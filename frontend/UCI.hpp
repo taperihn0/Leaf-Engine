@@ -5,9 +5,9 @@ public:
 	UniversalChessInterface() = default;
 	~UniversalChessInterface() = default;
 
-	void Loop(int argc, const char* argv[]);
+	void loop(int argc, const char* argv[]);
 private:
-	void Parse_UCI();
+	void parse_UCI();
 
 	std::string _command;
 };

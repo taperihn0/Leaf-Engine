@@ -20,8 +20,20 @@ public:
 
 	~BitBoard() = default;
 
-	INLINE constexpr BitBoard operator|(BitBoard bb) const noexcept {
+	INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
+		return _board = cpy._board;
+	}
+
+	INLINE constexpr BitBoard operator|(BitBoard bb) const {
 		return _board | bb._board;
+	}
+
+	INLINE constexpr BitBoard operator^(BitBoard bb) const {
+		return _board ^ bb._board;
+	}
+
+	INLINE constexpr BitBoard operator^(uint64_t bb) const {
+		return _board ^ bb;
 	}
 
 	// debug-purpose method
@@ -54,6 +66,7 @@ public:
 	}
 
 	static constexpr uint64_t universe = 0xffffffffffffffffUi64;
+	static constexpr uint64_t empty = 0Ui64;
 private:
 	uint64_t _board;
 };

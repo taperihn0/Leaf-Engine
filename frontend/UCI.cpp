@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-void UniversalChessInterface::Loop(int argc, const char* argv[]) {
+void UniversalChessInterface::loop(int argc, const char* argv[]) {
 	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
 
 	do {
@@ -14,12 +14,12 @@ void UniversalChessInterface::Loop(int argc, const char* argv[]) {
 
 		command_stream >> token;
 
-		if (token == "uci") Parse_UCI();
+		if (token == "uci") parse_UCI();
 
 	} while (_command != "quit");
 }
 
-inline void UniversalChessInterface::Parse_UCI() {
+inline void UniversalChessInterface::parse_UCI() {
 	std::cout << "id name " << ENGINE_NAME << '\n'
 		<< "id author " << AUTHOR << '\n'
 		<< "uciok" << '\n';

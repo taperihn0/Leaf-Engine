@@ -3,5 +3,5 @@
 
 int main(int argc, const char* argv[]) {
 	UniversalChessInterface uci_obj;
-	uci_obj.Loop(argc, argv);
+	uci_obj.loop(argc, argv);
 }
