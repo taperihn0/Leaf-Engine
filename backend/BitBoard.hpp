@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Common.hpp"
 
 #include <cstdint>
@@ -18,6 +20,9 @@ public:
 	constexpr BitBoard(uint64_t raw_init)
 		: _board(raw_init) {}
 
+	constexpr BitBoard(Square sq)
+		: _board(1Ui64 << sq) {}
+
 	~BitBoard() = default;
 
 	INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
@@ -32,14 +37,30 @@ public:
 		return _board ^ bb._board;
 	}
 
-	INLINE constexpr BitBoard operator^(uint64_t bb) const {
-		return _board ^ bb;
+	INLINE constexpr BitBoard operator^(uint64_t raw) const {
+		return _board ^ raw;
+	}
+
+	INLINE constexpr BitBoard operator&(BitBoard bb) const {
+		return _board & bb._board;
+	}
+
+	INLINE constexpr BitBoard operator&(uint64_t raw) const {
+		return _board & raw;
+	}
+
+	INLINE constexpr BitBoard operator>>(int shift) const {
+		return _board >> shift;
+	}
+
+	INLINE constexpr BitBoard operator<<(int shift) const {
+		return _board << shift;
 	}
 
 	// debug-purpose method
-	void PrintRaw();
+	void printRaw();
 	
-	void SetRaw(uint64_t bb);
+	void set(uint64_t bb);
 
 	int popCount();
 	int bitScanForward();
@@ -65,8 +86,87 @@ public:
 		setBit(target);
 	}
 
-	static constexpr uint64_t universe = 0xffffffffffffffffUi64;
-	static constexpr uint64_t empty = 0Ui64;
+	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
+		empty = 0Ui64,
+		not_a_file = 0xfefefefefefefefeUi64,
+		not_b_file = 0xfdfdfdfdfdfdfdfdUi64,
+		not_g_file = 0xbfbfbfbfbfbfbfbfUi64,
+		not_h_file = 0x7f7f7f7f7f7f7f7fUi64,
+
+		not_ab_file = not_a_file & not_b_file,
+		not_gh_file = not_g_file & not_h_file;
 private:
 	uint64_t _board;
 };
+
+// General setwise operations on BitBoard wrapper class *
+
+namespace {
+
+	// one step only and shifting routines *
+
+	INLINE BitBoard nortOne(BitBoard bb) {
+		return bb << 8;
+	}
+
+	INLINE BitBoard soutOne(BitBoard bb) {
+		return bb >> 8;
+	}
+
+	INLINE BitBoard westOne(BitBoard bb) {
+		return (bb >> 1) & BitBoard::not_h_file;
+	}
+
+	INLINE BitBoard eastOne(BitBoard bb) {
+		return (bb << 1) & BitBoard::not_a_file;
+	}
+
+	INLINE BitBoard noEaOne(BitBoard bb) {
+		return (bb << 9) & BitBoard::not_a_file;
+	}
+
+	INLINE BitBoard soEaOne(BitBoard bb) {
+		return (bb >> 7) & BitBoard::not_a_file;
+	}
+
+	INLINE BitBoard soWeOne(BitBoard bb) {
+		return (bb >> 9) & BitBoard::not_h_file;
+	}
+
+	INLINE BitBoard noWeOne(BitBoard bb) {
+		return (bb << 7) & BitBoard::not_h_file;
+	}
+
+	INLINE BitBoard noNoEa(BitBoard bb) {
+		return (bb << 17) & BitBoard::not_a_file;
+	}
+
+	INLINE BitBoard noEaEa(BitBoard bb) {
+		return (bb << 10) & BitBoard::not_ab_file;
+	}
+
+	INLINE BitBoard soEaEa(BitBoard bb) {
+		return (bb >> 6) & BitBoard::not_ab_file;
+	}
+
+	INLINE BitBoard soSoEa(BitBoard bb) {
+		return (bb >> 15) & BitBoard::not_a_file;
+	}
+
+	INLINE BitBoard soSoWe(BitBoard bb) {
+		return (bb >> 17) & BitBoard::not_h_file;
+	}
+
+	INLINE BitBoard soWeWe(BitBoard bb) {
+		return (bb >> 10) & BitBoard::not_gh_file;
+	}
+
+	INLINE BitBoard noWeWe(BitBoard bb) {
+		return (bb << 6) & BitBoard::not_gh_file;
+	}
+
+	INLINE BitBoard noNoWe(BitBoard bb) {
+		return (bb << 15) & BitBoard::not_h_file;
+	}
+
+} // namespace

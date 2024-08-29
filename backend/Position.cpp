@@ -46,7 +46,7 @@ void Position::setByFEN(const std::string fen) {
 		++x;
 	}
 
-	cur_fen = fen;
+	_cur_fen = fen;
 }
 
 void Position::setStartingPos() {
@@ -82,7 +82,7 @@ void Position::print() {
 
 	std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
 		<< "     A   B   C   D   E   F   G   H\n\n"
-		<< "FEN: " << cur_fen << '\n';
+		<< "FEN: " << _cur_fen << '\n';
 }
 
 void Position::setGameStates(const std::string fen, int i) {

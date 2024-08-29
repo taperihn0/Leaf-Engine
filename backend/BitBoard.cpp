@@ -1,13 +1,13 @@
 #include "BitBoard.hpp"
 
-void BitBoard::PrintRaw() {
+void BitBoard::printRaw() {
 	for (int i = 0; i < 64; i++) {
 		std::cout << static_cast<bool>((1Ui64 << i) & _board);
 		if (i % 8 == 7) std::cout << '\n';
 	}
 }
 
-void BitBoard::SetRaw(uint64_t bb) {
+void BitBoard::set(uint64_t bb) {
 	_board = bb;
 }
 
