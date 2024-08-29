@@ -9,18 +9,46 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 		if (!std::getline(std::cin, _command))
 			_command = "quit";
 
-		std::istringstream command_stream(_command);
+		std::istringstream strm(_command);
 		std::string token;
 
-		command_stream >> token;
+		strm >> std::skipws >> token;
 
-		if (token == "uci") parse_UCI();
+		if (token == "uci") parseUCI();
+		else if (token == "position") parsePosition(strm);
+		else if (token == "print") pos.print();
 
 	} while (_command != "quit");
 }
 
-inline void UniversalChessInterface::parse_UCI() {
+void UniversalChessInterface::parseUCI() {
 	std::cout << "id name " << ENGINE_NAME << '\n'
 		<< "id author " << AUTHOR << '\n'
 		<< "uciok" << '\n';
 }
+
+void UniversalChessInterface::parsePosition(std::istringstream& strm) {
+	std::string token;
+	strm >> std::skipws >> token;
+
+	if (token == "fen") {
+		std::string given_fen;
+
+		// load piece distribution
+		strm >> std::skipws >> token;
+		given_fen += token;
+
+		// get side to move, castling rights, en passant square
+		// and get halfmove counter as fullmove counter
+		for (int i = 0; i < 5; i++) {
+			strm >> std::skipws >> token;
+			given_fen += ' ' + token;
+		}
+
+		pos.setByFEN(given_fen);
+	}
+	else if (token == "startpos") {
+		pos.setStartingPos();
+	}
+}
+

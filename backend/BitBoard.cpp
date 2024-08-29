@@ -1,5 +1,4 @@
 #include "BitBoard.hpp"
-#include "..\frontend\UCI.hpp"
 
 void BitBoard::PrintRaw() {
 	for (int i = 0; i < 64; i++) {

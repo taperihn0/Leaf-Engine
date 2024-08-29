@@ -1,4 +1,4 @@
-#include "../backend/Common.hpp"
+#include "../backend/Position.hpp"
 
 class UniversalChessInterface {
 public:
@@ -7,7 +7,10 @@ public:
 
 	void loop(int argc, const char* argv[]);
 private:
-	void parse_UCI();
+	void parseUCI();
+	void parsePosition(std::istringstream& strm);
+
+	Position pos;
 
 	std::string _command;
 };

@@ -2,12 +2,8 @@
 
 #include <string_view>
 
-void Square::fromChar(char rank, char file) {
-	_sq = (rank - 'a') + (file - '1') * 8;
-}
-
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
-: kingside(kinit), queenside(qinit) {}
+	: kingside(kinit), queenside(qinit) {}
 
 void CastlingRights::printByColor(enumColor col_type) {
 	std::string msg;
@@ -16,10 +12,12 @@ void CastlingRights::printByColor(enumColor col_type) {
 	std::cout << msg;
 }
 
+Position::Position() { setStartingPos(); }
+
+Position::Position(const std::string init_fen) { setByFEN(init_fen); }
+
 void Position::setByFEN(const std::string fen) {
 	clearPieces();
-
-	static std::array<std::string_view, 2> piece_str_by_side = { "PNBRQK", "pnbrqk" };
 
 	int x = 0, y = 7;
 
@@ -47,6 +45,44 @@ void Position::setByFEN(const std::string fen) {
 		_piece_bb[side][piece_t].setBit(in);
 		++x;
 	}
+
+	cur_fen = fen;
+}
+
+void Position::setStartingPos() {
+	setByFEN(static_cast<std::string>(starting_pos));
+}
+
+void Position::print() {
+	std::cout << "     A   B   C   D   E   F   G   H";
+
+	for (int h = 7; h >= 0; h--) {
+		std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
+			<< ' ' << h + 1 << " | ";
+
+		for (int i = 8 * h; i < 8 * (h + 1); i++) {
+
+			char sqpiece_char = ' ';
+
+			for (enumColor col_t : { WHITE, BLACK }) {
+				for (enumPiece piece_t : { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING }) {
+					if (!_piece_bb[col_t][piece_t].getBit(i))
+						continue;
+
+					sqpiece_char = piece_str_by_side[col_t][piece_t];
+					break;
+				}
+			}
+
+			std::cout << sqpiece_char << " | ";
+		}
+
+		std::cout << h + 1;
+	}
+
+	std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
+		<< "     A   B   C   D   E   F   G   H\n\n"
+		<< "FEN: " << cur_fen << '\n';
 }
 
 void Position::setGameStates(const std::string fen, int i) {
