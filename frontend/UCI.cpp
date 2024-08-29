@@ -16,7 +16,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 
 		if (token == "uci") parseUCI();
 		else if (token == "position") parsePosition(strm);
-		else if (token == "print") pos.print();
+		else if (token == "print") _pos.print();
 
 	} while (_command != "quit");
 }
@@ -45,10 +45,10 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 			given_fen += ' ' + token;
 		}
 
-		pos.setByFEN(given_fen);
+		_pos.setByFEN(given_fen);
 	}
 	else if (token == "startpos") {
-		pos.setStartingPos();
+		_pos.setStartingPos();
 	}
 }
 

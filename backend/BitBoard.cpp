@@ -66,13 +66,13 @@ static constexpr int index64[64] = {
 };
 
 int BitBoard::bitScanForward() {
-	constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
 	assert(_board != 0);
 	return index64[((_board ^ (_board - 1)) * debruijn64) >> 58];
 }
 
 int BitBoard::bitScanReverse() {
-	constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
 	uint64_t bb = _board;
 	assert(_board != 0Ui64);
 	bb |= bb >> 1;

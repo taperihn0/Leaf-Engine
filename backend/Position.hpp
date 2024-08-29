@@ -28,26 +28,26 @@ public:
 	void printByColor(enumColor col_type);
 
 	INLINE bool getKingSide() noexcept {
-		return kingside;
+		return _kingside;
 	}
 
 	INLINE bool getQueenSide() noexcept {
-		return queenside;
+		return _queenside;
 	}
 
 	INLINE void setKingSide(bool flag) noexcept {
-		kingside = flag;
+		_kingside = flag;
 	}
 
 	INLINE void setQueenSide(bool flag) noexcept {
-		queenside = flag;
+		_queenside = flag;
 	}
 
 	INLINE void clear() noexcept {
-		kingside = false, queenside = false;
+		_kingside = false, _queenside = false;
 	}
 private:
-	bool kingside, queenside;
+	bool _kingside, _queenside;
 };
 
 // internal board state, including piece distribution 
@@ -151,5 +151,5 @@ private:
 
 	std::string _cur_fen;
 
-	static constexpr std::array<std::string_view, 2> piece_str_by_side = { "PNBRQK", "pnbrqk" };
+	static constexpr std::array<std::string_view, 2> _piece_str_by_side = { "PNBRQK", "pnbrqk" };
 };

@@ -12,7 +12,7 @@ private:
 	void parseUCI();
 	void parsePosition(std::istringstream& strm);
 
-	Position pos;
+	Position _pos;
 
 	std::string _command;
 };

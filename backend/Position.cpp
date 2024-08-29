@@ -3,12 +3,12 @@
 #include <string_view>
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
-	: kingside(kinit), queenside(qinit) {}
+	: _kingside(kinit), _queenside(qinit) {}
 
 void CastlingRights::printByColor(enumColor col_type) {
 	std::string msg;
-	if (kingside) msg += col_type == BLACK ? 'k' : 'K';
-	if (queenside) msg += col_type == BLACK ? 'q' : 'Q';
+	if (_kingside) msg += col_type == BLACK ? 'k' : 'K';
+	if (_queenside) msg += col_type == BLACK ? 'q' : 'Q';
 	std::cout << msg;
 }
 
@@ -40,7 +40,7 @@ void Position::setByFEN(const std::string fen) {
 		}
 
 		const bool side = islower(c);
-		const auto piece_t = piece_str_by_side[side].find_first_of(c);
+		const auto piece_t = _piece_str_by_side[side].find_first_of(c);
 
 		_piece_bb[side][piece_t].setBit(in);
 		++x;
@@ -69,7 +69,7 @@ void Position::print() {
 					if (!_piece_bb[col_t][piece_t].getBit(i))
 						continue;
 
-					sqpiece_char = piece_str_by_side[col_t][piece_t];
+					sqpiece_char = _piece_str_by_side[col_t][piece_t];
 					break;
 				}
 			}
