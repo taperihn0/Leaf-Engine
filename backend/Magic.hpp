@@ -2,7 +2,7 @@
 
 #include "Common.hpp"
 #include "BitBoard.hpp"
-#include "Position.hpp"
+#include "Piece.hpp"
 
 // class containing magic bitboards for bishops and rooks,
 // encapsulating hashing function for sliding pieces 
@@ -21,7 +21,7 @@ public:
     }
 
     // initialize look-up tables for bishop and rook
-    template <enumPiece Piece>
+    template <Piece::enumType Piece>
     static void initAttackTables();
 private:
     static BitBoard indexToSubset(int i, BitBoard relv_occ, int relv_bits);

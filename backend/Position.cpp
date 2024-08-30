@@ -1,7 +1,5 @@
 #include "Position.hpp"
 
-#include <string_view>
-
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
 
@@ -41,10 +39,8 @@ void Position::setByFEN(const std::string fen) {
 			continue;
 		}
 
-		const bool side = islower(c);
-		const auto piece_t = _piece_str_by_side[side].find_first_of(c);
-
-		_piece_bb[side][piece_t].setBit(in);
+		const enumColor col = islower(c) ? BLACK : WHITE;
+		_piece_bb[col][Piece().fromChar(col, c).toIndex()].setBit(in);
 		++x;
 	}
 
@@ -64,19 +60,22 @@ void Position::print() {
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
 
-			char sqpiece_char = ' ';
+			//char sqpiece_char = ' ';
+			Piece piece = Piece::enumType::NONE;
 
 			for (enumColor col_t : { WHITE, BLACK }) {
-				for (enumPiece piece_t : { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING }) {
+				for (Piece::enumType piece_t : { Piece::PAWN, Piece::KNIGHT, Piece::BISHOP, 
+					Piece::ROOK, Piece::QUEEN, Piece::KING }) {
 					if (!_piece_bb[col_t][piece_t].getBit(i))
 						continue;
 
-					sqpiece_char = _piece_str_by_side[col_t][piece_t];
+					piece.set(col_t, piece_t);
 					break;
 				}
 			}
 
-			std::cout << sqpiece_char << " | ";
+			piece.print();
+			std::cout << " | ";
 		}
 
 		std::cout << h + 1;

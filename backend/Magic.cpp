@@ -90,19 +90,19 @@ std::array<int, 64> SlidersMagics::_m_bits_rook = {
 std::array<std::array<uint64_t, 512>, 64> SlidersMagics::_mbishop_att;
 std::array<std::array<uint64_t, 4096>, 64> SlidersMagics::_mrook_att;
 
-template <enumPiece Piece>
+template <Piece::enumType Piece>
 void SlidersMagics::initAttackTables() {
-    static_assert(Piece == BISHOP or Piece == ROOK, "Attack tables generated only for bishops or rooks");
+    static_assert(Piece == Piece::BISHOP or Piece == Piece::ROOK, "Attack tables generated only for bishops or rooks");
 
     for (int sq = 0; sq < 64; sq++) {
-        const int relv_bits = Piece == BISHOP ? _m_bits_bishop[sq] : _m_bits_rook[sq];
-        const uint64_t relv_occ = Piece == BISHOP ? _m_occupancy_bishop[sq] : _m_occupancy_rook[sq];
+        const int relv_bits = Piece == Piece::BISHOP ? _m_bits_bishop[sq] : _m_bits_rook[sq];
+        const uint64_t relv_occ = Piece == Piece::BISHOP ? _m_occupancy_bishop[sq] : _m_occupancy_rook[sq];
 
         // looping through all occupancy subsets
         for (int i = 0; i < (1Ui64 << relv_bits); i++) {
             BitBoard subset = indexToSubset(i, relv_occ, relv_bits);
 
-            if constexpr (Piece == BISHOP)
+            if constexpr (Piece == Piece::BISHOP)
                 _mbishop_att[sq][mIndexHash(_magics_bishop[sq], subset, relv_bits)]
                 = generateBishopAttacks(sq, subset);
             else
@@ -177,5 +177,5 @@ uint64_t SlidersMagics::generateRookAttacks(Square sq, BitBoard relv_occ) {
     return mask;
 }
 
-template void SlidersMagics::initAttackTables<BISHOP>();
-template void SlidersMagics::initAttackTables<ROOK>();
+template void SlidersMagics::initAttackTables<Piece::BISHOP>();
+template void SlidersMagics::initAttackTables<Piece::ROOK>();

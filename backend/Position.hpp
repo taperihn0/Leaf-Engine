@@ -1,23 +1,7 @@
 #pragma once
 
 #include "BitBoard.hpp"
-
-enum enumPiece : uint8_t {
-	PAWN,
-	KNIGHT,
-	BISHOP,
-	ROOK,
-	QUEEN,
-	KING
-};
-
-enum enumColor : bool {
-	WHITE, BLACK
-};
-
-INLINE constexpr enumColor operator!(enumColor opp) {
-	return static_cast<enumColor>(!static_cast<bool>(opp));
-}
+#include "Piece.hpp"
 
 class Turn {
 public:
@@ -95,36 +79,36 @@ public:
 	void print();
 
 	INLINE BitBoard getPawnsBySide(enumColor col_type) {
-		return _piece_bb[col_type][PAWN];
+		return _piece_bb[col_type][Piece::PAWN];
 	}
 
 	INLINE BitBoard getKnightsBySide(enumColor col_type) {
-		return _piece_bb[col_type][KNIGHT];
+		return _piece_bb[col_type][Piece::KNIGHT];
 	}
 
 	INLINE BitBoard getBishopsBySide(enumColor col_type) {
-		return _piece_bb[col_type][BISHOP];
+		return _piece_bb[col_type][Piece::BISHOP];
 	}
 
 	INLINE BitBoard getRooksBySide(enumColor col_type) {
-		return _piece_bb[col_type][ROOK];
+		return _piece_bb[col_type][Piece::ROOK];
 	}
 
 	INLINE BitBoard getQueensBySide(enumColor col_type) {
-		return _piece_bb[col_type][QUEEN];
+		return _piece_bb[col_type][Piece::QUEEN];
 	}
 
 	INLINE BitBoard getKingBySide(enumColor col_type) {
-		return _piece_bb[col_type][KING];
+		return _piece_bb[col_type][Piece::KING];
 	}
 
 	INLINE BitBoard getByColor(enumColor col_type) {
-		return _piece_bb[col_type][PAWN]
-			| _piece_bb[col_type][KNIGHT]
-			| _piece_bb[col_type][BISHOP]
-			| _piece_bb[col_type][ROOK]
-			| _piece_bb[col_type][QUEEN]
-			| _piece_bb[col_type][KING];
+		return _piece_bb[col_type][Piece::PAWN]
+			| _piece_bb[col_type][Piece::KNIGHT]
+			| _piece_bb[col_type][Piece::BISHOP]
+			| _piece_bb[col_type][Piece::ROOK]
+			| _piece_bb[col_type][Piece::QUEEN]
+			| _piece_bb[col_type][Piece::KING];
 	}
 
 	INLINE BitBoard getWhites() {
@@ -184,6 +168,4 @@ private:
 	uint16_t _fullmove_count;
 
 	std::string _cur_fen;
-
-	static constexpr std::array<std::string_view, 2> _piece_str_by_side = { "PNBRQK", "pnbrqk" };
 };

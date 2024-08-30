@@ -3,10 +3,10 @@
 
 int main(int argc, const char* argv[]) {
 	UniversalChessInterface uci_obj;
-	//uci_obj.loop(argc, argv);
+	uci_obj.loop(argc, argv);
 
-	SlidersMagics::initAttackTables<BISHOP>();
-	SlidersMagics::initAttackTables<ROOK>();
+	SlidersMagics::initAttackTables<Piece::BISHOP>();
+	SlidersMagics::initAttackTables<Piece::ROOK>();
 
 	for (Square sq : { Square::a1, Square::a8, Square::e4, Square::d4, Square::f5, Square::h8, Square::f7 }) {
 		sq.print();
