@@ -85,3 +85,9 @@ int BitBoard::bitScanReverse() {
 	return index64[(bb * debruijn64) >> 58];
 }
 #endif
+
+int BitBoard::dropForward() {
+	const int ls1b = bitScanForward();
+	_board &= _board - 1;
+	return ls1b;
+}

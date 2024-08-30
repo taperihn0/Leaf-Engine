@@ -3,9 +3,9 @@
 #include "Common.hpp"
 #include "BitBoard.hpp"
 
-// static attack masks
-
 namespace {
+	// static attack masks
+
 	BitBoard whitePawnAttacks(Square sq) {
 		BitBoard bit(sq);
 		return noEaOne(bit) | noWeOne(bit);

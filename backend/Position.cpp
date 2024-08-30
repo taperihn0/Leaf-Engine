@@ -16,6 +16,8 @@ Position::Position() { setStartingPos(); }
 
 Position::Position(const std::string init_fen) { setByFEN(init_fen); }
 
+Position::Position(const std::string_view init_fen) { setByFEN(static_cast<std::string>(init_fen)); }
+
 void Position::setByFEN(const std::string fen) {
 	clearPieces();
 
@@ -50,7 +52,7 @@ void Position::setByFEN(const std::string fen) {
 }
 
 void Position::setStartingPos() {
-	setByFEN(static_cast<std::string>(starting_pos));
+	setByFEN(static_cast<std::string>(starting_fen));
 }
 
 void Position::print() {
@@ -86,7 +88,7 @@ void Position::print() {
 }
 
 void Position::setGameStates(const std::string fen, int i) {
-	_turn = fen[i] == 'w' ? WHITE : BLACK;
+	_turn.fromChar(fen[i]);
 
 	i += 2;
 	_castling_rights[WHITE].clear(), _castling_rights[BLACK].clear();

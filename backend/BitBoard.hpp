@@ -23,7 +23,9 @@ public:
 	constexpr BitBoard(Square sq)
 		: _board(1Ui64 << sq) {}
 
-	~BitBoard() = default;
+	INLINE constexpr operator uint64_t() const {
+		return _board;
+	}
 
 	INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
 		return _board = cpy._board;
@@ -61,6 +63,10 @@ public:
 		return _board << shift;
 	}
 
+	INLINE constexpr BitBoard operator*(BitBoard bb) const {
+		return _board * bb._board;
+	}
+
 	INLINE constexpr BitBoard operator~() const {
 		return ~_board;
 	}
@@ -73,6 +79,9 @@ public:
 	int popCount();
 	int bitScanForward();
 	int bitScanReverse();
+
+	// bit scan forward but with LS1B reset
+	int dropForward();
 
 	INLINE void popBit(int shift) {
 		assert(shift < 64);
@@ -96,12 +105,15 @@ public:
 
 	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
 		empty = 0Ui64,
-		a_file = 0x101010101010101Ui64,
+		a_file = 0x0101010101010101Ui64,
+		b_file = 0x0202020202020202Ui64,
+		g_file = 0x4040404040404040Ui64,
+		h_file = 0x8080808080808080Ui64,
 
 		not_a_file = ~a_file,
-		not_b_file = 0xfdfdfdfdfdfdfdfdUi64,
-		not_g_file = 0xbfbfbfbfbfbfbfbfUi64,
-		not_h_file = 0x7f7f7f7f7f7f7f7fUi64,
+		not_b_file = ~b_file,
+		not_g_file = ~g_file,
+		not_h_file = ~h_file,
 
 		not_ab_file = not_a_file & not_b_file,
 		not_gh_file = not_g_file & not_h_file;

@@ -19,6 +19,36 @@ INLINE constexpr enumColor operator!(enumColor opp) {
 	return static_cast<enumColor>(!static_cast<bool>(opp));
 }
 
+class Turn {
+public:
+	Turn() = default;
+	constexpr Turn(enumColor c)
+		: _col(c) {}
+
+	INLINE constexpr Turn operator=(enumColor c) {
+		return _col = c;
+	}
+
+	INLINE constexpr Turn operator!() const {
+		return !_col;
+	}
+
+	enumColor toColor() {
+		return _col;
+	}
+
+	void fromChar(char c) {
+		_col = c == 'w' ? WHITE : BLACK;
+	}
+
+	void print() {
+		std::cout << (_col == WHITE ? 'w' : 'b');
+	}
+
+private:
+	enumColor _col;
+};
+
 // wrapper around castling rights for single player
 class CastlingRights {
 public:
@@ -56,6 +86,7 @@ class Position {
 public:
 	Position();
 	Position(const std::string init_fen);
+	Position(const std::string_view init_fen);
 
 	// assuming given FEN is valid FEN position
 	void setByFEN(const std::string fen);
@@ -109,14 +140,14 @@ public:
 	}
 
 	INLINE BitBoard getOppositePieces() {
-		return getByColor(!_turn);
+		return getByColor(!_turn.toColor());
 	}
 
 	INLINE BitBoard getEmpties() {
 		return getOccupied() ^ BitBoard::universe;
 	}
 
-	INLINE enumColor getOppositeTurn() {
+	INLINE Turn getOppositeTurn() {
 		return !_turn;
 	}
 
@@ -128,8 +159,11 @@ public:
 		_turn = col_to_move;
 	}
 
-	static constexpr std::string_view starting_pos 
+	static constexpr std::string_view starting_fen 
 		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+	static constexpr std::string_view empty_fen
+		= "/////// w - - 0 1";
 
 private:
 	INLINE void clearPieces() {
@@ -140,7 +174,7 @@ private:
 	void setGameStates(const std::string fen, int i);
 
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
-	enumColor _turn;
+	Turn _turn;
 
 	std::array<CastlingRights, 2> _castling_rights;
 

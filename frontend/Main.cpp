@@ -1,15 +1,18 @@
 #include "UCI.hpp"
-#include "../backend/Attacks.hpp"
+#include "../backend/Magic.hpp"
 
 int main(int argc, const char* argv[]) {
 	UniversalChessInterface uci_obj;
 	//uci_obj.loop(argc, argv);
 
-	for (Square sq : { Square::a1, Square::a8, Square::f5, Square::c4, Square::f7 }) {
+	SlidersMagics::initAttackTables<BISHOP>();
+	SlidersMagics::initAttackTables<ROOK>();
+
+	for (Square sq : { Square::a1, Square::a8, Square::e4, Square::d4, Square::f5, Square::h8, Square::f7 }) {
 		sq.print();
 		std::cout << '\n';
 
-		rayAttacksQueen(sq).printRaw();
+		SlidersMagics::rookAttacks(sq, Position(Position::empty_fen).getOccupied()).printRaw();
 
 		std::cout << '\n';
 	}

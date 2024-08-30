@@ -15,6 +15,7 @@
 
 class Square {
 public:
+
 	// little endian rank-file mapping
 	enum enumSquare {
 		a1, b1, c1, d1, e1, f1, g1, h1,
@@ -29,7 +30,7 @@ public:
 
 	Square() = default;
 	constexpr Square(uint8_t cpy)
-		: _sq(cpy) {}
+		: _sq(cpy) { assert(isValid()); }
 
 	INLINE constexpr Square operator=(uint8_t sq) {
 		return _sq = sq;
@@ -45,6 +46,10 @@ public:
 
 	void print() {
 		std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
+	}
+
+	constexpr bool isValid() const {
+		return 0 <= _sq and _sq < 64 or _sq == none;
 	}
 
 	static constexpr uint8_t none = -1Ui8;
