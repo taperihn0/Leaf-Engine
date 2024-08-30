@@ -14,7 +14,7 @@ constexpr inline uint64_t U64(T val) {
 class BitBoard {
 public:
 	BitBoard() = default;
-	constexpr BitBoard(BitBoard&) = default;
+	constexpr BitBoard(const BitBoard&) = default;
 	constexpr BitBoard(BitBoard&&) = default;
 
 	constexpr BitBoard(uint64_t raw_init)
@@ -27,6 +27,10 @@ public:
 
 	INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
 		return _board = cpy._board;
+	}
+
+	INLINE constexpr BitBoard operator|=(BitBoard bb) {
+		return _board |= bb._board;
 	}
 
 	INLINE constexpr BitBoard operator|(BitBoard bb) const {
@@ -55,6 +59,10 @@ public:
 
 	INLINE constexpr BitBoard operator<<(int shift) const {
 		return _board << shift;
+	}
+
+	INLINE constexpr BitBoard operator~() const {
+		return ~_board;
 	}
 
 	// debug-purpose method
@@ -88,7 +96,9 @@ public:
 
 	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
 		empty = 0Ui64,
-		not_a_file = 0xfefefefefefefefeUi64,
+		a_file = 0x101010101010101Ui64,
+
+		not_a_file = ~a_file,
 		not_b_file = 0xfdfdfdfdfdfdfdfdUi64,
 		not_g_file = 0xbfbfbfbfbfbfbfbfUi64,
 		not_h_file = 0x7f7f7f7f7f7f7f7fUi64,

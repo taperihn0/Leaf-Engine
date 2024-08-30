@@ -1,9 +1,10 @@
 #include "BitBoard.hpp"
 
 void BitBoard::printRaw() {
-	for (int i = 0; i < 64; i++) {
-		std::cout << static_cast<bool>((1Ui64 << i) & _board);
-		if (i % 8 == 7) std::cout << '\n';
+	for (int h = 7; h >= 0; h--) {
+		for (int i = h * 8; i < (h + 1) * 8; i++)
+			std::cout << static_cast<bool>((1Ui64 << i) & _board);
+		std::cout << '\n';
 	}
 }
 
