@@ -60,7 +60,6 @@ void Position::print() {
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
 
-			//char sqpiece_char = ' ';
 			Piece piece = Piece::enumType::NONE;
 
 			for (enumColor col_t : { WHITE, BLACK }) {

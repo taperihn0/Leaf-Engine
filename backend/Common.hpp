@@ -36,8 +36,9 @@ public:
 		return _sq;
 	}
 
-	void fromChar(char rank, char file) {
+	Square fromChar(char rank, char file) {
 		_sq = (rank - 'a') + (file - '1') * 8;
+		return *this;
 	}
 
 	void print() {

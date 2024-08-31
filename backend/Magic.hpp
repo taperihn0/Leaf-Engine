@@ -5,7 +5,8 @@
 #include "Piece.hpp"
 
 // class containing magic bitboards for bishops and rooks,
-// encapsulating hashing function for sliding pieces 
+// encapsulating hashing function for sliding pieces.
+// Resources need to be initializated by calling initAttackTables function.
 class SlidersMagics {
 public:
     static INLINE constexpr int mIndexHash(BitBoard magic_bb, BitBoard relv_occ, int relv_bits) {
@@ -18,6 +19,10 @@ public:
 
     static INLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
         return _mrook_att[sq][mIndexHash(_magics_rook[sq], _m_occupancy_rook[sq] & occ, _m_bits_rook[sq])];
+    }
+
+    static INLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
+        return rookAttacks(sq, occ) | bishopAttacks(sq, occ);
     }
 
     // initialize look-up tables for bishop and rook
