@@ -2,6 +2,7 @@
 
 #include "Common.hpp"
 #include "Piece.hpp"
+#include "Square.hpp"
 
 class Position;
 

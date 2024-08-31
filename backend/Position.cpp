@@ -40,7 +40,7 @@ void Position::setByFEN(const std::string fen) {
 		}
 
 		const enumColor col = islower(c) ? BLACK : WHITE;
-		_piece_bb[col][Piece().fromChar(col, c).toIndex()].setBit(in);
+		_piece_bb[col][Piece::fromChar(col, c).toIndex()].setBit(in);
 		++x;
 	}
 
@@ -63,8 +63,7 @@ void Position::print() const {
 			Piece piece = Piece::enumType::NONE;
 
 			for (enumColor col_t : { WHITE, BLACK }) {
-				for (Piece::enumType piece_t : { Piece::PAWN, Piece::KNIGHT, Piece::BISHOP, 
-					Piece::ROOK, Piece::QUEEN, Piece::KING }) {
+				for (Piece::enumType piece_t : Piece::piece_list) {
 					if (!_piece_bb[col_t][piece_t].getBit(i))
 						continue;
 

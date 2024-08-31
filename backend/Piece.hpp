@@ -44,6 +44,15 @@ public:
 		NONE
 	};
 
+	static constexpr std::array<enumType, 6> piece_list = { 
+		Piece::PAWN, 
+		Piece::KNIGHT, 
+		Piece::BISHOP, 
+		Piece::ROOK, 
+		Piece::QUEEN, 
+		Piece::KING
+	};
+
 private:
 	static constexpr std::string_view _whites_str = "PNBRQK", _blacks_str = "pnbrqk";
 	enumType _type;
