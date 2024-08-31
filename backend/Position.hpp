@@ -9,16 +9,16 @@ public:
 	constexpr Turn(enumColor c)
 		: _col(c) {}
 
+	INLINE constexpr operator enumColor() const {
+		return _col;
+	}
+
 	INLINE constexpr Turn operator=(enumColor c) {
 		return _col = c;
 	}
 
 	INLINE constexpr Turn operator!() const {
 		return !_col;
-	}
-
-	enumColor toColor() {
-		return _col;
 	}
 
 	void fromChar(char c) {
@@ -76,33 +76,33 @@ public:
 	void setByFEN(const std::string fen);
 	void setStartingPos();
 
-	void print();
+	void print() const;
 
-	INLINE BitBoard getPawnsBySide(enumColor col_type) {
+	INLINE BitBoard getPawnsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::PAWN];
 	}
 
-	INLINE BitBoard getKnightsBySide(enumColor col_type) {
+	INLINE BitBoard getKnightsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::KNIGHT];
 	}
 
-	INLINE BitBoard getBishopsBySide(enumColor col_type) {
+	INLINE BitBoard getBishopsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::BISHOP];
 	}
 
-	INLINE BitBoard getRooksBySide(enumColor col_type) {
+	INLINE BitBoard getRooksBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::ROOK];
 	}
 
-	INLINE BitBoard getQueensBySide(enumColor col_type) {
+	INLINE BitBoard getQueensBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::QUEEN];
 	}
 
-	INLINE BitBoard getKingBySide(enumColor col_type) {
+	INLINE BitBoard getKingBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::KING];
 	}
 
-	INLINE BitBoard getByColor(enumColor col_type) {
+	INLINE BitBoard getByColor(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::PAWN]
 			| _piece_bb[col_type][Piece::KNIGHT]
 			| _piece_bb[col_type][Piece::BISHOP]
@@ -111,31 +111,35 @@ public:
 			| _piece_bb[col_type][Piece::KING];
 	}
 
-	INLINE BitBoard getWhites() {
+	INLINE BitBoard getWhites() const {
 		return getByColor(WHITE);
 	}
 
-	INLINE BitBoard getBlacks() {
+	INLINE BitBoard getBlacks() const {
 		return getByColor(BLACK);
 	}
 
-	INLINE BitBoard getOccupied() {
+	INLINE BitBoard getOccupied() const {
 		return getWhites() | getBlacks();
 	}
 
-	INLINE BitBoard getOppositePieces() {
-		return getByColor(!_turn.toColor());
+	INLINE BitBoard getOppositePieces() const {
+		return getByColor(!_turn);
 	}
 
-	INLINE BitBoard getEmpties() {
+	INLINE BitBoard getEmpties() const {
 		return getOccupied() ^ BitBoard::universe;
 	}
 
-	INLINE Turn getOppositeTurn() {
+	INLINE Turn getTurn() const {
+		return _turn;
+	}
+
+	INLINE Turn getOppositeTurn() const {
 		return !_turn;
 	}
 
-	INLINE CastlingRights getCastlingByColor(enumColor col_type) {
+	INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
 		return _castling_rights[col_type];
 	}
 

@@ -76,9 +76,9 @@ public:
 	
 	void set(uint64_t bb);
 
-	int popCount();
-	int bitScanForward();
-	int bitScanReverse();
+	int popCount() const;
+	int bitScanForward() const;
+	int bitScanReverse() const;
 
 	// bit scan forward but with LS1B reset
 	int dropForward();
@@ -93,7 +93,7 @@ public:
 		_board |= (1Ui64 << shift);
 	}
 
-	INLINE bool getBit(int shift) {
+	INLINE bool getBit(int shift) const {
 		assert(shift < 64);
 		return _board & (1Ui64 << shift);
 	}

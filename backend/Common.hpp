@@ -14,6 +14,17 @@
 #define ENGINE_NAME "Leaf Lite"
 #define AUTHOR "Szymon Belz"
 
+// move format, so far only long algebraic notation supported
+#define LONG_ALGEBRAIC_NOTATION
+
+#define ASSERT(s, error) (void)((s) or releaseFailedAssertion(__FILE__, error, __LINE__))
+
+inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
+	std::cout << text << '\n' << file << ", line " << line << '\n';
+	abort();
+	return true;
+}
+
 enum enumColor : bool {
 	WHITE, BLACK
 };
@@ -36,12 +47,11 @@ public:
 		return _sq;
 	}
 
-	Square fromChar(char rank, char file) {
-		_sq = (rank - 'a') + (file - '1') * 8;
-		return *this;
+	static Square fromChar(char file, char rank) {
+		return Square((file - 'a') + (rank - '1') * 8);
 	}
 
-	void print() {
+	void print() const {
 		std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
 	}
 

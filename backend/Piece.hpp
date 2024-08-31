@@ -10,25 +10,27 @@ public:
 	Piece(enumType piece_t) { set(WHITE, piece_t); }
 	Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
 
-	Piece fromChar(enumColor col_t, char c) {
+	INLINE constexpr operator int() const {
+		return _type;
+	}
+
+	static Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _whites_str.find_first_of(c)
 			: _blacks_str.find_first_of(c);
-		_type = enumType(id);
-		_col = col_t;
-		return *this;
+		return Piece(col_t, enumType(id));
 	}
 
 	void set(enumColor col_t, enumType piece_t) { 
 		_col = col_t, _type = piece_t;
 	}
 
-	void print() {
+	void print() const {
 		if (_type == NONE) std::cout << ' ';
 		else if (_col == WHITE) std::cout << _whites_str[_type];
 		else std::cout << _blacks_str[_type];
 	}
 
-	int toIndex() {
+	int toIndex() const {
 		return static_cast<int>(_type);
 	}
 

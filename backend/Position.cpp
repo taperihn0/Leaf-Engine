@@ -51,7 +51,7 @@ void Position::setStartingPos() {
 	setByFEN(static_cast<std::string>(starting_fen));
 }
 
-void Position::print() {
+void Position::print() const {
 	std::cout << "     A   B   C   D   E   F   G   H";
 
 	for (int h = 7; h >= 0; h--) {

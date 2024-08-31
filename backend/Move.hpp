@@ -2,12 +2,32 @@
 
 #include "Common.hpp"
 #include "Piece.hpp"
+#include "Position.hpp"
 
 class Move {
 public:
 	INLINE constexpr Move operator=(uint32_t raw) {
 		_rmove = raw;
 		return *this;
+	}
+	
+	// TODO
+	static inline Move fromStr(const Position pos, const std::string str) {
+#if defined(LONG_ALGEBRAIC_NOTATION)
+		ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
+		
+		Move tmp;
+
+		Square origin = Square::fromChar(str[0], str[1]), 
+			target = Square::fromChar(str[2], str[3]);
+
+		tmp.setOrigin(origin), tmp.setTarget(target);
+
+		if (str.size() == 5)
+			tmp.setPromoPiece(Piece().fromChar(pos.getTurn(), str[4]));
+
+		return tmp;
+#endif
 	}
 
 	INLINE Square getOrigin() {
@@ -34,22 +54,57 @@ public:
 		return _rmove & LONG_CASTLE;
 	}
 
-	INLINE Piece::enumType getPerformer() {
+	INLINE bool isPromotion() {
+		return _rmove & PROMO_PIECE;
+	}
+
+	INLINE Piece::enumType getPerformerT() {
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 16);
 	}
 
-	INLINE Piece::enumType getCaptured() {
+	INLINE Piece::enumType getCapturedT() {
 		return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 19);
 	}
 
-	INLINE Piece::enumType getPromoPiece() {
+	INLINE Piece::enumType getPromoPieceT() {
 		return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 22);
 	}
 
+	INLINE void print() {
+#if defined(LONG_ALGEBRAIC_NOTATION) 
+		if (_rmove == null) {
+			std::cout << _null_str;
+		}
+		else {
+			getOrigin().print(), getTarget().print();
+			if (isPromotion()) Piece(getPromoPieceT()).print();
+		}
+#endif
+	}
+
+	INLINE void setOrigin(Square origin) {
+		_rmove &= ~ORIGIN, _rmove |= origin;
+	}
+
+	INLINE void setTarget(Square target) {
+		_rmove &= ~TARGET, _rmove |= (target << 6);
+	}
+
+	INLINE void setPromoPiece(Piece piece) {
+		_rmove &= ~PROMO_PIECE, _rmove |= (piece << 4);
+	}
+
+	static constexpr uint32_t null = 0Ui32;
+
 private:
+	static constexpr std::string_view _null_str = "0000";
+
 	/*
-		Raw number data consists of layout above:
-		[promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
+		Raw number data consists of:
+		<----------------------------------------------------------------------------------->
+		|							25 bits	layout											|
+		<----------------------------------------------------------------------------------->
+		[promo] [captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
 		3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
 	*/
 
