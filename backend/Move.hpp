@@ -2,7 +2,8 @@
 
 #include "Common.hpp"
 #include "Piece.hpp"
-#include "Position.hpp"
+
+class Position;
 
 class Move {
 public:
@@ -11,24 +12,7 @@ public:
 		return *this;
 	}
 	
-	// TODO
-	static inline Move fromStr(const Position pos, const std::string str) {
-#if defined(LONG_ALGEBRAIC_NOTATION)
-		ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
-		
-		Move tmp;
-
-		Square origin = Square::fromChar(str[0], str[1]), 
-			target = Square::fromChar(str[2], str[3]);
-
-		tmp.setOrigin(origin), tmp.setTarget(target);
-
-		if (str.size() == 5)
-			tmp.setPromoPiece(Piece().fromChar(pos.getTurn(), str[4]));
-
-		return tmp;
-#endif
-	}
+	static Move fromStr(const Position pos, const std::string str);
 
 	INLINE Square getOrigin() {
 		return _rmove & ORIGIN;
@@ -70,18 +54,6 @@ public:
 		return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 22);
 	}
 
-	INLINE void print() {
-#if defined(LONG_ALGEBRAIC_NOTATION) 
-		if (_rmove == null) {
-			std::cout << _null_str;
-		}
-		else {
-			getOrigin().print(), getTarget().print();
-			if (isPromotion()) Piece(getPromoPieceT()).print();
-		}
-#endif
-	}
-
 	INLINE void setOrigin(Square origin) {
 		_rmove &= ~ORIGIN, _rmove |= origin;
 	}
@@ -94,8 +66,9 @@ public:
 		_rmove &= ~PROMO_PIECE, _rmove |= (piece << 4);
 	}
 
-	static constexpr uint32_t null = 0Ui32;
+	void print();
 
+	static constexpr uint32_t null = 0Ui32;
 private:
 	static constexpr std::string_view _null_str = "0000";
 
@@ -106,6 +79,7 @@ private:
 		<----------------------------------------------------------------------------------->
 		[promo] [captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
 		3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
+		 MS1B																		   LS1B
 	*/
 
 	enum enumLayout : uint32_t {
