@@ -6,7 +6,7 @@
 class Turn {
 public:
 	Turn() = default;
-	constexpr Turn(enumColor c)
+	INLINE constexpr Turn(enumColor c)
 		: _col(c) {}
 
 	INLINE constexpr operator enumColor() const {
@@ -137,6 +137,10 @@ public:
 
 	INLINE Turn getOppositeTurn() const {
 		return !_turn;
+	}
+
+	INLINE Square getEnPassantSq() const {
+		return _ep_square;
 	}
 
 	template <Piece::enumType Piece, enumColor Color>

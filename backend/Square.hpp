@@ -5,7 +5,7 @@
 class Square {
 public:
 	Square() = default;
-	constexpr Square(uint8_t cpy)
+	INLINE constexpr Square(uint8_t cpy)
 		: _sq(cpy) {
 		assert(isValid());
 	}
@@ -14,8 +14,16 @@ public:
 		return _sq = sq;
 	}
 
-	INLINE constexpr operator int() {
+	INLINE constexpr operator int() const {
 		return _sq;
+	}
+
+	INLINE bool isNotNull() const {
+		return _sq != none;
+	}
+
+	INLINE bool isNull() const {
+		return _sq == none;
 	}
 
 	static Square fromChar(char file, char rank) {

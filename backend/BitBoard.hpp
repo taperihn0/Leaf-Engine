@@ -72,6 +72,12 @@ public:
 		return ~_board;
 	}
 
+	template <int Shift>
+	INLINE void genShift() {
+		if constexpr (Shift < 0) _board >>= Shift;
+		else _board <<= Shift;
+	}
+
 	// debug-purpose method
 	void printRaw() const;
 	
@@ -104,6 +110,17 @@ public:
 		setBit(target);
 	}
 
+	template <int Rank>
+	static INLINE constexpr BitBoard rank() {
+		static_assert(1 <= Rank and Rank <= 8, "Invalid rank");
+		return BitBoard(0xffUi64 << ((Rank - 1) * 8));
+	}
+
+	template <File File_>
+	static INLINE constexpr BitBoard file() {
+		return BitBoard(0x0101010101010101Ui64 << static_cast<int>(File_));
+	}
+
 	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
 		empty = 0Ui64,
 		a_file = 0x0101010101010101Ui64,
@@ -125,6 +142,12 @@ private:
 // General setwise operations on BitBoard wrapper class *
 
 namespace {
+
+	template <int Shift>
+	INLINE BitBoard genShift(BitBoard bb) {
+		if constexpr (Shift < 0) bb >>= Shift;
+		else bb <<= Shift;
+	}
 
 	// one step only and shifting routines *
 

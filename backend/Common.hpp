@@ -37,3 +37,7 @@ static constexpr uint16_t max_node_moves = 256;
 
 class MoveGenerator;
 using MoveGen = MoveGenerator;
+
+enum class File {
+	A = 1, B, C, D, E, F, G, H
+};

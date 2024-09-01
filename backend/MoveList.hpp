@@ -3,6 +3,7 @@
 #include "Move.hpp"
 
 #include <algorithm>
+#include <numeric>
 
 class MoveList {
 public:
