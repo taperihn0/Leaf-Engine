@@ -139,6 +139,22 @@ public:
 		return !_turn;
 	}
 
+	template <Piece::enumType Piece, enumColor Color>
+	INLINE BitBoard get() const {
+		if constexpr (Piece == Piece::PAWN)
+			return getPawnsBySide(Color);
+		else if constexpr (Piece == Piece::KNIGHT)
+			return getKnightsBySide(Color);
+		else if constexpr (Piece == Piece::BISHOP)
+			return getBishopsBySide(Color);
+		else if constexpr (Piece == Piece::ROOK)
+			return getRooksBySide(Color);
+		else if constexpr (Piece == Piece::QUEEN)
+			return getQueensBySide(Color);
+
+		return getKingBySide(Color);
+	}
+
 	INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
 		return _castling_rights[col_type];
 	}

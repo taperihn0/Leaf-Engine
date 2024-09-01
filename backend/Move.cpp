@@ -2,7 +2,7 @@
 #include "Position.hpp"
 
 // TODO
-Move Move::fromStr(const Position pos, const std::string str) {
+Move Move::fromStr(const Position& pos, const std::string str) {
 #if defined(LONG_ALGEBRAIC_NOTATION)
 	ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
 

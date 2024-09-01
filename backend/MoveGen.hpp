@@ -5,11 +5,20 @@
 
 class MoveGenerator {
 public:
+
+	/*
+		Generation mode:
+		CAPTURES - all pseudo-legal captures and queen promotions
+		TACTICALS - all pseudo-legal captures and all promotions
+		QUIETS - all pseudo-legal non-captures and promotions without queen promotions
+	*/
+
 	enum enumMode {
-		CAPTURES, 
+		CAPTURES,
+		TACTICALS,
 		QUIETS
 	};
 
 	template <enumMode GenType>
-	static void generatePseudoLegalMoves(const Position pos, MoveList& move_list);
+	static void generatePseudoLegalMoves(const Position& pos, MoveList& move_list);
 };

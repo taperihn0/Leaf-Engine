@@ -8,12 +8,22 @@ class Position;
 
 class Move {
 public:
+	Move() = default;
+	INLINE Move(uint32_t raw)
+		: _rmove(raw) {}
+
 	INLINE constexpr Move operator=(uint32_t raw) {
 		_rmove = raw;
 		return *this;
 	}
 	
-	static Move fromStr(const Position pos, const std::string str);
+	// simplified make function. Leaves other data fields empty, initializing only
+	// capture flag, target and origin squares fields.
+	static INLINE Move makeSimple(Square origin, Square target, bool isCapture) {
+		return Move((isCapture << 12) | (target << 6) | origin);
+	}
+
+	static Move fromStr(const Position& pos, const std::string str);
 
 	INLINE Square getOrigin() {
 		return _rmove & ORIGIN;

@@ -73,7 +73,7 @@ public:
 	}
 
 	// debug-purpose method
-	void printRaw();
+	void printRaw() const;
 	
 	void set(uint64_t bb);
 

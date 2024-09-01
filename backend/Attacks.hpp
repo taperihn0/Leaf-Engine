@@ -2,6 +2,7 @@
 
 #include "Common.hpp"
 #include "BitBoard.hpp"
+#include "Magic.hpp"
 
 namespace {
 	// static attack masks
@@ -104,6 +105,23 @@ namespace {
 
 	BitBoard rayAttacksQueen(Square sq) {
 		return rayAttacksBishop(sq) | rayAttacksRook(sq);
+	}
+
+	// generalized template
+	template <Piece::enumType Piece>
+	INLINE BitBoard attacks(Square sq, BitBoard occ) {
+		static_assert(Piece != Piece::PAWN and Piece != Piece::NONE, "Unsupported piecetype in attacks func template");
+
+		if constexpr (Piece == Piece::KNIGHT)
+			return knightAttacks(sq);
+		else if constexpr (Piece == Piece::BISHOP)
+			return SlidersMagics::bishopAttacks(sq, occ);
+		else if constexpr (Piece == Piece::ROOK)
+			return SlidersMagics::rookAttacks(sq, occ);
+		else if constexpr (Piece == Piece::QUEEN)
+			return SlidersMagics::queenAttacks(sq, occ);
+
+		return kingAttacks(sq);
 	}
 
 } // namespace
