@@ -106,7 +106,7 @@ public:
 	// bit scan forward but with LS1B reset
 	int dropForward();
 
-	INLINE void popBit(int shift) {
+	INLINE void popBit(Square shift) {
 		assert(shift < 64);
 		_board &= ~(1Ui64 << shift);
 	}
@@ -121,7 +121,7 @@ public:
 		return _board & (1Ui64 << shift);
 	}
 
-	INLINE void moveBit(int origin, int target) {
+	INLINE void moveBit(Square origin, Square target) {
 		popBit(origin);
 		setBit(target);
 	}

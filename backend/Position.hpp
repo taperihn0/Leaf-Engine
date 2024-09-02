@@ -156,7 +156,7 @@ public:
 		_turn = col_to_move;
 	}
 
-	void make(Move move);
+	void make(Move& move);
 	void unmake(Move move);
 
 	template <bool Root>
