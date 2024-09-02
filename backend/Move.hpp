@@ -9,6 +9,8 @@ class Move;
 
 class Move {
 public:
+	enum class Castle;
+
 	Move() = default;
 	INLINE Move(uint32_t raw)
 		: _rmove(raw) {}
@@ -20,26 +22,15 @@ public:
 	
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
-	static INLINE Move makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t) {
-		return Move(
-			  (static_cast<uint32_t>(piece_t) << 16) 
-			| (is_capture << 12) 
-			| (static_cast<uint32_t>(target) << 6) 
-			| origin);
-	}
+	static Move makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t);
 
 	// performer and captured piece in en passant move are de facto known - these are pawns.
-	static INLINE Move makeEnPassant(Square origin, Square target) {
-		return Move((1Ui32 << 13) | (static_cast<uint32_t>(target) << 6) | origin);
-	}
+	static Move makeEnPassant(Square origin, Square target);
 
-	static INLINE Move makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
-		return Move(
-			  (static_cast<uint32_t>(promo_piece_t) << 22)
-			| (is_capture << 12) 
-			| (static_cast<uint32_t>(target) << 6) 
-			| origin);
-	}
+	static Move makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t);
+
+	template <Castle Type>
+	static INLINE Move makeCastling(Square origin, Square target);
 
 	static Move fromStr(const Position& pos, const std::string str);
 
@@ -97,6 +88,10 @@ public:
 
 	void print();
 
+	enum class Castle {
+		SHORT, LONG
+	};
+
 	static constexpr uint32_t null = 0Ui32;
 private:
 	static constexpr std::string_view _null_str = "0000";
@@ -125,3 +120,29 @@ private:
 
 	uint32_t _rmove;
 };
+
+INLINE Move Move::makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t) {
+	return Move(
+		(static_cast<uint32_t>(piece_t) << 16)
+		| (is_capture << 12)
+		| (static_cast<uint32_t>(target) << 6)
+		| origin);
+}
+
+INLINE Move Move::makeEnPassant(Square origin, Square target) {
+	return Move(EP_CAPTURE | (static_cast<uint32_t>(target) << 6) | origin);
+}
+
+INLINE Move Move::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
+	return Move(
+		(static_cast<uint32_t>(promo_piece_t) << 22)
+		| (is_capture << 12)
+		| (static_cast<uint32_t>(target) << 6)
+		| origin);
+}
+
+template <Move::Castle Type>
+INLINE Move Move::makeCastling(Square origin, Square target) {
+	static constexpr uint32_t Field = Type == Castle::SHORT ? SHORT_CASTLE : LONG_CASTLE;
+	return Move(Field | (static_cast<uint32_t>(target) << 6) | origin);
+}

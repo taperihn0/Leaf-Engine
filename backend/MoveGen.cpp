@@ -108,7 +108,28 @@ inline void generatePawnMoves(const Position& pos, MoveList& move_list) {
 	generatePawnPushes<GenType, Side>(pos, move_list);
 }
 
-template <Piece::enumType Piece, enumColor Side, bool Capture> 
+template <enumColor Side, bool isCapture>
+inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask) {
+	const Square org = pos.getKingBySide(Side).bitScanForward();
+	BitBoard att = kingAttacks(org) & mask;
+
+	while (att) {
+		const Square dst = att.dropForward();
+		move_list.push(Move::makeSimple(org, dst, isCapture, Piece::KING));
+	}
+
+	// handle castling 
+	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
+							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
+
+	if (pos.getCastlingByColor(Side).isShortPossible())
+		move_list.push(Move::makeCastling<Move::Castle::SHORT>(org, ShortCastleDst));
+
+	if (pos.getCastlingByColor(Side).isLongPossible())
+		move_list.push(Move::makeCastling<Move::Castle::LONG>(org, LongCastleDst));
+}
+
+template <Piece::enumType Piece, enumColor Side, bool isCapture> 
 void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
 	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE and Piece != Piece::KING, 
 		"Unsupported piecetype in generate func template");
@@ -121,7 +142,7 @@ void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
 
 		while (att) {
 			const Square dst = Square(att.dropForward());
-			move_list.push(Move::makeSimple(org, dst, Capture, Piece));
+			move_list.push(Move::makeSimple(org, dst, isCapture, Piece));
 		}
 	}
 }
@@ -140,7 +161,7 @@ void generateByColor(const Position& pos, MoveList& move_list) {
 	generate<Piece::ROOK, Side, areCaptures> (pos, move_list, mask);
 	generate<Piece::QUEEN, Side, areCaptures>(pos, move_list, mask);
 
-	// TODO: King moves
+	generateKingMoves<Side, areCaptures> (pos, move_list, mask);
 }
 
 template <MoveGen::enumMode GenType>

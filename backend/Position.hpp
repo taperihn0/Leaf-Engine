@@ -43,23 +43,23 @@ public:
 
 	void printByColor(enumColor col_type);
 
-	INLINE bool getKingSide() noexcept {
+	INLINE bool isShortPossible() {
 		return _kingside;
 	}
 
-	INLINE bool getQueenSide() noexcept {
+	INLINE bool isLongPossible() {
 		return _queenside;
 	}
 
-	INLINE void setKingSide(bool flag) noexcept {
+	INLINE void setKingSide(bool flag) {
 		_kingside = flag;
 	}
 
-	INLINE void setQueenSide(bool flag) noexcept {
+	INLINE void setQueenSide(bool flag) {
 		_queenside = flag;
 	}
 
-	INLINE void clear() noexcept {
+	INLINE void clear() {
 		_kingside = false, _queenside = false;
 	}
 private:
