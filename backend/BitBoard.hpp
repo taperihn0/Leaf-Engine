@@ -36,6 +36,22 @@ public:
 		return _board |= bb._board;
 	}
 
+	INLINE constexpr BitBoard operator&=(BitBoard bb) {
+		return _board &= bb._board;
+	}
+
+	INLINE constexpr BitBoard operator^=(BitBoard bb) {
+		return _board ^= bb._board;
+	}
+
+	INLINE constexpr BitBoard operator>>=(int shift) {
+		return _board >>= shift;
+	}
+
+	INLINE constexpr BitBoard operator<<=(int shift) {
+		return _board <<= shift;
+	}
+
 	INLINE constexpr BitBoard operator|(BitBoard bb) const {
 		return _board | bb._board;
 	}
@@ -73,9 +89,9 @@ public:
 	}
 
 	template <int Shift>
-	INLINE void genShift() {
-		if constexpr (Shift < 0) _board >>= Shift;
-		else _board <<= Shift;
+	INLINE BitBoard genShift() const {
+		if constexpr (Shift < 0) return _board >> (-Shift);
+		return _board << Shift;
 	}
 
 	// debug-purpose method
@@ -142,12 +158,6 @@ private:
 // General setwise operations on BitBoard wrapper class *
 
 namespace {
-
-	template <int Shift>
-	INLINE BitBoard genShift(BitBoard bb) {
-		if constexpr (Shift < 0) bb >>= Shift;
-		else bb <<= Shift;
-	}
 
 	// one step only and shifting routines *
 

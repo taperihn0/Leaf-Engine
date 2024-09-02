@@ -8,9 +8,9 @@ public:
 
 	/*
 		Generation mode:
-		CAPTURES - all pseudo-legal captures and queen promotions
-		TACTICALS - all pseudo-legal captures and all promotions
-		QUIETS - all pseudo-legal non-captures and promotions without queen promotions
+		<CAPTURES> - all pseudo-legal captures and queen promotions
+		<TACTICALS> - all pseudo-legal captures and all promotions
+		<QUIETS> - all pseudo-legal non-captures and promotions without queen promotions
 	*/
 
 	enum enumMode {

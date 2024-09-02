@@ -13,21 +13,25 @@ public:
 	}
 
 	INLINE void push(Move new_move) {
-		assert(idx < _size);
-		_moves[idx++].move = new_move;
+		assert(_idx < _size);
+		_moves[_idx++].move = new_move;
 	}
 
-	INLINE uint32_t getScore(uint32_t idx) const {
+	INLINE uint32_t getScore(int idx) const {
 		ASSERT(idx < _size, "Index overflow while geting an item from move list");
 		return _moves[idx].score;
 	}
 
-	INLINE Move getMove(uint32_t idx) const {
+	INLINE Move getMove(int idx) const {
 		ASSERT(idx < _size, "Index overflow while geting an item from move list");
 		return _moves[idx].move;
 	}
 
-	INLINE uint32_t size() const {
+	INLINE int count() const {
+		return _idx;
+	}
+
+	INLINE int size() const {
 		return _size;
 	}
 
@@ -36,7 +40,7 @@ public:
 	}
 
 private:
-	static constexpr uint32_t _size = max_node_moves;
+	static constexpr size_t _size = max_node_moves;
 
 	struct Entry {
 		void print() { move.print(); std::cout << score; }
@@ -46,6 +50,6 @@ private:
 		uint32_t score;
 	};
 
-	int idx = 0;
+	int _idx = 0;
 	std::array<Entry, _size> _moves;
 };

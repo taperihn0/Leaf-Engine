@@ -20,17 +20,24 @@ public:
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
 	static INLINE Move makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t) {
-		return Move(static_cast<uint32_t>(piece_t << 16) 
+		return Move(
+			  (static_cast<uint32_t>(piece_t) << 16) 
 			| (is_capture << 12) 
 			| (static_cast<uint32_t>(target) << 6) 
-			| origin );
+			| origin);
 	}
 
 	// performer and captured piece in en passant move are de facto known - these are pawns.
 	static INLINE Move makeEnPassant(Square origin, Square target) {
-		return Move((1Ui32 << 13) 
+		return Move((1Ui32 << 13) | (static_cast<uint32_t>(target) << 6) | origin);
+	}
+
+	static INLINE Move makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
+		return Move(
+			  (static_cast<uint32_t>(promo_piece_t) << 22)
+			| (is_capture << 12) 
 			| (static_cast<uint32_t>(target) << 6) 
-			| origin );
+			| origin);
 	}
 
 	static Move fromStr(const Position& pos, const std::string str);

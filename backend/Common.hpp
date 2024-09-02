@@ -17,6 +17,9 @@
 // move format, so far only long algebraic notation supported
 #define LONG_ALGEBRAIC_NOTATION
 
+// Warning: operator '<<' : shift count negative or too big, undefined behavior
+#pragma warning(disable: 4293)
+
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 
 inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
@@ -33,7 +36,7 @@ INLINE constexpr enumColor operator!(enumColor opp) {
 	return static_cast<enumColor>(!static_cast<bool>(opp));
 }
 
-static constexpr uint16_t max_node_moves = 256;
+static constexpr int max_node_moves = 256;
 
 class MoveGenerator;
 using MoveGen = MoveGenerator;

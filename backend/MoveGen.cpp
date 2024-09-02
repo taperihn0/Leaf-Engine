@@ -67,9 +67,9 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list) {
 
 	const BitBoard ep_bb = BitBoard(ep_sq);
 
-	if (genShift<WestDiag>(pawns) & ep_bb)
+	if (pawns.genShift<WestDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - WestDiag, ep_sq));
-	else if (genShift<EastDiag>(pawns) & ep_bb)
+	else if (pawns.genShift<EastDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - EastDiag, ep_sq));
 }
 
@@ -79,7 +79,7 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() : BitBoard::rank<1>();
 
 	BitBoard pawns = pos.get<Piece::PAWN, Side>();
-	pawns.genShift<Dir>();
+	pawns = pawns.genShift<Dir>();
 	pawns &= ~pos.getOccupied();
 
 	BitBoard promoted = pawns & BackRank;
@@ -99,10 +99,10 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 }
 
 template <MoveGen::enumMode GenType, enumColor Side>
-void generatePawnMoves(const Position& pos, MoveList& move_list) {
+inline void generatePawnMoves(const Position& pos, MoveList& move_list) {
 	if constexpr (GenType != MoveGen::QUIETS)
-		generatePawnCaptures<Side>(pos, move_list);
-	generatePawnPushes<Side>(pos, move_list);
+		generatePawnCaptures<GenType, Side>(pos, move_list);
+	generatePawnPushes<GenType, Side>(pos, move_list);
 }
 
 template <Piece::enumType Piece, enumColor Side, bool Capture> 
@@ -129,6 +129,8 @@ void generateByColor(const Position& pos, MoveList& move_list) {
 						  enemy_pieces = pos.getOccupied() ^ own_pieces,
 						  mask = GenType == MoveGen::QUIETS ? pos.getEmpties() : pos.getOccupied();
 	static constexpr bool Capture = GenType != MoveGen::QUIETS;
+
+	generatePawnMoves<GenType, Side>(pos, move_list);
 
 	generate<Piece::KNIGHT, Side, Capture>(pos, move_list, mask);
 	generate<Piece::BISHOP, Side, Capture>(pos, move_list, mask);
