@@ -3,6 +3,8 @@
 #include "BitBoard.hpp"
 #include "Piece.hpp"
 
+class Move;
+
 class Turn {
 public:
 	Turn() = default;
@@ -144,20 +146,7 @@ public:
 	}
 
 	template <Piece::enumType Piece, enumColor Color>
-	INLINE BitBoard get() const {
-		if constexpr (Piece == Piece::PAWN)
-			return getPawnsBySide(Color);
-		else if constexpr (Piece == Piece::KNIGHT)
-			return getKnightsBySide(Color);
-		else if constexpr (Piece == Piece::BISHOP)
-			return getBishopsBySide(Color);
-		else if constexpr (Piece == Piece::ROOK)
-			return getRooksBySide(Color);
-		else if constexpr (Piece == Piece::QUEEN)
-			return getQueensBySide(Color);
-
-		return getKingBySide(Color);
-	}
+	BitBoard get() const;
 
 	INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
 		return _castling_rights[col_type];
@@ -167,6 +156,12 @@ public:
 		_turn = col_to_move;
 	}
 
+	void make(Move move);
+	void unmake(Move move);
+
+	template <bool Root>
+	uint64_t perft(unsigned depth);
+
 	static constexpr std::string_view starting_fen 
 		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -174,12 +169,12 @@ public:
 		= "/////// w - - 0 1";
 
 private:
-	INLINE void clearPieces() {
-		for (enumColor col : { WHITE, BLACK })
-			_piece_bb[col].fill(BitBoard::empty);
-	}
+	void clearPieces();
 
-	void setGameStates(const std::string fen, int i);
+	void setGameStatesFromStr(const std::string fen, int i);
+
+	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
+	Piece::enumType pieceTypeOn(Square sq) const;
 
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
 	Turn _turn;
@@ -193,3 +188,38 @@ private:
 
 	std::string _cur_fen;
 };
+
+INLINE void Position::clearPieces() {
+	for (enumColor col : { WHITE, BLACK })
+		_piece_bb[col].fill(BitBoard::empty);
+}
+
+template <Piece::enumType Piece, enumColor Color>
+INLINE BitBoard Position::get() const {
+	if constexpr (Piece == Piece::PAWN)
+		return getPawnsBySide(Color);
+	else if constexpr (Piece == Piece::KNIGHT)
+		return getKnightsBySide(Color);
+	else if constexpr (Piece == Piece::BISHOP)
+		return getBishopsBySide(Color);
+	else if constexpr (Piece == Piece::ROOK)
+		return getRooksBySide(Color);
+	else if constexpr (Piece == Piece::QUEEN)
+		return getQueensBySide(Color);
+
+	return getKingBySide(Color);
+}
+
+INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {
+	for (Piece::enumType piece_t : Piece::piece_list) {
+		if (_piece_bb[by_color][piece_t].getBit(sq))
+			return piece_t;
+	}
+
+	return Piece::NONE;
+}
+
+INLINE Piece::enumType Position::pieceTypeOn(Square sq) const {
+	const Piece::enumType white = pieceTypeOn(sq, WHITE);
+	return white != Piece::NONE ? white : pieceTypeOn(sq, BLACK);
+}

@@ -5,6 +5,7 @@
 #include "Square.hpp"
 
 class Position;
+class Move;
 
 class Move {
 public:

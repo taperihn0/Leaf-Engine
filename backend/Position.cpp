@@ -1,4 +1,5 @@
 #include "Position.hpp"
+#include "Move.hpp"
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
@@ -29,7 +30,7 @@ void Position::setByFEN(const std::string fen) {
 			continue;
 		}
 		else if (c == ' ') {
-			setGameStates(fen, i + 1);
+			setGameStatesFromStr(fen, i + 1);
 			break;
 		}
 
@@ -59,20 +60,7 @@ void Position::print() const {
 			<< ' ' << h + 1 << " | ";
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
-
-			Piece piece = Piece::enumType::NONE;
-
-			for (enumColor col_t : { WHITE, BLACK }) {
-				for (Piece::enumType piece_t : Piece::piece_list) {
-					if (!_piece_bb[col_t][piece_t].getBit(i))
-						continue;
-
-					piece.set(col_t, piece_t);
-					break;
-				}
-			}
-
-			piece.print();
+			Piece(pieceTypeOn(i)).print();
 			std::cout << " | ";
 		}
 
@@ -84,7 +72,11 @@ void Position::print() const {
 		<< "FEN: " << _cur_fen << '\n';
 }
 
-void Position::setGameStates(const std::string fen, int i) {
+void Position::make(Move move) {
+
+}
+
+void Position::setGameStatesFromStr(const std::string fen, int i) {
 	_turn.fromChar(fen[i]);
 
 	i += 2;
