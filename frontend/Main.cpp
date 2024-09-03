@@ -13,6 +13,7 @@
 	move king or capture attacking knight. How to incorporate this fact into move generator?
 	4. When in double check, only king moves are possible to get out of the check.
 	5. Pinned knights can't move. Check whether this idea can be practically used in move gen.
+	6. Generate pre-computed static tables for knights, kings and pawns attacks for each square.
 */
 
 int main(int argc, const char* argv[]) {

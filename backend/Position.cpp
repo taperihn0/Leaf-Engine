@@ -72,36 +72,57 @@ void Position::print() const {
 		<< "FEN: " << _cur_fen << '\n';
 }
 
-void Position::make(Move& move) {
-	const Square org = move.getOrigin(),
-				 dst = move.getTarget();
+void Position::make(Move move) {
+	const Square		  org = move.getOrigin(),
+						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
 						  ep_capture = move.isEnPassant(),
-						  promotion = move.isPromotion();
+						  promotion = move.isPromotion(),
+						  short_castle = move.isShortCastle(),
+						  long_castle = move.isLongCastle();
 	const Piece::enumType piece_t = move.getPerformerT(),
 						  captured = ep_capture ? Piece::PAWN : pieceTypeOn(dst),
 						  promo_piece_t = move.getPromoPieceT();
-	const bool			  pawn_push = piece_t == Piece::PAWN and !capture and !ep_capture;
 	const int			  dir = _turn == WHITE ? 8 : -8;
+	const bool			  pawn_push = piece_t == Piece::PAWN and !capture and !ep_capture,
+						  double_pawn_push = pawn_push and org - dst > dir;
+	const Square          RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
+						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
 	if (promotion) {
-		assert(piece_t == Piece::PAWN);
-		assert(promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
+		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 		_piece_bb[_turn][piece_t].popBit(org);
 		_piece_bb[_turn][promo_piece_t].setBit(dst);
 	}
-	else {
+	else // if not a promotion - just move a piece
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
-	}
+
 
 	if (ep_capture) {
 		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
 		_piece_bb[!_turn][captured].popBit(dst - dir);
 	} 
-	else if (capture) {
+	else if (capture)
 		_piece_bb[!_turn][captured].popBit(dst);
+
+
+	if (short_castle) {
+		assert(piece_t == Piece::KING and getRooksBySide(_turn).getBit(dst + 1));
+		getRooksBySide(_turn).moveBit(dst + 1, dst - 1);
+	}
+	else if (long_castle) {
+		assert(piece_t == Piece::KING and getRooksBySide(_turn).getBit(dst + 1));
+		getRooksBySide(_turn).moveBit(dst - 2, dst + 1);
 	}
 
+
+	if (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))
+		_castling_rights[_turn].setKingSide(false);
+	
+	if (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))
+		_castling_rights[_turn].setQueenSide(false);
+
+	_ep_square = double_pawn_push ? dst - dir : Square::none;
 	_halfmove_count = capture or ep_capture or pawn_push ? 0 : _halfmove_count + 1;
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;

@@ -106,9 +106,9 @@ public:
 	// bit scan forward but with LS1B reset
 	int dropForward();
 
-	INLINE void popBit(Square shift) {
-		assert(shift < 64);
-		_board &= ~(1Ui64 << shift);
+	INLINE void popBit(Square sq) {
+		assert(sq.isValid() and sq.isNotNull());
+		_board &= ~(1Ui64 << sq);
 	}
 
 	INLINE void setBit(int shift) {
@@ -119,6 +119,10 @@ public:
 	INLINE bool getBit(int shift) const {
 		assert(shift < 64);
 		return _board & (1Ui64 << shift);
+	}
+
+	INLINE bool isEmptySq(Square sq) const {
+		return !getBit(sq);
 	}
 
 	INLINE void moveBit(Square origin, Square target) {

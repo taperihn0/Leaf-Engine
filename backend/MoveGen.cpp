@@ -79,7 +79,8 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 	static constexpr int      Dir = Side == WHITE ? 8 : -8;
 	static constexpr bool     Captures = true,
 							  nonCaptures = !Captures;
-	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() : BitBoard::rank<1>();
+	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() : BitBoard::rank<1>(),
+							  NonPushed = Side == WHITE ? BitBoard::rank<2>() : BitBoard::rank<7>();
 
 	BitBoard pawns = pos.get<Piece::PAWN, Side>();
 	pawns = pawns.genShift<Dir>();
@@ -94,6 +95,14 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 	}
 
 	if constexpr (GenType == MoveGen::QUIETS) {
+		BitBoard double_pushable = pawns & NonPushed;
+		pawns ^= double_pushable;
+
+		while (double_pushable) {
+			const Square dst = Square(double_pushable.dropForward());
+			move_list.push(Move::makeSimple(dst - 2 * Dir, dst, nonCaptures, Piece::PAWN));
+		}
+
 		while (pawns) {
 			const Square dst = Square(pawns.dropForward());
 			move_list.push(Move::makeSimple(dst - Dir, dst, nonCaptures, Piece::PAWN));
@@ -122,10 +131,18 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
 							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
 
-	if (pos.getCastlingByColor(Side).isShortPossible())
+	if (pos.isCheck()) return;
+
+	const CastlingRights own_castling_state = pos.getCastlingByColor(Side);
+
+	if (own_castling_state.isShortPossible() and
+		own_castling_state.notThroughPieces_Short<Side>(pos) and
+		own_castling_state.notThroughCheck_Short<Side>(pos))
 		move_list.push(Move::makeCastling<Move::Castle::SHORT>(org, ShortCastleDst));
 
-	if (pos.getCastlingByColor(Side).isLongPossible())
+	if (own_castling_state.isLongPossible() and
+		own_castling_state.notThroughPieces_Long<Side>(pos) and
+		own_castling_state.notThroughCheck_Long<Side>(pos))
 		move_list.push(Move::makeCastling<Move::Castle::LONG>(org, LongCastleDst));
 }
 
