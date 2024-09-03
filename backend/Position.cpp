@@ -72,7 +72,7 @@ void Position::print() const {
 		<< "FEN: " << _cur_fen << '\n';
 }
 
-void Position::make(Move move) {
+void Position::make(Move& move, IrreversibleState& state) {
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
@@ -81,13 +81,20 @@ void Position::make(Move move) {
 						  short_castle = move.isShortCastle(),
 						  long_castle = move.isLongCastle();
 	const Piece::enumType piece_t = move.getPerformerT(),
-						  captured = ep_capture ? Piece::PAWN : pieceTypeOn(dst),
+						  captured = capture ? 
+									 ep_capture ? Piece::PAWN 
+									 : pieceTypeOn(dst, !_turn) 
+								     : Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture and !ep_capture,
 						  double_pawn_push = pawn_push and org - dst > dir;
 	const Square          RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
 						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
+
+	state.ep_sq = _ep_square;
+	state.halfmove_count = _halfmove_count;
+	state.castling_rights = _castling_rights;
 
 	if (promotion) {
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
@@ -102,16 +109,18 @@ void Position::make(Move move) {
 		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
 		_piece_bb[!_turn][captured].popBit(dst - dir);
 	} 
-	else if (capture)
+	else if (capture) {
+		move.setCapturedT(captured);
 		_piece_bb[!_turn][captured].popBit(dst);
+	}
 
 
 	if (short_castle) {
-		assert(piece_t == Piece::KING and getRooksBySide(_turn).getBit(dst + 1));
+		assert(piece_t == Piece::KING);
 		getRooksBySide(_turn).moveBit(dst + 1, dst - 1);
 	}
 	else if (long_castle) {
-		assert(piece_t == Piece::KING and getRooksBySide(_turn).getBit(dst + 1));
+		assert(piece_t == Piece::KING);
 		getRooksBySide(_turn).moveBit(dst - 2, dst + 1);
 	}
 
@@ -123,9 +132,55 @@ void Position::make(Move move) {
 		_castling_rights[_turn].setQueenSide(false);
 
 	_ep_square = double_pawn_push ? dst - dir : Square::none;
-	_halfmove_count = capture or ep_capture or pawn_push ? 0 : _halfmove_count + 1;
+	_halfmove_count = capture or ep_capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
+}
+
+void Position::unmake(Move move, IrreversibleState prev_state) {
+	const Square		  org = move.getOrigin(),
+						  dst = move.getTarget();
+	const bool			  capture = move.isCapture(),
+						  ep_capture = move.isEnPassant(),
+						  promotion = move.isPromotion(),
+						  short_castle = move.isShortCastle(),
+						  long_castle = move.isLongCastle();
+	const Piece::enumType piece_t = move.getPerformerT(),
+						  captured = capture ?
+						  ep_capture ? Piece::PAWN
+						  : move.getCapturedT()
+						  : Piece::NONE,
+						  promo_piece_t = move.getPromoPieceT();
+	const int			  dir = _turn == WHITE ? 8 : -8;
+
+	if (promotion) {
+		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
+		_piece_bb[_turn][piece_t].setBit(org);
+		_piece_bb[_turn][promo_piece_t].popBit(dst);
+	}
+	else // if not a promotion - just move a piece to origin square
+		_piece_bb[_turn][piece_t].moveBit(dst, org);
+
+	if (ep_capture) {
+		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
+		_piece_bb[!_turn][captured].setBit(dst - dir);
+	}
+	else if (capture)
+		_piece_bb[!_turn][captured].setBit(dst);
+
+	// undo castling (move rook to its origin square in corner)
+	if (short_castle)
+		getRooksBySide(_turn).moveBit(dst - 1, dst + 1);
+	else if (long_castle)
+		getRooksBySide(_turn).moveBit(dst + 1, dst - 2);
+
+	_turn = !_turn;
+	_fullmove_count -= static_cast<int>(_turn);
+
+	// recover old states that are irreversible
+	_ep_square = prev_state.ep_sq;
+	_halfmove_count = prev_state.halfmove_count;
+	_castling_rights = prev_state.castling_rights;
 }
 
 void Position::setGameStatesFromStr(const std::string fen, int i) {

@@ -79,11 +79,15 @@ public:
 	}
 
 	INLINE void setTarget(Square target) {
-		_rmove &= ~TARGET, _rmove |= (target << 6);
+		_rmove &= ~TARGET, _rmove |= static_cast<uint32_t>(target) << 6;
 	}
 
 	INLINE void setPromoPiece(Piece piece) {
-		_rmove &= ~PROMO_PIECE, _rmove |= (piece << 4);
+		_rmove &= ~PROMO_PIECE, _rmove |= static_cast<uint32_t>(piece) << 4;
+	}
+
+	INLINE void setCapturedT(Piece::enumType captured) {
+		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 
 	void print();

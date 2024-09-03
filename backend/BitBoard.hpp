@@ -126,6 +126,7 @@ public:
 	}
 
 	INLINE void moveBit(Square origin, Square target) {
+		assert(getBit(origin));
 		popBit(origin);
 		setBit(target);
 	}

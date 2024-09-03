@@ -84,6 +84,8 @@ private:
 // and game flags like castling
 class Position {
 public:
+	struct IrreversibleState;
+
 	Position();
 	Position(const std::string init_fen);
 	Position(const std::string_view init_fen);
@@ -179,11 +181,17 @@ public:
 
 	bool isCheck() const;
 
-	void make(Move move);
-	void unmake(Move move);
+	void make(Move& move, IrreversibleState& state);
+	void unmake(Move move, IrreversibleState prev_state);
 
 	template <bool Root>
 	uint64_t perft(unsigned depth);
+
+	struct IrreversibleState {
+		Square ep_sq;
+		uint8_t halfmove_count;
+		std::array<CastlingRights, 2> castling_rights;
+	};
 
 	static constexpr std::string_view starting_fen 
 		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -203,10 +211,9 @@ private:
 	Turn _turn;
 
 	std::array<CastlingRights, 2> _castling_rights;
-
 	Square _ep_square;
-
 	uint8_t _halfmove_count;
+
 	uint16_t _fullmove_count;
 
 	std::string _cur_fen;
