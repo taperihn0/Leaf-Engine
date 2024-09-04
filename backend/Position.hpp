@@ -305,7 +305,7 @@ INLINE bool Position::isInCheck(enumColor side) const {
 
 INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {
 	for (Piece::enumType piece_t : Piece::piece_list) {
-		if (_piece_bb[by_color][piece_t].getBit(sq))
+		if (_piece_bb[by_color][piece_t].isOccupiedSq(sq))
 			return piece_t;
 	}
 

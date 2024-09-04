@@ -97,7 +97,7 @@ void Position::make(Move& move, IrreversibleState& state) {
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
-						  double_pawn_push = pawn_push and abs(org - dst) > dir;
+						  double_pawn_push = pawn_push and abs(org - dst) > 8;
 	const Square          RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
 						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
@@ -160,7 +160,7 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 								     capture ? move.getCapturedT() : 
 									 Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
-	const int			  dir = _turn == WHITE ? 8 : -8;
+	const int			  dir = _turn == WHITE ? -8 : 8;
 
 	_turn = !_turn;
 
