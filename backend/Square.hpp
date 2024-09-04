@@ -31,7 +31,9 @@ public:
 	}
 
 	void print() const {
-		std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
+		ASSERT(isValid(), "Trying to call print on invalid square");
+		if (isNull()) std::cout << '-';
+		else std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
 	}
 
 	constexpr bool isValid() const {

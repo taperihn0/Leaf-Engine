@@ -1,4 +1,5 @@
 #include "UCI.hpp"
+#include "../backend/Move.hpp"
 
 #include <sstream>
 
@@ -17,6 +18,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 		if (token == "uci") parseUCI();
 		else if (token == "position") parsePosition(strm);
 		else if (token == "print") _pos.print();
+		else if (token == "go") parseGo(strm);
 
 	} while (_command != "quit");
 }
@@ -49,6 +51,27 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	}
 	else if (token == "startpos") {
 		_pos.setStartingPos();
+	}
+
+	strm >> std::skipws >> token;
+	if (token == "moves") {
+		// TODO
+		while (strm >> std::skipws >> token) {
+			Move move = Move::fromStr(_pos, token);
+			Position::IrreversibleState tmp;
+			_pos.make(move, tmp);
+		}
+	}
+}
+
+void UniversalChessInterface::parseGo(std::istringstream& strm) {
+	std::string token;
+	strm >> std::skipws >> token;
+
+	if (token == "perft") {
+		strm >> std::skipws >> token;
+		const int depth = std::stoi(token);
+		_pos.perft(depth);
 	}
 }
 

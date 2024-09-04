@@ -16,7 +16,8 @@ public:
 	enum enumMode {
 		CAPTURES,
 		TACTICALS,
-		QUIETS
+		QUIETS,
+		ALL
 	};
 
 	template <enumMode GenType>

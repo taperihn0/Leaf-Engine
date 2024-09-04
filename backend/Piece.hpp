@@ -7,17 +7,23 @@ public:
 	enum enumType;
 
 	Piece() = default;
-	Piece(enumType piece_t) { set(WHITE, piece_t); }
-	Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
+	inline Piece(enumType piece_t) { set(WHITE, piece_t); }
+	inline Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
 
 	INLINE constexpr operator int() const {
-		return _type;
+		return static_cast<int>(_type);
 	}
 
-	static Piece fromChar(enumColor col_t, char c) {
+	static inline Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _whites_str.find_first_of(c)
 			: _blacks_str.find_first_of(c);
 		return Piece(col_t, enumType(id));
+	}
+
+	static inline enumType typeFromChar(char c) {
+		c = tolower(c);
+		auto id = _whites_str.find_first_of(c);
+		return enumType(id);
 	}
 
 	void set(enumColor col_t, enumType piece_t) { 

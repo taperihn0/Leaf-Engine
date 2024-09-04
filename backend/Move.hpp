@@ -86,6 +86,10 @@ public:
 		_rmove &= ~PROMO_PIECE, _rmove |= static_cast<uint32_t>(piece) << 4;
 	}
 
+	INLINE void setPerformerT(Piece::enumType piece) {
+		_rmove &= ~PERFORMER, _rmove |= static_cast<uint32_t>(piece) << 16;
+	}
+
 	INLINE void setCapturedT(Piece::enumType captured) {
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
@@ -134,7 +138,7 @@ INLINE Move Move::makeSimple(Square origin, Square target, bool is_capture, Piec
 }
 
 INLINE Move Move::makeEnPassant(Square origin, Square target) {
-	return Move(EP_CAPTURE | (static_cast<uint32_t>(target) << 6) | origin);
+	return Move(EP_CAPTURE | CAPTURE | (static_cast<uint32_t>(target) << 6) | origin);
 }
 
 INLINE Move Move::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {

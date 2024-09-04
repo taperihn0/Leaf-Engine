@@ -68,9 +68,9 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list) {
 
 	const BitBoard ep_bb = BitBoard(ep_sq);
 
-	if (pawns.genShift<WestDiag>() & ep_bb)
+	if (pawns.pawnsAttack<WestDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - WestDiag, ep_sq));
-	else if (pawns.genShift<EastDiag>() & ep_bb)
+	else if (pawns.pawnsAttack<EastDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - EastDiag, ep_sq));
 }
 
@@ -80,11 +80,11 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 	static constexpr bool     Captures = true,
 							  nonCaptures = !Captures;
 	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() : BitBoard::rank<1>(),
-							  NonPushed = Side == WHITE ? BitBoard::rank<2>() : BitBoard::rank<7>();
+							  DoublePushable = Side == WHITE ? BitBoard::rank<3>() : BitBoard::rank<6>();
 
 	BitBoard pawns = pos.get<Piece::PAWN, Side>();
 	pawns = pawns.genShift<Dir>();
-	pawns &= ~pos.getOccupied();
+	pawns &= pos.getEmpties();
 
 	BitBoard promoted = pawns & BackRank;
 	pawns ^= promoted;
@@ -95,12 +95,13 @@ void generatePawnPushes(const Position& pos, MoveList& move_list) {
 	}
 
 	if constexpr (GenType == MoveGen::QUIETS) {
-		BitBoard double_pushable = pawns & NonPushed;
-		pawns ^= double_pushable;
+		BitBoard double_pushable = pawns & DoublePushable;
+		double_pushable = double_pushable.genShift<Dir>();
+		double_pushable &= pos.getEmpties();
 
 		while (double_pushable) {
 			const Square dst = Square(double_pushable.dropForward());
-			move_list.push(Move::makeSimple(dst - 2 * Dir, dst, nonCaptures, Piece::PAWN));
+			move_list.push(Move::makeSimple(dst -  2 * Dir, dst, nonCaptures, Piece::PAWN));
 		}
 
 		while (pawns) {
@@ -131,7 +132,7 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
 							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
 
-	if (pos.isCheck()) return;
+	if (pos.isInCheck(Side)) return;
 
 	const CastlingRights own_castling_state = pos.getCastlingByColor(Side);
 
@@ -166,9 +167,8 @@ void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
 
 template <MoveGen::enumMode GenType, enumColor Side>
 void generateByColor(const Position& pos, MoveList& move_list) {
-	static const BitBoard own_pieces = Side == WHITE ? pos.getWhites() : pos.getBlacks(),
-						  enemy_pieces = pos.getOccupied() ^ own_pieces,
-						  mask = GenType == MoveGen::QUIETS ? pos.getEmpties() : pos.getOccupied();
+	const BitBoard		  enemy_pieces = pos.getOppositePieces(),
+						  mask = GenType == MoveGen::QUIETS ? pos.getEmpties() : enemy_pieces;
 	static constexpr bool areCaptures = GenType != MoveGen::QUIETS;
 
 	generatePawnMoves<GenType, Side>(pos, move_list);
@@ -186,6 +186,12 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list)
 	static_cast<enumColor>(pos.getTurn()) == WHITE ? 
 		generateByColor<GenType, WHITE>(pos, move_list) :
 		generateByColor<GenType, BLACK>(pos, move_list);
+}
+
+template <>
+void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveList& move_list) {
+	generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, move_list);
+	generatePseudoLegalMoves<MoveGen::QUIETS>(pos, move_list);
 }
 
 template void MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(const Position&, MoveList&);

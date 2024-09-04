@@ -11,6 +11,7 @@ public:
 private:
 	void parseUCI();
 	void parsePosition(std::istringstream& strm);
+	void parseGo(std::istringstream& strm);
 
 	Position _pos;
 

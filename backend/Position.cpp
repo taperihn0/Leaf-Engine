@@ -1,13 +1,15 @@
 #include "Position.hpp"
 #include "Move.hpp"
+#include "MoveGen.hpp"
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
 
-void CastlingRights::printByColor(enumColor col_type) {
+void CastlingRights::printByColor(enumColor col_type) const {
 	std::string msg;
 	if (_kingside) msg += col_type == BLACK ? 'k' : 'K';
 	if (_queenside) msg += col_type == BLACK ? 'q' : 'Q';
+	msg = msg.empty() ? "-" : msg;
 	std::cout << msg;
 }
 
@@ -44,8 +46,6 @@ void Position::setByFEN(const std::string fen) {
 		_piece_bb[col][Piece::fromChar(col, c).toIndex()].setBit(in);
 		++x;
 	}
-
-	_cur_fen = fen;
 }
 
 void Position::setStartingPos() {
@@ -60,7 +60,7 @@ void Position::print() const {
 			<< ' ' << h + 1 << " | ";
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
-			Piece(pieceTypeOn(i)).print();
+			pieceOn(i).print();
 			std::cout << " | ";
 		}
 
@@ -69,7 +69,16 @@ void Position::print() const {
 
 	std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
 		<< "     A   B   C   D   E   F   G   H\n\n"
-		<< "FEN: " << _cur_fen << '\n';
+		<< "FEN States: ";
+
+	_turn.print();
+	std::cout << ' ';
+	_castling_rights[WHITE].printByColor(WHITE);
+	_castling_rights[BLACK].printByColor(BLACK);
+	std::cout << ' ';
+	_ep_square.print();
+	std::cout << ' ' << static_cast<int>(_halfmove_count)
+		<< ' ' << _fullmove_count << '\n';
 }
 
 void Position::make(Move& move, IrreversibleState& state) {
@@ -87,8 +96,8 @@ void Position::make(Move& move, IrreversibleState& state) {
 								     : Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
-	const bool			  pawn_push = piece_t == Piece::PAWN and !capture and !ep_capture,
-						  double_pawn_push = pawn_push and org - dst > dir;
+	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
+						  double_pawn_push = pawn_push and abs(org - dst) > dir;
 	const Square          RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
 						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
@@ -110,6 +119,7 @@ void Position::make(Move& move, IrreversibleState& state) {
 		_piece_bb[!_turn][captured].popBit(dst - dir);
 	} 
 	else if (capture) {
+		assert(captured != Piece::NONE);
 		move.setCapturedT(captured);
 		_piece_bb[!_turn][captured].popBit(dst);
 	}
@@ -132,7 +142,7 @@ void Position::make(Move& move, IrreversibleState& state) {
 		_castling_rights[_turn].setQueenSide(false);
 
 	_ep_square = double_pawn_push ? dst - dir : Square::none;
-	_halfmove_count = capture or ep_capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
+	_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
 }
@@ -146,12 +156,13 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 						  short_castle = move.isShortCastle(),
 						  long_castle = move.isLongCastle();
 	const Piece::enumType piece_t = move.getPerformerT(),
-						  captured = capture ?
-						  ep_capture ? Piece::PAWN
-						  : move.getCapturedT()
-						  : Piece::NONE,
+						  captured = ep_capture ? Piece::PAWN : 
+								     capture ? move.getCapturedT() : 
+									 Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
+
+	_turn = !_turn;
 
 	if (promotion) {
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
@@ -174,7 +185,6 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 	else if (long_castle)
 		getRooksBySide(_turn).moveBit(dst + 1, dst - 2);
 
-	_turn = !_turn;
 	_fullmove_count -= static_cast<int>(_turn);
 
 	// recover old states that are irreversible
@@ -182,6 +192,45 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 	_halfmove_count = prev_state.halfmove_count;
 	_castling_rights = prev_state.castling_rights;
 }
+
+template <bool Root>
+uint64_t Position::perft(unsigned depth) {
+	if (depth == 0)
+		return 1;
+
+	uint64_t nodes = 0, child_nodes = 0;
+
+	MoveList move_list;
+	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
+
+	IrreversibleState state;
+
+	for (int i = 0; i < move_list.count(); i++) {
+		Move move = move_list.getMove(i);
+		make(move, state);
+
+		if (!isInCheck(!_turn)) {
+			child_nodes = perft<false>(depth - 1);
+			nodes += child_nodes;
+
+			if constexpr (Root) {
+				move.print();
+				std::cout << ": " << child_nodes << '\n';
+			}
+		}
+
+		unmake(move, state);
+	}
+
+	if constexpr (Root) {
+		std::cout << "total nodes: " << nodes << "\n\n";
+	}
+
+	return nodes;
+}
+
+template uint64_t Position::perft<false>(unsigned depth);
+template uint64_t Position::perft<true>(unsigned depth);
 
 void Position::setGameStatesFromStr(const std::string fen, int i) {
 	_turn.fromChar(fen[i]);

@@ -94,6 +94,13 @@ public:
 		return _board << Shift;
 	}
 
+	template <int Shift>
+	INLINE BitBoard pawnsAttack() const {
+		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
+		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? not_h_file : not_a_file;
+		return genShift<Shift>() & ExclFile;
+	}
+
 	// debug-purpose method
 	void printRaw() const;
 	
@@ -125,6 +132,10 @@ public:
 		return !getBit(sq);
 	}
 
+	INLINE bool isOccupiedSq(Square sq) const {
+		return getBit(sq);
+	}
+
 	INLINE void moveBit(Square origin, Square target) {
 		assert(getBit(origin));
 		popBit(origin);
@@ -139,23 +150,22 @@ public:
 
 	template <File File_>
 	static INLINE constexpr BitBoard file() {
-		return BitBoard(0x0101010101010101Ui64 << static_cast<int>(File_));
+		return BitBoard(a_file << static_cast<int>(File_));
 	}
 
+	// crucial uint64_t constants
 	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
-		empty = 0Ui64,
-		a_file = 0x0101010101010101Ui64,
-		b_file = 0x0202020202020202Ui64,
-		g_file = 0x4040404040404040Ui64,
-		h_file = 0x8080808080808080Ui64,
-
-		not_a_file = ~a_file,
-		not_b_file = ~b_file,
-		not_g_file = ~g_file,
-		not_h_file = ~h_file,
-
-		not_ab_file = not_a_file & not_b_file,
-		not_gh_file = not_g_file & not_h_file;
+							  empty = 0Ui64,
+							  a_file = 0x0101010101010101Ui64,
+							  b_file = 0x0202020202020202Ui64,
+							  g_file = 0x4040404040404040Ui64,
+							  h_file = 0x8080808080808080Ui64,
+							  not_a_file = ~a_file,
+						      not_b_file = ~b_file,
+						      not_g_file = ~g_file,
+						      not_h_file = ~h_file,
+						      not_ab_file = not_a_file & not_b_file,
+						      not_gh_file = not_g_file & not_h_file;
 private:
 	uint64_t _board;
 };
