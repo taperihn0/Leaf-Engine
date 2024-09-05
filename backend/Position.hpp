@@ -128,6 +128,10 @@ public:
 		return _piece_bb[col_type][Piece::KING];
 	}
 
+	INLINE Square getKingSquare(enumColor col_type) const {
+		return _king_sq[col_type];
+	}
+
 	BitBoard getByColor(enumColor col_type) const;
 
 	INLINE BitBoard getWhites() const {
@@ -223,6 +227,8 @@ private:
 	uint8_t _halfmove_count;
 
 	uint16_t _fullmove_count;
+
+	std::array<Square, 2> _king_sq;
 };
 
 template <enumColor Side>
@@ -300,12 +306,12 @@ INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
 }
 
 INLINE bool Position::isInCheck(enumColor side) const {
-	const Square king_sq = getKingBySide(side).bitScanForward();
+	const Square king_sq = getKingSquare(side);
 	return attacked(king_sq, side);
 }
 
 INLINE bool Position::isInDoubleCheck(enumColor side) const {
-	const Square king_sq = getKingBySide(side).bitScanForward();
+	const Square king_sq = getKingSquare(side);
 
 	uint8_t att_count = 0;
 

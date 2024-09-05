@@ -120,9 +120,9 @@ inline void generatePawnMoves(const Position& pos, MoveList& move_list) {
 
 template <enumColor Side, bool isCapture>
 inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask) {
-	const Square org = pos.getKingBySide(Side).bitScanForward();
+	const Square org = pos.getKingSquare(Side);
 	// exclude opponent king's attacks from our king's attack mask - kings cannot touch
-	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingBySide(pos.getOppositeTurn()).bitScanForward());
+	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingSquare(!Side));
 
 	while (att) {
 		const Square dst = att.dropForward();
@@ -181,7 +181,7 @@ void generateByColor(const Position& pos, MoveList& move_list) {
 	generate<Piece::ROOK, Side, areCaptures> (pos, move_list, mask);
 	generate<Piece::QUEEN, Side, areCaptures>(pos, move_list, mask);
 
-	generateKingMoves<Side, areCaptures> (pos, move_list, mask);
+	generateKingMoves<Side, areCaptures>(pos, move_list, mask);
 }
 
 template <MoveGen::enumMode GenType>

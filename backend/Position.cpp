@@ -91,10 +91,10 @@ void Position::make(Move& move, IrreversibleState& state) {
 						  short_castle = move.isShortCastle(),
 						  long_castle = move.isLongCastle();
 	const Piece::enumType piece_t = move.getPerformerT(),
-						  captured = capture ? 
-									 ep_capture ? Piece::PAWN 
-									 : pieceTypeOn(dst, !_turn) 
-								     : Piece::NONE,
+									captured = capture ?
+									ep_capture ? Piece::PAWN
+									: pieceTypeOn(dst, !_turn)
+									: Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
@@ -120,7 +120,7 @@ void Position::make(Move& move, IrreversibleState& state) {
 	if (ep_capture) {
 		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
 		_piece_bb[!_turn][captured].popBit(dst - dir);
-	} 
+	}
 	else if (capture) {
 		assert(captured != Piece::NONE);
 		move.setCapturedT(captured);
@@ -142,6 +142,9 @@ void Position::make(Move& move, IrreversibleState& state) {
 		_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
 	}
 
+
+	if (piece_t == Piece::KING)
+		_king_sq[_turn] = dst;
 
 	if (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))
 		_castling_rights[_turn].setKingSide(false);
@@ -192,6 +195,9 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 		_piece_bb[_turn][Piece::ROOK].moveBit(dst - 1, dst + 1);
 	else if (long_castle)
 		_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 2);
+
+	if (piece_t == Piece::KING)
+		_king_sq[_turn] = org;
 
 	_fullmove_count -= static_cast<int>(_turn);
 
@@ -296,4 +302,7 @@ void Position::setGameStatesFromStr(const std::string fen, int i) {
 		_fullmove_count *= 10;
 		_fullmove_count += fen[i] - '0';
 	}
+
+	_king_sq[WHITE] = getKingBySide(WHITE).bitScanForward();
+	_king_sq[BLACK] = getKingBySide(BLACK).bitScanReverse();
 }
