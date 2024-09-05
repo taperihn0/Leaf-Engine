@@ -188,6 +188,7 @@ public:
 	bool attacked_KingIncluded(Square sq, enumColor side) const;
 
 	bool isInCheck(enumColor side) const;
+	bool isInDoubleCheck(enumColor side) const;
 
 	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
 	Piece pieceOn(Square sq) const;
@@ -301,6 +302,30 @@ INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
 INLINE bool Position::isInCheck(enumColor side) const {
 	const Square king_sq = getKingBySide(side).bitScanForward();
 	return attacked(king_sq, side);
+}
+
+INLINE bool Position::isInDoubleCheck(enumColor side) const {
+	const Square king_sq = getKingBySide(side).bitScanForward();
+
+	uint8_t att_count = 0;
+
+	if (pawnAttacks(king_sq, side) & getPawnsBySide(!side))
+		att_count++;
+
+	if (knightAttacks(king_sq) & getKnightsBySide(!side))
+		att_count++;
+
+	if (att_count >= 2) return true;
+
+	if (SlidersMagics::bishopAttacks(king_sq, getOccupied()) & getBishopsQueens(!side))
+		att_count++;
+
+	if (att_count >= 2) return true;
+
+	if (SlidersMagics::rookAttacks(king_sq, getOccupied()) & getRooksQueens(!side))
+		att_count++;
+
+	return att_count >= 2;
 }
 
 INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {

@@ -4,35 +4,68 @@
 #include "BitBoard.hpp"
 #include "Magic.hpp"
 
-namespace {
-	// static attack masks
+// static and pre-computed attack masks for double-sided pawns, knights as also kings.
+struct StaticAttackTables {
+	StaticAttackTables() { init(); }
 
-	inline BitBoard whitePawnAttacks(Square sq) {
+	inline BitBoard whitePawnAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return noEaOne(bit) | noWeOne(bit);
 	}
 
-	inline BitBoard blackPawnAttacks(Square sq) {
+	inline BitBoard blackPawnAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return soEaOne(bit) | soWeOne(bit);
 	}
 
-	inline BitBoard pawnAttacks(Square sq, enumColor col_type) {
-		return col_type == WHITE ? whitePawnAttacks(sq) : blackPawnAttacks(sq);
-	}
-
-	inline BitBoard knightAttacks(Square sq) {
+	inline BitBoard knightAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return noNoEa(bit) | noEaEa(bit) | soEaEa(bit)
 			| soSoEa(bit) | soSoWe(bit) | soWeWe(bit)
 			| noWeWe(bit) | noNoWe(bit);
 	}
 
-	inline BitBoard kingAttacks(Square sq) {
+	inline BitBoard kingAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return nortOne(bit) | noEaOne(bit) | eastOne(bit)
 			| soEaOne(bit) | soutOne(bit) | soWeOne(bit)
 			| westOne(bit) | noWeOne(bit);
+	}
+
+	// generate attack masks for each square
+	void init() {
+		for (enumColor col : { WHITE, BLACK })
+			for (int sq = 0; sq < 64; sq++)
+				for_pawns[col][sq] = col == WHITE ? whitePawnAttacksOnFly(sq)
+				: blackPawnAttacksOnFly(sq);
+
+		for (int sq = 0; sq < 64; sq++) {
+			for_knights[sq] = knightAttacksOnFly(sq);
+			for_kings[sq] = kingAttacksOnFly(sq);
+		}
+	}
+
+	std::array<std::array<BitBoard, 64>, 2> for_pawns;
+	std::array<BitBoard, 64> for_knights, for_kings;
+};
+
+extern StaticAttackTables attack_tables;
+
+namespace {
+
+	INLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
+		assert(sq.isValid() and sq.isNotNull());
+		return attack_tables.for_pawns[col_type][sq];
+	}
+
+	INLINE BitBoard knightAttacks(Square sq) {
+		assert(sq.isValid() and sq.isNotNull());
+		return attack_tables.for_knights[sq];
+	}
+
+	INLINE BitBoard kingAttacks(Square sq) {
+		assert(sq.isValid() and sq.isNotNull());
+		return attack_tables.for_kings[sq];
 	}
 
 	BitBoard nortRay(Square sq) {
