@@ -2,8 +2,9 @@
 #include "Position.hpp"
 
 // TODO: move validity restricted checking
+// there were some issues with castling moves when parsing 'position <> moves <...castling_move>
 Move Move::fromStr(const Position& pos, const std::string str) {
-#if defined(LONG_ALGEBRAIC_NOTATION)
+#if defined(PURE_NOTATION)
 	ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
 
 	Square				  origin = Square::fromChar(str[0], str[1]),
@@ -36,13 +37,13 @@ Move Move::fromStr(const Position& pos, const std::string str) {
 }
 
 void Move::print() {
-#if defined(LONG_ALGEBRAIC_NOTATION) 
+#if defined(PURE_NOTATION) 
 	if (_rmove == null) {
 		std::cout << _null_str;
 	}
 	else {
 		getOrigin().print(), getTarget().print();
-		if (isPromotion()) Piece(getPromoPieceT()).print();
+		if (isPromotion()) Piece(BLACK, getPromoPieceT()).print();
 	}
 #endif
 }

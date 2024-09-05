@@ -14,6 +14,8 @@
 	4. When in double check, only king moves are possible to get out of the check.
 	5. Pinned knights can't move. Check whether this idea can be practically used in move gen.
 	6. Generate pre-computed static tables for knights, kings and pawns attacks for each square.
+	7. Keep king square in a memory and incrementally update it. Maybe it will be faster than 
+	scanning for king's square manually.
 */
 
 int main(int argc, const char* argv[]) {

@@ -18,10 +18,13 @@ public:
 	constexpr BitBoard(const BitBoard&) = default;
 	constexpr BitBoard(BitBoard&&) = default;
 
-	constexpr BitBoard(uint64_t raw_init)
+	inline constexpr BitBoard(uint64_t raw_init)
 		: _board(raw_init) {}
 
-	constexpr BitBoard(Square sq)
+	inline constexpr BitBoard(Square sq)
+		: _board(1Ui64 << sq) {}
+
+	inline constexpr BitBoard(Square::enumSquare sq)
 		: _board(1Ui64 << sq) {}
 
 	INLINE constexpr operator uint64_t() const {

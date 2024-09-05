@@ -99,7 +99,9 @@ void Position::make(Move& move, IrreversibleState& state) {
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and abs(org - dst) > 8;
 	const Square          RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
-						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
+						  LeftCorner = _turn == WHITE ? Square::a1 : Square::a8,
+						  RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
+						  LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
 	state.ep_sq = _ep_square;
 	state.halfmove_count = _halfmove_count;
@@ -122,16 +124,21 @@ void Position::make(Move& move, IrreversibleState& state) {
 		assert(captured != Piece::NONE);
 		move.setCapturedT(captured);
 		_piece_bb[!_turn][captured].popBit(dst);
+
+		if (dst == RightCornerOpponent)
+			_castling_rights[!_turn].setKingSide(false);
+		else if (dst == LeftCornerOpponent)
+			_castling_rights[!_turn].setQueenSide(false);
 	}
 
 
 	if (short_castle) {
 		assert(piece_t == Piece::KING);
-		getRooksBySide(_turn).moveBit(dst + 1, dst - 1);
+		_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
 	}
 	else if (long_castle) {
 		assert(piece_t == Piece::KING);
-		getRooksBySide(_turn).moveBit(dst - 2, dst + 1);
+		_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
 	}
 
 
@@ -181,9 +188,9 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 
 	// undo castling (move rook to its origin square in corner)
 	if (short_castle)
-		getRooksBySide(_turn).moveBit(dst - 1, dst + 1);
+		_piece_bb[_turn][Piece::ROOK].moveBit(dst - 1, dst + 1);
 	else if (long_castle)
-		getRooksBySide(_turn).moveBit(dst + 1, dst - 2);
+		_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 2);
 
 	_fullmove_count -= static_cast<int>(_turn);
 

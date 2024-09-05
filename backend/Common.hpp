@@ -14,8 +14,8 @@
 #define ENGINE_NAME "Leaf Lite"
 #define AUTHOR "Szymon Belz"
 
-// move format, so far only long algebraic notation supported
-#define LONG_ALGEBRAIC_NOTATION
+// move format, so far only pure notation supported
+#define PURE_NOTATION
 
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
 #pragma warning(disable: 4293)

@@ -6,7 +6,7 @@ void generatePromotions(Square origin, Square target, MoveList& move_list) {
 	if constexpr (GenType == MoveGen::CAPTURES or GenType == MoveGen::TACTICALS)
 		move_list.push(Move::makePromotion(origin, target, Capture, Piece::QUEEN));
 
-	if constexpr (GenType == MoveGen::QUIETS or GenType == MoveGen::TACTICALS) {
+	if constexpr (Capture or GenType == MoveGen::QUIETS or GenType == MoveGen::TACTICALS) {
 		move_list.push(Move::makePromotion(origin, target, Capture, Piece::KNIGHT));
 		move_list.push(Move::makePromotion(origin, target, Capture, Piece::BISHOP));
 		move_list.push(Move::makePromotion(origin, target, Capture, Piece::ROOK));
@@ -70,7 +70,7 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list) {
 
 	if (pawns.pawnsAttack<WestDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - WestDiag, ep_sq));
-	else if (pawns.pawnsAttack<EastDiag>() & ep_bb)
+	if (pawns.pawnsAttack<EastDiag>() & ep_bb)
 		move_list.push(Move::makeEnPassant(ep_sq - EastDiag, ep_sq));
 }
 
@@ -121,7 +121,8 @@ inline void generatePawnMoves(const Position& pos, MoveList& move_list) {
 template <enumColor Side, bool isCapture>
 inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask) {
 	const Square org = pos.getKingBySide(Side).bitScanForward();
-	BitBoard att = kingAttacks(org) & mask;
+	// exclude opponent king's attacks from our king's attack mask - kings cannot touch
+	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingBySide(pos.getOppositeTurn()).bitScanForward());
 
 	while (att) {
 		const Square dst = att.dropForward();
@@ -129,6 +130,8 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	}
 
 	// handle castling 
+	if constexpr (isCapture) return;
+
 	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
 							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
 

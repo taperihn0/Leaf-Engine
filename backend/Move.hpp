@@ -145,12 +145,15 @@ INLINE Move Move::makePromotion(Square origin, Square target, bool is_capture, P
 	return Move(
 		(static_cast<uint32_t>(promo_piece_t) << 22)
 		| (is_capture << 12)
-		| (static_cast<uint32_t>(target) << 6)
+		| (static_cast<uint32_t>(target) << 6) 
 		| origin);
 }
 
 template <Move::Castle Type>
 INLINE Move Move::makeCastling(Square origin, Square target) {
 	static constexpr uint32_t Field = Type == Castle::SHORT ? SHORT_CASTLE : LONG_CASTLE;
-	return Move(Field | (static_cast<uint32_t>(target) << 6) | origin);
+	return Move((static_cast<uint32_t>(Piece::KING) << 16)
+		| Field 
+		| (static_cast<uint32_t>(target) << 6)
+		| origin);
 }

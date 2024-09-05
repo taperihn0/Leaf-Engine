@@ -241,7 +241,7 @@ INLINE bool CastlingRights::notThroughPieces_Short(const Position& pos) const {
 	static constexpr BitBoard Intermediates = Side == WHITE ?
 		BitBoard(Square::f1) | BitBoard(Square::g1)
 		: BitBoard(Square::f8) | BitBoard(Square::g8);
-
+	
 	return !(pos.getOccupied() & Intermediates);
 }
 

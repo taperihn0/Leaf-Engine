@@ -4,11 +4,13 @@
 
 class Square {
 public:
+	enum enumSquare;
+
 	Square() = default;
 	INLINE constexpr Square(uint8_t cpy)
-		: _sq(cpy) {
-		assert(isValid());
-	}
+		: _sq(cpy) { assert(isValid()); }
+	INLINE constexpr Square(enumSquare sq)
+		: _sq(sq) { assert(isValid()); }
 
 	INLINE constexpr Square operator=(uint8_t sq) {
 		return _sq = sq;
