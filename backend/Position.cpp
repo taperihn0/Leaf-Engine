@@ -1,6 +1,7 @@
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveGen.hpp"
+#include "Time.hpp"
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
@@ -205,6 +206,11 @@ uint64_t Position::perft(unsigned depth) {
 	if (depth == 0)
 		return 1;
 
+	Timer my_timer;
+
+	if constexpr (Root)
+		my_timer.go();
+
 	uint64_t nodes = 0, child_nodes = 0;
 
 	MoveList move_list;
@@ -230,7 +236,12 @@ uint64_t Position::perft(unsigned depth) {
 	}
 
 	if constexpr (Root) {
-		std::cout << "total nodes: " << nodes << "\n\n";
+		my_timer.stop();
+		auto duration_ms = my_timer.duration();
+		duration_ms = 0 ? 1 : duration_ms;
+
+		std::cout << "total nodes: " << nodes << " (" << duration_ms / 1000.f << " seconds, " 
+			<< nodes / duration_ms << "kN/sec.)" << '\n';
 	}
 
 	return nodes;
