@@ -10,6 +10,7 @@
 */
 
 StaticAttackTables attack_tables;
+RectangularTable rectangular;
 
 int main(int argc, const char* argv[]) {
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
