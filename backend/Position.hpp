@@ -194,6 +194,8 @@ public:
 	bool isInCheck(enumColor side) const;
 	bool isInDoubleCheck(enumColor side) const;
 
+	BitBoard getCheckers(enumColor side) const;
+
 	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
 	Piece pieceOn(Square sq) const;
 
@@ -332,6 +334,29 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 		att_count++;
 
 	return att_count >= 2;
+}
+
+INLINE BitBoard Position::getCheckers(enumColor side) const {
+	const Square sq = getKingSquare(side);
+	BitBoard bb;
+
+	bb = pawnAttacks(sq, side) & getPawnsBySide(!side);
+	if (bb)
+		return bb;
+
+	bb = knightAttacks(sq) & getKnightsBySide(!side);
+	if (bb)
+		return bb;
+
+	bb = SlidersMagics::bishopAttacks(sq, getOccupied()) & getBishopsQueens(!side);
+	if (bb)
+		return bb;
+
+	bb = SlidersMagics::rookAttacks(sq, getOccupied()) & getRooksQueens(!side);
+	if (bb)
+		return bb;
+
+	return BitBoard::empty;
 }
 
 INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {

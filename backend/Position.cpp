@@ -91,10 +91,10 @@ void Position::make(Move& move, IrreversibleState& state) {
 						  short_castle = move.isShortCastle(),
 						  long_castle = move.isLongCastle();
 	const Piece::enumType piece_t = move.getPerformerT(),
-									captured = capture ?
-									ep_capture ? Piece::PAWN
-									: pieceTypeOn(dst, !_turn)
-									: Piece::NONE,
+						  captured = capture ?
+									 ep_capture ? Piece::PAWN
+									 : pieceTypeOn(dst, !_turn)
+									 : Piece::NONE,
 						  promo_piece_t = move.getPromoPieceT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
