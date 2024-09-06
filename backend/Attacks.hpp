@@ -49,7 +49,7 @@ struct StaticAttackTables {
 	std::array<BitBoard, 64> for_knights, for_kings;
 };
 
-extern StaticAttackTables attack_tables;
+extern const StaticAttackTables attack_tables;
 
 namespace {
 

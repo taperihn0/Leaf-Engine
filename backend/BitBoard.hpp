@@ -219,7 +219,7 @@ struct RectangularTable {
 	std::array<std::array<BitBoard, 64>, 64> table;
 };
 
-extern RectangularTable rectangular;
+extern const RectangularTable rectangular;
 
 // General setwise operations on BitBoard wrapper class *
 

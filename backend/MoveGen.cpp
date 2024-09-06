@@ -170,13 +170,11 @@ void generate(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard 
 }
 
 template <MoveGen::enumMode GenType, enumColor Side>
-void generateByColor(const Position& pos, MoveList& move_list) {
+void generateByColor(const Position& pos, MoveList& move_list, const BitBoard occupied, 
+	const BitBoard enemy_pieces, const BitBoard checkers) {
 	static constexpr bool areCaptures = GenType != MoveGen::QUIETS;
-	const BitBoard		  enemy_pieces = pos.getOppositePieces(),
-						  occupied = enemy_pieces | pos.getOwnPieces(),
-						  empties = ~occupied,
-						  gen_mask = GenType == MoveGen::QUIETS ? empties : enemy_pieces,
-						  checkers = pos.getCheckers(Side);
+	const BitBoard		  empties = ~occupied,
+						  gen_mask = GenType == MoveGen::QUIETS ? empties : enemy_pieces;
 	const bool			  check = static_cast<bool>(checkers);
 
 	BitBoard pieces_mask = gen_mask;
@@ -195,15 +193,29 @@ void generateByColor(const Position& pos, MoveList& move_list) {
 
 template <MoveGen::enumMode GenType>
 void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list) {
+	const BitBoard enemy_pieces = pos.getOppositePieces(),
+				   occupied = enemy_pieces | pos.getOwnPieces(),
+				   checkers = pos.getCheckers(pos.getTurn());
+
 	static_cast<enumColor>(pos.getTurn()) == WHITE ? 
-		generateByColor<GenType, WHITE>(pos, move_list) :
-		generateByColor<GenType, BLACK>(pos, move_list);
+		generateByColor<GenType, WHITE>(pos, move_list, occupied, enemy_pieces, checkers) :
+		generateByColor<GenType, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
 }
 
 template <>
 void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveList& move_list) {
-	generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, move_list);
-	generatePseudoLegalMoves<MoveGen::QUIETS>(pos, move_list);
+	const BitBoard enemy_pieces = pos.getOppositePieces(),
+				   occupied = enemy_pieces | pos.getOwnPieces(),
+				   checkers = pos.getCheckers(pos.getTurn());
+
+	if (pos.getTurn() == WHITE) {
+		generateByColor<CAPTURES, WHITE>(pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<QUIETS, WHITE>  (pos, move_list, occupied, enemy_pieces, checkers);
+	}
+	else {
+		generateByColor<CAPTURES, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<QUIETS, BLACK>  (pos, move_list, occupied, enemy_pieces, checkers);
+	}
 }
 
 template void MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(const Position&, MoveList&);

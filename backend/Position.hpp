@@ -194,12 +194,13 @@ public:
 	bool isInCheck(enumColor side) const;
 	bool isInDoubleCheck(enumColor side) const;
 
+	BitBoard getCheckersOnFly(enumColor side) const;
 	BitBoard getCheckers(enumColor side) const;
 
 	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
 	Piece pieceOn(Square sq) const;
 
-	void make(Move& move, IrreversibleState& state);
+	bool make(Move& move, IrreversibleState& state);
 	void unmake(Move move, IrreversibleState prev_state);
 
 	template <bool Root = true>
@@ -213,10 +214,6 @@ public:
 
 	static constexpr std::string_view starting_fen 
 		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-	static constexpr std::string_view empty_fen
-		= "/////// w - - 0 1";
-
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, int i);
@@ -298,7 +295,7 @@ INLINE bool Position::attacked(Square sq, enumColor side) const  {
 		return true;
 	if (knightAttacks(sq) & getKnightsBySide(!side)) 
 		return true;
-	if (SlidersMagics::bishopAttacks(sq, getOccupied()) & getBishopsQueens(!side)) 
+	if (SlidersMagics::bishopAttacks(sq, getOccupied()) & getBishopsQueens(!side))
 		return true;
 	return (SlidersMagics::rookAttacks(sq, getOccupied()) & getRooksQueens(!side));
 }
@@ -314,6 +311,7 @@ INLINE bool Position::isInCheck(enumColor side) const {
 
 INLINE bool Position::isInDoubleCheck(enumColor side) const {
 	const Square king_sq = getKingSquare(side);
+	const BitBoard occupied = getOccupied();
 
 	uint8_t att_count = 0;
 
@@ -325,12 +323,12 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 
 	if (att_count >= 2) return true;
 
-	if (SlidersMagics::bishopAttacks(king_sq, getOccupied()) & getBishopsQueens(!side))
+	if (SlidersMagics::bishopAttacks(king_sq, occupied) & getBishopsQueens(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
 
-	if (SlidersMagics::rookAttacks(king_sq, getOccupied()) & getRooksQueens(!side))
+	if (SlidersMagics::rookAttacks(king_sq, occupied) & getRooksQueens(!side))
 		att_count++;
 
 	return att_count >= 2;
@@ -338,6 +336,7 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 
 INLINE BitBoard Position::getCheckers(enumColor side) const {
 	const Square sq = getKingSquare(side);
+	const BitBoard occupied = getOccupied();
 	BitBoard bb;
 
 	bb = pawnAttacks(sq, side) & getPawnsBySide(!side);
@@ -348,11 +347,11 @@ INLINE BitBoard Position::getCheckers(enumColor side) const {
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::bishopAttacks(sq, getOccupied()) & getBishopsQueens(!side);
+	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueens(!side);
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::rookAttacks(sq, getOccupied()) & getRooksQueens(!side);
+	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueens(!side);
 	if (bb)
 		return bb;
 

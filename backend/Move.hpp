@@ -62,6 +62,10 @@ public:
 		return _rmove & PROMO_PIECE;
 	}
 
+	INLINE bool isLegal() {
+		return _rmove &= 1Ui32 << 25;
+	}
+
 	INLINE Piece::enumType getPerformerT() {
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 16);
 	}
@@ -94,6 +98,10 @@ public:
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 
+	INLINE void set_isLegal(bool is_legal) {
+		_rmove |= (uint32_t)is_legal << 25;
+	}
+
 	void print();
 
 	enum class Castle {
@@ -105,12 +113,12 @@ private:
 	static constexpr std::string_view _null_str = "0000";
 
 	/*
-		Raw number data consists of:
-		<----------------------------------------------------------------------------------->
-		|							25 bits	layout											|
-		<----------------------------------------------------------------------------------->
-		[promo] [captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
-		3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
+		          Raw number data consists of:
+		          <----------------------------------------------------------------------------------->
+		          |							25 bits	layout											  |
+		          <----------------------------------------------------------------------------------->
+		[is_legal][promo] [captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
+		  1 bit   3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
 		 MS1B																		   LS1B
 	*/
 
