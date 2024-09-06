@@ -88,7 +88,6 @@ void generatePawnPushes(const Position& pos, MoveList& move_list, BitBoard empti
 	pushable &= empties;
 
 	BitBoard promoted = pushable & BackRank;
-	pushable ^= promoted;
 
 	while (promoted) {
 		const Square dst = Square(promoted.dropForward());
@@ -96,6 +95,7 @@ void generatePawnPushes(const Position& pos, MoveList& move_list, BitBoard empti
 	}
 
 	if constexpr (GenType == MoveGen::QUIETS) {
+		pushable ^= promoted;
 		BitBoard double_pushable = pushable & DoublePushable;
 		double_pushable = double_pushable.genShift<Dir>();
 		double_pushable &= empties;
@@ -120,7 +120,7 @@ inline void generatePawnMoves(const Position& pos, MoveList& move_list, BitBoard
 }
 
 template <enumColor Side, bool isCapture>
-inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask) {
+inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied) {
 	const Square org = pos.getKingSquare(Side);
 	// exclude opponent king's attacks from our king's attack mask - kings cannot touch
 	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingSquare(!Side));
@@ -141,18 +141,18 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	const CastlingRights own_castling_state = pos.getCastlingByColor(Side);
 
 	if (own_castling_state.isShortPossible() and
-		own_castling_state.notThroughPieces_Short<Side>(pos) and
+		own_castling_state.notThroughPieces_Short<Side>(occupied) and
 		own_castling_state.notThroughCheck_Short<Side>(pos))
 		move_list.push(Move::makeCastling<Move::Castle::SHORT>(org, ShortCastleDst));
 
 	if (own_castling_state.isLongPossible() and
-		own_castling_state.notThroughPieces_Long<Side>(pos) and
+		own_castling_state.notThroughPieces_Long<Side>(occupied) and
 		own_castling_state.notThroughCheck_Long<Side>(pos))
 		move_list.push(Move::makeCastling<Move::Castle::LONG>(org, LongCastleDst));
 }
 
 template <Piece::enumType Piece, enumColor Side, bool isCapture> 
-void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
+void generate(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied) {
 	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE and Piece != Piece::KING, 
 		"Unsupported piecetype in generate func template");
 
@@ -160,7 +160,7 @@ void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
 
 	while (pieces) {
 		const Square org = Square(pieces.dropForward());
-		BitBoard att = attacks<Piece>(org, pos.getOccupied()) & mask;
+		BitBoard att = attacks<Piece>(org, occupied) & mask;
 
 		while (att) {
 			const Square dst = Square(att.dropForward());
@@ -172,18 +172,19 @@ void generate(const Position& pos, MoveList& move_list, BitBoard mask) {
 template <MoveGen::enumMode GenType, enumColor Side>
 void generateByColor(const Position& pos, MoveList& move_list) {
 	const BitBoard		  enemy_pieces = pos.getOppositePieces(),
-						  empties = pos.getEmpties(),
+						  occupied = enemy_pieces | pos.getOwnPieces(),
+						  empties = ~occupied,
 						  mask = GenType == MoveGen::QUIETS ? empties : enemy_pieces;
 	static constexpr bool areCaptures = GenType != MoveGen::QUIETS;
 
 	generatePawnMoves<GenType, Side>(pos, move_list, enemy_pieces, empties);
 
-	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, mask);
-	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, mask);
-	generate<Piece::ROOK, Side, areCaptures>(pos, move_list, mask);
-	generate<Piece::QUEEN, Side, areCaptures>(pos, move_list, mask);
+	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, mask, occupied);
+	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, mask, occupied);
+	generate<Piece::ROOK, Side, areCaptures>  (pos, move_list, mask, occupied);
+	generate<Piece::QUEEN, Side, areCaptures> (pos, move_list, mask, occupied);
 
-	generateKingMoves<Side, areCaptures>(pos, move_list, mask);
+	generateKingMoves<Side, areCaptures>(pos, move_list, mask, occupied);
 }
 
 template <MoveGen::enumMode GenType>

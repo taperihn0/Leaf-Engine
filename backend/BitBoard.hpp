@@ -173,6 +173,12 @@ private:
 	uint64_t _board;
 };
 
+INLINE int BitBoard::dropForward() {
+	const int ls1b = bitScanForward();
+	_board &= _board - 1;
+	return ls1b;
+}
+
 // General setwise operations on BitBoard wrapper class *
 
 namespace {

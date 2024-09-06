@@ -60,10 +60,10 @@ public:
 	bool notThroughCheck_Long(const Position& pos) const;
 
 	template <enumColor Side>
-	bool notThroughPieces_Short(const Position& pos) const;
+	bool notThroughPieces_Short(BitBoard occupied) const;
 
 	template <enumColor Side>
-	bool notThroughPieces_Long(const Position& pos) const;
+	bool notThroughPieces_Long(BitBoard occupied) const;
 
 	INLINE void setKingSide(bool flag) {
 		_kingside = flag;
@@ -246,21 +246,21 @@ INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughPieces_Short(const Position& pos) const {
+INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied) const {
 	static constexpr BitBoard Intermediates = Side == WHITE ?
 		BitBoard(Square::f1) | BitBoard(Square::g1)
 		: BitBoard(Square::f8) | BitBoard(Square::g8);
 	
-	return !(pos.getOccupied() & Intermediates);
+	return !(occupied & Intermediates);
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughPieces_Long(const Position& pos) const {
+INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied) const {
 	static constexpr BitBoard Intermediates = Side == WHITE ?
 		BitBoard(Square::b1) | BitBoard(Square::c1) | BitBoard(Square::d1)
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
 
-	return !(pos.getOccupied() & Intermediates);
+	return !(occupied & Intermediates);
 }
 
 INLINE BitBoard Position::getByColor(enumColor col_type) const {
