@@ -162,12 +162,12 @@ bool Position::make(Move& move, IrreversibleState& state) {
 }
 
 void Position::unmake(Move move, IrreversibleState prev_state) {
-	const Square		  org = move.getOrigin(),
-		dst = move.getTarget();
-	const bool			  capture = move.isCapture(),
-		ep_capture = move.isEnPassant(),
-		promotion = move.isPromotion();
 	const Piece::enumType piece_t = move.getPerformerT();
+	const Square		  org = move.getOrigin(),
+						  dst = move.getTarget();
+	const bool			  capture = move.isCapture(),
+						  ep_capture = move.isEnPassant(),
+						  promotion = move.isPromotion();
 
 	_turn = !_turn;
 

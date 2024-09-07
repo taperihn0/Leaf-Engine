@@ -8,7 +8,8 @@
 #include <array>
 #include <string_view>
 
-#define INLINE inline 
+// using __forceinline by default
+#define INLINE __forceinline 
 #define _FORCEINLINE __forceinline
 
 #define ENGINE_NAME "Leaf Lite"

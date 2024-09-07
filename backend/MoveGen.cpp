@@ -151,7 +151,7 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 }
 
 template <Piece::enumType Piece, enumColor Side, bool isCapture> 
-void generate(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied) {
+inline void generate(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied) {
 	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE and Piece != Piece::KING, 
 		"Unsupported piecetype in generate func template");
 
