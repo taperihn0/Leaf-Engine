@@ -13,6 +13,8 @@
 	-> (217.774 seconds, 31790kN/sec.)
 	changed if-branches in make function:
 	-> (204.242 seconds, 33896kN/sec.)
+	delegated variable definitions in make and unmake
+	-> (192.031 seconds, 36051kN/sec.)
 */
 
 const StaticAttackTables attack_tables;

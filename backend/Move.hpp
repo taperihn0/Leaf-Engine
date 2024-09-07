@@ -27,10 +27,10 @@ public:
 	// performer and captured piece in en passant move are de facto known - these are pawns.
 	static Move makeEnPassant(Square origin, Square target);
 
-	static Move makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t);
+	static Move makePromotion(Square origin, Square target, bool is_capture, Piece::enumType to_piece);
 
-	template <Castle Type>
-	static INLINE Move makeCastling(Square origin, Square target);
+	template <Move::Castle Type>
+	static Move makeCastling(Square origin, Square target);
 
 	static Move fromStr(const Position& pos, const std::string str);
 
@@ -60,10 +60,6 @@ public:
 
 	INLINE bool isPromotion() {
 		return _rmove & PROMO_PIECE;
-	}
-
-	INLINE bool isLegal() {
-		return _rmove &= 1Ui32 << 25;
 	}
 
 	INLINE Piece::enumType getPerformerT() {
@@ -98,10 +94,6 @@ public:
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 
-	INLINE void set_isLegal(bool is_legal) {
-		_rmove |= (uint32_t)is_legal << 25;
-	}
-
 	void print();
 
 	enum class Castle {
@@ -113,13 +105,13 @@ private:
 	static constexpr std::string_view _null_str = "0000";
 
 	/*
-		          Raw number data consists of:
-		          <----------------------------------------------------------------------------------->
-		          |							25 bits	layout											  |
-		          <----------------------------------------------------------------------------------->
-		[is_legal][promo] [captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
-		  1 bit   3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
-		 MS1B																		   LS1B
+		Raw number data consists of:
+		 <----------------------------------------------------------------------------------->
+		 |							25 bits	layout											|
+		 <----------------------------------------------------------------------------------->
+		 [promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
+		 3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
+		  MS1B							     -->									    LS1B
 	*/
 
 	enum enumLayout : uint32_t {
@@ -140,7 +132,7 @@ private:
 INLINE Move Move::makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t) {
 	return Move(
 		(static_cast<uint32_t>(piece_t) << 16)
-		| (is_capture << 12)
+		| (static_cast<uint32_t>(is_capture) << 12)
 		| (static_cast<uint32_t>(target) << 6)
 		| origin);
 }
@@ -152,16 +144,17 @@ INLINE Move Move::makeEnPassant(Square origin, Square target) {
 INLINE Move Move::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
 	return Move(
 		(static_cast<uint32_t>(promo_piece_t) << 22)
-		| (is_capture << 12)
-		| (static_cast<uint32_t>(target) << 6) 
+		| (static_cast<uint32_t>(is_capture) << 12)
+		| (static_cast<uint32_t>(target) << 6)
 		| origin);
 }
 
 template <Move::Castle Type>
 INLINE Move Move::makeCastling(Square origin, Square target) {
 	static constexpr uint32_t Field = Type == Castle::SHORT ? SHORT_CASTLE : LONG_CASTLE;
-	return Move((static_cast<uint32_t>(Piece::KING) << 16)
-		| Field 
+	return Move(
+		(static_cast<uint32_t>(Piece::KING) << 16)
+		| Field
 		| (static_cast<uint32_t>(target) << 6)
 		| origin);
 }

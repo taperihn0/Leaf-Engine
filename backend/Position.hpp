@@ -194,12 +194,12 @@ public:
 	bool isInCheck(enumColor side) const;
 	bool isInDoubleCheck(enumColor side) const;
 
-	BitBoard getCheckersOnFly(enumColor side) const;
 	BitBoard getCheckers(enumColor side) const;
 
 	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
 	Piece pieceOn(Square sq) const;
 
+	// returns whether move is legal or pseudo-legal
 	bool make(Move& move, IrreversibleState& state);
 	void unmake(Move move, IrreversibleState prev_state);
 

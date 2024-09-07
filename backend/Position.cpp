@@ -88,12 +88,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	const bool			  capture = move.isCapture(),
 						  ep_capture = move.isEnPassant(),
 						  promotion = move.isPromotion();
-	const Piece::enumType piece_t = move.getPerformerT(),
-						  captured = capture ?
-									 ep_capture ? Piece::PAWN
-									 : pieceTypeOn(dst, !_turn)
-									 : Piece::NONE,
-						  promo_piece_t = move.getPromoPieceT();
+	const Piece::enumType piece_t = move.getPerformerT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and abs(org - dst) > 8;
@@ -102,25 +97,20 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	state.halfmove_count = _halfmove_count;
 	state.castling_rights = _castling_rights;
 
-	if (promotion) {
-		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
-		_piece_bb[_turn][piece_t].popBit(org);
-		_piece_bb[_turn][promo_piece_t].setBit(dst);
-	}
-	else // if not a promotion - just move a piece on its own bitboard
-		_piece_bb[_turn][piece_t].moveBit(org, dst);
-
 	if (ep_capture) {
-		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
-		_piece_bb[!_turn][captured].popBit(dst - dir);
+		assert(piece_t == Piece::PAWN);
+		_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
 	}
 	else if (capture) {
+		const Piece::enumType captured = pieceTypeOn(dst, !_turn);
+
 		assert(captured != Piece::NONE);
+
 		move.setCapturedT(captured);
 		_piece_bb[!_turn][captured].popBit(dst);
 
 		const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
-			LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
+					 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
 		if (dst == RightCornerOpponent)
 			_castling_rights[!_turn].setKingSide(false);
@@ -128,9 +118,19 @@ bool Position::make(Move& move, IrreversibleState& state) {
 			_castling_rights[!_turn].setQueenSide(false);
 	}
 
+	if (promotion) {
+		const Piece::enumType promo_piece_t = move.getPromoPieceT();
+		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
+
+		_piece_bb[_turn][piece_t].popBit(org);
+		_piece_bb[_turn][promo_piece_t].setBit(dst);
+	}
+	else // if not a promotion - just move a piece on its own bitboard
+		_piece_bb[_turn][piece_t].moveBit(org, dst);
+
 	if (piece_t == Piece::KING) {
 		const bool	 short_castle = move.isShortCastle(),
-			long_castle = move.isLongCastle();
+					 long_castle = move.isLongCastle();
 
 		if (short_castle)
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
@@ -142,6 +142,8 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	
 	const bool legal = !isInCheck(_turn);
 	
+	// Just leave castling flags untouched since the move is pseudo-legal.
+	// It will be ignored anyway in the search.
 	if (legal) {
 		const Square RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
 				     LeftCorner  = _turn == WHITE ? Square::a1 : Square::a8;
@@ -167,16 +169,13 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 	const bool			  capture = move.isCapture(),
 						  ep_capture = move.isEnPassant(),
 						  promotion = move.isPromotion();
-	const Piece::enumType piece_t = move.getPerformerT(),
-						  captured = ep_capture ? Piece::PAWN : 
-								     capture ? move.getCapturedT() : 
-									 Piece::NONE,
-						  promo_piece_t = move.getPromoPieceT();
-	const int			  dir = _turn == WHITE ? -8 : 8;
+	const Piece::enumType piece_t = move.getPerformerT();
 
 	_turn = !_turn;
 
 	if (promotion) {
+		const Piece::enumType promo_piece_t = move.getPromoPieceT();
+
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 		_piece_bb[_turn][piece_t].setBit(org);
 		_piece_bb[_turn][promo_piece_t].popBit(dst);
@@ -185,11 +184,17 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 		_piece_bb[_turn][piece_t].moveBit(dst, org);
 
 	if (ep_capture) {
-		assert(piece_t == Piece::PAWN and captured == Piece::PAWN);
-		_piece_bb[!_turn][captured].setBit(dst - dir);
+		const int dir = _turn == WHITE ? 8 : -8;
+
+		assert(piece_t == Piece::PAWN);
+		_piece_bb[!_turn][Piece::PAWN].setBit(dst - dir);
 	}
-	else if (capture)
+	else if (capture) {
+		const Piece::enumType captured = move.getCapturedT();
+
+		assert(captured != Piece::NONE);
 		_piece_bb[!_turn][captured].setBit(dst);
+	}
 
 	// undo castling (move rook to its origin square in corner)
 	if (piece_t == Piece::KING) {

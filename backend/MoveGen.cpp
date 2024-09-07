@@ -132,11 +132,10 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 
 	// handle castling 
 	if constexpr (isCapture) return;
+	if (check) return;
 
 	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
 							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
-
-	if (check) return;
 
 	const CastlingRights own_castling_state = pos.getCastlingByColor(Side);
 
@@ -178,6 +177,7 @@ void generateByColor(const Position& pos, MoveList& move_list, const BitBoard oc
 	const bool			  check = static_cast<bool>(checkers);
 
 	BitBoard pieces_mask = gen_mask;
+
 	if (check)
 		pieces_mask &= inBetween(pos.getKingSquare(Side), checkers.bitScanForward());
 
@@ -185,8 +185,8 @@ void generateByColor(const Position& pos, MoveList& move_list, const BitBoard oc
 
 	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
 	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::ROOK, Side, areCaptures>  (pos, move_list, pieces_mask, occupied);
-	generate<Piece::QUEEN, Side, areCaptures> (pos, move_list, pieces_mask, occupied);
+	generate<Piece::ROOK, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
+	generate<Piece::QUEEN, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
 
 	generateKingMoves<Side, areCaptures>(pos, move_list, gen_mask, occupied, check);
 }
