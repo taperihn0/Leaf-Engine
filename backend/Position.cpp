@@ -86,7 +86,6 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
-						  ep_capture = move.isEnPassant(),
 						  promotion = move.isPromotion();
 	const Piece::enumType piece_t = move.getPerformerT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
@@ -97,25 +96,27 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	state.halfmove_count = _halfmove_count;
 	state.castling_rights = _castling_rights;
 
-	if (ep_capture) {
-		assert(piece_t == Piece::PAWN);
-		_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
-	}
-	else if (capture) {
-		const Piece::enumType captured = pieceTypeOn(dst, !_turn);
+	if (capture) {
+		if (move.isEnPassant()) {
+			assert(piece_t == Piece::PAWN);
+			_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
+		}
+		else {
+			const Piece::enumType captured = pieceTypeOn(dst, !_turn);
 
-		assert(captured != Piece::NONE);
+			assert(captured != Piece::NONE);
 
-		move.setCapturedT(captured);
-		_piece_bb[!_turn][captured].popBit(dst);
+			move.setCapturedT(captured);
+			_piece_bb[!_turn][captured].popBit(dst);
 
-		const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
-					 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
+			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
+						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
-		if (dst == RightCornerOpponent)
-			_castling_rights[!_turn].setKingSide(false);
-		else if (dst == LeftCornerOpponent)
-			_castling_rights[!_turn].setQueenSide(false);
+			if (dst == RightCornerOpponent)
+				_castling_rights[!_turn].setKingSide(false);
+			else if (dst == LeftCornerOpponent)
+				_castling_rights[!_turn].setQueenSide(false);
+		}
 	}
 
 	if (promotion) {
@@ -129,12 +130,9 @@ bool Position::make(Move& move, IrreversibleState& state) {
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
 
 	if (piece_t == Piece::KING) {
-		const bool	 short_castle = move.isShortCastle(),
-					 long_castle = move.isLongCastle();
-
-		if (short_castle)
+		if (move.isShortCastle())
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
-		else if (long_castle)
+		else if (move.isLongCastle())
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
 
 		_king_sq[_turn] = dst;
@@ -165,10 +163,10 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 void Position::unmake(Move move, IrreversibleState prev_state) {
 	const Square		  org = move.getOrigin(),
-						  dst = move.getTarget();
+		dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
-						  ep_capture = move.isEnPassant(),
-						  promotion = move.isPromotion();
+		ep_capture = move.isEnPassant(),
+		promotion = move.isPromotion();
 	const Piece::enumType piece_t = move.getPerformerT();
 
 	_turn = !_turn;
@@ -183,17 +181,19 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 	else // if not a promotion - just move a piece to origin square
 		_piece_bb[_turn][piece_t].moveBit(dst, org);
 
-	if (ep_capture) {
-		const int dir = _turn == WHITE ? 8 : -8;
+	if (capture) {
+		if (ep_capture) {
+			const int dir = _turn == WHITE ? 8 : -8;
 
-		assert(piece_t == Piece::PAWN);
-		_piece_bb[!_turn][Piece::PAWN].setBit(dst - dir);
-	}
-	else if (capture) {
-		const Piece::enumType captured = move.getCapturedT();
+			assert(piece_t == Piece::PAWN);
+			_piece_bb[!_turn][Piece::PAWN].setBit(dst - dir);
+		}
+		else {
+			const Piece::enumType captured = move.getCapturedT();
 
-		assert(captured != Piece::NONE);
-		_piece_bb[!_turn][captured].setBit(dst);
+			assert(captured != Piece::NONE);
+			_piece_bb[!_turn][captured].setBit(dst);
+		}
 	}
 
 	// undo castling (move rook to its origin square in corner)

@@ -12,6 +12,7 @@ public:
 	enum class Castle;
 
 	Move() = default;
+
 	INLINE Move(uint32_t raw)
 		: _rmove(raw) {}
 

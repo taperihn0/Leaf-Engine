@@ -12,7 +12,7 @@ public:
 			[](Entry e1, Entry e2) { return e1.score < e2.score; });
 	}
 
-	INLINE void push(Move new_move) {
+	INLINE void push(Move&& new_move) {
 		assert(_idx < _size);
 		_moves[_idx++].move = new_move;
 	}

@@ -194,6 +194,8 @@ public:
 	bool isInCheck(enumColor side) const;
 	bool isInDoubleCheck(enumColor side) const;
 
+	// Do not return all of the checkers, but terminates as soon as just one checker in found.
+	// If no checkers found, returns empty board.
 	BitBoard getCheckers(enumColor side) const;
 
 	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;

@@ -15,6 +15,8 @@
 	-> (204.242 seconds, 33896kN/sec.)
 	delegated variable definitions in make and unmake
 	-> (192.031 seconds, 36051kN/sec.)
+	changed if-branch for captures and r-value references in MoveList::push
+	-> (190.25 seconds, 36389kN/sec.)
 */
 
 const StaticAttackTables attack_tables;
