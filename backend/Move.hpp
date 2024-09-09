@@ -20,6 +20,10 @@ public:
 		_rmove = raw;
 		return *this;
 	}
+
+	INLINE constexpr bool operator==(Move b) const noexcept {
+		return _rmove == b._rmove;
+	}
 	
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
@@ -33,7 +37,7 @@ public:
 	template <Move::Castle Type>
 	static Move makeCastling(Square origin, Square target);
 
-	static Move fromStr(const Position& pos, const std::string str);
+	static Move fromStr(const Position& pos, const std::string& str);
 
 	INLINE Square getOrigin() {
 		return _rmove & ORIGIN;
@@ -104,6 +108,8 @@ public:
 	static constexpr uint32_t null = 0Ui32;
 private:
 	static constexpr std::string_view _null_str = "0000";
+
+	bool isValid(const Position& pos);
 
 	/*
 		Raw number data consists of:

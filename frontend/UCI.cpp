@@ -4,6 +4,9 @@
 #include <sstream>
 
 void UniversalChessInterface::loop(int argc, const char* argv[]) {
+	// C-style streams aren't used there
+	std::ios_base::sync_with_stdio(false);
+
 	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
 
 	do {
@@ -55,11 +58,10 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 
 	strm >> std::skipws >> token;
 	if (token == "moves") {
-		// TODO
 		while (strm >> std::skipws >> token) {
 			Move move = Move::fromStr(_pos, token);
-			Position::IrreversibleState tmp;
-			_pos.make(move, tmp);
+			Position::IrreversibleState unused;
+			_pos.make(move, unused);
 		}
 	}
 }
@@ -70,8 +72,18 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 
 	if (token == "perft") {
 		strm >> std::skipws >> token;
-		const int depth = std::stoi(token);
-		_pos.perft(depth);
+
+		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
+			const unsigned depth = std::stoi(token);
+			_pos.perft(depth);
+		}
 	}
 }
 
+INLINE bool UniversalChessInterface::isValidNumber(const std::string& str) {
+	return str.find_first_not_of("1234567890", 0) == std::string::npos;
+}
+
+INLINE bool UniversalChessInterface::isSigned(const std::string& str) {
+	return !str.empty() and str[0] == '-';
+}

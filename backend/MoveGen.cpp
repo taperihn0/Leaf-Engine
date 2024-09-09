@@ -185,8 +185,8 @@ void generateByColor(const Position& pos, MoveList& move_list, const BitBoard oc
 
 	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
 	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::ROOK, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::QUEEN, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
+	generate<Piece::ROOK, Side, areCaptures>  (pos, move_list, pieces_mask, occupied);
+	generate<Piece::QUEEN, Side, areCaptures> (pos, move_list, pieces_mask, occupied);
 
 	generateKingMoves<Side, areCaptures>(pos, move_list, gen_mask, occupied, check);
 }
@@ -201,6 +201,33 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list)
 		generateByColor<GenType, WHITE>(pos, move_list, occupied, enemy_pieces, checkers) :
 		generateByColor<GenType, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
 }
+
+/*
+	MoveGen::generatePseudoLegalMoves<MoveGen::ALL> generates all pseudolegal moves.
+	Oriented towards perft generation, tested and debuged by perft function.
+
+	Its performance was measured and documented. Athough fully legal generators are much
+	more efficient in perft testing due to possibility of incorporating bulk counting in perft 
+	search, my pseudo-legal generator got some extra megaNodes per second.
+	Result above were generated in a position 
+	{ r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 }
+	in depth 6.
+
+	added pre-calculated attack masks:
+	-> (217.774 seconds, 31790kN/sec.)
+
+	changed if-branches in make function:
+	-> (204.242 seconds, 33896kN/sec.)
+
+	delegated variable definitions in make and unmake:
+	-> (192.031 seconds, 36051kN/sec.)
+
+	changed if-branch for captures and r-value references in MoveList::push:
+	-> (190.25 seconds, 36389kN/sec.)
+
+	used __forceinline attribute:
+	-> (179.723 seconds, 38520kN/sec.)
+*/
 
 template <>
 void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveList& move_list) {

@@ -22,7 +22,7 @@ public:
 
 	static inline enumType typeFromChar(char c) {
 		c = tolower(c);
-		auto id = _whites_str.find_first_of(c);
+		auto id = _blacks_str.find_first_of(c);
 		return enumType(id);
 	}
 

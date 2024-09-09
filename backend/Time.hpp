@@ -7,7 +7,7 @@ public:
 	void go();
 	void stop();
 
-	// returns time past in milliseconds
+	// returns time passed in milliseconds
 	auto duration();
 private:
 	inline auto now() {

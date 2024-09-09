@@ -35,6 +35,10 @@ public:
 		return _size;
 	}
 
+	INLINE bool contains(Move m) const {
+		return std::find(_moves.data(), _moves.data() + _idx, Entry{ m, 0 }) != _moves.data() + _idx;
+	}
+
 	void print() const {
 		for (Entry m : _moves) m.print();
 	}
@@ -44,6 +48,10 @@ private:
 
 	struct Entry {
 		void print() { move.print(); std::cout << score; }
+
+		INLINE constexpr bool operator==(Entry b) const noexcept {
+			return move == b.move;
+		}
 
 		Move move;
 		// TODO: move score datatype 
