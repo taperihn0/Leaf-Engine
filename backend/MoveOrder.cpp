@@ -4,7 +4,7 @@
 template <OrderType Type>
 bool MoveOrder<Type>::loadMove(Move& move) {
 	if (_iterator >= _move_list.count()) return false;
-	move = _move_list.getMove(_iterator);
+	move = _move_list.getMove(_iterator++);
 	return true;
 }
 

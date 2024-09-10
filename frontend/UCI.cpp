@@ -55,7 +55,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	else if (token == "startpos") {
 		_pos.setStartingPos();
 	}
-
+		
 	strm >> std::skipws >> token;
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
@@ -76,6 +76,14 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
 			const unsigned depth = std::stoi(token);
 			_pos.perft(depth);
+		}
+	}
+	else if (token == "depth") {
+		strm >> std::skipws >> token;
+
+		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
+			const unsigned depth = std::stoi(token);
+			_search.bestMove(_pos, depth);
 		}
 	}
 }

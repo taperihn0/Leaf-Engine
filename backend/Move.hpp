@@ -16,6 +16,10 @@ public:
 	INLINE Move(uint32_t raw)
 		: _rmove(raw) {}
 
+	INLINE bool isNull() {
+		return _rmove == null;
+	}
+
 	INLINE constexpr Move operator=(uint32_t raw) {
 		_rmove = raw;
 		return *this;
