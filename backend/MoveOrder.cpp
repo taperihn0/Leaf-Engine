@@ -8,6 +8,8 @@ bool MoveOrder<Type>::loadMove(Move& move) {
 	return true;
 }
 
+// TODO: STAGED MOVE ORDERER
+
 bool MoveOrder<PLAIN>::nextMove(const Position& pos, Move& next_move) {
 	if (!_iterator) {
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);

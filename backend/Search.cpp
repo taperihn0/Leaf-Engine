@@ -4,36 +4,30 @@
 #include "MoveGen.hpp"
 
 void Search::bestMove(Position& pos, unsigned depth) {
+	ASSERT(1 <= depth and depth < max_depth, "Invalid depth");
 	iterativeDeepening(pos, depth);
-
-	std::cout << "bestmove ";
-	_pv_line[0][0].print();
-	std::cout << '\n';
 }
 
 void Search::iterativeDeepening(Position& pos, unsigned depth) {
-	ASSERT(1 <= depth and depth < max_depth, "Invalid depth");
-	clearPV();
+	SearchResults search_results;
 
 	for (unsigned d = 1; d <= depth; d++) {
-		search(pos, d);
+		search_results.nodes_cnt = 0;
+		search(pos, d, search_results);
 	}
+
+	search_results.printBestMove();
 }
 
-void Search::search(Position& pos, unsigned depth) {
-	const Score score_cp = negaMax(pos, -Score::infinity, Score::infinity, depth, 0);
-	assert(!_pv_line[0][0].isNull());
-
-	std::cout << "info score cp " << score_cp.toInt() << " pv ";
-
-	int it = 0;
-	while (!_pv_line[0][it].isNull())
-		_pv_line[0][it++].print(), std::cout << ' ';
-
-	std::cout << '\n';
+void Search::search(Position& pos, unsigned depth, SearchResults& results) {
+	negaMax<true>(pos, results, -Score::infinity, Score::infinity, depth, 0);
+	results.print();
 }
 
-Score Search::negaMax(Position& pos, Score alpha, Score beta, unsigned depth, unsigned ply) {
+template <bool Root>
+Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply) {
+	results.nodes_cnt++;
+
 	if (!depth) {
 		return staticEval(pos);
 	}
@@ -51,7 +45,7 @@ Score Search::negaMax(Position& pos, Score alpha, Score beta, unsigned depth, un
 
 		if (pos.make(move, state)) {
 			legal_move = true;
-			score = -negaMax(pos, -beta, -alpha, depth - 1, ply + 1);
+			score = -negaMax<false>(pos, results, -beta, -alpha, depth - 1, ply + 1);
 		}
 
 		pos.unmake(move, state);
@@ -59,11 +53,18 @@ Score Search::negaMax(Position& pos, Score alpha, Score beta, unsigned depth, un
 		if (legal_move and score > alpha) {
 			if (score >= beta) return beta;
 			
-			_pv_line[ply][0] = move;
-			std::copy(_pv_line[ply + 1].data(), _pv_line[ply + 1].data() + depth - 1, _pv_line[ply].data() + 1);
+			results.pv_line[ply][0] = move;
+			std::copy(results.pv_line[ply + 1].data(), results.pv_line[ply + 1].data() + depth - 1, 
+				results.pv_line[ply].data() + 1);
 			alpha = score;
 		}
 	}
 
+	if constexpr (Root) 
+		results.score_cp = alpha;
+
 	return alpha;
 }
+
+template Score Search::negaMax<true>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
+template Score Search::negaMax<false>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
