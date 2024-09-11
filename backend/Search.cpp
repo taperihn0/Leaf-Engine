@@ -2,6 +2,15 @@
 #include "Eval.hpp"
 #include "MoveGen.hpp"
 
+std::string Score::toStr() const {
+	if (_raw > Score::infinity - (int16_t)max_depth)
+		return "mate " + std::to_string((Score::infinity - _raw + 1) / 2);
+	else if (_raw < -Score::infinity + (int16_t)max_depth)
+		return "mate -" + std::to_string((_raw + Score::infinity + 1) / 2);
+
+	return "cp " + std::to_string(_raw);
+}
+
 INLINE void SearchResults::clearPV() {
 	for (auto& ply_line : pv_line)
 		ply_line.fill(Move::null);
@@ -19,8 +28,12 @@ INLINE void SearchResults::print() {
 	const auto duration_ms = timer.duration();
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
 
-	std::cout << "info score cp " << score_cp.toInt() << " nodes " << nodes_cnt
-		<< " time " << duration_ms << " nps " << nps << " pv ";
+	std::cout << "info depth " << depth
+		<< " score " << score_cp.toStr()
+		<< " nodes " << nodes_cnt
+		<< " time " << duration_ms 
+		<< " nps " << nps 
+		<< " pv ";
 
 	int it = 0;
 	while (!pv_line[0][it].isNull())
@@ -60,17 +73,21 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 		return quiesce(pos, results, alpha, beta);
 	}
 
+	const bool check = pos.isInCheck(pos.getTurn());
+
 	assert(0 < depth and depth < max_depth);
 	assert(alpha < beta);
 	
 	TreeNodeInfo& node = tree.getNode(ply);
 	node.moves.generateMoves(pos);
+	node.legals_cnt = 0;
 
 	while (node.moves.nextMove(pos, node.move)) {
 		bool legal_move = false;
 
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
+			node.legals_cnt++;
 			node.score = -negaMax<false>(pos, results, -beta, -alpha, depth - 1, ply + 1);
 		}
 
@@ -87,8 +104,19 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 		}
 	}
 
-	if constexpr (Root) 
+	// detect checkmate or stealmate
+	if (!node.legals_cnt) {
+		return check ? -Score::infinity + ply : Score::draw;
+	}
+	// Fifty-move rule draw
+	else if (pos.halfmoveClock() >= 100) {
+		return Score::draw;
+	}
+
+	if constexpr (Root) {
+		results.depth = depth;
 		results.score_cp = alpha;
+	}
 
 	return alpha;
 }

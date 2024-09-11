@@ -36,6 +36,8 @@ public:
 		return _raw;
 	}
 
+	std::string toStr() const;
+
 	static constexpr int16_t draw = 0,
 							 infinity = std::numeric_limits<int16_t>::max();
 private:
@@ -51,6 +53,7 @@ struct SearchResults {
 	void printBestMove();
 	void print();
 
+	unsigned depth;
 	Timer timer;
 	Score score_cp;
 	uint64_t nodes_cnt;
@@ -62,6 +65,7 @@ struct TreeNodeInfo {
 	Position::IrreversibleState state;
 	Move move;
 	Score score;
+	int legals_cnt;
 };
 
 class TreeInfo{

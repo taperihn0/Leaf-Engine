@@ -181,6 +181,10 @@ public:
 		return _castling_rights[_turn];
 	}
 
+	INLINE uint8_t halfmoveClock() const {
+		return _halfmove_count;
+	}
+
 	INLINE void setTurn(enumColor col_to_move) {
 		_turn = col_to_move;
 	}

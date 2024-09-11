@@ -10,7 +10,6 @@ void CastlingRights::printByColor(enumColor col_type) const {
 	std::string msg;
 	if (_kingside) msg += col_type == BLACK ? 'k' : 'K';
 	if (_queenside) msg += col_type == BLACK ? 'q' : 'Q';
-	msg = msg.empty() ? "-" : msg;
 	std::cout << msg;
 }
 
