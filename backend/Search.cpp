@@ -1,6 +1,5 @@
 #include "Search.hpp"
 #include "Eval.hpp"
-#include "MoveOrder.hpp"
 #include "MoveGen.hpp"
 
 INLINE void SearchResults::clearPV() {
@@ -17,8 +16,11 @@ INLINE void SearchResults::printBestMove() {
 }
 
 INLINE void SearchResults::print() {
+	const auto duration_ms = timer.duration();
+	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
+
 	std::cout << "info score cp " << score_cp.toInt() << " nodes " << nodes_cnt
-		<< " pv ";
+		<< " time " << duration_ms << " nps " << nps << " pv ";
 
 	int it = 0;
 	while (!pv_line[0][it].isNull())
@@ -44,7 +46,9 @@ void Search::iterativeDeepening(Position& pos, unsigned depth) {
 }
 
 void Search::search(Position& pos, unsigned depth, SearchResults& results) {
+	results.timer.go();
 	negaMax<true>(pos, results, -Score::infinity, Score::infinity, depth, 0);
+	results.timer.stop();
 	results.print();
 }
 
@@ -58,30 +62,28 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 
 	assert(0 < depth and depth < max_depth);
 	assert(alpha < beta);
+	
+	TreeNodeInfo& node = tree.getNode(ply);
+	node.moves.generateMoves(pos);
 
-	MoveOrder<PLAIN> moves;
-	Position::IrreversibleState state;
-	Move move;
-
-	moves.generateMoves(pos);
-	while (moves.nextMove(pos, move)) {
-		Score score;
+	while (node.moves.nextMove(pos, node.move)) {
 		bool legal_move = false;
 
-		if (pos.make(move, state)) {
+		if (pos.make(node.move, node.state)) {
 			legal_move = true;
-			score = -negaMax<false>(pos, results, -beta, -alpha, depth - 1, ply + 1);
+			node.score = -negaMax<false>(pos, results, -beta, -alpha, depth - 1, ply + 1);
 		}
 
-		pos.unmake(move, state);
+		pos.unmake(node.move, node.state);
 
-		if (legal_move and score > alpha) {
-			if (score >= beta) return beta;
+		if (legal_move and node.score > alpha) {
+			alpha = node.score;
+
+			if (node.score >= beta) break;
 			
-			results.pv_line[ply][0] = move;
+			results.pv_line[ply][0] = node.move;
 			std::copy(results.pv_line[ply + 1].data(), results.pv_line[ply + 1].data() + depth - 1, 
 				results.pv_line[ply].data() + 1);
-			alpha = score;
 		}
 	}
 
@@ -108,10 +110,10 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 	MoveOrder<QUIESCENT> moves;
 	Position::IrreversibleState state;
 	Move move;
+	Score score;
 
 	moves.generateMoves(pos);
 	while (moves.nextMove(pos, move)) {
-		Score score;
 		bool legal_move = false;
 
 		if (pos.make(move, state)) {

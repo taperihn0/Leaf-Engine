@@ -3,6 +3,8 @@
 #include "Common.hpp"
 #include "Position.hpp"
 #include "Move.hpp"
+#include "MoveOrder.hpp"
+#include "Time.hpp"
 
 #include <numeric>
 
@@ -49,9 +51,27 @@ struct SearchResults {
 	void printBestMove();
 	void print();
 
+	Timer timer;
 	Score score_cp;
 	uint64_t nodes_cnt;
 	std::array<std::array<Move, max_depth>, max_depth> pv_line;
+};
+
+struct TreeNodeInfo {
+	MoveOrder<PLAIN> moves;
+	Position::IrreversibleState state;
+	Move move;
+	Score score;
+};
+
+class TreeInfo{
+public:
+	INLINE TreeNodeInfo& getNode(unsigned ply) {
+		assert(ply < max_depth);
+		return node[ply];
+	}
+private:
+	std::array<TreeNodeInfo, max_depth> node;
 };
 
 class Search {
@@ -65,4 +85,6 @@ private:
 	Score negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
 
 	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
+
+	TreeInfo tree;
 };

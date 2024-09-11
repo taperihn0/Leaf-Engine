@@ -39,6 +39,8 @@ public:
 		return std::find(_moves.data(), _moves.data() + _idx, Entry{ m, 0 }) != _moves.data() + _idx;
 	}
 
+	INLINE void clear() { _idx = 0; }
+
 	void print() const {
 		for (Entry m : _moves) m.print();
 	}

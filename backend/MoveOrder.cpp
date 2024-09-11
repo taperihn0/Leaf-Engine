@@ -3,6 +3,7 @@
 
 void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	_iterator = 0;
+	_move_list.clear();
 	MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 	MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 }
@@ -16,6 +17,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 
 void MoveOrder<QUIESCENT>::generateMoves(const Position& pos) {
 	_iterator = 0;
+	_move_list.clear();
 	MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 }
 

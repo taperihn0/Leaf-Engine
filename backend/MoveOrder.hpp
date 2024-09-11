@@ -23,6 +23,8 @@ class MoveOrder {
 public:
 	void generateMoves(const Position& pos);
 	bool nextMove(const Position& pos, Move& next_move);
+
+	INLINE void clear() { _iterator = 0; }
 private:
 	bool loadMove(Move& move);
 
