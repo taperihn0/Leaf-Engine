@@ -5,7 +5,8 @@
 
 enum OrderType {
 	PLAIN, 
-	STAGED
+	STAGED,
+	QUIESCENT
 };
 
 /*
@@ -13,11 +14,14 @@ enum OrderType {
 	 - Plain move ordering. Generates all moves, both captures and quiets once.
 	MoveOrder<STAGED>:
 	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
+	MoveOrder<QUIESCE>
+	 - Generates only captures in quiescent node.
 */
 
 template <OrderType Type>
 class MoveOrder {
 public:
+	void generateMoves(const Position& pos);
 	bool nextMove(const Position& pos, Move& next_move);
 private:
 	bool loadMove(Move& move);

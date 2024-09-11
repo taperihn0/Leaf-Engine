@@ -44,29 +44,10 @@ struct SearchResults {
 	INLINE SearchResults()
 		: score_cp(0), nodes_cnt(0), pv_line{} {}
 
-	INLINE void clearPV() {
-		for (auto& ply_line : pv_line)
-			ply_line.fill(Move::null);
-	}
+	void clearPV();
 
-	INLINE void printBestMove() {
-		ASSERT(!pv_line[0][0].isNull(), "Null bestmove error");
-
-		std::cout << "bestmove ";
-		pv_line[0][0].print();
-		std::cout << '\n';
-	}
-
-	INLINE void print() {
-		std::cout << "info score cp " << score_cp.toInt() << " nodes " << nodes_cnt
-			<< " pv ";
-
-		int it = 0;
-		while (!pv_line[0][it].isNull())
-			pv_line[0][it++].print(), std::cout << ' ';
-
-		std::cout << '\n';
-	}
+	void printBestMove();
+	void print();
 
 	Score score_cp;
 	uint64_t nodes_cnt;
@@ -82,4 +63,6 @@ private:
 
 	template <bool Root>
 	Score negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
+
+	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
 };

@@ -3,6 +3,30 @@
 #include "MoveOrder.hpp"
 #include "MoveGen.hpp"
 
+INLINE void SearchResults::clearPV() {
+	for (auto& ply_line : pv_line)
+		ply_line.fill(Move::null);
+}
+
+INLINE void SearchResults::printBestMove() {
+	ASSERT(!pv_line[0][0].isNull(), "Null bestmove error");
+
+	std::cout << "bestmove ";
+	pv_line[0][0].print();
+	std::cout << '\n';
+}
+
+INLINE void SearchResults::print() {
+	std::cout << "info score cp " << score_cp.toInt() << " nodes " << nodes_cnt
+		<< " pv ";
+
+	int it = 0;
+	while (!pv_line[0][it].isNull())
+		pv_line[0][it++].print(), std::cout << ' ';
+
+	std::cout << '\n';
+}
+
 void Search::bestMove(Position& pos, unsigned depth) {
 	ASSERT(1 <= depth and depth < max_depth, "Invalid depth");
 	iterativeDeepening(pos, depth);
@@ -29,7 +53,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 	results.nodes_cnt++;
 
 	if (!depth) {
-		return staticEval(pos);
+		return quiesce(pos, results, alpha, beta);
 	}
 
 	assert(0 < depth and depth < max_depth);
@@ -39,6 +63,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 	Position::IrreversibleState state;
 	Move move;
 
+	moves.generateMoves(pos);
 	while (moves.nextMove(pos, move)) {
 		Score score;
 		bool legal_move = false;
@@ -68,3 +93,39 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 
 template Score Search::negaMax<true>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
 template Score Search::negaMax<false>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
+
+Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score beta) {
+	results.nodes_cnt++;
+
+	const Score stand_pat = staticEval(pos);
+	
+	// standing pat cutoff
+	if (stand_pat > alpha) {
+		if (stand_pat >= beta) return beta;
+		alpha = stand_pat;
+	}
+
+	MoveOrder<QUIESCENT> moves;
+	Position::IrreversibleState state;
+	Move move;
+
+	moves.generateMoves(pos);
+	while (moves.nextMove(pos, move)) {
+		Score score;
+		bool legal_move = false;
+
+		if (pos.make(move, state)) {
+			legal_move = true;
+			score = -quiesce(pos, results, -beta, -alpha);
+		}
+
+		pos.unmake(move, state);
+
+		if (legal_move and score > alpha) {
+			if (score >= beta) return beta;
+			alpha = score;
+		}
+	}
+
+	return alpha;
+}
