@@ -5,6 +5,7 @@
 #include "Move.hpp"
 #include "MoveOrder.hpp"
 #include "Time.hpp"
+#include "Eval.hpp"
 
 #include <numeric>
 
@@ -15,6 +16,14 @@ public:
 	INLINE Score() = default;
 	INLINE Score(uint16_t val)
 		: _raw(val) {}
+
+	INLINE Score operator+(Score b) const {
+		return _raw + b._raw;
+	}
+
+	INLINE Score operator-(Score b) const {
+		return _raw - b._raw;
+	}
 
 	INLINE bool operator>(Score b) const {
 		return _raw > b._raw;
@@ -78,6 +87,8 @@ private:
 	std::array<TreeNodeInfo, max_depth> node;
 };
 
+class Eval;
+
 class Search {
 public:
 	void bestMove(Position& pos, unsigned depth);
@@ -90,5 +101,6 @@ private:
 
 	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
 
-	TreeInfo tree;
+	TreeInfo _tree;
+	Eval _eval;
 };

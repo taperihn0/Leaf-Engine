@@ -12,7 +12,7 @@ Move Move::fromStr(const Position& pos, const std::string& str) {
 						  target = Square::fromChar(str[2], str[3]);
 	const Piece::enumType piece = pos.pieceTypeOn(origin, pos.getTurn());
 	const bool			  is_capture = pos.getOppositePieces().isOccupiedSq(target),
-						  is_ep_capture = target == pos.getEnPassantSq(),
+						  is_ep_capture = piece == Piece::PAWN and target == pos.getEnPassantSq(),
 						  promotion = str.size() == 5,
 						  short_castle = piece == Piece::KING and origin - target == -2,
 						  long_castle = piece == Piece::KING and origin - target == 2;

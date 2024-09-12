@@ -71,14 +71,14 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 
 	if (!depth) {
 		return quiesce(pos, results, alpha, beta);
-	}
+	} 
 
 	const bool check = pos.isInCheck(pos.getTurn());
 
 	assert(0 < depth and depth < max_depth);
 	assert(alpha < beta);
 	
-	TreeNodeInfo& node = tree.getNode(ply);
+	TreeNodeInfo& node = _tree.getNode(ply);
 	node.moves.clear();
 	node.legals_cnt = 0;
 
@@ -130,7 +130,7 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 
 	assert(alpha < beta);
 
-	const Score stand_pat = staticEval(pos);
+	const Score stand_pat = _eval.staticEval(pos);
 	
 	// standing pat cutoff
 	if (stand_pat > alpha) {
@@ -146,7 +146,7 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 	moves.generateMoves(pos);
 	while (moves.nextMove(pos, move)) {
 		bool legal_move = false;
-
+			
 		if (pos.make(move, state)) {
 			legal_move = true;
 			score = -quiesce(pos, results, -beta, -alpha);
