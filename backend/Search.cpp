@@ -79,7 +79,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 	assert(alpha < beta);
 	
 	TreeNodeInfo& node = tree.getNode(ply);
-	node.moves.generateMoves(pos);
+	node.moves.clear();
 	node.legals_cnt = 0;
 
 	while (node.moves.nextMove(pos, node.move)) {
@@ -96,6 +96,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 		if (legal_move and node.score > alpha) {
 			alpha = node.score;
 
+			// fail hard
 			if (node.score >= beta) break;
 			
 			results.pv_line[ply][0] = node.move;
@@ -127,6 +128,8 @@ template Score Search::negaMax<false>(Position& pos, SearchResults& results, Sco
 Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score beta) {
 	results.nodes_cnt++;
 
+	assert(alpha < beta);
+
 	const Score stand_pat = staticEval(pos);
 	
 	// standing pat cutoff
@@ -152,6 +155,7 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 		pos.unmake(move, state);
 
 		if (legal_move and score > alpha) {
+			// fail hard
 			if (score >= beta) return beta;
 			alpha = score;
 		}

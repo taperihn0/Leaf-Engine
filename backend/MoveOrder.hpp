@@ -24,19 +24,15 @@ public:
 	void generateMoves(const Position& pos);
 	bool nextMove(const Position& pos, Move& next_move);
 
-	INLINE void clear() { _iterator = 0; }
+	INLINE void clear() { 
+		_iterator = 0, _stage = _first_stage, _move_list.clear();
+	}
 private:
 	bool loadMove(Move& move);
 
-	struct Stage {
-		const bool unused;
-		MoveGen::enumMode mode;
-	};
+	static constexpr MoveGen::enumMode _first_stage = MoveGen::CAPTURES;
 
-	static constexpr Stage _staged_first_mode = { false , MoveGen::CAPTURES },
-						   _plain_mode        = { true };
-
-	Stage _stage = Type == PLAIN ? _plain_mode : _staged_first_mode;
+	MoveGen::enumMode _stage = _first_stage;
 	MoveList _move_list;
 	int _iterator = 0;
 };

@@ -61,7 +61,7 @@ struct SearchResults {
 };
 
 struct TreeNodeInfo {
-	MoveOrder<PLAIN> moves;
+	MoveOrder<STAGED> moves;
 	Position::IrreversibleState state;
 	Move move;
 	Score score;

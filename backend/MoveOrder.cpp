@@ -10,7 +10,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 
 /* 
 	MoveOrder<STAGED> template class does not specify generateMoves function. 
-    It generates appropiate moves on fly, during move picking as stage as is 
+    It generates appropiate moves on fly, during move picking as stage is 
 	moving from really promising captures to less promising quiets moves in terms of 
     possibility of beta cuttoff 
 */
@@ -29,8 +29,24 @@ bool MoveOrder<Type>::nextMove(const Position& _, Move& next_move) {
 template bool MoveOrder<PLAIN>::nextMove(const Position& _, Move& next_move);
 template bool MoveOrder<QUIESCENT>::nextMove(const Position& _, Move& next_move);
 
-/* TODO: STAGED move picker */
 bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
+	switch (_stage) {
+	case MoveGen::CAPTURES:
+		if (!_iterator)
+			MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+
+		if (loadMove(next_move))
+			return true;
+
+		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+		_stage = MoveGen::QUIETS;
+
+		[[fallthrough]];
+	case MoveGen::QUIETS:
+		if (loadMove(next_move))
+			return true;
+	}
+
 	return false;
 }
 
