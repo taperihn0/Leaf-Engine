@@ -95,10 +95,14 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	state.halfmove_count = _halfmove_count;
 	state.castling_rights = _castling_rights;
 
+	// TEMPORARY
+	state.hash_key = _hashing.key;
+
 	if (capture) {
 		if (move.isEnPassant()) {
 			assert(piece_t == Piece::PAWN);
 			_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
+			_hashing.key ^= _hashing._piece_keys[!_turn][Piece::PAWN][dst - dir];
 		}
 		else {
 			const Piece::enumType captured = pieceTypeOn(dst, !_turn);
@@ -107,14 +111,19 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 			move.setCapturedT(captured);
 			_piece_bb[!_turn][captured].popBit(dst);
+			_hashing.key ^= _hashing._piece_keys[!_turn][captured][dst];
 
 			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
-						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
+				LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
-			if (dst == RightCornerOpponent)
+			if (_castling_rights[!_turn].isShortPossible() and dst == RightCornerOpponent) {
+				_hashing.key ^= _hashing._short_castle_keys[!_turn];
 				_castling_rights[!_turn].setKingSide(false);
-			else if (dst == LeftCornerOpponent)
+			}
+			else if (_castling_rights[!_turn].isLongPossible() and dst == LeftCornerOpponent) {
+				_hashing.key ^= _hashing._long_castle_keys[!_turn];
 				_castling_rights[!_turn].setQueenSide(false);
+			}
 		}
 	}
 
@@ -124,36 +133,68 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 		_piece_bb[_turn][piece_t].popBit(org);
 		_piece_bb[_turn][promo_piece_t].setBit(dst);
+
+		_hashing.key ^= _hashing._piece_keys[_turn][piece_t][org];
+		_hashing.key ^= _hashing._piece_keys[_turn][promo_piece_t][dst];
 	}
-	else // if not a promotion - just move a piece on its own bitboard
+	else { // if not a promotion - just move a piece on its own bitboard 
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
 
+		_hashing.key ^= _hashing._piece_keys[_turn][piece_t][org];
+		_hashing.key ^= _hashing._piece_keys[_turn][piece_t][dst];
+	}
+
 	if (piece_t == Piece::KING) {
-		if (move.isShortCastle())
+		if (move.isShortCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
-		else if (move.isLongCastle())
+
+			_hashing.key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
+			_hashing.key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 1];
+		}
+		else if (move.isLongCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
+
+			_hashing.key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 2];
+			_hashing.key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
+		}
 
 		_king_sq[_turn] = dst;
 	}
-	
+
 	const bool legal = !isInCheck(_turn);
-	
+
 	// Just leave castling flags untouched since the move is pseudo-legal.
 	// It will be ignored anyway in the search.
 	if (legal) {
 		const Square RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
-				     LeftCorner  = _turn == WHITE ? Square::a1 : Square::a8;
+			LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
-		if (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))
+		if (_castling_rights[_turn].isShortPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))) {
+			_hashing.key ^= _hashing._short_castle_keys[_turn];
 			_castling_rights[_turn].setKingSide(false);
+		}
 
-		if (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))
+		if (_castling_rights[_turn].isLongPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))) {
+			_hashing.key ^= _hashing._long_castle_keys[_turn];
 			_castling_rights[_turn].setQueenSide(false);
+		}
+
+		// reset old en passant square state
+		if (_ep_square.isNotNull())
+			_hashing.key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+
+		_ep_square = Square::none;
+
+		if (double_pawn_push) {
+			_ep_square = dst - dir;
+			_hashing.key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+		}
+
+		_hashing.key ^= _hashing._black_key;
+
+		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	}
 
-	_ep_square = double_pawn_push ? dst - dir : Square::none;
-	_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
 
@@ -214,6 +255,9 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 	_ep_square = prev_state.ep_sq;
 	_halfmove_count = prev_state.halfmove_count;
 	_castling_rights = prev_state.castling_rights;
+
+	// TEMPORARY
+	_hashing.key = prev_state.hash_key;
 }
 
 template <bool Root>
@@ -237,6 +281,8 @@ uint64_t Position::perft(unsigned depth) {
 		Move move = move_list.getMove(i);
 
 		if (make(move, state)) {
+			assert(_hashing.key == _hashing.generateOnFly(*this));
+
 			child_nodes = perft<false>(depth - 1);
 			nodes += child_nodes;
 
@@ -313,4 +359,6 @@ void Position::setGameStatesFromStr(const std::string fen, int i) {
 
 	_king_sq[WHITE] = getKingBySide(WHITE).bitScanForward();
 	_king_sq[BLACK] = getKingBySide(BLACK).bitScanReverse();
+
+	_hashing.key = _hashing.generateOnFly(*this);
 }

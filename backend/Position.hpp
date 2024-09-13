@@ -3,6 +3,7 @@
 #include "BitBoard.hpp"
 #include "Piece.hpp"
 #include "Attacks.hpp"
+#include "Hash.hpp"
 
 class Move;
 class Position;
@@ -209,6 +210,8 @@ public:
 	bool make(Move& move, IrreversibleState& state);
 	void unmake(Move move, IrreversibleState prev_state);
 
+	uint64_t getZobristKey() const;
+
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
@@ -216,6 +219,8 @@ public:
 		Square ep_sq;
 		uint8_t halfmove_count;
 		std::array<CastlingRights, 2> castling_rights;
+		// TEMPORARY
+		uint64_t hash_key;
 	};
 
 	static constexpr std::string_view starting_fen 
@@ -234,6 +239,8 @@ private:
 	uint16_t _fullmove_count;
 
 	std::array<Square, 2> _king_sq;
+
+	ZobristHash _hashing;
 };
 
 template <enumColor Side>
@@ -376,4 +383,8 @@ INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) cons
 INLINE Piece Position::pieceOn(Square sq) const {
 	const Piece::enumType type = pieceTypeOn(sq, WHITE);
 	return type != Piece::NONE ? Piece(WHITE, type) : Piece(BLACK, pieceTypeOn(sq, BLACK));
+}
+
+INLINE uint64_t Position::getZobristKey() const {
+	return _hashing.key;
 }

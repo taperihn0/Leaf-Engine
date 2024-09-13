@@ -26,7 +26,7 @@ public:
 		return enumType(id);
 	}
 
-	void set(enumColor col_t, enumType piece_t) { 
+	inline void set(enumColor col_t, enumType piece_t) { 
 		_col = col_t, _type = piece_t;
 	}
 
@@ -36,8 +36,16 @@ public:
 		else std::cout << _blacks_str[_type];
 	}
 
-	int toIndex() const {
+	inline int toIndex() const {
 		return static_cast<int>(_type);
+	}
+
+	inline enumType getType() const {
+		return _type;
+	}
+
+	inline enumColor getColor() const {
+		return _col;
 	}
 
 	enum enumType : uint8_t {

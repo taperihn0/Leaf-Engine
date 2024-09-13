@@ -20,6 +20,14 @@ public:
 		return _sq;
 	}
 
+	INLINE uint8_t getFile() const {
+		return _sq % 8;
+	}
+
+	INLINE uint8_t getRank() const {
+		return _sq / 8;
+	}
+
 	INLINE bool isNotNull() const {
 		return _sq != none;
 	}
@@ -38,7 +46,7 @@ public:
 		else std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
 	}
 
-	constexpr bool isValid() const {
+	INLINE constexpr bool isValid() const {
 		return 0 <= _sq and _sq < 64 or _sq == none;
 	}
 

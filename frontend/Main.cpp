@@ -12,6 +12,7 @@ const RectangularTable rectangular;
 	to return little different score, so called contempt factor. An idea
 	here would be to register approximate strenght of an opponent and 
 	based on that calculate appopriate draw score.
+	2. Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 */
 
 int main(int argc, const char* argv[]) {
