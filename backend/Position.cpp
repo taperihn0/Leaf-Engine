@@ -292,7 +292,7 @@ void Position::setGameStatesFromStr(const std::string fen, int i) {
 	_ep_square = Square::none;
 
 	if (fen[++i] != '-') {
-		_ep_square.fromChar(fen[i], fen[i + 1]);
+		_ep_square = Square::fromChar(fen[i], fen[i + 1]);
 	}
 
 	i += 2;

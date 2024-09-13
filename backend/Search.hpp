@@ -77,14 +77,14 @@ struct TreeNodeInfo {
 	int legals_cnt;
 };
 
-class TreeInfo{
+class TreeInfo {
 public:
 	INLINE TreeNodeInfo& getNode(unsigned ply) {
 		assert(ply < max_depth);
-		return node[ply];
+		return _node[ply];
 	}
 private:
-	std::array<TreeNodeInfo, max_depth> node;
+	std::array<TreeNodeInfo, max_depth> _node;
 };
 
 class Eval;
