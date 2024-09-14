@@ -211,7 +211,8 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list)
 	search, my pseudo-legal generator got some extra megaNodes per second.
 	Result above were generated in a position 
 	{ r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 }
-	in depth 6.
+	in depth 6,
+	also before implementing any other features like Zobrist Hashing.
 
 	added pre-calculated attack masks:
 	-> (217.774 seconds, 31790kN/sec.)

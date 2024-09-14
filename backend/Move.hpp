@@ -43,43 +43,43 @@ public:
 
 	static Move fromStr(const Position& pos, const std::string& str);
 
-	INLINE Square getOrigin() {
+	INLINE Square getOrigin() const {
 		return _rmove & ORIGIN;
 	}
 
-	INLINE Square getTarget() {
+	INLINE Square getTarget() const {
 		return (_rmove & TARGET) >> 6;
 	}
 
-	INLINE bool isCapture() {
+	INLINE bool isCapture() const {
 		return _rmove & CAPTURE;
 	}
 
-	INLINE bool isEnPassant() {
+	INLINE bool isEnPassant() const {
 		return _rmove & EP_CAPTURE;
 	}
 
-	INLINE bool isShortCastle() {
+	INLINE bool isShortCastle() const {
 		return _rmove & SHORT_CASTLE;
 	}
 
-	INLINE bool isLongCastle() {
+	INLINE bool isLongCastle() const {
 		return _rmove & LONG_CASTLE;
 	}
 
-	INLINE bool isPromotion() {
+	INLINE bool isPromotion() const {
 		return _rmove & PROMO_PIECE;
 	}
 
-	INLINE Piece::enumType getPerformerT() {
+	INLINE Piece::enumType getPerformerT() const {
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 16);
 	}
 
-	INLINE Piece::enumType getCapturedT() {
+	INLINE Piece::enumType getCapturedT() const {
 		return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 19);
 	}
 
-	INLINE Piece::enumType getPromoPieceT() {
+	INLINE Piece::enumType getPromoPieceT() const {
 		return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 22);
 	}
 
@@ -103,7 +103,7 @@ public:
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 
-	void print();
+	void print() const;
 
 	enum class Castle {
 		SHORT, LONG
@@ -113,7 +113,7 @@ public:
 private:
 	static constexpr std::string_view _null_str = "0000";
 
-	bool isValid(const Position& pos);
+	bool isValid(const Position& pos) const;
 
 	/*
 		Raw number data consists of:

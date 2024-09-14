@@ -101,6 +101,8 @@ private:
 
 	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
 
+	bool isRepetitionCycle(const Position& pos, unsigned ply);
+
 	TreeInfo _tree;
 	Eval _eval;
 };

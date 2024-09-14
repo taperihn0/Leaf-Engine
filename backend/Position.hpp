@@ -386,5 +386,5 @@ INLINE Piece Position::pieceOn(Square sq) const {
 }
 
 INLINE uint64_t Position::getZobristKey() const {
-	return _hashing.key;
+	return _hashing._key;
 }

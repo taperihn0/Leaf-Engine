@@ -69,7 +69,11 @@ template <bool Root>
 Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply) {
 	results.nodes_cnt++;
 
-	if (!depth) {
+	// Fifty-move rule or repetition draw
+	if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, ply)) {
+		return Score::draw;
+	}
+	else if (!depth) {
 		return quiesce(pos, results, alpha, beta);
 	} 
 
@@ -104,14 +108,10 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 				results.pv_line[ply].data() + 1);
 		}
 	}
-
+	
 	// detect checkmate or stealmate
 	if (!node.legals_cnt) {
 		return check ? -Score::infinity + ply : Score::draw;
-	}
-	// Fifty-move rule draw
-	else if (pos.halfmoveClock() >= 100) {
-		return Score::draw;
 	}
 
 	if constexpr (Root) {
@@ -162,4 +162,29 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 	}
 
 	return alpha;
+}
+
+bool Search::isRepetitionCycle(const Position& pos, unsigned ply) {
+	const unsigned my_ply = ply;
+	const uint64_t my_hashkey = pos.getZobristKey();
+
+	if (ply < 3) return false;
+
+	// a note: to get a hash key of a node, we need to get it from its child node
+	//  (at a depth of one less).
+	for (; ply > 0; ply--) {
+		const Move move = _tree.getNode(ply).move;
+
+		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
+			return false;
+		else if ((my_ply - ply) % 2 == 0)
+			continue;
+
+		const uint64_t prev_hashkey = _tree.getNode(ply).state.hash_key;
+
+		if (my_hashkey == prev_hashkey)
+			return true;
+	}
+
+	return false;
 }

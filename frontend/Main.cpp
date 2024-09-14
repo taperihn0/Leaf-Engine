@@ -13,6 +13,7 @@ const RectangularTable rectangular;
 	here would be to register approximate strenght of an opponent and 
 	based on that calculate appopriate draw score.
 	2. Try to update Zobrish Key only when move is legal, in an if (legal) branch.
+	3. Try to find more efficient algorithm behing cycle detection (repetition) in search.
 */
 
 int main(int argc, const char* argv[]) {

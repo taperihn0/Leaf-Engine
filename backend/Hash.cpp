@@ -66,7 +66,7 @@ uint64_t ZobristHash::generateOnFly(const Position& pos) {
 
 #if defined(_DEBUG)
 bool ZobristHash::printXOR_Diff(uint64_t key_2) {
-	std::cout << (key ^ key_2) << ' ';
+	std::cout << (_key ^ key_2) << ' ';
 	return true;
 }
 #endif

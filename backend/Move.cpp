@@ -42,7 +42,7 @@ Move Move::fromStr(const Position& pos, const std::string& str) {
 #endif
 }
 
-void Move::print() {
+void Move::print() const {
 #if defined(PURE_NOTATION) 
 	if (_rmove == null) {
 		std::cout << _null_str;
@@ -54,7 +54,7 @@ void Move::print() {
 #endif
 }
 
-bool Move::isValid(const Position& pos) {
+bool Move::isValid(const Position& pos) const {
 	MoveList mlist;
 	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(pos, mlist);
 	return mlist.contains(*this);
