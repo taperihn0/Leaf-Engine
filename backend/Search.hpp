@@ -6,6 +6,7 @@
 #include "MoveOrder.hpp"
 #include "Time.hpp"
 #include "Eval.hpp"
+#include "Game.hpp"
 
 #include <numeric>
 
@@ -91,17 +92,18 @@ class Eval;
 
 class Search {
 public:
-	void bestMove(Position& pos, unsigned depth);
+	void bestMove(Position& pos, const Game& game, unsigned depth);
 private:
-	void iterativeDeepening(Position& pos, unsigned depth);
-	void search(Position& pos, unsigned depth, SearchResults& results);
+	void iterativeDeepening(Position& pos, const Game& game, unsigned depth);
+	void search(Position& pos, const Game& game, unsigned depth, SearchResults& results);
 
 	template <bool Root>
-	Score negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
+	Score negaMax(Position& pos, SearchResults& results, const Game& game, 
+		Score alpha, Score beta, unsigned depth, unsigned ply);
 
 	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
 
-	bool isRepetitionCycle(const Position& pos, unsigned ply);
+	bool isRepetitionCycle(const Position& pos, const Game& game, int ply);
 
 	TreeInfo _tree;
 	Eval _eval;

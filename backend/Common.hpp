@@ -38,7 +38,8 @@ INLINE constexpr enumColor operator!(enumColor opp) {
 }
 
 static constexpr int max_node_moves = 256;
-static constexpr unsigned max_depth = 256;
+static constexpr unsigned max_depth = 256,
+						  max_game_moves = max_node_moves;
 
 class MoveGenerator;
 using MoveGen = MoveGenerator;

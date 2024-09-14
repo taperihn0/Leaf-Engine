@@ -34,5 +34,5 @@ private:
 
 	MoveGen::enumMode _stage = _first_stage;
 	MoveList _move_list;
-	int _iterator = 0;
+	size_t _iterator = 0;
 };

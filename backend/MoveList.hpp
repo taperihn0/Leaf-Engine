@@ -22,12 +22,12 @@ public:
 		return _moves[idx].score;
 	}
 
-	INLINE Move getMove(int idx) const {
+	INLINE Move getMove(size_t idx) const {
 		ASSERT(idx < _size, "Index overflow while geting an item from move list");
 		return _moves[idx].move;
 	}
 
-	INLINE int count() const {
+	INLINE size_t count() const {
 		return _idx;
 	}
 
@@ -60,6 +60,6 @@ private:
 		uint32_t score;
 	};
 
-	int _idx = 0;
+	size_t _idx = 0;
 	std::array<Entry, _size> _moves;
 };

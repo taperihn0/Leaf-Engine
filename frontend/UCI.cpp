@@ -19,6 +19,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 		strm >> std::skipws >> token;
 
 		if (token == "uci") parseUCI();
+		else if (token == "ucinewgame") parseNewGame();
 		else if (token == "position") parsePosition(strm);
 		else if (token == "print") _pos.print();
 		else if (token == "go") parseGo(strm);
@@ -30,6 +31,10 @@ void UniversalChessInterface::parseUCI() {
 	std::cout << "id name " << ENGINE_NAME << '\n'
 		<< "id author " << AUTHOR << '\n'
 		<< "uciok" << '\n';
+}
+
+void UniversalChessInterface::parseNewGame() {
+	_game.clear();
 }
 
 void UniversalChessInterface::parsePosition(std::istringstream& strm) {
@@ -54,13 +59,17 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	}
 	else if (token == "startpos") {
 		_pos.setStartingPos();
+		_game.clear();
 	}
 		
 	strm >> std::skipws >> token;
 	if (token == "moves") {
+		Position::IrreversibleState unused;
+
 		while (strm >> std::skipws >> token) {
 			Move move = Move::fromStr(_pos, token);
-			Position::IrreversibleState unused;
+
+			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move, unused);
 		}
 	}
@@ -83,7 +92,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 
 		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
 			const unsigned depth = std::stoi(token);
-			_search.bestMove(_pos, depth);
+			_search.bestMove(_pos, _game, depth);
 		}
 	}
 }

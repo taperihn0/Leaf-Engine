@@ -42,40 +42,43 @@ INLINE void SearchResults::print() {
 	std::cout << '\n';
 }
 
-void Search::bestMove(Position& pos, unsigned depth) {
+void Search::bestMove(Position& pos, const Game& game, unsigned depth) {
 	ASSERT(1 <= depth and depth < max_depth, "Invalid depth");
-	iterativeDeepening(pos, depth);
+	iterativeDeepening(pos, game, depth);
 }
 
-void Search::iterativeDeepening(Position& pos, unsigned depth) {
+void Search::iterativeDeepening(Position& pos, const Game& game, unsigned depth) {
 	SearchResults search_results;
 
 	for (unsigned d = 1; d <= depth; d++) {
 		search_results.nodes_cnt = 0;
-		search(pos, d, search_results);
+		search(pos, game, d, search_results);
 	}
 
 	search_results.printBestMove();
 }
 
-void Search::search(Position& pos, unsigned depth, SearchResults& results) {
+void Search::search(Position& pos, const Game& game, unsigned depth, SearchResults& results) {
 	results.timer.go();
-	negaMax<true>(pos, results, -Score::infinity, Score::infinity, depth, 0);
+	negaMax<true>(pos, results, game, -Score::infinity, Score::infinity, depth, 0);
 	results.timer.stop();
 	results.print();
 }
 
 template <bool Root>
-Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply) {
+Score Search::negaMax(Position& pos, SearchResults& results, const Game& game, 
+	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	results.nodes_cnt++;
 
-	// Fifty-move rule or repetition draw
-	if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, ply)) {
-		return Score::draw;
+	if constexpr (!Root) {
+		// Fifty-move rule or repetition draw
+		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, ply)) {
+			return Score::draw;
+		}
+		else if (!depth) {
+			return quiesce(pos, results, alpha, beta);
+		}
 	}
-	else if (!depth) {
-		return quiesce(pos, results, alpha, beta);
-	} 
 
 	const bool check = pos.isInCheck(pos.getTurn());
 
@@ -92,17 +95,17 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
 			node.legals_cnt++;
-			node.score = -negaMax<false>(pos, results, -beta, -alpha, depth - 1, ply + 1);
+			node.score = -negaMax<false>(pos, results, game, -beta, -alpha, depth - 1, ply + 1);
 		}
 
 		pos.unmake(node.move, node.state);
 
 		if (legal_move and node.score > alpha) {
+			// fail hard
+			if (node.score >= beta) return beta;
+			
 			alpha = node.score;
 
-			// fail hard
-			if (node.score >= beta) break;
-			
 			results.pv_line[ply][0] = node.move;
 			std::copy(results.pv_line[ply + 1].data(), results.pv_line[ply + 1].data() + depth - 1, 
 				results.pv_line[ply].data() + 1);
@@ -122,8 +125,10 @@ Score Search::negaMax(Position& pos, SearchResults& results, Score alpha, Score 
 	return alpha;
 }
 
-template Score Search::negaMax<true>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
-template Score Search::negaMax<false>(Position& pos, SearchResults& results, Score alpha, Score beta, unsigned depth, unsigned ply);
+template Score Search::negaMax<true>(Position& pos, SearchResults& results, const Game& game, 
+	Score alpha, Score beta, unsigned depth, unsigned ply);
+template Score Search::negaMax<false>(Position& pos, SearchResults& results, const Game& game, 
+	Score alpha, Score beta, unsigned depth, unsigned ply);
 
 Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score beta) {
 	results.nodes_cnt++;
@@ -164,24 +169,37 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 	return alpha;
 }
 
-bool Search::isRepetitionCycle(const Position& pos, unsigned ply) {
-	const unsigned my_ply = ply;
+bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
+	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 
-	if (ply < 3) return false;
-
-	// a note: to get a hash key of a node, we need to get it from its child node
-	//  (at a depth of one less).
-	for (; ply > 0; ply--) {
+	for (ply = ply - 1; ply >= 0; ply--) {
 		const Move move = _tree.getNode(ply).move;
 
 		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
 			return false;
-		else if ((my_ply - ply) % 2 == 0)
+		else if ((my_ply - ply) % 2 == 1)
 			continue;
 
 		const uint64_t prev_hashkey = _tree.getNode(ply).state.hash_key;
+		if (my_hashkey == prev_hashkey)
+			return true;
+	}
 
+	
+	const int my_cnt = static_cast<int>(game.currentHalfCount());
+
+	if (!my_cnt) return false;
+
+	for (int cnt = my_cnt - 1; cnt >= my_cnt - 5 and cnt >= 0; cnt--) {
+		const Move move = game.getPrevMove(cnt);
+
+		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
+			return false;
+		else if ((my_cnt - cnt) % 2 == 0)
+			continue;
+
+		const uint64_t prev_hashkey = game.getPrevKey(cnt);
 		if (my_hashkey == prev_hashkey)
 			return true;
 	}
