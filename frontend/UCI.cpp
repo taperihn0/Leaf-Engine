@@ -1,7 +1,37 @@
 #include "UCI.hpp"
 #include "../backend/Move.hpp"
+#include "../backend/Search.hpp"
 
 #include <sstream>
+
+inline SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
+	SearchLimits limits;
+	limits.depth = max_depth - 1;
+
+	if (token == "depth") {
+		strm >> std::skipws >> token;
+
+		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
+			limits.depth = std::stoi(token);
+		}
+	}
+
+	if (token == "wtime") {
+		strm >> std::skipws >> token;
+		limits.wtime = std::stoi(token);
+
+		strm >> std::skipws >> token >> std::skipws >> token;
+		limits.btime = std::stoi(token);
+
+		strm >> std::skipws >> token >> std::skipws >> token;
+		limits.winc = std::stoi(token);
+
+		strm >> std::skipws >> token >> std::skipws >> token;
+		limits.binc = std::stoi(token);
+	}
+
+	return limits;
+}
 
 void UniversalChessInterface::loop(int argc, const char* argv[]) {
 	// C-style streams aren't used there
@@ -87,20 +117,8 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 			_pos.perft(depth);
 		}
 	}
-	else if (token == "depth") {
-		strm >> std::skipws >> token;
-
-		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
-			const unsigned depth = std::stoi(token);
-			_search.bestMove(_pos, _game, depth);
-		}
+	else {
+		SearchLimits limits = loadSearchInfo(strm, token);
+		_search.bestMove(_pos, _game, limits);
 	}
-}
-
-INLINE bool UniversalChessInterface::isValidNumber(const std::string& str) {
-	return str.find_first_not_of("1234567890", 0) == std::string::npos;
-}
-
-INLINE bool UniversalChessInterface::isSigned(const std::string& str) {
-	return !str.empty() and str[0] == '-';
 }

@@ -16,9 +16,6 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 
-	bool isValidNumber(const std::string& str);
-	bool isSigned(const std::string& str);
-
 	Position _pos;
 	Search _search;
 	Game _game;

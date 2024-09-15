@@ -47,3 +47,11 @@ using MoveGen = MoveGenerator;
 enum class File : uint8_t {
 	A = 1, B, C, D, E, F, G, H
 };
+
+INLINE bool isValidNumber(const std::string& str) {
+	return str.find_first_not_of("1234567890", 0) == std::string::npos;
+}
+
+INLINE bool isSigned(const std::string& str) {
+	return !str.empty() and str[0] == '-';
+}

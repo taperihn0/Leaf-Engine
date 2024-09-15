@@ -34,6 +34,10 @@ public:
 		return _raw >= b._raw;
 	}
 
+	INLINE bool operator==(Score b) const {
+		return _raw == b._raw;
+	}
+
 	INLINE bool operator<(Score b) const {
 		return _raw < b._raw;
 	}
@@ -49,14 +53,40 @@ public:
 	std::string toStr() const;
 
 	static constexpr int16_t draw = 0,
-							 infinity = std::numeric_limits<int16_t>::max();
+							 infinity = std::numeric_limits<int16_t>::max(),
+							 undef = infinity;
 private:
 	int16_t _raw;
+};
+
+class SearchLimits {
+public:
+	INLINE void calculateSearchTime(const Position& pos) {
+		_search_time = pos.getTurn() == WHITE ? (wtime / 20 + winc / 2)
+											  : (btime / 20 + binc / 2);
+	}
+
+	INLINE bool isTimeLeft() {
+		timer.stop();
+		return !_search_time or timer.duration() < _search_time;
+	}
+
+	unsigned depth = 0,
+			 wtime = 0, 
+			 btime = 0, 
+			 winc  = 0, 
+			 binc  = 0;
+
+	Timer timer;
+private:
+	unsigned _search_time;
 };
 
 struct SearchResults {
 	INLINE SearchResults()
 		: score_cp(0), nodes_cnt(0), pv_line{} {}
+
+	void registerBestMove();
 
 	void clearPV();
 
@@ -68,6 +98,7 @@ struct SearchResults {
 	Score score_cp;
 	uint64_t nodes_cnt;
 	std::array<std::array<Move, max_depth>, max_depth> pv_line;
+	Move bestmove;
 };
 
 struct TreeNodeInfo {
@@ -92,10 +123,10 @@ class Eval;
 
 class Search {
 public:
-	void bestMove(Position& pos, const Game& game, unsigned depth);
+	void bestMove(Position& pos, const Game& game, SearchLimits limits);
 private:
-	void iterativeDeepening(Position& pos, const Game& game, unsigned depth);
-	void search(Position& pos, const Game& game, unsigned depth, SearchResults& results);
+	void iterativeDeepening(Position& pos, const Game& game);
+	bool search(Position& pos, const Game& game, unsigned depth, SearchResults& results);
 
 	template <bool Root>
 	Score negaMax(Position& pos, SearchResults& results, const Game& game, 
@@ -107,4 +138,7 @@ private:
 
 	TreeInfo _tree;
 	Eval _eval;
+	SearchLimits _limits;
+
+	static constexpr uint64_t _check_node_count = 2048;
 };

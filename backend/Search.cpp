@@ -2,6 +2,8 @@
 #include "Eval.hpp"
 #include "MoveGen.hpp"
 
+#include <sstream>
+
 std::string Score::toStr() const {
 	if (_raw > Score::infinity - (int16_t)max_depth)
 		return "mate " + std::to_string((Score::infinity - _raw + 1) / 2);
@@ -9,6 +11,10 @@ std::string Score::toStr() const {
 		return "mate -" + std::to_string((_raw + Score::infinity + 1) / 2);
 
 	return "cp " + std::to_string(_raw);
+}
+
+INLINE void SearchResults::registerBestMove() {
+	bestmove = pv_line[0][0];
 }
 
 INLINE void SearchResults::clearPV() {
@@ -42,43 +48,60 @@ INLINE void SearchResults::print() {
 	std::cout << '\n';
 }
 
-void Search::bestMove(Position& pos, const Game& game, unsigned depth) {
-	ASSERT(1 <= depth and depth < max_depth, "Invalid depth");
-	iterativeDeepening(pos, game, depth);
+void Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
+	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
+
+	_limits = limits;
+	_limits.timer.go();
+	_limits.calculateSearchTime(pos);
+
+	iterativeDeepening(pos, game);
 }
 
-void Search::iterativeDeepening(Position& pos, const Game& game, unsigned depth) {
+void Search::iterativeDeepening(Position& pos, const Game& game) {
 	SearchResults search_results;
 
-	for (unsigned d = 1; d <= depth; d++) {
+	for (unsigned d = 1; d <= _limits.depth; d++) {
 		search_results.nodes_cnt = 0;
-		search(pos, game, d, search_results);
+
+		if (search(pos, game, d, search_results))
+			break;
+
+		search_results.registerBestMove();
 	}
 
 	search_results.printBestMove();
 }
 
-void Search::search(Position& pos, const Game& game, unsigned depth, SearchResults& results) {
+bool Search::search(Position& pos, const Game& game, unsigned depth, SearchResults& results) {
 	results.timer.go();
-	negaMax<true>(pos, results, game, -Score::infinity, Score::infinity, depth, 0);
+
+	const Score score = negaMax<true>(pos, results, game, -Score::infinity, Score::infinity, depth, 0);
+
 	results.timer.stop();
 	results.print();
+
+	return score == Score::undef;
 }
 
 template <bool Root>
 Score Search::negaMax(Position& pos, SearchResults& results, const Game& game, 
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
-	results.nodes_cnt++;
-
 	if constexpr (!Root) {
 		// Fifty-move rule or repetition draw
 		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, ply)) {
 			return Score::draw;
 		}
-		else if (!depth) {
+		
+		if (!depth) {
 			return quiesce(pos, results, alpha, beta);
 		}
+		else if ((results.nodes_cnt & _check_node_count) == 0 and !_limits.isTimeLeft()) {
+			return Score::undef;
+		}
 	}
+
+	results.nodes_cnt++;
 
 	const bool check = pos.isInCheck(pos.getTurn());
 
@@ -88,6 +111,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, const Game& game,
 	TreeNodeInfo& node = _tree.getNode(ply);
 	node.moves.clear();
 	node.legals_cnt = 0;
+	node.score = 0;
 
 	while (node.moves.nextMove(pos, node.move)) {
 		bool legal_move = false;
@@ -100,7 +124,9 @@ Score Search::negaMax(Position& pos, SearchResults& results, const Game& game,
 
 		pos.unmake(node.move, node.state);
 
-		if (legal_move and node.score > alpha) {
+		if (node.score == -Score::undef)
+			return Score::undef;
+		else if (legal_move and node.score > alpha) {
 			// fail hard
 			if (node.score >= beta) return beta;
 			
@@ -131,6 +157,10 @@ template Score Search::negaMax<false>(Position& pos, SearchResults& results, con
 	Score alpha, Score beta, unsigned depth, unsigned ply);
 
 Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score beta) {
+	if ((results.nodes_cnt & _check_node_count) == 0 and !_limits.isTimeLeft()) {
+		return Score::undef;
+	}
+
 	results.nodes_cnt++;
 
 	assert(alpha < beta);
@@ -146,7 +176,7 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 	MoveOrder<QUIESCENT> moves;
 	Position::IrreversibleState state;
 	Move move;
-	Score score;
+	Score score = 0;
 
 	moves.generateMoves(pos);
 	while (moves.nextMove(pos, move)) {
@@ -159,7 +189,9 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 
 		pos.unmake(move, state);
 
-		if (legal_move and score > alpha) {
+		if (score == -Score::undef)
+			return Score::undef;
+		else if (legal_move and score > alpha) {
 			// fail hard
 			if (score >= beta) return beta;
 			alpha = score;
