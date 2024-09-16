@@ -4,7 +4,7 @@
 
 #include <sstream>
 
-inline SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
+SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = max_depth - 1;
 
@@ -53,6 +53,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 		else if (token == "position") parsePosition(strm);
 		else if (token == "print") _pos.print();
 		else if (token == "go") parseGo(strm);
+		else if (token == "isready") parseIsReady();
 
 	} while (_command != "quit");
 }
@@ -63,7 +64,7 @@ void UniversalChessInterface::parseUCI() {
 		<< "uciok" << '\n';
 }
 
-void UniversalChessInterface::parseNewGame() {
+inline void UniversalChessInterface::parseNewGame() {
 	_game.clear();
 }
 
@@ -105,7 +106,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	}
 }
 
-void UniversalChessInterface::parseGo(std::istringstream& strm) {
+inline void UniversalChessInterface::parseGo(std::istringstream& strm) {
 	std::string token;
 	strm >> std::skipws >> token;
 
@@ -116,9 +117,14 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 			const unsigned depth = std::stoi(token);
 			_pos.perft(depth);
 		}
+
+		return;
 	}
-	else {
-		SearchLimits limits = loadSearchInfo(strm, token);
-		_search.bestMove(_pos, _game, limits);
-	}
+	
+	SearchLimits limits = loadSearchInfo(strm, token);
+	_search.bestMove(_pos, _game, limits);
+}
+
+inline void UniversalChessInterface::parseIsReady() {
+	std::cout << "readyok\n";
 }

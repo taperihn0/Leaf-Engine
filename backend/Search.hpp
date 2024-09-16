@@ -4,9 +4,9 @@
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveOrder.hpp"
-#include "Time.hpp"
 #include "Eval.hpp"
 #include "Game.hpp"
+#include "Time.hpp"
 
 #include <numeric>
 
@@ -38,6 +38,10 @@ public:
 		return _raw == b._raw;
 	}
 
+	INLINE bool operator!=(Score b) const {
+		return _raw != b._raw;
+	}
+
 	INLINE bool operator<(Score b) const {
 		return _raw < b._raw;
 	}
@@ -54,38 +58,26 @@ public:
 
 	static constexpr int16_t draw = 0,
 							 infinity = std::numeric_limits<int16_t>::max(),
+							 // undefined score in incompleted score, signalising cutted search tree
 							 undef = infinity;
 private:
 	int16_t _raw;
 };
 
-class SearchLimits {
-public:
-	INLINE void calculateSearchTime(const Position& pos) {
-		_search_time = pos.getTurn() == WHITE ? (wtime / 20 + winc / 2)
-											  : (btime / 20 + binc / 2);
-	}
-
-	INLINE bool isTimeLeft() {
-		timer.stop();
-		return !_search_time or timer.duration() < _search_time;
-	}
+struct SearchLimits {
+	bool isTimeLeft();
 
 	unsigned depth = 0,
 			 wtime = 0, 
 			 btime = 0, 
 			 winc  = 0, 
-			 binc  = 0;
+			 binc  = 0,
+			 search_time = 0;
 
 	Timer timer;
-private:
-	unsigned _search_time;
 };
 
 struct SearchResults {
-	INLINE SearchResults()
-		: score_cp(0), nodes_cnt(0), pv_line{} {}
-
 	void registerBestMove();
 
 	void clearPV();
@@ -93,12 +85,13 @@ struct SearchResults {
 	void printBestMove();
 	void print();
 
-	unsigned depth;
+	unsigned depth     = 0;
+	Score score_cp     = 0;
+	uint64_t nodes_cnt = 0;
+	Move bestmove      = Move::null;
+
+	std::array<std::array<Move, max_depth>, max_depth> pv_line = {};
 	Timer timer;
-	Score score_cp;
-	uint64_t nodes_cnt;
-	std::array<std::array<Move, max_depth>, max_depth> pv_line;
-	Move bestmove;
 };
 
 struct TreeNodeInfo {
@@ -125,20 +118,19 @@ class Search {
 public:
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
 private:
-	void iterativeDeepening(Position& pos, const Game& game);
-	bool search(Position& pos, const Game& game, unsigned depth, SearchResults& results);
+	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
+	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root>
-	Score negaMax(Position& pos, SearchResults& results, const Game& game, 
+	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 
-	Score quiesce(Position& pos, SearchResults& results, Score alpha, Score beta);
+	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta);
 
 	bool isRepetitionCycle(const Position& pos, const Game& game, int ply);
 
 	TreeInfo _tree;
 	Eval _eval;
-	SearchLimits _limits;
 
 	static constexpr uint64_t _check_node_count = 2048;
 };

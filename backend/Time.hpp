@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Common.hpp"
+#include "Position.hpp"
+
 #include <chrono>
 
 class Timer {
@@ -18,14 +21,21 @@ private:
 	std::chrono::system_clock::time_point _start, _stop;
 };
 
-inline void Timer::go() {
+INLINE void Timer::go() {
 	_start = now();
 }
 
-inline void Timer::stop() {
+INLINE void Timer::stop() {
 	_stop = now();
 }
 
-inline auto Timer::duration() {
+INLINE auto Timer::duration() {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(_stop - _start).count();
 }
+
+struct SearchLimits;
+
+class TimeMan {
+public:
+	static unsigned searchTime(const Position& pos, SearchLimits& limits);
+};

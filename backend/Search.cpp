@@ -1,6 +1,7 @@
 #include "Search.hpp"
 #include "Eval.hpp"
 #include "MoveGen.hpp"
+#include "Time.hpp"
 
 #include <sstream>
 
@@ -13,6 +14,11 @@ std::string Score::toStr() const {
 	return "cp " + std::to_string(_raw);
 }
 
+INLINE bool SearchLimits::isTimeLeft() {
+	timer.stop();
+	return !search_time or timer.duration() < search_time;
+}
+
 INLINE void SearchResults::registerBestMove() {
 	bestmove = pv_line[0][0];
 }
@@ -23,10 +29,10 @@ INLINE void SearchResults::clearPV() {
 }
 
 INLINE void SearchResults::printBestMove() {
-	ASSERT(!pv_line[0][0].isNull(), "Null bestmove error");
+	ASSERT(!bestmove.isNull(), "Null bestmove error");
 
 	std::cout << "bestmove ";
-	pv_line[0][0].print();
+	bestmove.print();
 	std::cout << '\n';
 }
 
@@ -51,20 +57,20 @@ INLINE void SearchResults::print() {
 void Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
 
-	_limits = limits;
-	_limits.timer.go();
-	_limits.calculateSearchTime(pos);
+	limits.timer.go();
+	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	iterativeDeepening(pos, game);
+	iterativeDeepening(pos, game, limits);
 }
 
-void Search::iterativeDeepening(Position& pos, const Game& game) {
+void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
 
-	for (unsigned d = 1; d <= _limits.depth; d++) {
+	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.nodes_cnt = 0;
+		search_results.depth = d;
 
-		if (search(pos, game, d, search_results))
+		if (!search(pos, game, limits, search_results))
 			break;
 
 		search_results.registerBestMove();
@@ -73,30 +79,35 @@ void Search::iterativeDeepening(Position& pos, const Game& game) {
 	search_results.printBestMove();
 }
 
-bool Search::search(Position& pos, const Game& game, unsigned depth, SearchResults& results) {
+bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
 	results.timer.go();
 
-	const Score score = negaMax<true>(pos, results, game, -Score::infinity, Score::infinity, depth, 0);
+	const Score score 
+		= negaMax<true>(pos, limits, results, game, -Score::infinity, Score::infinity, results.depth, 0);
+
+	if (score == Score::undef)
+		return false;
 
 	results.timer.stop();
 	results.print();
 
-	return score == Score::undef;
+	return true;
 }
 
 template <bool Root>
-Score Search::negaMax(Position& pos, SearchResults& results, const Game& game, 
+Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, 
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	if constexpr (!Root) {
+
 		// Fifty-move rule or repetition draw
 		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, ply)) {
 			return Score::draw;
 		}
 		
 		if (!depth) {
-			return quiesce(pos, results, alpha, beta);
+			return quiesce(pos, limits, results, alpha, beta);
 		}
-		else if ((results.nodes_cnt & _check_node_count) == 0 and !_limits.isTimeLeft()) {
+		else if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
 			return Score::undef;
 		}
 	}
@@ -119,7 +130,7 @@ Score Search::negaMax(Position& pos, SearchResults& results, const Game& game,
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
 			node.legals_cnt++;
-			node.score = -negaMax<false>(pos, results, game, -beta, -alpha, depth - 1, ply + 1);
+			node.score = -negaMax<false>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
 		}
 
 		pos.unmake(node.move, node.state);
@@ -144,20 +155,19 @@ Score Search::negaMax(Position& pos, SearchResults& results, const Game& game,
 	}
 
 	if constexpr (Root) {
-		results.depth = depth;
 		results.score_cp = alpha;
 	}
 
 	return alpha;
 }
 
-template Score Search::negaMax<true>(Position& pos, SearchResults& results, const Game& game, 
+template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 	Score alpha, Score beta, unsigned depth, unsigned ply);
-template Score Search::negaMax<false>(Position& pos, SearchResults& results, const Game& game, 
+template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 	Score alpha, Score beta, unsigned depth, unsigned ply);
 
-Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score beta) {
-	if ((results.nodes_cnt & _check_node_count) == 0 and !_limits.isTimeLeft()) {
+Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta) {
+	if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
 		return Score::undef;
 	}
 
@@ -184,7 +194,7 @@ Score Search::quiesce(Position& pos, SearchResults& results, Score alpha, Score 
 			
 		if (pos.make(move, state)) {
 			legal_move = true;
-			score = -quiesce(pos, results, -beta, -alpha);
+			score = -quiesce(pos, limits, results, -beta, -alpha);
 		}
 
 		pos.unmake(move, state);

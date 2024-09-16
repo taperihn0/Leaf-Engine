@@ -18,8 +18,12 @@
 // move format, so far only pure notation supported
 #define PURE_NOTATION
 
+#if defined(_MSC_VER)
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
 #pragma warning(disable: 4293)
+// Function uses 'X' bytes of stack. Consider moving some data to heap
+#pragma warning(disable: 6262)
+#endif
 
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 

@@ -15,6 +15,7 @@ private:
 	void parseNewGame();
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
+	void parseIsReady();
 
 	Position _pos;
 	Search _search;
