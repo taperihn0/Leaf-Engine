@@ -21,7 +21,7 @@
 #if defined(_MSC_VER)
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
 #pragma warning(disable: 4293)
-// Function uses 'X' bytes of stack. Consider moving some data to heap
+// Warning: function uses 'X' bytes of stack. Consider moving some data to heap
 #pragma warning(disable: 6262)
 #endif
 

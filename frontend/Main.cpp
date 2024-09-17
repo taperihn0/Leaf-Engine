@@ -23,7 +23,7 @@ const RectangularTable rectangular;
 int main(int argc, const char* argv[]) {
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
 	SlidersMagics::initAttackTables<Piece::ROOK>();
-	
+
 	UniversalChessInterface uci_obj;
 	uci_obj.loop(argc, argv);
 }

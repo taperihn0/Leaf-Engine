@@ -3,10 +3,11 @@
 #include "../backend/Position.hpp"
 #include "../backend/Search.hpp"
 #include "../backend/Game.hpp"
+#include "../backend/TranspositionTable.hpp"
 
 class UniversalChessInterface {
 public:
-	UniversalChessInterface() = default;
+	UniversalChessInterface();
 	~UniversalChessInterface() = default;
 
 	void loop(int argc, const char* argv[]);
@@ -22,4 +23,7 @@ private:
 	Game _game;
 
 	std::string _command;
+
+	// TEMPORARY
+	TranspositionTable _tt;
 };

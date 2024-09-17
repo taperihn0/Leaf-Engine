@@ -22,6 +22,14 @@ public:
 		return _raw + b._raw;
 	}
 
+	INLINE Score operator+=(Score b) {
+		return _raw += b._raw;
+	}
+
+	INLINE Score operator-=(Score b) {
+		return _raw -= b._raw;
+	}
+
 	INLINE Score operator-(Score b) const {
 		return _raw - b._raw;
 	}
@@ -32,6 +40,10 @@ public:
 
 	INLINE bool operator>=(Score b) const {
 		return _raw >= b._raw;
+	}
+
+	INLINE bool operator<=(Score b) const {
+		return _raw <= b._raw;
 	}
 
 	INLINE bool operator==(Score b) const {
@@ -58,7 +70,6 @@ public:
 
 	static constexpr int16_t draw = 0,
 							 infinity = std::numeric_limits<int16_t>::max(),
-							 // undefined score in incompleted score, signalising cutted search tree
 							 undef = infinity;
 private:
 	int16_t _raw;
@@ -113,10 +124,15 @@ private:
 };
 
 class Eval;
+class TranspositionTable;
 
 class Search {
 public:
+	Search(TranspositionTable&& tt);
+
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
+
+	INLINE TranspositionTable& getTranspositionTable() { return _tt; }
 private:
 	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
@@ -131,6 +147,7 @@ private:
 
 	TreeInfo _tree;
 	Eval _eval;
+	TranspositionTable& _tt;
 
-	static constexpr uint64_t _check_node_count = 2048;
+	static constexpr uint64_t _check_node_count = 4096;
 };
