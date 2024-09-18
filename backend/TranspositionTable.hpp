@@ -6,7 +6,7 @@
 #include <utility>
 
 // TODO
-struct TTEntry {
+struct alignas(16) TTEntry {
 	enum Bound : uint8_t {
 		EXACT = 0, 
 		LOWERBOUND = 1,
@@ -17,9 +17,6 @@ struct TTEntry {
 	uint8_t depth;
 	Bound bound;
 	Score score;
-
-	// TEMPORARY
-	uint8_t padding[4];
 };
 
 class Score;
@@ -40,6 +37,7 @@ public:
 	void printDebug();
 #endif
 private:
+
 	TranspositionTable(const TranspositionTable&) = delete;
 	TranspositionTable operator=(const TranspositionTable&) = delete;
 
