@@ -87,9 +87,9 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	results.timer.go();
 
 	const Score score 
-		= negaMax<true>(pos, limits, results, game, -Score::infinity, Score::infinity, results.depth, 0);
+		= -negaMax<true>(pos, limits, results, game, -Score::infinity, Score::infinity, results.depth, 0);
 
-	if (results.depth > 1 and score == Score::undef)
+	if (results.depth > 1 and !score.isValid())
 		return false;
 
 	results.timer.stop();
@@ -108,7 +108,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			return Score::draw;
 		}
 		else if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
-			return Score::undef;
+			return -Score::undef;
 		}
 
 		const auto& [is_valid, tt_score] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
@@ -148,9 +148,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(node.move, node.state);
 
-		if (node.score == -Score::undef)
-			return Score::undef;
-		else if (legal_move and node.score > alpha) {
+		if (node.score.isValid() and legal_move and node.score > alpha) {
 			if (node.score >= beta) {
 				bound_type = TTEntry::UPPERBOUND;
 				alpha = beta;
@@ -160,9 +158,19 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			bound_type = TTEntry::EXACT;
 			alpha = node.score;
 
+			// TODO: replace old PV tables with bug-free TT PV storing and probing.
 			results.pv_line[ply][0] = node.move;
 			std::copy(results.pv_line[ply + 1].data(), results.pv_line[ply + 1].data() + depth - 1, 
 				results.pv_line[ply].data() + 1);
+		}
+		else if (!node.score.isValid()) {
+			if (Root and bound_type == TTEntry::LOWERBOUND)
+				// TODO: move at root assigned here might be illegal.
+				// Implement a heuristic of keeping best move of a node,
+				// and assign it here.
+				results.pv_line[ply][0] = node.move;
+
+			return -Score::undef;
 		}
 	}
 	
@@ -188,7 +196,7 @@ template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, Searc
 
 Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta) {
 	if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
-		return Score::undef;
+		return -Score::undef;
 	}
 
 	results.nodes_cnt++;
@@ -219,8 +227,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(move, state);
 
-		if (score == -Score::undef)
-			return Score::undef;
+		if (!score.isValid())
+			return -Score::undef;
 		else if (legal_move and score > alpha) {
 			// fail hard
 			if (score >= beta) return beta;
@@ -248,12 +256,15 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 			return true;
 	}
 
-	
 	const int my_cnt = static_cast<int>(game.currentHalfCount());
 
-	if (!my_cnt) return false;
+	// look only at 5 moves backward so far
+	for (int i = 1; i <= 5; i++) {
+		const int cnt = my_cnt - i;
 
-	for (int cnt = my_cnt - 1; cnt >= my_cnt - 5 and cnt >= 0; cnt--) {
+		if (cnt < 0) 
+			return false;
+
 		const Move move = game.getPrevMove(cnt);
 
 		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)

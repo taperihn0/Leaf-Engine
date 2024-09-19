@@ -66,6 +66,10 @@ public:
 		return _raw;
 	}
 
+	INLINE bool isValid() const {
+		return _raw != undef;
+	}
+
 	std::string toStr() const;
 
 	static constexpr int16_t draw = 0,
