@@ -92,20 +92,19 @@ struct SearchLimits {
 	Timer timer;
 };
 
-struct SearchResults {
-	void registerBestMove();
+class Search;
 
-	void clearPV();
+struct SearchResults {
+	void registerBestMove(Move move);
 
 	void printBestMove();
-	void print();
+	void print(const Search* search, unsigned depth, const Position& pos);
 
 	unsigned depth     = 0;
 	Score score_cp     = 0;
 	uint64_t nodes_cnt = 0;
 	Move bestmove      = Move::null;
 
-	std::array<std::array<Move, max_depth>, max_depth> pv_line = {};
 	Timer timer;
 };
 
@@ -113,8 +112,10 @@ struct TreeNodeInfo {
 	MoveOrder<STAGED> moves;
 	Position::IrreversibleState state;
 	Move move;
+	Move bestmove;
 	Score score;
 	int legals_cnt;
+	Score best_score;
 };
 
 class TreeInfo {
@@ -132,6 +133,8 @@ class TranspositionTable;
 
 class Search {
 public:
+	friend struct SearchResults;
+
 	Search(TranspositionTable&& tt);
 
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);

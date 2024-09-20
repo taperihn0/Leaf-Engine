@@ -20,13 +20,8 @@ INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
 
-INLINE void SearchResults::registerBestMove() {
-	bestmove = pv_line[0][0];
-}
-
-INLINE void SearchResults::clearPV() {
-	for (auto& ply_line : pv_line)
-		ply_line.fill(Move::null);
+INLINE void SearchResults::registerBestMove(Move move) {
+	bestmove = move;
 }
 
 INLINE void SearchResults::printBestMove() {
@@ -40,7 +35,7 @@ INLINE void SearchResults::printBestMove() {
 Search::Search(TranspositionTable&& tt)
 	: _tt(tt) {}
 
-INLINE void SearchResults::print() {
+INLINE void SearchResults::print(const Search* search, unsigned depth, const Position& pos) {
 	const auto duration_ms = timer.duration();
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
 
@@ -51,9 +46,20 @@ INLINE void SearchResults::print() {
 		<< " nps " << nps 
 		<< " pv ";
 
-	int it = 0;
-	while (!pv_line[0][it].isNull())
-		pv_line[0][it++].print(), std::cout << ' ';
+	Position cpy = pos;
+
+	while (depth--) {
+		Move pv_move = search->_tt.probe(cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0)
+			.second
+			.move;
+
+		if (pv_move.isNull()) break;
+		
+		pv_move.print(), std::cout << ' ';
+
+		Position::IrreversibleState tmp;
+		cpy.make(pv_move, tmp);
+	}
 
 	std::cout << '\n';
 }
@@ -77,7 +83,7 @@ void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 		if (!search(pos, game, limits, search_results))
 			break;
 
-		search_results.registerBestMove();
+		search_results.registerBestMove(_tree.getNode(0).bestmove);
 	}
 
 	search_results.printBestMove();
@@ -93,7 +99,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 		return false;
 
 	results.timer.stop();
-	results.print();
+	results.print(this, results.depth, pos);
 
 	return true;
 }
@@ -102,8 +108,6 @@ template <bool Root>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, 
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	if constexpr (!Root) {
-
-		// Fifty-move rule or repetition draw
 		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, ply)) {
 			return Score::draw;
 		}
@@ -111,10 +115,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			return -Score::undef;
 		}
 
-		const auto& [is_valid, tt_score] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
+		const auto& [is_valid, entry] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
 
 		if (is_valid) {
-			return tt_score;
+			return entry.score;
 		}
 
 		if (!depth) {
@@ -134,6 +138,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node.moves.clear();
 	node.legals_cnt = 0;
 	node.score = 0;
+	node.bestmove = Move::null;
+	node.best_score = -Score::infinity;
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
@@ -148,27 +154,25 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(node.move, node.state);
 
-		if (node.score.isValid() and legal_move and node.score > alpha) {
-			if (node.score >= beta) {
-				bound_type = TTEntry::UPPERBOUND;
-				alpha = beta;
-				break;
+		if (node.score.isValid() and legal_move and node.score > node.best_score) {
+			node.bestmove = node.move;
+			node.best_score = node.score;
+
+			if (node.score > alpha) {
+				if (node.score >= beta) {
+					bound_type = TTEntry::UPPERBOUND;
+					alpha = beta;
+					break;
+				}
+
+				bound_type = TTEntry::EXACT;
+				alpha = node.score;
 			}
-
-			bound_type = TTEntry::EXACT;
-			alpha = node.score;
-
-			// TODO: replace old PV tables with bug-free TT PV storing and probing.
-			results.pv_line[ply][0] = node.move;
-			std::copy(results.pv_line[ply + 1].data(), results.pv_line[ply + 1].data() + depth - 1, 
-				results.pv_line[ply].data() + 1);
 		}
 		else if (!node.score.isValid()) {
-			if (Root and bound_type == TTEntry::LOWERBOUND)
+			if (Root and node.bestmove.isNull())
 				// TODO: move at root assigned here might be illegal.
-				// Implement a heuristic of keeping best move of a node,
-				// and assign it here.
-				results.pv_line[ply][0] = node.move;
+				node.bestmove = node.move;
 
 			return -Score::undef;
 		}
@@ -180,7 +184,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		alpha = check ? -Score::infinity + ply : Score::draw;
 	}
 
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha);
+	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.bestmove);
 
 	if constexpr (Root) {
 		results.score_cp = alpha;

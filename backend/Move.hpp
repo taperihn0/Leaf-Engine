@@ -16,7 +16,7 @@ public:
 	INLINE Move(uint32_t raw)
 		: _rmove(raw) {}
 
-	INLINE bool isNull() {
+	INLINE bool isNull() const {
 		return _rmove == null;
 	}
 
