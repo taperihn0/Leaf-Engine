@@ -114,29 +114,30 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		else if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
 			return -Score::undef;
 		}
-
-		const auto& [is_valid, entry] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
-
-		if (is_valid) {
-			return entry.score;
-		}
-
-		if (!depth) {
+		else if (!depth) {
 			return quiesce(pos, limits, results, alpha, beta);
 		}
 	}
 
+	const auto& [tt_hit, tt_entry] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
+
+	if (!Root and tt_hit) {
+		return tt_entry.score;
+	}
+
 	results.nodes_cnt++;
 
-	const bool check = pos.isInCheck(pos.getTurn());
+	TreeNodeInfo& node = _tree.getNode(ply);
 
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
-	
-	TreeNodeInfo& node = _tree.getNode(ply);
 
+	node.check = pos.isInCheck(pos.getTurn());
+	
 	node.moves.clear();
-	node.legals_cnt = 0;
+	node.moves.setHashMove(tt_entry.move);
+
+	node.can_move = false;
 	node.score = 0;
 	node.bestmove = Move::null;
 	node.best_score = -Score::infinity;
@@ -148,7 +149,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
-			node.legals_cnt++;
+			node.can_move = true;
 			node.score = -negaMax<false>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
 		}
 
@@ -179,9 +180,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 	
 	// detect checkmate or stealmate
-	if (!node.legals_cnt) {
+	if (!node.can_move) {
 		bound_type = TTEntry::EXACT;
-		alpha = check ? -Score::infinity + ply : Score::draw;
+		alpha = node.check ? -Score::infinity + ply : Score::draw;
 	}
 
 	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.bestmove);

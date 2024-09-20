@@ -14,11 +14,11 @@ public:
 		<ALL> - all pseudo-legal moves in given position
 	*/
 
-	enum enumMode {
+	enum enumMode : uint8_t {
 		CAPTURES,
 		TACTICALS,
 		QUIETS,
-		ALL
+		ALL,
 	};
 
 	template <enumMode GenType>

@@ -8,10 +8,10 @@
 // TODO
 struct alignas(16) TTEntry {
 	enum Bound : uint8_t {
-		EXACT = 0,
-		LOWERBOUND = 1,
-		UPPERBOUND = 2,
-		NONE = 3
+		NONE = 0,
+		EXACT = 1,
+		LOWERBOUND = 2,
+		UPPERBOUND = 3,
 	};
 
 	uint64_t key;

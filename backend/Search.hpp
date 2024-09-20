@@ -114,8 +114,9 @@ struct TreeNodeInfo {
 	Move move;
 	Move bestmove;
 	Score score;
-	int legals_cnt;
+	bool can_move;
 	Score best_score;
+	bool check;
 };
 
 class TreeInfo {

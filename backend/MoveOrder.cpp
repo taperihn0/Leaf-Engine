@@ -23,7 +23,7 @@ void MoveOrder<QUIESCENT>::generateMoves(const Position& pos) {
 
 template <OrderType Type>
 bool MoveOrder<Type>::nextMove(const Position& _, Move& next_move) {
-	return loadMove(next_move);
+	return getFromList(next_move);
 }
 
 template bool MoveOrder<PLAIN>::nextMove(const Position& _, Move& next_move);
@@ -31,19 +31,34 @@ template bool MoveOrder<QUIESCENT>::nextMove(const Position& _, Move& next_move)
 
 bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
 	switch (_stage) {
-	case MoveGen::CAPTURES:
-		if (!_iterator)
-			MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+	case enumStage::HASH_MOVE:
+		_stage = enumStage::CAPTURES;
 
-		if (loadMove(next_move))
+		if (!_hash_move.isNull()) {
+			next_move = _hash_move;
 			return true;
-
-		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
-		_stage = MoveGen::QUIETS;
+		}
 
 		[[fallthrough]];
-	case MoveGen::QUIETS:
-		if (loadMove(next_move))
+	case enumStage::CAPTURES:
+		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+		_stage = enumStage::PICK_CAPTURES;
+
+		[[fallthrough]];
+	case enumStage::PICK_CAPTURES:
+		if (getFromList(next_move))
+			return true;
+
+		_stage = enumStage::QUIETS;
+
+		[[fallthrough]];
+	case enumStage::QUIETS:
+		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+		_stage = enumStage::PICK_QUIETS;
+
+		[[fallthrough]];
+	case enumStage::PICK_QUIETS:
+		if (getFromList(next_move))
 			return true;
 	}
 
@@ -51,7 +66,7 @@ bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
 }
 
 template <OrderType Type>
-INLINE bool MoveOrder<Type>::loadMove(Move& move) {
+INLINE bool MoveOrder<Type>::getFromList(Move& move) {
 	if (_iterator >= _move_list.count()) return false;
 	move = _move_list.getMove(_iterator++);
 	return true;
