@@ -9,17 +9,17 @@ class Timer {
 public:
 	void go();
 	void stop();
-
-	// returns time passed in milliseconds
 	auto duration();
 private:
-	inline auto now() {
-		static std::chrono::system_clock clock;
-		return clock.now();
-	}
+	auto now();
 
 	std::chrono::system_clock::time_point _start, _stop;
 };
+
+INLINE auto Timer::now() {
+	static std::chrono::system_clock clock;
+	return clock.now();
+}
 
 INLINE void Timer::go() {
 	_start = now();

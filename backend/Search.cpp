@@ -40,10 +40,12 @@ INLINE void SearchResults::print(const Search* search, unsigned depth, const Pos
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
 
 	std::cout << "info depth " << depth
+		<< " seldepth " << seldepth
 		<< " score " << score_cp.toStr()
 		<< " nodes " << nodes_cnt
 		<< " time " << duration_ms 
 		<< " nps " << nps 
+		<< " hashfull " << static_cast<unsigned>(static_cast<float>(tt_hits) / tt_entries * 1000)
 		<< " pv ";
 
 	Position cpy = pos;
@@ -77,6 +79,7 @@ void Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 
 void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
+	search_results.tt_entries = _tt.getEntriesCount();
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.nodes_cnt = 0;
@@ -117,7 +120,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			return -Score::undef;
 		}
 		else if (!depth) {
-			return quiesce(pos, limits, results, alpha, beta);
+			return quiesce(pos, limits, results, alpha, beta, ply);
 		}
 	}
 
@@ -191,7 +194,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		alpha = node.check ? -Score::infinity + ply : Score::draw;
 	}
 
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.bestmove);
+	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.bestmove, results);
 
 	if constexpr (Root) {
 		results.score_cp = alpha;
@@ -205,12 +208,13 @@ template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, Search
 template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 	Score alpha, Score beta, unsigned depth, unsigned ply);
 
-Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta) {
+Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply) {
 	if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
 		return -Score::undef;
 	}
 
 	results.nodes_cnt++;
+	results.seldepth = ply + 1;
 
 	assert(alpha < beta);
 
@@ -233,7 +237,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 			
 		if (pos.make(move, state)) {
 			legal_move = true;
-			score = -quiesce(pos, limits, results, -beta, -alpha);
+			score = -quiesce(pos, limits, results, -beta, -alpha, ply + 1);
 		}
 
 		pos.unmake(move, state);

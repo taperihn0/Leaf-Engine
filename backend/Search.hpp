@@ -100,10 +100,13 @@ struct SearchResults {
 	void printBestMove();
 	void print(const Search* search, unsigned depth, const Position& pos);
 
-	unsigned depth     = 0;
-	Score score_cp     = 0;
-	uint64_t nodes_cnt = 0;
-	Move bestmove      = Move::null;
+	unsigned depth      = 0,
+			 seldepth   = 0;
+	Score	 score_cp   = 0;
+	uint64_t nodes_cnt  = 0;
+	size_t   tt_hits    = 0,
+			 tt_entries = 0;
+	Move     bestmove   = Move::null;
 
 	Timer timer;
 };
@@ -149,7 +152,7 @@ private:
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 
-	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta);
+	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply);
 
 	bool isRepetitionCycle(const Position& pos, const Game& game, int ply);
 

@@ -33,11 +33,14 @@ void TranspositionTable::clear() {
 }
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-	TTEntry::Bound node_bound, Score node_score, Move node_move) {
+	TTEntry::Bound node_bound, Score node_score, Move node_move, SearchResults& results) {
 	if (node_score > Score::infinity - static_cast<int16_t>(max_depth))
 		node_score += node_ply;
 	else if (node_score < -Score::infinity + static_cast<int16_t>(max_depth))
 		node_score -= node_ply;
+
+	if (!_mem[node_key & (_size - 1)].depth)
+		results.tt_hits++;
 
 	_mem[node_key & (_size - 1)] = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
 }
