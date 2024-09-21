@@ -5,7 +5,6 @@
 
 #include <utility>
 
-// TODO
 struct alignas(16) TTEntry {
 	enum Bound : uint8_t {
 		NONE = 0,
@@ -35,7 +34,7 @@ public:
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
 		TTEntry::Bound node_bound, Score node_score, Move node_move);
 
-	std::pair<bool, TTEntry> probe(uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply);
+	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply);
 
 #if defined(_DEBUG)
 	void printDebug();

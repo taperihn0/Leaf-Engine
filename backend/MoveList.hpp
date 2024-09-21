@@ -17,7 +17,7 @@ public:
 		_moves[_idx++].move = new_move;
 	}
 
-	INLINE uint32_t getScore(int idx) const {
+	INLINE uint32_t getScore(size_t idx) const {
 		ASSERT(idx < _size, "Index overflow while geting an item from move list");
 		return _moves[idx].score;
 	}
@@ -45,6 +45,8 @@ public:
 		for (Entry m : _moves) m.print();
 	}
 
+	void scoreCaptures(size_t first, const Position& pos);
+
 private:
 	static constexpr size_t _size = max_node_moves;
 
@@ -57,7 +59,7 @@ private:
 
 		Move move;
 		// TODO: move score datatype 
-		uint32_t score;
+		int16_t score;
 	};
 
 	size_t _idx = 0;

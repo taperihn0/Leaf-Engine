@@ -1,7 +1,5 @@
 #include "TranspositionTable.hpp"
 
-static constexpr TTEntry undef_entry = TTEntry{};
-
 inline constexpr size_t operator""_MB(size_t mb_count) {
 	return mb_count * 1024 * 1024;
 }
@@ -44,36 +42,43 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	_mem[node_key & (_size - 1)] = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
 }
 
-INLINE auto makeValidResult(const TTEntry* entry, Score s) {
-	return std::pair{ true, TTEntry{ 0, 0, TTEntry::NONE, s, entry->move} };
-}
-
 INLINE auto makeResult(bool valid, const TTEntry* entry, Score s) {
-	return std::pair{ valid, TTEntry{ 0, 0, TTEntry::NONE, s, entry->move } };
+	return std::pair{ valid, TTEntry{ entry->key, 0, TTEntry::NONE, s, entry->move } };
 }
 
-std::pair<bool, TTEntry> TranspositionTable::probe(uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
-	static constexpr auto invalid_entry = std::make_pair(false, undef_entry);
+bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
+	static constexpr TTEntry undef_entry = TTEntry{};
 	const TTEntry* const  entry = _mem + (key & (_size - 1));
 
-	if (entry->depth < node_depth or entry->key != key)
-		return invalid_entry;
+	if (entry->key != key)
+		return false;
+	else if (entry->depth < node_depth) {
+		out_entry = *entry;
+		return false;
+	}
 
 	switch (entry->bound) {
 	case TTEntry::EXACT:
 		const Score mate_score = entry->score > Score::infinity  - static_cast<int16_t>(max_depth) ? 
-								  entry->score - node_ply :
+								 entry->score - node_ply :
 								 entry->score < -Score::infinity + static_cast<int16_t>(max_depth) ? 
-							      entry->score + node_ply : entry->score;
+							     entry->score + node_ply : 
+								 entry->score;
 
-		return makeValidResult(entry, mate_score);
+		out_entry = *entry;
+		out_entry.score = mate_score;
+		return true;
 	case TTEntry::LOWERBOUND:
-		return makeResult(alpha >= entry->score, entry, alpha);
+		out_entry = *entry;
+		out_entry.score = alpha;
+		return alpha >= entry->score;
 	case TTEntry::UPPERBOUND:
-		return makeResult(beta <= entry->score, entry, beta);
+		out_entry = *entry;
+		out_entry.score = beta;
+		return beta <= entry->score;
 	}
 
-	return invalid_entry;
+	return false;
 }
 
 #if defined(_DEBUG)

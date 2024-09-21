@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Piece.hpp"
 #include "Square.hpp"
+#include "Position.hpp"
 
 class Position;
 class Move;
@@ -105,6 +106,9 @@ public:
 
 	void print() const;
 
+	// simplified legality check
+	bool isLegal(const Position& pos) const;
+
 	enum class Castle {
 		SHORT, LONG
 	};
@@ -113,7 +117,7 @@ public:
 private:
 	static constexpr std::string_view _null_str = "0000";
 
-	bool isValid(const Position& pos) const;
+	bool isPseudoLegal(const Position& pos) const;
 
 	/*
 		Raw number data consists of:
@@ -168,4 +172,12 @@ INLINE Move Move::makeCastling(Square origin, Square target) {
 		| Field
 		| (static_cast<uint32_t>(target) << 6)
 		| origin);
+}
+
+INLINE bool Move::isLegal(const Position& pos) const {
+	const Square org = getOrigin();// dst = getTarget();
+	const Piece::enumType p = getPerformerT();
+
+	return p == pos.pieceTypeOn(org, pos.getTurn());
+		//and (p != Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied()));
 }

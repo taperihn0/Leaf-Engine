@@ -49,12 +49,14 @@ INLINE void SearchResults::print(const Search* search, unsigned depth, const Pos
 	Position cpy = pos;
 
 	while (depth--) {
-		Move pv_move = search->_tt.probe(cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0)
-			.second
-			.move;
+		TTEntry tt_entry;
+		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0);
 
-		if (pv_move.isNull()) break;
-		
+		Move pv_move = tt_entry.move;
+
+		if (!tt_hit or pv_move.isNull()) 
+			break;
+
 		pv_move.print(), std::cout << ' ';
 
 		Position::IrreversibleState tmp;
@@ -119,7 +121,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	const auto& [tt_hit, tt_entry] = _tt.probe(pos.getZobristKey(), alpha, beta, depth, ply);
+	TTEntry tt_entry;
+	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth, ply);
 
 	if (!Root and tt_hit) {
 		return tt_entry.score;
@@ -134,8 +137,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	node.check = pos.isInCheck(pos.getTurn());
 	
+	const Move tt_move = tt_entry.key == pos.getZobristKey() 
+						 and tt_entry.move.isLegal(pos) ? tt_entry.move : Move::null;
+
 	node.moves.clear();
-	node.moves.setHashMove(tt_entry.move);
+	node.moves.setHashMove(tt_move);
 
 	node.can_move = false;
 	node.score = 0;
@@ -235,7 +241,6 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		if (!score.isValid())
 			return -Score::undef;
 		else if (legal_move and score > alpha) {
-			// fail hard
 			if (score >= beta) return beta;
 			alpha = score;
 		}

@@ -1,5 +1,4 @@
 #include "Move.hpp"
-#include "Position.hpp"
 #include "MoveGen.hpp"
 
 // TODO: move validity restricted checking
@@ -37,7 +36,7 @@ Move Move::fromStr(const Position& pos, const std::string& str) {
 	else
 		res = Move::makeSimple(origin, target, is_capture, piece);
 
-	assert(res.isValid(pos));
+	assert(res.isPseudoLegal(pos));
 	return res;
 #endif
 }
@@ -54,7 +53,7 @@ void Move::print() const {
 #endif
 }
 
-bool Move::isValid(const Position& pos) const {
+INLINE bool Move::isPseudoLegal(const Position& pos) const {
 	MoveList mlist;
 	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(pos, mlist);
 	return mlist.contains(*this);

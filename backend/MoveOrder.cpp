@@ -67,7 +67,9 @@ bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
 
 template <OrderType Type>
 INLINE bool MoveOrder<Type>::getFromList(Move& move) {
-	if (_iterator >= _move_list.count()) return false;
+	if (_iterator >= _move_list.count()) 
+		return false;
+
 	move = _move_list.getMove(_iterator++);
-	return true;
+	return move == _hash_move ? getFromList(move) : true;
 }
