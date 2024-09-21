@@ -8,28 +8,18 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 }
 
-/* 
-	MoveOrder<STAGED> template class does not specify generateMoves function. 
-    It generates appropiate moves on fly, during move picking as stage is 
-	moving from really promising captures to less promising quiets moves in terms of 
-    possibility of beta cuttoff 
-*/
-
-void MoveOrder<QUIESCENT>::generateMoves(const Position& pos) {
-	_iterator = 0;
-	_move_list.clear();
-	MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
-}
-
-template <OrderType Type>
-bool MoveOrder<Type>::nextMove(const Position& _, Move& next_move) {
+bool MoveOrder<PLAIN>::nextMove(const Position& _, Move& next_move) {
 	return getFromList(next_move);
 }
 
-template bool MoveOrder<PLAIN>::nextMove(const Position& _, Move& next_move);
-template bool MoveOrder<QUIESCENT>::nextMove(const Position& _, Move& next_move);
+/* 
+	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
+    Both generates appropiate moves on fly, during move picking as stage is 
+	moving from really promising moves to less interesting ones.
+*/
 
-bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
+template <OrderType Type>
+bool MoveOrder<Type>::nextMove(const Position& pos, Move& next_move) {
 	switch (_stage) {
 	case enumStage::HASH_MOVE:
 		_stage = enumStage::CAPTURES;
@@ -42,12 +32,20 @@ bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
 		[[fallthrough]];
 	case enumStage::CAPTURES:
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+
+		// TODO: prefer partial sort over normal sort
+		_move_list.scoreCaptures(0, pos);
+		_move_list.sort(0, _move_list.count());
+
 		_stage = enumStage::PICK_CAPTURES;
 
 		[[fallthrough]];
 	case enumStage::PICK_CAPTURES:
 		if (getFromList(next_move))
 			return true;
+		
+		if constexpr (Type == QUIESCENT)
+			return false;
 
 		_stage = enumStage::QUIETS;
 
@@ -64,6 +62,9 @@ bool MoveOrder<STAGED>::nextMove(const Position& pos, Move& next_move) {
 
 	return false;
 }
+
+template bool MoveOrder<STAGED>::nextMove(const Position& _, Move& next_move);
+template bool MoveOrder<QUIESCENT>::nextMove(const Position& _, Move& next_move);
 
 template <OrderType Type>
 INLINE bool MoveOrder<Type>::getFromList(Move& move) {

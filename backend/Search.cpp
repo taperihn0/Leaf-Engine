@@ -214,7 +214,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 
 	results.nodes_cnt++;
-	results.seldepth = ply + 1;
+	results.seldepth = std::max(results.seldepth, ply + 1);
 
 	assert(alpha < beta);
 
@@ -231,7 +231,6 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Move move;
 	Score score = 0;
 
-	moves.generateMoves(pos);
 	while (moves.nextMove(pos, move)) {
 		bool legal_move = false;
 			

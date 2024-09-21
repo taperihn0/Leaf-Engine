@@ -7,9 +7,9 @@
 
 class MoveList {
 public:
-	INLINE void sort() {
-		std::sort(_moves.begin(), _moves.end(), 
-			[](Entry e1, Entry e2) { return e1.score < e2.score; });
+	INLINE void sort(size_t first, size_t end) {
+		std::sort(_moves.data() + first, _moves.data() + end, 
+			[](Entry e1, Entry e2) { return e1.score > e2.score; });
 	}
 
 	INLINE void push(Move&& new_move) {
