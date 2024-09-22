@@ -21,14 +21,14 @@ INLINE bool SearchLimits::isTimeLeft() {
 }
 
 INLINE void SearchResults::registerBestMove(Move move) {
-	bestmove = move;
+	best_move = move;
 }
 
 INLINE void SearchResults::printBestMove() {
-	ASSERT(!bestmove.isNull(), "Null bestmove error");
+	ASSERT(!best_move.isNull(), "Null bestmove error");
 
 	std::cout << "bestmove ";
-	bestmove.print();
+	best_move.print();
 	std::cout << '\n';
 }
 
@@ -88,7 +88,7 @@ void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 		if (!search(pos, game, limits, search_results))
 			break;
 
-		search_results.registerBestMove(_tree.getNode(0).bestmove);
+		search_results.registerBestMove(_tree.getNode(0).best_move);
 	}
 
 	search_results.printBestMove();
@@ -148,7 +148,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	node.can_move = false;
 	node.score = 0;
-	node.bestmove = Move::null;
+	node.best_move = Move::null;
 	node.best_score = -Score::infinity;
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
@@ -165,7 +165,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		pos.unmake(node.move, node.state);
 
 		if (node.score.isValid() and legal_move and node.score > node.best_score) {
-			node.bestmove = node.move;
+			node.best_move = node.move;
 			node.best_score = node.score;
 
 			if (node.score > alpha) {
@@ -180,9 +180,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			}
 		}
 		else if (!node.score.isValid()) {
-			if (Root and node.bestmove.isNull())
+			if (Root and node.best_move.isNull())
 				// TODO: move at root assigned here might be illegal.
-				node.bestmove = node.move;
+				node.best_move = node.move;
 
 			return -Score::undef;
 		}
@@ -194,7 +194,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		alpha = node.check ? -Score::infinity + ply : Score::draw;
 	}
 
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.bestmove, results);
+	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.best_move, results);
 
 	if constexpr (Root) {
 		results.score_cp = alpha;

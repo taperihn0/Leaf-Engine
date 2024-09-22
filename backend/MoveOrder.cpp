@@ -8,7 +8,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 }
 
-bool MoveOrder<PLAIN>::nextMove(const Position& _, Move& next_move) {
+bool MoveOrder<PLAIN>::nextMove(const Position&, Move& next_move) {
 	return getFromList(next_move);
 }
 
@@ -33,7 +33,7 @@ bool MoveOrder<Type>::nextMove(const Position& pos, Move& next_move) {
 	case enumStage::CAPTURES:
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
-		// TODO: prefer partial sort over normal sort
+		// TODO: partial sort 
 		_move_list.scoreCaptures(0, pos);
 		_move_list.sort(0, _move_list.count());
 

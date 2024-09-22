@@ -9,8 +9,15 @@
 #include <string_view>
 
 // using __forceinline by default
+#if defined(_MSC_VER)
 #define INLINE __forceinline 
 #define _FORCEINLINE __forceinline
+#define _LAMBDA_FORCEINLINE [[msvc::forceinline]] 
+#else
+#define INLINE inline
+#define _FORCEINLINE inline
+#define _LAMBDA_FORCEINLINE  
+#endif
 
 #define ENGINE_NAME "Leaf Lite"
 #define AUTHOR "Szymon Belz"

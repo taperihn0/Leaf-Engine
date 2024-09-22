@@ -106,7 +106,7 @@ struct SearchResults {
 	uint64_t nodes_cnt  = 0;
 	size_t   tt_hits    = 0,
 			 tt_entries = 0;
-	Move     bestmove   = Move::null;
+	Move     best_move  = Move::null;
 
 	Timer timer;
 };
@@ -115,7 +115,7 @@ struct TreeNodeInfo {
 	MoveOrder<STAGED> moves;
 	Position::IrreversibleState state;
 	Move move;
-	Move bestmove;
+	Move best_move;
 	Score score;
 	bool can_move;
 	Score best_score;

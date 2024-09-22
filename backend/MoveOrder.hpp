@@ -22,7 +22,7 @@ template <OrderType Type>
 class MoveOrder {
 public:
 	void generateMoves(const Position& pos);
-	bool nextMove(const Position& pos, Move& next_move);
+	bool nextMove(const Position&, Move& next_move);
 
 	void setHashMove(Move m);
 

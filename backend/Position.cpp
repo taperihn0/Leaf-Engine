@@ -106,10 +106,10 @@ bool Position::make(Move& move, IrreversibleState& state) {
 		}
 		else {
 			const Piece::enumType captured = pieceTypeOn(dst, !_turn);
+			move.setCapturedT(captured);
 
 			assert(captured != Piece::NONE);
 
-			move.setCapturedT(captured);
 			_piece_bb[!_turn][captured].popBit(dst);
 			_hashing._key ^= _hashing._piece_keys[!_turn][captured][dst];
 

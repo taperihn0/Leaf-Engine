@@ -9,7 +9,12 @@ class MoveList {
 public:
 	INLINE void sort(size_t first, size_t end) {
 		std::sort(_moves.data() + first, _moves.data() + end, 
-			[](Entry e1, Entry e2) { return e1.score > e2.score; });
+			_greater_score);
+	}
+
+	INLINE void partialSort(size_t first, size_t mid, size_t end) {
+		std::partial_sort(_moves.data() + first, _moves.data() + mid, _moves.data() + end,
+			_greater_score);
 	}
 
 	INLINE void push(Move&& new_move) {
@@ -36,7 +41,8 @@ public:
 	}
 
 	INLINE bool contains(Move m) const {
-		return std::find(_moves.data(), _moves.data() + _idx, Entry{ m, 0 }) != _moves.data() + _idx;
+		return std::find_if(_moves.data(), _moves.data() + _idx, 
+			[m](Entry e) { return e.move == m; }) != _moves.data() + _idx;
 	}
 
 	INLINE void clear() { _idx = 0; }
@@ -46,12 +52,15 @@ public:
 	}
 
 	void scoreCaptures(size_t first, const Position& pos);
+	// TODO: scoreQuiets function
 
 private:
 	static constexpr size_t _size = max_node_moves;
 
 	struct Entry {
-		void print() { move.print(); std::cout << score; }
+		void print() { 
+			move.print(); std::cout << score; 
+		}
 
 		INLINE constexpr bool operator==(Entry b) const noexcept {
 			return move == b.move;
@@ -60,6 +69,10 @@ private:
 		Move move;
 		// TODO: move score datatype 
 		int16_t score;
+	};
+
+	inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
+		return a.score > b.score;
 	};
 
 	size_t _idx = 0;
