@@ -171,7 +171,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (node.score > alpha) {
 				if (node.score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
-					alpha = beta;
 					break;
 				}
 
@@ -191,16 +190,16 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	// detect checkmate or stealmate
 	if (!node.can_move) {
 		bound_type = TTEntry::EXACT;
-		alpha = node.check ? -Score::infinity + ply : Score::draw;
+		node.best_score = node.check ? -Score::infinity + ply : Score::draw;
 	}
 
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, alpha, node.best_move, results);
+	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node.best_score, node.best_move, results);
 
 	if constexpr (Root) {
-		results.score_cp = alpha;
+		results.score_cp = node.best_score;
 	}
 
-	return alpha;
+	return node.best_score;
 }
 
 template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
