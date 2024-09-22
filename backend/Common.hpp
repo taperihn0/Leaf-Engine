@@ -8,8 +8,8 @@
 #include <array>
 #include <string_view>
 
-// using __forceinline by default
 #if defined(_MSC_VER)
+// using __forceinline by default
 #define INLINE __forceinline 
 #define _FORCEINLINE __forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]] 

@@ -271,8 +271,8 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 
 	const int my_cnt = static_cast<int>(game.currentHalfCount());
 
-	// look only at 5 moves backward so far
-	for (int i = 1; i <= 5; i++) {
+	// iterate through only a subset of all game moves
+	for (int i = 1; i <= 11; i++) {
 		const int cnt = my_cnt - i;
 
 		if (cnt < 0) 
