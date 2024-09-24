@@ -7,77 +7,9 @@
 #include "Eval.hpp"
 #include "Game.hpp"
 #include "Time.hpp"
+#include "Score.hpp"
 
 #include <numeric>
-
-// Wrapper around raw int16_t score. Raw score stands for evaluation score expressed in 
-// centipawns (for simplicity, 1 cp is around 1/100 of pawn value)
-class Score {
-public:
-	INLINE Score() = default;
-	INLINE Score(uint16_t val)
-		: _raw(val) {}
-
-	INLINE Score operator+(Score b) const {
-		return _raw + b._raw;
-	}
-
-	INLINE Score operator+=(Score b) {
-		return _raw += b._raw;
-	}
-
-	INLINE Score operator-=(Score b) {
-		return _raw -= b._raw;
-	}
-
-	INLINE Score operator-(Score b) const {
-		return _raw - b._raw;
-	}
-
-	INLINE bool operator>(Score b) const {
-		return _raw > b._raw;
-	}
-
-	INLINE bool operator>=(Score b) const {
-		return _raw >= b._raw;
-	}
-
-	INLINE bool operator<=(Score b) const {
-		return _raw <= b._raw;
-	}
-
-	INLINE bool operator==(Score b) const {
-		return _raw == b._raw;
-	}
-
-	INLINE bool operator!=(Score b) const {
-		return _raw != b._raw;
-	}
-
-	INLINE bool operator<(Score b) const {
-		return _raw < b._raw;
-	}
-
-	INLINE Score operator-() const {
-		return -_raw;
-	}
-
-	INLINE int16_t toInt() const {
-		return _raw;
-	}
-
-	INLINE bool isValid() const {
-		return _raw != undef;
-	}
-
-	std::string toStr() const;
-
-	static constexpr int16_t draw = 0,
-							 infinity = std::numeric_limits<int16_t>::max(),
-							 undef = infinity;
-private:
-	int16_t _raw;
-};
 
 struct SearchLimits {
 	bool isTimeLeft();
@@ -88,8 +20,7 @@ struct SearchLimits {
 			 winc  = 0, 
 			 binc  = 0,
 			 search_time = 0;
-
-	Timer timer;
+	Timer    timer;
 };
 
 class Search;
@@ -107,12 +38,11 @@ struct SearchResults {
 	size_t   tt_hits    = 0,
 			 tt_entries = 0;
 	Move     best_move  = Move::null;
-
-	Timer timer;
+	Timer    timer;
 };
 
-struct TreeNodeInfo {
-	MoveOrder<STAGED> moves;
+struct NodeInfo {
+	MoveOrder<STAGED> move_picker;
 	Position::IrreversibleState state;
 	Move move;
 	Move best_move;
@@ -124,12 +54,9 @@ struct TreeNodeInfo {
 
 class TreeInfo {
 public:
-	INLINE TreeNodeInfo& getNode(unsigned ply) {
-		assert(ply < max_depth);
-		return _node[ply];
-	}
+	NodeInfo& getNode(unsigned ply);
 private:
-	std::array<TreeNodeInfo, max_depth> _node;
+	std::array<NodeInfo, max_depth> _node;
 };
 
 class Eval;
@@ -162,3 +89,8 @@ private:
 
 	static constexpr uint64_t _check_node_count = 4096;
 };
+
+INLINE NodeInfo& TreeInfo::getNode(unsigned ply) {
+	assert(ply < max_depth);
+	return _node[ply];
+}

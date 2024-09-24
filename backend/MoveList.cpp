@@ -18,7 +18,8 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 
 		if (_moves[i].move.isCapture()) {
 			const Piece::enumType att = _moves[i].move.getPerformerT(),
-				vic = pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
+				vic = _moves[i].move.isEnPassant() ? Piece::PAWN : 
+			pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
 
 			_moves[i].score = mvv_lva[att][vic];
 		}

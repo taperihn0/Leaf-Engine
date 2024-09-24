@@ -6,15 +6,6 @@
 
 #include <sstream>
 
-std::string Score::toStr() const {
-	if (_raw > Score::infinity - (int16_t)max_depth)
-		return "mate " + std::to_string((Score::infinity - _raw + 1) / 2);
-	else if (_raw < -Score::infinity + (int16_t)max_depth)
-		return "mate -" + std::to_string((_raw + Score::infinity + 1) / 2);
-
-	return "cp " + std::to_string(_raw);
-}
-
 INLINE bool SearchLimits::isTimeLeft() {
 	timer.stop();
 	return !search_time or timer.duration() < search_time;
@@ -133,7 +124,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	results.nodes_cnt++;
 
-	TreeNodeInfo& node = _tree.getNode(ply);
+	NodeInfo& node = _tree.getNode(ply);
 
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
@@ -143,8 +134,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	const Move tt_move = tt_entry.key == pos.getZobristKey() 
 						 and tt_entry.move.isLegal(pos) ? tt_entry.move : Move::null;
 
-	node.moves.clear();
-	node.moves.setHashMove(tt_move);
+	node.move_picker.clear();
+	node.move_picker.setHashMove(tt_move);
 
 	node.can_move = false;
 	node.score = 0;
@@ -153,7 +144,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node.moves.nextMove(pos, node.move)) {
+	while (node.move_picker.nextMove(pos, node.move)) {
 		bool legal_move = false;
 
 		if (pos.make(node.move, node.state)) {
