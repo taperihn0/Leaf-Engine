@@ -44,6 +44,7 @@ private:
 	enumStage _first_stage = Type == QUIESCENT ? enumStage::CAPTURES : enumStage::HASH_MOVE;
 	enumStage _stage       = _first_stage;
 	size_t _iterator       = 0;
+
 	Move _hash_move		   = Move::null;
 	Move _killer_move	   = Move::null;
 

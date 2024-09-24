@@ -40,14 +40,6 @@ inline bool releaseFailedAssertion(std::string_view file, std::string_view text,
 	return true;
 }
 
-enum enumColor : bool {
-	WHITE, BLACK
-};
-
-INLINE constexpr enumColor operator!(enumColor opp) {
-	return static_cast<enumColor>(!static_cast<bool>(opp));
-}
-
 static constexpr int max_node_moves = 256;
 static constexpr unsigned max_depth = 256,
 						  max_game_moves = 512;
