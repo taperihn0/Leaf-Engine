@@ -26,7 +26,7 @@ INLINE void SearchResults::printBestMove() {
 Search::Search(TranspositionTable&& tt)
 	: _tt(tt) {}
 
-INLINE void SearchResults::print(const Search* search, unsigned depth, const Position& pos) {
+INLINE void SearchResults::print(const Search* search, const Position& pos) {
 	const auto duration_ms = timer.duration();
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
 
@@ -91,13 +91,13 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	results.timer.go();
 
 	const Score score 
-		= -negaMax<true>(pos, limits, results, game, -Score::infinity, Score::infinity, results.depth, 0);
+		= -negaMax<true>(pos, limits, results, game, -Score::infinity, +Score::infinity, results.depth, 0);
 
 	if (results.depth > 1 and !score.isValid())
 		return false;
 
 	results.timer.stop();
-	results.print(this, results.depth, pos);
+	results.print(this, pos);
 
 	return true;
 }

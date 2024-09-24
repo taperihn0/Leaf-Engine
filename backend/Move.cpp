@@ -2,7 +2,6 @@
 #include "MoveGen.hpp"
 
 // TODO: move validity restricted checking
-// there were some issues with castling moves when parsing 'position <> moves <...castling_move>
 Move Move::fromStr(const Position& pos, const std::string& str) {
 #if defined(PURE_NOTATION)
 	ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
@@ -53,6 +52,38 @@ void Move::print() const {
 #endif
 }
 
+bool Move::isPseudoLegal(const Position& pos) const {
+	const Square org = getOrigin(), dst = getTarget();
+	const Piece::enumType p = getPerformerT(), d = pos.pieceTypeOn(dst, pos.getOppositeTurn());
+
+	if (p == Piece::KING) {
+		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
+			return false;
+		else if (isShortCastle()) {
+			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
+			return own_castling_state.isShortPossible()
+				and (own_castling_state.notThroughPieces_Short(pos.getOccupied(), pos.getTurn()))
+				and !pos.isInCheck(pos.getTurn())
+				and (own_castling_state.notThroughCheck_Short(pos, pos.getTurn()));
+		}
+		else if (isLongCastle()) {
+			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
+			return own_castling_state.isLongPossible()
+				and (own_castling_state.notThroughPieces_Long(pos.getOccupied(), pos.getTurn()))
+				and !pos.isInCheck(pos.getTurn())
+				and (own_castling_state.notThroughCheck_Long(pos, pos.getTurn()));
+		}
+	}
+	else if (isEnPassant()) {
+		return pos.pieceTypeOn(org, pos.getTurn()) == Piece::PAWN
+			and pos.getEnPassantSq() == dst;
+	}
+
+	return p == pos.pieceTypeOn(org, pos.getTurn())
+		and (!isCapture() or d != Piece::NONE)
+		and (!isQuiet() or (d == Piece::NONE and pos.pieceTypeOn(dst, pos.getTurn()) == Piece::NONE))
+		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
+}
 
 template <bool onlyQuiets>
 bool Move::isPseudoLegal_fromList(const Position& pos) const {

@@ -29,7 +29,7 @@ struct SearchResults {
 	void registerBestMove(Move move);
 
 	void printBestMove();
-	void print(const Search* search, unsigned depth, const Position& pos);
+	void print(const Search* search, const Position& pos);
 
 	unsigned depth      = 0,
 			 seldepth   = 0;
