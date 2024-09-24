@@ -55,6 +55,7 @@ struct NodeInfo {
 class TreeInfo {
 public:
 	NodeInfo& getNode(unsigned ply);
+	void clear();
 private:
 	std::array<NodeInfo, max_depth> _node;
 };
@@ -93,4 +94,9 @@ private:
 INLINE NodeInfo& TreeInfo::getNode(unsigned ply) {
 	assert(ply < max_depth);
 	return _node[ply];
+}
+
+INLINE void TreeInfo::clear() {
+	for (auto& node : _node) 
+		node.move_picker.setKillerMove(Move::null);
 }

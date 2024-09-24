@@ -47,7 +47,16 @@ bool MoveOrder<Type>::nextMove(const Position& pos, Move& next_move) {
 		if constexpr (Type == QUIESCENT)
 			return false;
 
+		_stage = enumStage::KILLER;
+
+		[[fallthrough]];
+	case enumStage::KILLER:
 		_stage = enumStage::QUIETS;
+
+		if (!_killer_move.isNull() and _killer_move != _hash_move and _killer_move.isPseudoLegal(pos)) {
+			next_move = _killer_move;
+			return true;
+		}
 
 		[[fallthrough]];
 	case enumStage::QUIETS:
@@ -72,5 +81,5 @@ INLINE bool MoveOrder<Type>::getFromList(Move& move) {
 		return false;
 
 	move = _move_list.getMove(_iterator++);
-	return move == _hash_move ? getFromList(move) : true;
+	return move == _hash_move or move == _killer_move ? getFromList(move) : true;
 }

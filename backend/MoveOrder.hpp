@@ -25,6 +25,7 @@ public:
 	bool nextMove(const Position&, Move& next_move);
 
 	void setHashMove(Move m);
+	void setKillerMove(Move m);
 
 	void clear();
 private:
@@ -34,6 +35,7 @@ private:
 		HASH_MOVE,
 		CAPTURES,
 		PICK_CAPTURES, 
+		KILLER,
 		QUIETS,
 		PICK_QUIETS,
 	};
@@ -43,6 +45,7 @@ private:
 	enumStage _stage       = _first_stage;
 	size_t _iterator       = 0;
 	Move _hash_move		   = Move::null;
+	Move _killer_move	   = Move::null;
 
 	MoveList _move_list;
 };
@@ -58,4 +61,9 @@ INLINE void MoveOrder<Type>::clear() {
 template <OrderType Type>
 INLINE void MoveOrder<Type>::setHashMove(Move m) {
 	_hash_move = m;
+}
+
+template <OrderType Type>
+INLINE void MoveOrder<Type>::setKillerMove(Move m) {
+	_killer_move = m;
 }

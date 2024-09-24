@@ -26,6 +26,10 @@ public:
 		return *this;
 	}
 
+	INLINE constexpr bool operator!=(Move b) const noexcept {
+		return _rmove != b._rmove;
+	}
+
 	INLINE constexpr bool operator==(Move b) const noexcept {
 		return _rmove == b._rmove;
 	}
@@ -54,6 +58,10 @@ public:
 
 	INLINE bool isCapture() const {
 		return _rmove & CAPTURE;
+	}
+
+	INLINE bool isQuiet() const {
+		return !isCapture();
 	}
 
 	INLINE bool isEnPassant() const {
@@ -106,8 +114,10 @@ public:
 
 	void print() const;
 
-	// simplified legality check
-	bool isLegal(const Position& pos) const;
+	bool isPseudoLegal(const Position& pos) const;
+
+	template <bool onlyQuiets>
+	bool isPseudoLegal_fromList(const Position& pos) const;
 
 	enum class Castle {
 		SHORT, LONG
@@ -116,8 +126,6 @@ public:
 	static constexpr uint32_t null = 0Ui32;
 private:
 	static constexpr std::string_view _null_str = "0000";
-
-	bool isPseudoLegal(const Position& pos) const;
 
 	/*
 		Raw number data consists of:
@@ -174,10 +182,32 @@ INLINE Move Move::makeCastling(Square origin, Square target) {
 		| origin);
 }
 
-INLINE bool Move::isLegal(const Position& pos) const {
-	const Square org = getOrigin();// dst = getTarget();
-	const Piece::enumType p = getPerformerT();
+INLINE bool Move::isPseudoLegal(const Position& pos) const {
+	const Square org = getOrigin(), dst = getTarget();
+	const Piece::enumType p = getPerformerT(), d = pos.pieceTypeOn(dst, pos.getOppositeTurn());
 
-	return p == pos.pieceTypeOn(org, pos.getTurn());
-		//and (p != Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied()));
+	if (p == Piece::KING) {
+		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
+			return false;
+		else if (isShortCastle()) {
+			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
+			return own_castling_state.isShortPossible()
+				and (own_castling_state.notThroughPieces_Short(pos.getOccupied(), pos.getTurn()))
+				and !pos.isInCheck(pos.getTurn())
+				and (own_castling_state.notThroughCheck_Short(pos, pos.getTurn()));
+		}
+		else if (isLongCastle()) {
+			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
+			return own_castling_state.isLongPossible()
+				and (own_castling_state.notThroughPieces_Long(pos.getOccupied(), pos.getTurn()))
+				and !pos.isInCheck(pos.getTurn())
+				and (own_castling_state.notThroughCheck_Long(pos, pos.getTurn()));
+		}
+	}
+
+	// TODO: en passant validity
+	return p == pos.pieceTypeOn(org, pos.getTurn())
+		and (!isCapture() or d != Piece::NONE)
+		and (!isQuiet() or (d == Piece::NONE and pos.pieceTypeOn(dst, pos.getTurn()) == Piece::NONE))
+		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
 }

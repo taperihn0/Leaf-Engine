@@ -53,8 +53,13 @@ void Move::print() const {
 #endif
 }
 
-INLINE bool Move::isPseudoLegal(const Position& pos) const {
+
+template <bool onlyQuiets>
+bool Move::isPseudoLegal_fromList(const Position& pos) const {
 	MoveList mlist;
-	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(pos, mlist);
+	MoveGen::generatePseudoLegalMoves<onlyQuiets ? MoveGen::QUIETS : MoveGen::ALL>(pos, mlist);
 	return mlist.contains(*this);
 }
+
+template bool Move::isPseudoLegal_fromList<true>(const Position& pos) const;
+template bool Move::isPseudoLegal_fromList<false>(const Position& pos) const;

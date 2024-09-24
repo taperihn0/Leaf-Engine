@@ -48,7 +48,8 @@ public:
 	INLINE void clear() { _idx = 0; }
 
 	void print() const {
-		for (Entry m : _moves) m.print();
+		for (int i = 0; i < _idx; i++)
+			_moves[i].move.print(), std::cout << '\n';
 	}
 
 	void scoreCaptures(size_t first, const Position& pos);
@@ -58,10 +59,6 @@ private:
 	static constexpr size_t _size = max_node_moves;
 
 	struct Entry {
-		void print() { 
-			move.print(); std::cout << score; 
-		}
-
 		INLINE constexpr bool operator==(Entry b) const noexcept {
 			return move == b.move;
 		}

@@ -76,6 +76,8 @@ void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 		search_results.nodes_cnt = 0;
 		search_results.depth = d;
 
+		_tree.clear();
+
 		if (!search(pos, game, limits, search_results))
 			break;
 
@@ -132,7 +134,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node.check = pos.isInCheck(pos.getTurn());
 	
 	const Move tt_move = tt_entry.key == pos.getZobristKey() 
-						 and tt_entry.move.isLegal(pos) ? tt_entry.move : Move::null;
+						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
 	node.move_picker.clear();
 	node.move_picker.setHashMove(tt_move);
@@ -162,6 +164,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (node.score > alpha) {
 				if (node.score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
+					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPieceT() != Piece::QUEEN))
+						node.move_picker.setKillerMove(node.move);
 					break;
 				}
 
@@ -185,6 +189,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 
 	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node.best_score, node.best_move, results);
+
+	_tree.getNode(ply + 1).move_picker.setKillerMove(Move::null);
 
 	if constexpr (Root) {
 		results.score_cp = node.best_score;
