@@ -67,6 +67,11 @@ class Search {
 public:
 	friend struct SearchResults;
 
+	enum enumNode {
+		PV_NODE,
+		NON_PV_NODE,
+	};
+
 	Search(TranspositionTable&& tt);
 
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
@@ -76,7 +81,7 @@ private:
 	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
-	template <bool Root, bool NullMove = !Root>
+	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 

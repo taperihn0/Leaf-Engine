@@ -102,7 +102,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	return true;
 }
 
-template <bool Root, bool NullMove>
+template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, 
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	if constexpr (!Root) {
@@ -135,11 +135,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		if (!node.check and depth >= R + 1) {
 			pos.makeNull(node.state);
-			const Score score = -negaMax<false, false>(pos, limits, results, game, -beta, -beta + 1, depth - R - 1, ply + 1);
+			const Score score =
+				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, -beta, -beta + 1, depth - R - 1, ply + 1);
 			pos.unmakeNull(node.state);
 
 			if (score >= beta) {
-				const Score verify = negaMax<false, false>(pos, limits, results, game, beta - 1, beta, depth - R - 1, ply);
+				const Score verify = 
+					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, beta - 1, beta, depth - R - 1, ply);
 
 				if (verify >= beta)
 					return verify;
@@ -151,7 +153,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
 
-	
 	const Move tt_move = tt_entry.key == pos.getZobristKey() 
 						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
@@ -166,12 +167,25 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
 	while (node.move_picker.nextMove(pos, node.move)) {
-		bool legal_move = false;
+		bool legal_move = false,
+			 do_search = true;
 
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
 			node.can_move = true;
-			node.score = -negaMax<false, true>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
+
+			// Principle variation search
+			if (!tt_move.isNull() and node.move != tt_move and NodeType == PV_NODE) {
+				node.score = 
+					-negaMax<false, PV_NODE, true>(pos, limits, results, game, -alpha - 1, -alpha, depth - 1, ply + 1);
+
+				if (node.score <= alpha)
+					do_search = false;
+			} 
+
+			if (do_search)
+				node.score =
+					-negaMax<false, NodeType, true>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
 		}
 
 		pos.unmake(node.move, node.state);
