@@ -102,7 +102,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	return true;
 }
 
-template <bool Root>
+template <bool Root, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, 
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	if constexpr (!Root) {
@@ -128,10 +128,29 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	NodeInfo& node = _tree.getNode(ply);
 
+	node.check = pos.isInCheck(pos.getTurn());
+
+	if constexpr (NullMove) {
+		static constexpr int R = 2;
+
+		if (!node.check and depth >= R + 1) {
+			pos.makeNull(node.state);
+			const Score score = -negaMax<false, false>(pos, limits, results, game, -beta, -beta + 1, depth - R - 1, ply + 1);
+			pos.unmakeNull(node.state);
+
+			if (score >= beta) {
+				const Score verify = negaMax<false, false>(pos, limits, results, game, beta - 1, beta, depth - R - 1, ply);
+
+				if (verify >= beta)
+					return verify;
+			}
+		}
+	}
+
+
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
 
-	node.check = pos.isInCheck(pos.getTurn());
 	
 	const Move tt_move = tt_entry.key == pos.getZobristKey() 
 						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
@@ -152,7 +171,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (pos.make(node.move, node.state)) {
 			legal_move = true;
 			node.can_move = true;
-			node.score = -negaMax<false>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
+			node.score = -negaMax<false, true>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
 		}
 
 		pos.unmake(node.move, node.state);

@@ -45,10 +45,6 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	_mem[node_key & (_size - 1)] = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
 }
 
-INLINE auto makeResult(bool valid, const TTEntry* entry, Score s) {
-	return std::pair{ valid, TTEntry{ entry->key, 0, TTEntry::NONE, s, entry->move } };
-}
-
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
 	static constexpr TTEntry undef_entry = TTEntry{};
 	const TTEntry* const  entry = _mem + (key & (_size - 1));

@@ -114,7 +114,11 @@ public:
 	int bitScanReverse() const;
 
 	// bit scan forward but with LS1B reset
-	int dropForward();
+	INLINE int dropForward() {
+		const int ls1b = bitScanForward();
+		_board &= _board - 1;
+		return ls1b;
+	}
 
 	INLINE void popBit(Square sq) {
 		assert(sq.isValid() and sq.isNotNull());
@@ -172,12 +176,6 @@ public:
 private:
 	uint64_t _board;
 };
-
-INLINE int BitBoard::dropForward() {
-	const int ls1b = bitScanForward();
-	_board &= _board - 1;
-	return ls1b;
-}
 
 // Rectangular lookup for in-between routines
 struct RectangularTable {

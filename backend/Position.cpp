@@ -201,7 +201,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	return legal;
 }
 
-void Position::unmake(Move move, IrreversibleState prev_state) {
+void Position::unmake(Move move, const IrreversibleState& prev_state) {
 	const Piece::enumType piece_t = move.getPerformerT();
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
@@ -258,6 +258,34 @@ void Position::unmake(Move move, IrreversibleState prev_state) {
 
 	// TEMPORARY
 	_hashing._key = prev_state.hash_key;
+}
+
+void Position::makeNull(IrreversibleState& state) {
+	_halfmove_count++;
+	_fullmove_count += static_cast<uint16_t>(_turn);
+
+	state.hash_key = _hashing._key;
+
+	_turn = !_turn;
+	_hashing._key ^= _hashing._black_key;
+
+	state.ep_sq = _ep_square;
+
+	if (_ep_square.isNotNull())
+		_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+
+	_ep_square = Square::none;
+}
+
+void Position::unmakeNull(const IrreversibleState& prev_state) {
+	_turn = !_turn;
+	
+	_halfmove_count--;
+	_fullmove_count -= static_cast<uint16_t>(_turn);
+
+	_hashing._key = prev_state.hash_key;
+
+	_ep_square = prev_state.ep_sq;
 }
 
 template <bool Root>

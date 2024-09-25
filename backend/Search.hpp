@@ -76,7 +76,7 @@ private:
 	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
-	template <bool Root>
+	template <bool Root, bool NullMove = !Root>
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 
