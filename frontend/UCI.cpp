@@ -34,13 +34,16 @@ SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _search(std::move(_tt)) {}
+	: _search(_tt) {}
 
 void UniversalChessInterface::loop(int argc, const char* argv[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
 
 	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
+
+	//_pos.setByFEN("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - 0 1");
+	//std::cout << _pos.StaticExchangeEval(Square::e5) << '\n';
 
 	do {
 		if (!std::getline(std::cin, _command))
@@ -69,6 +72,7 @@ void UniversalChessInterface::parseUCI() {
 
 inline void UniversalChessInterface::parseNewGame() {
 	_game.clear();
+	MoveOrder<STAGED>::clearCounterMoveHistory();
 }
 
 void UniversalChessInterface::parsePosition(std::istringstream& strm) {

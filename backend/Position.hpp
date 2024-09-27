@@ -171,8 +171,12 @@ public:
 	// just like attacked function above, but includes king attacks
 	bool attacked_KingIncluded(Square sq, enumColor side) const;
 
+	BitBoard attacksTo(Square sq, enumColor side, BitBoard occ) const;
+
 	bool isInCheck(enumColor side) const;
 	bool isInDoubleCheck(enumColor side) const;
+
+	BitBoard leastValuableAttackers(Square sq, enumColor side) const;
 
 	// Do not return all of the checkers, but terminates as soon as just one checker in found.
 	// If no checkers found, returns empty board.
@@ -193,6 +197,8 @@ public:
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
+	int StaticExchangeEval(const Square sq) const;
+
 	struct IrreversibleState {
 		Square ep_sq;
 		uint8_t halfmove_count;
@@ -206,6 +212,9 @@ public:
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, int i);
+
+	//BitBoard leastValuableAttacker_withMask(const Square sq, enumColor side, 
+	//BitBoard occupied, BitBoard mask, Piece::enumType& attacker) const;
 
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
 	Turn _turn;
@@ -321,6 +330,18 @@ INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
 	return attacked(sq, side) or (kingAttacks(sq) & getKingBySide(!side));
 }
 
+INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) const {
+	const BitBoard queen = _piece_bb[!side][Piece::QUEEN],
+		rookQueen = _piece_bb[!side][Piece::ROOK] | queen,
+		bishopQueen = _piece_bb[!side][Piece::BISHOP] | queen;
+
+	return (_piece_bb[!side][Piece::PAWN] & pawnAttacks(sq, side))
+		| (_piece_bb[!side][Piece::KNIGHT] & knightAttacks(sq))
+		| (_piece_bb[!side][Piece::KING] & kingAttacks(sq))
+		| (bishopQueen & attacks<Piece::BISHOP>(sq, occ))
+		| (rookQueen & attacks<Piece::ROOK>(sq, occ));
+}
+
 INLINE bool Position::isInCheck(enumColor side) const {
 	const Square king_sq = getKingSquare(side);
 	return attacked(king_sq, side);
@@ -351,28 +372,31 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 	return att_count >= 2;
 }
 
-INLINE BitBoard Position::getCheckers(enumColor side) const {
-	const Square sq = getKingSquare(side);
+INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) const {
 	const BitBoard occupied = getOccupied();
 	BitBoard bb;
-
-	bb = pawnAttacks(sq, side) & getPawnsBySide(!side);
+	
+	bb = pawnAttacks(sq, attacked) & getPawnsBySide(!attacked);
 	if (bb)
 		return bb;
 
-	bb = knightAttacks(sq) & getKnightsBySide(!side);
+	bb = knightAttacks(sq) & getKnightsBySide(!attacked);
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueens(!side);
+	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueens(!attacked);
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueens(!side);
+	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueens(!attacked);
 	if (bb)
 		return bb;
 
 	return BitBoard::empty;
+}
+
+INLINE BitBoard Position::getCheckers(enumColor side) const {
+	return leastValuableAttackers(getKingSquare(side), side);
 }
 
 INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {

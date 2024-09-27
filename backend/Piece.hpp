@@ -3,6 +3,8 @@
 #include "Common.hpp"
 #include "Color.hpp"
 
+#include <vector>
+
 class Piece {
 public:
 	enum enumType;
@@ -56,7 +58,11 @@ public:
 		ROOK,
 		QUEEN,
 		KING,
-		NONE
+
+		BISHOP_LIKE = BISHOP | QUEEN,
+		ROOK_LIKE   =   ROOK | QUEEN,
+
+		NONE,
 	};
 
 	static constexpr std::array<enumType, 6> piece_list = { 
@@ -73,3 +79,7 @@ private:
 	enumType _type;
 	enumColor _col;
 };
+
+INLINE constexpr Piece::enumType operator|(Piece::enumType t1, Piece::enumType t2) {
+	return static_cast<Piece::enumType>(t1 | t2);
+}

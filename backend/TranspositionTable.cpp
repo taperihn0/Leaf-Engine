@@ -39,15 +39,17 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	else if (node_score < -Score::infinity + static_cast<int16_t>(max_depth))
 		node_score -= node_ply;
 
-	if (!_mem[node_key & (_size - 1)].depth)
+	TTEntry* const entry = _mem + (node_key & (_size - 1));
+
+	if (!entry->depth)
 		results.tt_hits++;
 
-	_mem[node_key & (_size - 1)] = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
+	*entry = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
 	static constexpr TTEntry undef_entry = TTEntry{};
-	const TTEntry* const  entry = _mem + (key & (_size - 1));
+	const TTEntry* const entry = _mem + (key & (_size - 1));
 
 	if (entry->key != key)
 		return false;

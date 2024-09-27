@@ -12,16 +12,23 @@ static constexpr std::array<std::array<int, 5>, 6> mvv_lva = { {
 } };
 
 void MoveList::scoreCaptures(size_t first, const Position& pos) {
+	static constexpr std::array<int, 6> piece_value = {
+		100, 300, 300, 500, 900, 10000
+	};
+
 	for (size_t i = first; i < _idx; i++) {
-		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion() 
+		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion()
 			and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
 
 		if (_moves[i].move.isCapture()) {
 			const Piece::enumType att = _moves[i].move.getPerformerT(),
-				vic = _moves[i].move.isEnPassant() ? Piece::PAWN : 
-			pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
+				vic = _moves[i].move.isEnPassant() ? Piece::PAWN :
+				pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
 
-			_moves[i].score = mvv_lva[att][vic];
+			if (piece_value[att] <= piece_value[vic])
+				_moves[i].score = mvv_lva[att][vic];
+			else
+				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getTarget());
 		}
 		else _moves[i].score = 2000;
 	}

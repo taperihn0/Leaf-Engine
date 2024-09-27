@@ -23,7 +23,7 @@ INLINE void SearchResults::printBestMove() {
 	std::cout << '\n';
 }
 
-Search::Search(TranspositionTable&& tt)
+Search::Search(TranspositionTable& tt)
 	: _tt(tt) {}
 
 INLINE void SearchResults::print(const Search* search, const Position& pos) {
@@ -161,12 +161,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	node.can_move = false;
 	node.score = 0;
+	node.ply = ply;
 	node.best_move = Move::null;
 	node.best_score = -Score::infinity;
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node.move_picker.nextMove(pos, node.move)) {
+	while (node.move_picker.nextMove(_tree, node, pos, node.move)) {
 		bool legal_move = false,
 			 do_search = true;
 
@@ -197,8 +198,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (node.score > alpha) {
 				if (node.score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
-					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPieceT() != Piece::QUEEN))
+					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPieceT() != Piece::QUEEN)) {
 						node.move_picker.setKillerMove(node.move);
+						if constexpr (!Root)
+							node.move_picker.setCounterMove(_tree.getNode(ply - 1).move, node.move, !pos.getTurn());
+					}
 					break;
 				}
 
@@ -260,7 +264,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Move move;
 	Score score = 0;
 
-	while (moves.nextMove(pos, move)) {
+	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {
 		bool legal_move = false;
 			
 		if (pos.make(move, state)) {

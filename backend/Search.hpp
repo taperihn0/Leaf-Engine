@@ -50,11 +50,13 @@ struct NodeInfo {
 	bool can_move;
 	Score best_score;
 	bool check;
+	unsigned ply;
 };
 
 class TreeInfo {
 public:
 	NodeInfo& getNode(unsigned ply);
+	const NodeInfo& getNode(unsigned ply) const;
 	void clear();
 private:
 	std::array<NodeInfo, max_depth> _node;
@@ -72,7 +74,7 @@ public:
 		NON_PV_NODE,
 	};
 
-	Search(TranspositionTable&& tt);
+	Search(TranspositionTable& tt);
 
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
 
@@ -97,6 +99,11 @@ private:
 };
 
 INLINE NodeInfo& TreeInfo::getNode(unsigned ply) {
+	assert(ply < max_depth);
+	return _node[ply];
+}
+
+INLINE const NodeInfo& TreeInfo::getNode(unsigned ply) const {
 	assert(ply < max_depth);
 	return _node[ply];
 }
