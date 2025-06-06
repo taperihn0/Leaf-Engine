@@ -13,7 +13,6 @@
 #include <intrin.h>
 #endif
 
-
 #if defined(_MSC_VER)
 // using __forceinline by default
 #define INLINE __forceinline 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(Leaf)
 
 file(GLOB SOURCES CONFIGURE_DEPENDS
@@ -8,12 +8,9 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 	"backend/*.cpp"
 )
 
-set(
-	LIBRARIES
-	# ...
-)
-
 add_executable(Leaf ${SOURCES})
+
+# MSVS IS NOT SPECIFIED FOR NOW
 
 if (MSVC)
 	# pass
@@ -24,7 +21,7 @@ else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
 endif()
 
-if (MSVS)
+if (MSVC)
 	# pass
 else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")

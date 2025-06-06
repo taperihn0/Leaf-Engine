@@ -112,7 +112,7 @@ void SlidersMagics::initAttackTables() {
     }
 }
 
-BitBoard SlidersMagics::indexToSubset(int i, BitBoard relv_occ, int relv_bits) {
+BitBoard SlidersMagics::indexToSubset(uint64_t i, BitBoard relv_occ, int relv_bits) {
     BitBoard subset = BitBoard::empty;
 
     for (int j = 0; j < relv_bits; j++) {

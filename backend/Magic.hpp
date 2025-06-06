@@ -29,7 +29,7 @@ public:
     template <Piece::enumType Piece>
     static void initAttackTables();
 private:
-    static BitBoard indexToSubset(int i, BitBoard relv_occ, int relv_bits);
+    static BitBoard indexToSubset(uint64_t i, BitBoard relv_occ, int relv_bits);
 
     static uint64_t generateBishopAttacks(Square sq, BitBoard relv_occ);
     static uint64_t generateRookAttacks(Square sq, BitBoard relv_occ);
