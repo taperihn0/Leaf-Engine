@@ -24,7 +24,7 @@ void Position::setByFEN(const std::string fen) {
 
 	int x = 0, y = 7;
 
-	for (int i = 0; i < size(fen); i++) {
+	for (size_t i = 0; i < size(fen); i++) {
 		const char c = fen[i];
 
 		if (isdigit(c)) {
@@ -305,7 +305,7 @@ uint64_t Position::perft(unsigned depth) {
 
 	IrreversibleState state;
 
-	for (int i = 0; i < move_list.count(); i++) {
+	for (size_t i = 0; i < move_list.count(); i++) {
 		Move move = move_list.getMove(i);
 
 		if (make(move, state)) {
@@ -338,7 +338,7 @@ uint64_t Position::perft(unsigned depth) {
 template uint64_t Position::perft<false>(unsigned depth);
 template uint64_t Position::perft<true>(unsigned depth);
 
-void Position::setGameStatesFromStr(const std::string fen, int i) {
+void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 	_turn.fromChar(fen[i]);
 
 	i += 2;

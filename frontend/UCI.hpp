@@ -18,12 +18,12 @@ private:
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
 
+	// TEMPORARY
+	TranspositionTable _tt;
+
 	Position _pos;
 	Search _search;
 	Game _game;
 
 	std::string _command;
-
-	// TEMPORARY
-	TranspositionTable _tt;
 };

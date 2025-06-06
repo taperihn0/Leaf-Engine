@@ -123,7 +123,7 @@ public:
 		SHORT, LONG
 	};
 
-	static constexpr uint32_t null = 0Ui32;
+	static constexpr uint32_t null = 0_ui32;
 private:
 	static constexpr std::string_view _null_str = "0000";
 

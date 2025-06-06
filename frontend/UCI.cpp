@@ -34,9 +34,12 @@ SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _search(_tt) {}
+	: _tt(),
+	_search(_tt) 
+{}
 
-void UniversalChessInterface::loop(int argc, const char* argv[]) {
+// ARGUMENTS AREN'T USED FOR NOW
+void UniversalChessInterface::loop(int, const char*[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
 

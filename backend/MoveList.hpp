@@ -48,7 +48,7 @@ public:
 	INLINE void clear() { _idx = 0; }
 
 	void print() const {
-		for (int i = 0; i < _idx; i++)
+		for (size_t i = 0; i < _idx; i++)
 			_moves[i].move.print(), std::cout << '\n';
 	}
 

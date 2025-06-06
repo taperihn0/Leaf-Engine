@@ -99,7 +99,7 @@ void SlidersMagics::initAttackTables() {
         const uint64_t relv_occ = Piece == Piece::BISHOP ? _m_occupancy_bishop[sq] : _m_occupancy_rook[sq];
 
         // looping through all occupancy subsets
-        for (int i = 0; i < (1Ui64 << relv_bits); i++) {
+        for (uint64_t i = 0; i < (1_ui64 << relv_bits); i++) {
             BitBoard subset = indexToSubset(i, relv_occ, relv_bits);
 
             if constexpr (Piece == Piece::BISHOP)
@@ -117,7 +117,7 @@ BitBoard SlidersMagics::indexToSubset(int i, BitBoard relv_occ, int relv_bits) {
 
     for (int j = 0; j < relv_bits; j++) {
         const int ls1b_idx = relv_occ.dropForward();
-        if (i & (1Ui64 << j)) subset.setBit(ls1b_idx);
+        if (i & (1_ui64 << j)) subset.setBit(ls1b_idx);
     }
 
     return subset;

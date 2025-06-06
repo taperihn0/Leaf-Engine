@@ -9,18 +9,18 @@ public:
 	Game() = default;
 
 	INLINE void recordInfo(uint64_t key, Move move) {
-		assert(0 <= _idx and _idx < max_game_moves);
+		assert(_idx < max_game_moves);
 		_move_history[_idx] = move;
 		_key_history[_idx++] = key;
 	}
 
 	INLINE Move getPrevMove(size_t halfmove_cnt) const {
-		assert(0 <= halfmove_cnt and halfmove_cnt < _idx);
+		assert(halfmove_cnt < _idx);
 		return _move_history[halfmove_cnt];
 	}
 
 	INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
-		assert(0 <= halfmove_cnt and halfmove_cnt < _idx);
+		assert(halfmove_cnt < _idx);
 		return _key_history[halfmove_cnt];
 	}
 

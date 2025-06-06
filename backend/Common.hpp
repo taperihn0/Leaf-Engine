@@ -2,11 +2,17 @@
 
 #include <iostream>
 #include <string>
-#include <intrin.h>
 #include <cassert>
 #include <type_traits>
 #include <array>
 #include <string_view>
+#include <cstdint>
+#include <cstring>
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
 
 #if defined(_MSC_VER)
 // using __forceinline by default
@@ -20,7 +26,7 @@
 #endif
 
 #define ENGINE_NAME "Leaf Lite"
-#define AUTHOR "Szymon Belz"
+#define AUTHOR 	  "Szymon Belz"
 
 // move format, so far only pure notation supported
 #define PURE_NOTATION
@@ -31,6 +37,24 @@
 // Warning: function uses 'X' bytes of stack. Consider moving some data to heap
 #pragma warning(disable: 6262)
 #endif
+
+using ull = unsigned long long;
+
+inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
+	return static_cast<uint8_t>(a);
+}
+
+inline constexpr uint16_t operator"" _ui16(ull a) noexcept {
+	return static_cast<uint16_t>(a);
+}
+
+inline constexpr uint32_t operator"" _ui32(ull a) noexcept {
+	return static_cast<uint32_t>(a);
+}
+
+inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
+	return static_cast<uint64_t>(a);
+}
 
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 

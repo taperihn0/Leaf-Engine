@@ -3,7 +3,7 @@
 void BitBoard::printRaw() const {
 	for (int h = 7; h >= 0; h--) {
 		for (int i = h * 8; i < (h + 1) * 8; i++)
-			std::cout << static_cast<bool>((1Ui64 << i) & _board);
+			std::cout << static_cast<bool>((1_ui64 << i) & _board);
 		std::cout << '\n';
 	}
 }
@@ -27,14 +27,14 @@ int BitBoard::popCount() const {
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 int BitBoard::bitScanForward() const {
-	assert(_board != 0Ui64);
+	assert(_board != 0_ui64);
 	unsigned long s;
 	_BitScanForward64(&s, _board);
 	return static_cast<int>(s);
 }
 
 int BitBoard::bitScanReverse() const {
-	assert(_board != 0Ui64);
+	assert(_board != 0_ui64);
 	unsigned long s;
 	_BitScanReverse64(&s, _board);
 	return static_cast<int>(s);
@@ -42,12 +42,12 @@ int BitBoard::bitScanReverse() const {
 
 #elif defined(__GNUC__)
 int BitBoard::bitScanForward() const {
-	assert(_board != 0Ui64);
+	assert(_board != 0_ui64);
 	return __builtin_ctzll(_board);
 }
 
 int BitBoard::bitScanReverse() const {
-	assert(_board != 0Ui64);
+	assert(_board != 0_ui64);
 	return __builtin_clzll(_board);
 }
 #else
@@ -67,15 +67,15 @@ static constexpr int index64[64] = {
 };
 
 int BitBoard::bitScanForward() const {
-	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
 	assert(_board != 0);
 	return index64[((_board ^ (_board - 1)) * debruijn64) >> 58];
 }
 
 int BitBoard::bitScanReverse() const {
-	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89Ui64;
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
 	uint64_t bb = _board;
-	assert(_board != 0Ui64);
+	assert(_board != 0_ui64);
 	bb |= bb >> 1;
 	bb |= bb >> 2;
 	bb |= bb >> 4;

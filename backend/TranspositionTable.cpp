@@ -1,6 +1,6 @@
 #include "TranspositionTable.hpp"
 
-inline constexpr size_t operator""_MB(size_t mb_count) {
+inline constexpr size_t operator""_MB(ull mb_count) {
 	return mb_count * 1024 * 1024;
 }
 
@@ -48,7 +48,6 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
-	static constexpr TTEntry undef_entry = TTEntry{};
 	const TTEntry* const entry = _mem + (key & (_size - 1));
 
 	if (entry->key != key)
@@ -59,7 +58,7 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 	}
 
 	switch (entry->bound) {
-	case TTEntry::EXACT:
+	case TTEntry::EXACT: {
 		const Score mate_score = entry->score > Score::infinity  - static_cast<int16_t>(max_depth) ? 
 								 entry->score - node_ply :
 								 entry->score < -Score::infinity + static_cast<int16_t>(max_depth) ? 
@@ -69,14 +68,18 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 		out_entry = *entry;
 		out_entry.score = mate_score;
 		return true;
-	case TTEntry::LOWERBOUND:
+	}
+	case TTEntry::LOWERBOUND: {
 		out_entry = *entry;
 		out_entry.score = alpha;
 		return alpha >= entry->score;
-	case TTEntry::UPPERBOUND:
+	}
+	case TTEntry::UPPERBOUND: {
 		out_entry = *entry;
 		out_entry.score = beta;
 		return beta <= entry->score;
+	}
+	default: break; 
 	}
 
 	return false;

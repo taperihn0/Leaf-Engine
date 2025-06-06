@@ -3,8 +3,6 @@
 #include "Common.hpp"
 #include "Square.hpp"
 
-#include <cstdint>
-
 template <typename T>
 constexpr inline uint64_t U64(T val) {
 	static_assert(std::is_integral<T>(), "U64 casting restricted to integer types");
@@ -22,10 +20,10 @@ public:
 		: _board(raw_init) {}
 
 	inline constexpr BitBoard(Square sq)
-		: _board(1Ui64 << sq) {}
+		: _board(1_ui64 << sq) {}
 
 	inline constexpr BitBoard(Square::enumSquare sq)
-		: _board(1Ui64 << sq) {}
+		: _board(1_ui64 << sq) {}
 
 	INLINE constexpr operator uint64_t() const {
 		return _board;
@@ -122,17 +120,17 @@ public:
 
 	INLINE void popBit(Square sq) {
 		assert(sq.isValid() and sq.isNotNull());
-		_board &= ~(1Ui64 << sq);
+		_board &= ~(1_ui64 << sq);
 	}
 
 	INLINE void setBit(int shift) {
 		assert(shift < 64);
-		_board |= (1Ui64 << shift);
+		_board |= (1_ui64 << shift);
 	}
 
 	INLINE bool getBit(int shift) const {
 		assert(shift < 64);
-		return _board & (1Ui64 << shift);
+		return _board & (1_ui64 << shift);
 	}
 
 	INLINE bool isEmptySq(Square sq) const {
@@ -152,7 +150,7 @@ public:
 	template <int Rank>
 	static INLINE constexpr BitBoard rank() {
 		static_assert(1 <= Rank and Rank <= 8, "Invalid rank");
-		return BitBoard(0xffUi64 << ((Rank - 1) * 8));
+		return BitBoard(0xff_ui64 << ((Rank - 1) * 8));
 	}
 
 	template <File File_>
@@ -161,12 +159,12 @@ public:
 	}
 
 	// crucial uint64_t constants
-	static constexpr uint64_t universe = 0xffffffffffffffffUi64,
-							  empty = 0Ui64,
-							  a_file = 0x0101010101010101Ui64,
-							  b_file = 0x0202020202020202Ui64,
-							  g_file = 0x4040404040404040Ui64,
-							  h_file = 0x8080808080808080Ui64,
+	static constexpr uint64_t universe = 0xffffffffffffffff_ui64,
+							  empty = 0_ui64,
+							  a_file = 0x0101010101010101_ui64,
+							  b_file = 0x0202020202020202_ui64,
+							  g_file = 0x4040404040404040_ui64,
+							  h_file = 0x8080808080808080_ui64,
 							  not_a_file = ~a_file,
 						      not_b_file = ~b_file,
 						      not_g_file = ~g_file,

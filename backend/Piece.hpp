@@ -7,7 +7,19 @@
 
 class Piece {
 public:
-	enum enumType;
+	enum enumType : uint8_t {
+		PAWN,
+		KNIGHT,
+		BISHOP,
+		ROOK,
+		QUEEN,
+		KING,
+
+		BISHOP_LIKE = BISHOP | QUEEN,
+		ROOK_LIKE   =   ROOK | QUEEN,
+
+		NONE,
+	};
 
 	Piece() = default;
 	inline Piece(enumType piece_t) { set(WHITE, piece_t); }
@@ -50,20 +62,6 @@ public:
 	inline enumColor getColor() const {
 		return _col;
 	}
-
-	enum enumType : uint8_t {
-		PAWN,
-		KNIGHT,
-		BISHOP,
-		ROOK,
-		QUEEN,
-		KING,
-
-		BISHOP_LIKE = BISHOP | QUEEN,
-		ROOK_LIKE   =   ROOK | QUEEN,
-
-		NONE,
-	};
 
 	static constexpr std::array<enumType, 6> piece_list = { 
 		Piece::PAWN, 

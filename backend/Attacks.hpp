@@ -69,19 +69,19 @@ namespace {
 	}
 
 	BitBoard nortRay(Square sq) {
-		return 0x0101010101010100Ui64 << sq;
+		return 0x0101010101010100_ui64 << sq;
 	}
 
 	BitBoard soutRay(Square sq) {
-		return 0x0080808080808080Ui64 >> (sq ^ 63);
+		return 0x0080808080808080_ui64 >> (sq ^ 63);
 	}
 
 	BitBoard westRay(Square sq) {
-		return (1Ui64 << sq) - (1Ui64 << (sq & 56));
+		return (1_ui64 << sq) - (1_ui64 << (sq & 56));
 	}
 
 	BitBoard eastRay(Square sq) {
-		return 2 * ((1Ui64 << (sq | 7)) - (1Ui64 << sq));
+		return 2 * ((1_ui64 << (sq | 7)) - (1_ui64 << sq));
 	}
 
 	BitBoard noEaRay(Square sq) {

@@ -211,7 +211,7 @@ public:
 		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 private:
 	void clearPieces();
-	void setGameStatesFromStr(const std::string fen, int i);
+	void setGameStatesFromStr(const std::string fen, size_t i);
 
 	//BitBoard leastValuableAttacker_withMask(const Square sq, enumColor side, 
 	//BitBoard occupied, BitBoard mask, Piece::enumType& attacker) const;

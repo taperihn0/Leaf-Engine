@@ -2,6 +2,7 @@
 #include "Position.hpp"
 #include "Search.hpp"
 
+template <>
 void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	_iterator = 0;
 	_move_list.clear();
@@ -9,6 +10,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 }
 
+template <>
 bool MoveOrder<PLAIN>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move& next_move) {
 	return getFromList(next_move);
 }
