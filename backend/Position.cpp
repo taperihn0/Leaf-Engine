@@ -46,6 +46,9 @@ void Position::setByFEN(const std::string fen) {
 		_piece_bb[col][Piece::fromChar(col, c).toIndex()].setBit(in);
 		++x;
 	}
+
+	_occupied[WHITE] = getByColorOnFly(WHITE);
+	_occupied[BLACK] = getByColorOnFly(BLACK);
 }
 
 void Position::setStartingPos() {
@@ -89,7 +92,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	const Piece::enumType piece_t = move.getPerformerT();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
-						  double_pawn_push = pawn_push and abs(org - dst) > 8;
+						  double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
 
 	state.ep_sq = _ep_square;
 	state.halfmove_count = _halfmove_count;
@@ -102,6 +105,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 		if (move.isEnPassant()) {
 			assert(piece_t == Piece::PAWN);
 			_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
+			_occupied[!_turn].popBit(dst - dir);
 			_hashing._key ^= _hashing._piece_keys[!_turn][Piece::PAWN][dst - dir];
 		}
 		else {
@@ -111,6 +115,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 			assert(captured != Piece::NONE);
 
 			_piece_bb[!_turn][captured].popBit(dst);
+			_occupied[!_turn].popBit(dst);
 			_hashing._key ^= _hashing._piece_keys[!_turn][captured][dst];
 
 			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
@@ -133,12 +138,14 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 		_piece_bb[_turn][piece_t].popBit(org);
 		_piece_bb[_turn][promo_piece_t].setBit(dst);
+		_occupied[_turn].moveBit(org, dst);
 
 		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][org];
 		_hashing._key ^= _hashing._piece_keys[_turn][promo_piece_t][dst];
 	}
 	else { // if not a promotion - just move a piece on its own bitboard 
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
+		_occupied[_turn].moveBit(org, dst);
 
 		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][org];
 		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][dst];
@@ -147,12 +154,14 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	if (piece_t == Piece::KING) {
 		if (move.isShortCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
+			_occupied[_turn].moveBit(dst + 1, dst - 1);
 
 			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
 			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 1];
 		}
 		else if (move.isLongCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
+			_occupied[_turn].moveBit(dst - 2, dst + 1);
 
 			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 2];
 			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
@@ -162,6 +171,8 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	}
 
 	const bool legal = !isInCheck(_turn);
+
+	/*move.setLegalMoved(legal);*/
 
 	// Just leave castling flags untouched since the move is pseudo-legal.
 	// It will be ignored anyway in the search.
@@ -194,7 +205,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	}
-
+	
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
 
@@ -217,9 +228,12 @@ void Position::unmake(Move move, const IrreversibleState& prev_state) {
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 		_piece_bb[_turn][piece_t].setBit(org);
 		_piece_bb[_turn][promo_piece_t].popBit(dst);
+		_occupied[_turn].moveBit(dst, org);
 	}
-	else // if not a promotion - just move a piece to origin square
+	else { // if not a promotion - just move a piece to origin square
 		_piece_bb[_turn][piece_t].moveBit(dst, org);
+		_occupied[_turn].moveBit(dst, org);
+	}
 
 	if (capture) {
 		if (ep_capture) {
@@ -227,12 +241,14 @@ void Position::unmake(Move move, const IrreversibleState& prev_state) {
 
 			assert(piece_t == Piece::PAWN);
 			_piece_bb[!_turn][Piece::PAWN].setBit(dst - dir);
+			_occupied[!_turn].setBit(dst - dir);
 		}
 		else {
 			const Piece::enumType captured = move.getCapturedT();
 
 			assert(captured != Piece::NONE);
 			_piece_bb[!_turn][captured].setBit(dst);
+			_occupied[!_turn].setBit(dst);
 		}
 	}
 
@@ -241,10 +257,14 @@ void Position::unmake(Move move, const IrreversibleState& prev_state) {
 		const bool short_castle = move.isShortCastle(),
 				   long_castle = move.isLongCastle();
 
-		if (short_castle)
+		if (short_castle) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 1, dst + 1);
-		else if (long_castle)
+			_occupied[_turn].moveBit(dst - 1, dst + 1);
+		} 
+		else if (long_castle) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 2);
+			_occupied[_turn].moveBit(dst + 1, dst - 2);
+		}
 
 		_king_sq[_turn] = org;
 	}

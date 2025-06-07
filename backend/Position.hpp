@@ -110,6 +110,8 @@ public:
 
 	BitBoard getByColor(enumColor col_type) const;
 
+	BitBoard getByColorOnFly(enumColor col_type) const;
+
 	INLINE BitBoard getWhites() const {
 		return getByColor(WHITE);
 	}
@@ -217,6 +219,7 @@ private:
 	//BitBoard occupied, BitBoard mask, Piece::enumType& attacker) const;
 
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
+	std::array<BitBoard, 2> _occupied;
 	Turn _turn;
 
 	std::array<CastlingRights, 2> _castling_rights;
@@ -287,6 +290,11 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor s
 }
 
 INLINE BitBoard Position::getByColor(enumColor col_type) const {
+	assert(_occupied[col_type] == getByColorOnFly(col_type));
+	return _occupied[col_type];
+}
+
+INLINE BitBoard Position::getByColorOnFly(enumColor col_type) const {
 	return _piece_bb[col_type][Piece::PAWN]
 		| _piece_bb[col_type][Piece::KNIGHT]
 		| _piece_bb[col_type][Piece::BISHOP]
@@ -297,6 +305,7 @@ INLINE BitBoard Position::getByColor(enumColor col_type) const {
 
 INLINE void Position::clearPieces() {
 	std::wmemset((wchar_t*)_piece_bb.data(), BitBoard::empty, 6 * sizeof(BitBoard));
+	std::wmemset((wchar_t*)_occupied.data(), BitBoard::empty, 2 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>
@@ -315,15 +324,12 @@ INLINE BitBoard Position::get() const {
 	return getKingBySide(Color);
 }
 
-INLINE bool Position::attacked(Square sq, enumColor side) const  {
-	if (pawnAttacks(sq, side) & getPawnsBySide(!side)) 
-		return true;
-	if (knightAttacks(sq) & getKnightsBySide(!side)) 
-		return true;
+INLINE bool Position::attacked(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
-	if (SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueens(!side))
-		return true;
-	return (SlidersMagics::rookAttacks(sq, occ) & getRooksQueens(!side));
+	return (knightAttacks(sq) & getKnightsBySide(!side)) or
+		(pawnAttacks(sq, side) & getPawnsBySide(!side)) or
+		(SlidersMagics::rookAttacks(sq, occ) & getRooksQueens(!side)) or
+		(SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueens(!side));
 }
 
 INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
@@ -343,8 +349,7 @@ INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) con
 }
 
 INLINE bool Position::isInCheck(enumColor side) const {
-	const Square king_sq = getKingSquare(side);
-	return attacked(king_sq, side);
+	return attacked(getKingSquare(side), side);
 }
 
 INLINE bool Position::isInDoubleCheck(enumColor side) const {

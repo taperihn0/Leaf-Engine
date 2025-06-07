@@ -80,6 +80,12 @@ public:
 		return _rmove & PROMO_PIECE;
 	}
 
+	// use this field only after making a move -
+	// move legality is checked only when attempting to make it
+	INLINE bool isLegalMoved() const {
+		return _rmove & LEGALLY_MOVED;
+	}
+
 	INLINE Piece::enumType getPerformerT() const {
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 16);
 	}
@@ -112,6 +118,10 @@ public:
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 
+	INLINE void setLegalMoved(bool legal) {
+		_rmove &= ~LEGALLY_MOVED, _rmove |= static_cast<uint32_t>(legal) << 25;
+	}
+
 	void print() const;
 
 	bool isPseudoLegal(const Position& pos) const;
@@ -129,12 +139,12 @@ private:
 
 	/*
 		Raw number data consists of:
-		 <----------------------------------------------------------------------------------->
-		 |							25 bits	layout											|
-		 <----------------------------------------------------------------------------------->
-		 [promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
-		 3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
-		  MS1B							     -->									    LS1B
+		 <------------------------------------------------------------------------------------------>
+		 |								26 bits	layout												|
+		 <------------------------------------------------------------------------------------------>
+		 [legal][promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
+		  1 bit 3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
+		  MS1B									-->												LS1B
 	*/
 
 	enum enumLayout : uint32_t {
@@ -146,7 +156,8 @@ private:
 		LONG_CASTLE = 0x8000,
 		PERFORMER = 0x70000,
 		CAPTURED = 0x380000,
-		PROMO_PIECE = 0x1c00000
+		PROMO_PIECE = 0x1c00000,
+		LEGALLY_MOVED = 0x2000000
 	};
 
 	uint32_t _rmove;
