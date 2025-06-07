@@ -296,8 +296,7 @@ INLINE BitBoard Position::getByColor(enumColor col_type) const {
 }
 
 INLINE void Position::clearPieces() {
-	for (enumColor col : { WHITE, BLACK })
-		_piece_bb[col].fill(BitBoard::empty);
+	std::wmemset((wchar_t*)_piece_bb.data(), BitBoard::empty, 6 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>
@@ -321,9 +320,10 @@ INLINE bool Position::attacked(Square sq, enumColor side) const  {
 		return true;
 	if (knightAttacks(sq) & getKnightsBySide(!side)) 
 		return true;
-	if (SlidersMagics::bishopAttacks(sq, getOccupied()) & getBishopsQueens(!side))
+	const BitBoard occ = getOccupied();
+	if (SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueens(!side))
 		return true;
-	return (SlidersMagics::rookAttacks(sq, getOccupied()) & getRooksQueens(!side));
+	return (SlidersMagics::rookAttacks(sq, occ) & getRooksQueens(!side));
 }
 
 INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
@@ -353,20 +353,20 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 
 	uint8_t att_count = 0;
 
-	if (pawnAttacks(king_sq, side) & getPawnsBySide(!side))
-		att_count++;
-
-	if (knightAttacks(king_sq) & getKnightsBySide(!side))
-		att_count++;
-
-	if (att_count >= 2) return true;
-
 	if (SlidersMagics::bishopAttacks(king_sq, occupied) & getBishopsQueens(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
 
 	if (SlidersMagics::rookAttacks(king_sq, occupied) & getRooksQueens(!side))
+		att_count++;
+
+	if (att_count >= 2) return true;
+
+	if (pawnAttacks(king_sq, side) & getPawnsBySide(!side))
+		att_count++;
+
+	if (knightAttacks(king_sq) & getKnightsBySide(!side))
 		att_count++;
 
 	return att_count >= 2;

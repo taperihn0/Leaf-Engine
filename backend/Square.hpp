@@ -31,11 +31,11 @@ public:
 	}
 
 	INLINE uint8_t getFile() const {
-		return _sq % 8;
+		return _sq & 7;
 	}
 
 	INLINE uint8_t getRank() const {
-		return _sq / 8;
+		return _sq >> 3;
 	}
 
 	INLINE bool isNotNull() const {
@@ -53,7 +53,7 @@ public:
 	void print() const {
 		ASSERT(isValid(), "Trying to call print on invalid square");
 		if (isNull()) std::cout << '-';
-		else std::cout << "abcdefgh"[_sq % 8] << (_sq / 8 + 1);
+		else std::cout << "abcdefgh"[_sq & 7] << (_sq / 8 + 1);
 	}
 
 	INLINE constexpr bool isValid() const {
