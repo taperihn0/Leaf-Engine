@@ -104,13 +104,11 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 		
 	strm >> std::skipws >> token;
 	if (token == "moves") {
-		Position::IrreversibleState unused;
-
 		while (strm >> std::skipws >> token) {
 			Move move = Move::fromStr(_pos, token);
 
 			_game.recordInfo(_pos.getZobristKey(), move);
-			_pos.make(move, unused);
+			_pos.make(move);
 		}
 	}
 }

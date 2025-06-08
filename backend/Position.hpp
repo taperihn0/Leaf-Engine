@@ -188,7 +188,7 @@ public:
 	Piece pieceOn(Square sq) const;
 
 	// returns whether move is legal or pseudo-legal
-	bool make(Move& move, IrreversibleState& state);
+	bool make(Move& move);
 	void unmake(Move move, const IrreversibleState& prev_state);
 
 	void makeNull(IrreversibleState& state);
@@ -200,6 +200,8 @@ public:
 	uint64_t perft(unsigned depth);
 
 	int StaticExchangeEval(const Square sq) const;
+
+	IrreversibleState getIrreversibleState() const;
 
 	struct IrreversibleState {
 		Square ep_sq;
@@ -301,6 +303,11 @@ INLINE BitBoard Position::getByColorOnFly(enumColor col_type) const {
 		| _piece_bb[col_type][Piece::ROOK]
 		| _piece_bb[col_type][Piece::QUEEN]
 		| _piece_bb[col_type][Piece::KING];
+}
+
+INLINE Position::IrreversibleState Position::getIrreversibleState() const {
+	return Position::IrreversibleState{ _ep_square, _halfmove_count,
+										_castling_rights, getZobristKey() };
 }
 
 INLINE void Position::clearPieces() {

@@ -52,8 +52,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 
 		pv_move.print(), std::cout << ' ';
 
-		Position::IrreversibleState tmp;
-		cpy.make(pv_move, tmp);
+		cpy.make(pv_move);
 	}
 
 	std::cout << '\n';
@@ -165,14 +164,14 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node.best_move = Move::null;
 	node.best_score = -Score::infinity;
 
+	node.state = pos.getIrreversibleState();
+
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
 	while (node.move_picker.nextMove(_tree, node, pos, node.move)) {
-		bool legal_move = false,
-			 do_search = true;
+		bool do_search = true;
 
-		if (pos.make(node.move, node.state)) {
-			legal_move = true;
+		if (pos.make(node.move)) {
 			node.can_move = true;
 
 			// Principle variation search
@@ -191,7 +190,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(node.move, node.state);
 
-		if (node.score.isValid() and legal_move and node.score > node.best_score) {
+		if (node.score.isValid() and node.move.isLegalMoved() and node.score > node.best_score) {
 			node.best_move = node.move;
 			node.best_score = node.score;
 
@@ -260,12 +259,13 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 
 	MoveOrder<QUIESCENT> moves;
-	Position::IrreversibleState state;
 	Move move;
 	Score score = 0;
 
+	Position::IrreversibleState state = pos.getIrreversibleState();
+
 	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {
-		if (pos.make(move, state)) {
+		if (pos.make(move)) {
 			score = -quiesce(pos, limits, results, -beta, -alpha, ply + 1);
 		}
 

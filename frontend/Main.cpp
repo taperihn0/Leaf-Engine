@@ -11,8 +11,6 @@
 	basing on that calculate appopriate draw score
 	2. Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 	3. Also, try another depth when considering moves from game record in terms of repetitions.
-	4. Game state of a node don't have to be overwritten every time we make a move. It can be 
-	remembered once, when entering the node.
 */
 
 int main(int argc, const char* argv[]) {

@@ -84,7 +84,7 @@ void Position::print() const {
 		<< ' ' << _fullmove_count << '\n';
 }
 
-bool Position::make(Move& move, IrreversibleState& state) {
+bool Position::make(Move& move) {
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
@@ -93,13 +93,6 @@ bool Position::make(Move& move, IrreversibleState& state) {
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
-
-	state.ep_sq = _ep_square;
-	state.halfmove_count = _halfmove_count;
-	state.castling_rights = _castling_rights;
-
-	// TEMPORARY
-	state.hash_key = _hashing._key;
 
 	if (capture) {
 		if (move.isEnPassant()) {
@@ -323,12 +316,12 @@ uint64_t Position::perft(unsigned depth) {
 	MoveList move_list;
 	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
 
-	IrreversibleState state;
+	IrreversibleState state = getIrreversibleState();
 
 	for (size_t i = 0; i < move_list.count(); i++) {
 		Move move = move_list.getMove(i);
 
-		if (make(move, state)) {
+		if (make(move)) {
 			assert(_hashing._key == _hashing.generateOnFly(*this));
 
 			child_nodes = perft<false>(depth - 1);
