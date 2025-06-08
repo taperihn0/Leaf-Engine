@@ -36,15 +36,13 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 	case enumStage::CAPTURES:
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
-		// TODO: partial sort 
 		_move_list.scoreCaptures(0, pos);
-		_move_list.sort(0, _move_list.count());
 
 		_stage = enumStage::PICK_CAPTURES;
 
 		[[fallthrough]];
 	case enumStage::PICK_CAPTURES:
-		if (getFromList(next_move))
+		if (getFromListCapture(next_move))
 			return true;
 		
 		if constexpr (Type == QUIESCENT)
@@ -83,7 +81,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
-		return getFromList(next_move);
+		return getFromListQuiet(next_move);
 	}
 
 	return false;
@@ -94,9 +92,29 @@ template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, c
 
 template <OrderType Type>
 INLINE bool MoveOrder<Type>::getFromList(Move& move) {
+	return getFromListQuiet(move);
+}
+
+template <OrderType Type>
+INLINE bool MoveOrder<Type>::getFromListQuiet(Move& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
 	move = _move_list.getMove(_iterator++);
 	return move == _hash_move or move == _killer_move or move == _counter ? getFromList(move) : true;
+}
+
+template <OrderType Type>
+template <bool ExcludeHashMove>
+INLINE bool MoveOrder<Type>::getFromListCapture(Move& move) {
+	if (_iterator >= _move_list.count())
+		return false;
+
+	_move_list.partialSort(_iterator, _iterator + 1, _move_list.count());
+	move = _move_list.getMove(_iterator++);
+
+	if constexpr (ExcludeHashMove)
+		return move == _hash_move ? getFromListCapture<false>(move) : true;
+	if constexpr (!ExcludeHashMove)
+		return getFromListCapture<false>(move);
 }

@@ -29,6 +29,7 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 				_moves[i].score = mvv_lva[att][vic];
 			else
 				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getTarget());
+
 		}
 		else _moves[i].score = 2000;
 	}

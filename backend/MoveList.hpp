@@ -22,7 +22,7 @@ public:
 		_moves[_idx++].move = new_move;
 	}
 
-	INLINE uint32_t getScore(size_t idx) const {
+	INLINE int32_t getScore(size_t idx) const {
 		ASSERT(idx < _size, "Index overflow while geting an item from move list");
 		return _moves[idx].score;
 	}

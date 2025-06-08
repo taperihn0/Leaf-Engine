@@ -44,8 +44,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 
 	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
 
-	//_pos.setByFEN("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - 0 1");
-	//std::cout << _pos.StaticExchangeEval(Square::e5) << '\n';
+	//_pos.setByFEN("r1bqkb1r/pppppppp/2n2n2/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1");
+	//_pos.print();
+	//std::cout << _pos.StaticExchangeEval(Square::c7) << '\n';
 
 	do {
 		if (!std::getline(std::cin, _command))

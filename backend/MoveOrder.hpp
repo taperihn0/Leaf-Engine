@@ -36,6 +36,9 @@ public:
 	static void clearCounterMoveHistory();
 private:
 	bool getFromList(Move& move);
+	bool getFromListQuiet(Move& move);
+	template <bool ExcludeHashMove = true>
+	bool getFromListCapture(Move& move);
 
 	enum class enumStage : uint8_t {
 		HASH_MOVE,
