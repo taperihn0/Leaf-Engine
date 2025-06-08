@@ -8,6 +8,7 @@
 #include "Game.hpp"
 #include "Time.hpp"
 #include "Score.hpp"
+#include "TranspositionTable.hpp"
 
 #include <numeric>
 
@@ -74,7 +75,7 @@ public:
 		NON_PV_NODE,
 	};
 
-	Search(TranspositionTable& tt);
+	Search();
 
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
 
@@ -93,7 +94,7 @@ private:
 
 	TreeInfo _tree;
 	Eval _eval;
-	TranspositionTable& _tt;
+	TranspositionTable _tt;
 
 	static constexpr uint64_t _check_node_count = 4096;
 };

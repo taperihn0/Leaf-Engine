@@ -3,7 +3,6 @@
 #include "../backend/Position.hpp"
 #include "../backend/Search.hpp"
 #include "../backend/Game.hpp"
-#include "../backend/TranspositionTable.hpp"
 
 class UniversalChessInterface {
 public:
@@ -17,9 +16,6 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
-
-	// TEMPORARY
-	TranspositionTable _tt;
 
 	Position _pos;
 	Search _search;

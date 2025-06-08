@@ -34,8 +34,7 @@ SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _tt(),
-	_search(_tt) 
+	: _search() 
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW

@@ -26,6 +26,8 @@ public:
 		return *this;
 	}
 
+	// do not consider whether move would be legally moved, since it's not a thing
+	// to compare
 	INLINE constexpr bool operator!=(Move b) const noexcept {
 		return (_rmove & ~LEGALLY_MOVED) != (b._rmove & ~LEGALLY_MOVED);
 	}
@@ -84,6 +86,11 @@ public:
 	// move legality is checked only when attempting to make it
 	INLINE bool isLegalMoved() const {
 		return _rmove & LEGALLY_MOVED;
+	}
+
+	INLINE bool isIrreversible() const {
+		return isCapture() or getPerformerT() == Piece::PAWN or 
+			isShortCastle() or isLongCastle();
 	}
 
 	INLINE Piece::enumType getPerformerT() const {
@@ -172,7 +179,11 @@ INLINE Move Move::makeSimple(Square origin, Square target, bool is_capture, Piec
 }
 
 INLINE Move Move::makeEnPassant(Square origin, Square target) {
-	return Move(EP_CAPTURE | CAPTURE | (static_cast<uint32_t>(target) << 6) | origin);
+	return Move(
+		EP_CAPTURE 
+		| CAPTURE 
+		| (static_cast<uint32_t>(target) << 6) 
+		| origin);
 }
 
 INLINE Move Move::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {

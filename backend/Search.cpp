@@ -23,8 +23,8 @@ INLINE void SearchResults::printBestMove() {
 	std::cout << '\n';
 }
 
-Search::Search(TranspositionTable& tt)
-	: _tt(tt) {}
+Search::Search()
+	: _tt() {}
 
 INLINE void SearchResults::print(const Search* search, const Position& pos) {
 	const auto duration_ms = timer.duration();
@@ -292,7 +292,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 	for (ply = ply - 1; ply >= 0; ply--) {
 		const Move move = _tree.getNode(ply).move;
 
-		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
+		if (move.isIrreversible())
 			return false;
 		else if (((my_ply - ply) & 1) == 1)
 			continue;
@@ -311,7 +311,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 
 		const Move move = game.getPrevMove(cnt);
 
-		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
+		if (move.isIrreversible())
 			return false;
 		else if ((i & 1) == 0)
 			continue;

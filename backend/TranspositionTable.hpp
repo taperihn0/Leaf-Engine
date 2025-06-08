@@ -1,7 +1,11 @@
 #pragma once
 
 #include "Common.hpp"
-#include "Search.hpp"
+#include "Score.hpp"
+#include "Move.hpp"
+
+class Score;
+struct SearchResults;
 
 struct alignas(16) TTEntry {
 	enum Bound : uint8_t {
@@ -18,9 +22,6 @@ struct alignas(16) TTEntry {
 	Move move;
 };
 
-class Score;
-struct SearchResults;
-
 class TranspositionTable {
 public:
 	TranspositionTable();
@@ -33,7 +34,7 @@ public:
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
 		TTEntry::Bound node_bound, Score node_score, Move node_move, SearchResults& results);
 
-	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply);
+	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
 
 #if defined(_DEBUG)
 	void printDebug();

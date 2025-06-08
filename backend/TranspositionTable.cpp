@@ -1,4 +1,5 @@
 #include "TranspositionTable.hpp"
+#include "Search.hpp"
 
 inline constexpr size_t operator""_MB(ull mb_count) {
 	return mb_count * 1024 * 1024;
@@ -47,7 +48,7 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	*entry = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
 }
 
-bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) {
+bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const {
 	const TTEntry* const entry = _mem + (key & (_size - 1));
 
 	if (entry->key != key)
