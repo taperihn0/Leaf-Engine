@@ -172,7 +172,7 @@ bool Position::make(Move& move, IrreversibleState& state) {
 
 	const bool legal = !isInCheck(_turn);
 
-	/*move.setLegalMoved(legal);*/
+	move.setLegalMoved(legal);
 
 	// Just leave castling flags untouched since the move is pseudo-legal.
 	// It will be ignored anyway in the search.

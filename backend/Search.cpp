@@ -265,10 +265,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Score score = 0;
 
 	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {
-		bool legal_move = false;
-			
 		if (pos.make(move, state)) {
-			legal_move = true;
 			score = -quiesce(pos, limits, results, -beta, -alpha, ply + 1);
 		}
 
@@ -276,7 +273,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 
 		if (!score.isValid())
 			return -Score::undef;
-		else if (legal_move and score > alpha) {
+		else if (move.isLegalMoved() and score > alpha) {
 			if (score >= beta) return beta;
 			alpha = score;
 		}
@@ -289,23 +286,24 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 
+	static constexpr int search_rep_depth = 11;
+	static_assert(search_rep_depth & 1);
+
 	for (ply = ply - 1; ply >= 0; ply--) {
 		const Move move = _tree.getNode(ply).move;
 
 		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
 			return false;
-		else if ((my_ply - ply) % 2 == 1)
+		else if (((my_ply - ply) & 1) == 1)
 			continue;
-
-		const uint64_t prev_hashkey = _tree.getNode(ply).state.hash_key;
-		if (my_hashkey == prev_hashkey)
+		else if (my_hashkey == _tree.getNode(ply).state.hash_key /* previous hashkey */)
 			return true;
 	}
 
 	const int my_cnt = static_cast<int>(game.currentHalfCount());
 
 	// iterate through only a subset of all game moves
-	for (int i = 1; i <= 11; i++) {
+	for (int i = 1; i <= search_rep_depth; i++) {
 		const int cnt = my_cnt - i;
 
 		if (cnt < 0) 
@@ -315,11 +313,9 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 
 		if (move.isCapture() or move.getPerformerT() == Piece::PAWN)
 			return false;
-		else if ((my_cnt - cnt) % 2 == 0)
+		else if ((i & 1) == 0)
 			continue;
-
-		const uint64_t prev_hashkey = game.getPrevKey(cnt);
-		if (my_hashkey == prev_hashkey)
+		else if (my_hashkey == game.getPrevKey(cnt))
 			return true;
 	}
 

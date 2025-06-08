@@ -27,11 +27,11 @@ public:
 	}
 
 	INLINE constexpr bool operator!=(Move b) const noexcept {
-		return _rmove != b._rmove;
+		return (_rmove & ~LEGALLY_MOVED) != (b._rmove & ~LEGALLY_MOVED);
 	}
 
 	INLINE constexpr bool operator==(Move b) const noexcept {
-		return _rmove == b._rmove;
+		return (_rmove & ~LEGALLY_MOVED) == (b._rmove & ~LEGALLY_MOVED);
 	}
 	
 	// simplified make function. Leaves other data fields empty, initializing only
@@ -139,11 +139,11 @@ private:
 
 	/*
 		Raw number data consists of:
-		 <------------------------------------------------------------------------------------------>
-		 |								26 bits	layout												|
-		 <------------------------------------------------------------------------------------------>
-		 [legal][promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
-		  1 bit 3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
+		 <------------------------------------------------------------------------------------------------>
+		 |								26 bits	layout													  |
+		 <------------------------------------------------------------------------------------------------>
+		 [legal-moved][promo][captured][performer][q-castle][k-castle][ep-capture][capture][target][origin]
+		     1 bit    3 bits   3 bits     3 bits     1 bit     1 bit     1 bit      1 bit   6 bits  6 bits
 		  MS1B									-->												LS1B
 	*/
 

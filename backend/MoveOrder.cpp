@@ -83,8 +83,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
-		if (getFromList(next_move))
-			return true;
+		return getFromList(next_move);
 	}
 
 	return false;
