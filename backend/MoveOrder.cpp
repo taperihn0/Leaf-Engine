@@ -110,7 +110,7 @@ INLINE bool MoveOrder<Type>::getFromListCapture(Move& move) {
 	if (_iterator >= _move_list.count())
 		return false;
 
-	_move_list.partialSort(_iterator, _iterator + 1, _move_list.count());
+	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
 
 	if constexpr (ExcludeHashMove)

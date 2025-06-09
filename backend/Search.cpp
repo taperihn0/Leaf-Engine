@@ -177,7 +177,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			// Principle variation search
 			if (!tt_move.isNull() and node.move != tt_move and NodeType == PV_NODE) {
 				node.score = 
-					-negaMax<false, PV_NODE, true>(pos, limits, results, game, -alpha - 1, -alpha, depth - 1, ply + 1);
+					-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, -alpha - 1, -alpha, depth - 1, ply + 1);
 
 				if (node.score <= alpha)
 					do_search = false;
@@ -261,7 +261,6 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	MoveOrder<QUIESCENT> moves;
 	Move move;
 	Score score = 0;
-
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
 	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {

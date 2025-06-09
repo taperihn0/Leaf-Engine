@@ -11,11 +11,11 @@ static constexpr std::array<std::array<int, 5>, 6> mvv_lva = { {
 	{ 1000, 2000, 3000, 4000, 5000 }
 } };
 
-void MoveList::scoreCaptures(size_t first, const Position& pos) {
-	static constexpr std::array<int, 6> piece_value = {
-		100, 300, 300, 500, 900, 10000
-	};
+static constexpr std::array<int, 6> piece_value = {
+	100, 300, 300, 500, 900, 10000
+};
 
+void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion()
 			and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
@@ -33,4 +33,19 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 		}
 		else _moves[i].score = 2000;
 	}
+}
+
+void MoveList::selectSort(size_t first) {
+	assert(first < _idx);
+	int16_t best = _moves[first].score;
+	size_t ind = first;
+
+	for (size_t i = first + 1; i < _idx; i++) {
+		if (_moves[i].score > best) {
+			best = _moves[i].score;
+			ind = i;
+		}
+	}
+
+	std::swap(_moves[ind], _moves[first]);
 }

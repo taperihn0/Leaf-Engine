@@ -55,6 +55,8 @@ public:
 	void scoreCaptures(size_t first, const Position& pos);
 	// TODO: scoreQuiets function
 
+	void selectSort(size_t first);
+
 private:
 	static constexpr size_t _size = max_node_moves;
 
