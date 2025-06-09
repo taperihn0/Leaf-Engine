@@ -29,11 +29,14 @@ public:
 
 	void setHashMove(Move m);
 	void setKillerMove(Move m);
-	void setCounterMove(Move prev, Move curr, bool side);
+
+	void updateHistory(Move curr, bool side, int depth);
+	//void setCounterMove(Move prev, Move curr, bool side);
 
 	void clear();
-
-	static void clearCounterMoveHistory();
+	
+	static void agingHistory();
+	static void clearHistory();
 private:
 	bool getFromList(Move& move);
 	bool getFromListQuiet(Move& move);
@@ -59,7 +62,7 @@ private:
 	Move _killer_move	   = Move::null;
 	Move _counter		   = Move::null;
 
-	inline static Move _countermove[2][6][64] = {};
+	inline static int16_t _history[2][6][64] = {};
 
 	MoveList _move_list;
 };
@@ -82,13 +85,30 @@ template <OrderType Type>
 INLINE void MoveOrder<Type>::setKillerMove(Move m) {
 	_killer_move = m;
 }
-
+/*
 template <OrderType Type>
 INLINE void MoveOrder<Type>::setCounterMove(Move prev, Move curr, bool side) {
 	_countermove[side][prev.getPerformerT()][prev.getTarget()] = curr;
 }
+*/
+template <OrderType Type>
+INLINE void MoveOrder<Type>::updateHistory(Move curr, bool side, int depth) {
+	_history[side][curr.getPerformerT()][curr.getTarget()] += depth * depth;
+
+	if (_history[side][curr.getPerformerT()][curr.getTarget()] > 16000) {
+		agingHistory();
+	}
+}
 
 template <OrderType Type>
-INLINE void MoveOrder<Type>::clearCounterMoveHistory() {
-	std::memset(_countermove, Move::null, sizeof(_countermove) / sizeof(Move));
+INLINE void MoveOrder<Type>::agingHistory() {
+	for (size_t i = 0; i < 2; i++) 
+		for (size_t j = 0; j < 6; j++)
+			for (size_t k = 0; k < 64; k++)
+				_history[i][j][k] /= 2;
+}
+
+template <OrderType Type>
+INLINE void MoveOrder<Type>::clearHistory() {
+	std::memset(_history, 0, sizeof(_history));
 }

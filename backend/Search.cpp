@@ -199,8 +199,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 					bound_type = TTEntry::UPPERBOUND;
 					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPieceT() != Piece::QUEEN)) {
 						node.move_picker.setKillerMove(node.move);
-						if constexpr (!Root)
-							node.move_picker.setCounterMove(_tree.getNode(ply - 1).move, node.move, !pos.getTurn());
+						//if constexpr (!Root)
+						//	node.move_picker.setCounterMove(_tree.getNode(ply - 1).move, node.move, !pos.getTurn());
+						node.move_picker.updateHistory(node.move, pos.getTurn(), depth);
 					}
 					break;
 				}

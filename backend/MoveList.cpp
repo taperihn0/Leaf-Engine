@@ -35,6 +35,13 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	}
 }
 
+void MoveList::scoreQuiets(size_t first, const Position& pos, int16_t (*history)[6][64]) {
+	for (size_t i = first; i < _idx; i++) {
+		assert(_moves[i].move.isQuiet());
+		_moves[i].score = history[pos.getTurn()][_moves[i].move.getPerformerT()][_moves[i].move.getTarget()];
+	}
+}
+
 void MoveList::selectSort(size_t first) {
 	assert(first < _idx);
 	int16_t best = _moves[first].score;

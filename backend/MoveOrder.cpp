@@ -52,7 +52,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 
 		[[fallthrough]];
 	case enumStage::KILLER:
-		_stage = enumStage::COUNTERMOVE;
+		_stage = enumStage::QUIETS;
 
 		if (!_killer_move.isNull() and _killer_move != _hash_move and _killer_move.isPseudoLegal(pos)) {
 			next_move = _killer_move;
@@ -60,7 +60,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 		}
 
 		[[fallthrough]];
-	case enumStage::COUNTERMOVE:
+	/*case enumStage::COUNTERMOVE:
 		_stage = enumStage::QUIETS;
 
 		if (node.ply > 0) {
@@ -74,13 +74,18 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 			}
 		}
 
-		[[fallthrough]];
+		[[fallthrough]];*/
 	case enumStage::QUIETS:
 		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+		
+		//_move_list.scoreQuiets(0, pos, _history);
+		//_move_list.sort(0, _move_list.count());
+
 		_stage = enumStage::PICK_QUIETS;
 
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
+		_move_list.scoreQuiets(_iterator, pos, _history);
 		return getFromListQuiet(next_move);
 	}
 
@@ -100,7 +105,9 @@ INLINE bool MoveOrder<Type>::getFromListQuiet(Move& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
+	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
+
 	return move == _hash_move or move == _killer_move or move == _counter ? getFromList(move) : true;
 }
 

@@ -1,4 +1,12 @@
-### simple SEE 
+### commit _: history heuristic without countermove heuristic + select sort + some structural changes in the code
+Score of history vs nonpv: 555 - 440 - 623  [0.536] 1618 <br>
+...      history playing White: 315 - 177 - 317  [0.585] 809 <br>
+...      history playing Black: 240 - 263 - 306  [0.486] 809 <br>
+...      White vs Black: 578 - 417 - 623  [0.550] 1618 <br>
+Elo difference: 24.7 +/- 13.3, LOS: 100.0 %, DrawRatio: 38.5 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit _: simple SEE 
 Score of t2 vs t1: 502 - 480 - 650  [0.507] 1632 <br>
 ...      t2 playing White: 300 - 192 - 324  [0.566] 816 <br>
 ...      t2 playing Black: 202 - 288 - 326  [0.447] 816 <br> 

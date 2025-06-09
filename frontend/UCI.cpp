@@ -75,7 +75,7 @@ void UniversalChessInterface::parseUCI() {
 
 inline void UniversalChessInterface::parseNewGame() {
 	_game.clear();
-	MoveOrder<STAGED>::clearCounterMoveHistory();
+	MoveOrder<STAGED>::clearHistory();
 }
 
 void UniversalChessInterface::parsePosition(std::istringstream& strm) {
