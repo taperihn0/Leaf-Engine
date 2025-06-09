@@ -31,16 +31,13 @@ public:
 	void setKillerMove(Move m);
 
 	void updateHistory(Move curr, bool side, int depth);
-	//void setCounterMove(Move prev, Move curr, bool side);
 
 	void clear();
 	
 	static void agingHistory();
 	static void clearHistory();
 private:
-	bool getFromList(Move& move);
 	bool getFromListQuiet(Move& move);
-	template <bool ExcludeHashMove = true>
 	bool getFromListCapture(Move& move);
 
 	enum class enumStage : uint8_t {
@@ -48,7 +45,6 @@ private:
 		CAPTURES,
 		PICK_CAPTURES, 
 		KILLER,
-		COUNTERMOVE,
 		QUIETS,
 		PICK_QUIETS,
 	};
@@ -60,7 +56,6 @@ private:
 
 	Move _hash_move		   = Move::null;
 	Move _killer_move	   = Move::null;
-	Move _counter		   = Move::null;
 
 	inline static int16_t _history[2][6][64] = {};
 
@@ -72,7 +67,6 @@ INLINE void MoveOrder<Type>::clear() {
 	_iterator = 0;
 	_stage = _first_stage;
 	_hash_move = Move::null;
-	_counter = Move::null;
 	_move_list.clear();
 }
 
@@ -85,12 +79,7 @@ template <OrderType Type>
 INLINE void MoveOrder<Type>::setKillerMove(Move m) {
 	_killer_move = m;
 }
-/*
-template <OrderType Type>
-INLINE void MoveOrder<Type>::setCounterMove(Move prev, Move curr, bool side) {
-	_countermove[side][prev.getPerformerT()][prev.getTarget()] = curr;
-}
-*/
+
 template <OrderType Type>
 INLINE void MoveOrder<Type>::updateHistory(Move curr, bool side, int depth) {
 	_history[side][curr.getPerformerT()][curr.getTarget()] += depth * depth;

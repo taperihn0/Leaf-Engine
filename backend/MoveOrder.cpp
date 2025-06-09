@@ -10,11 +10,6 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 	MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 }
 
-template <>
-bool MoveOrder<PLAIN>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move& next_move) {
-	return getFromList(next_move);
-}
-
 /* 
 	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
     Both generates appropiate moves on fly, during move picking as stage is 
@@ -60,26 +55,8 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 		}
 
 		[[fallthrough]];
-	/*case enumStage::COUNTERMOVE:
-		_stage = enumStage::QUIETS;
-
-		if (node.ply > 0) {
-			const Move prev = tree.getNode(node.ply - 1).move;
-			_counter = _countermove[pos.getOppositeTurn()][prev.getPerformerT()][prev.getTarget()];
-
-			if (!_counter.isNull() and _counter != _hash_move
-				and _counter != _killer_move and _counter.isPseudoLegal(pos)) {
-				next_move = _counter;
-				return true;
-			}
-		}
-
-		[[fallthrough]];*/
 	case enumStage::QUIETS:
 		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
-		
-		//_move_list.scoreQuiets(0, pos, _history);
-		//_move_list.sort(0, _move_list.count());
 
 		_stage = enumStage::PICK_QUIETS;
 
@@ -96,11 +73,6 @@ template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, cons
 template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
 
 template <OrderType Type>
-INLINE bool MoveOrder<Type>::getFromList(Move& move) {
-	return getFromListQuiet(move);
-}
-
-template <OrderType Type>
 INLINE bool MoveOrder<Type>::getFromListQuiet(Move& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
@@ -108,11 +80,10 @@ INLINE bool MoveOrder<Type>::getFromListQuiet(Move& move) {
 	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
 
-	return move == _hash_move or move == _killer_move or move == _counter ? getFromList(move) : true;
+	return move == _hash_move or move == _killer_move ? getFromListQuiet(move) : true;
 }
 
 template <OrderType Type>
-template <bool ExcludeHashMove>
 INLINE bool MoveOrder<Type>::getFromListCapture(Move& move) {
 	if (_iterator >= _move_list.count())
 		return false;
@@ -120,8 +91,5 @@ INLINE bool MoveOrder<Type>::getFromListCapture(Move& move) {
 	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
 
-	if constexpr (ExcludeHashMove)
-		return move == _hash_move ? getFromListCapture<false>(move) : true;
-	if constexpr (!ExcludeHashMove)
-		return getFromListCapture<false>(move);
+	return move == _hash_move ? getFromListCapture(move) : true;
 }
