@@ -37,7 +37,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 
 		[[fallthrough]];
 	case enumStage::PICK_CAPTURES:
-		if (getFromListCapture(next_move))
+		if (getFromList(next_move))
 			return true;
 		
 		if constexpr (Type == QUIESCENT)
@@ -63,7 +63,7 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
 		_move_list.scoreQuiets(_iterator, pos, _history);
-		return getFromListQuiet(next_move);
+		return getFromList(next_move);
 	}
 
 	return false;
@@ -73,23 +73,12 @@ template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, cons
 template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
 
 template <OrderType Type>
-INLINE bool MoveOrder<Type>::getFromListQuiet(Move& move) {
+INLINE bool MoveOrder<Type>::getFromList(Move& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
 	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
 
-	return move == _hash_move or move == _killer_move ? getFromListQuiet(move) : true;
-}
-
-template <OrderType Type>
-INLINE bool MoveOrder<Type>::getFromListCapture(Move& move) {
-	if (_iterator >= _move_list.count())
-		return false;
-
-	_move_list.selectSort(_iterator);
-	move = _move_list.getMove(_iterator++);
-
-	return move == _hash_move ? getFromListCapture(move) : true;
+	return move == _hash_move or move == _killer_move ? getFromList(move) : true;
 }

@@ -37,8 +37,7 @@ public:
 	static void agingHistory();
 	static void clearHistory();
 private:
-	bool getFromListQuiet(Move& move);
-	bool getFromListCapture(Move& move);
+	bool getFromList(Move& move);
 
 	enum class enumStage : uint8_t {
 		HASH_MOVE,
