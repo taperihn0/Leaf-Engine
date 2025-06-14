@@ -8,6 +8,7 @@
 #include <string_view>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 #if defined(_MSC_VER)
 #include <intrin.h>
