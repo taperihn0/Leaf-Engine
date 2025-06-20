@@ -44,9 +44,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 
 	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
 
-	//_pos.setByFEN("r1bqkb1r/pppppppp/2n2n2/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1");
+	//_pos.setByFEN("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - 0 1");
 	//_pos.print();
-	//std::cout << _pos.StaticExchangeEval(Square::c7) << '\n';
+	//std::cout << _pos.StaticExchangeEval(Square::d3, Square::e5) << '\n';
 
 	do {
 		if (!std::getline(std::cin, _command))
@@ -63,6 +63,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "print") _pos.print();
 		else if (token == "go") parseGo(strm);
 		else if (token == "isready") parseIsReady();
+#if defined(DEBUG)
+		else if (token == "see") parseSEE(strm);
+#endif
 
 	} while (_command != "quit");
 }
@@ -136,3 +139,11 @@ inline void UniversalChessInterface::parseGo(std::istringstream& strm) {
 inline void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
+
+#if defined (DEBUG)
+void UniversalChessInterface::parseSEE(std::istringstream& strm) {
+	std::string org, dst;
+	strm >> std::skipws >> org >> std::skipws >> dst;
+	std::cout << _pos.StaticExchangeEval(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
+}
+#endif

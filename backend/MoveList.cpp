@@ -21,14 +21,14 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 			and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
 
 		if (_moves[i].move.isCapture()) {
-			const Piece::enumType att = _moves[i].move.getPerformerT(),
-				vic = _moves[i].move.isEnPassant() ? Piece::PAWN :
-				pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
+			const Piece::enumType att = _moves[i].move.getPerformerT();
+			const Piece::enumType vic = _moves[i].move.isEnPassant() ? Piece::PAWN : 
+										pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
 
 			if (piece_value[att] <= piece_value[vic])
 				_moves[i].score = mvv_lva[att][vic];
 			else
-				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getTarget());
+				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getOrigin(), _moves[i].move.getTarget());
 
 		}
 		else _moves[i].score = 2000;

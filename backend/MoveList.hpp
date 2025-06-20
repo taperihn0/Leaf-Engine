@@ -53,7 +53,6 @@ public:
 	}
 
 	void scoreCaptures(size_t first, const Position& pos);
-	// TODO: scoreQuiets function
 	void scoreQuiets(size_t first, const Position& pos, int16_t (*history)[6][64]);
 
 	void selectSort(size_t first);

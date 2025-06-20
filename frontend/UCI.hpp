@@ -16,6 +16,9 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
+#if defined (DEBUG)
+	void parseSEE(std::istringstream& strm);
+#endif
 
 	Position _pos;
 	Search _search;

@@ -199,7 +199,7 @@ public:
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
-	int StaticExchangeEval(const Square sq) const;
+	int StaticExchangeEval(const Square org, const Square sq) const;
 
 	IrreversibleState getIrreversibleState() const;
 

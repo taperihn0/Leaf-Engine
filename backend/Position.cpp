@@ -49,6 +49,9 @@ void Position::setByFEN(const std::string fen) {
 
 	_occupied[WHITE] = getByColorOnFly(WHITE);
 	_occupied[BLACK] = getByColorOnFly(BLACK);
+
+	_king_sq[WHITE] = getKingBySide(WHITE).bitScanForward();
+	_king_sq[BLACK] = getKingBySide(BLACK).bitScanReverse();
 }
 
 void Position::setStartingPos() {
@@ -398,9 +401,6 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 		_fullmove_count += fen[i] - '0';
 	}
 
-	_king_sq[WHITE] = getKingBySide(WHITE).bitScanForward();
-	_king_sq[BLACK] = getKingBySide(BLACK).bitScanReverse();
-
 	_hashing._key = _hashing.generateOnFly(*this);
 }
 
@@ -476,7 +476,7 @@ int Position::StaticExchangeEval(const Square sq) const {
 }
 */
 
-int Position::StaticExchangeEval(const Square sq) const {
+int Position::StaticExchangeEval(const Square org, const Square sq) const {
 	static constexpr std::array<int, 6> piece_value = {
 		100, 300, 300, 500, 900, 10000
 	};
@@ -496,14 +496,14 @@ int Position::StaticExchangeEval(const Square sq) const {
 	int i = 0;
 	gain[0] = 0;
 	Piece::enumType victim = pieceTypeOn(sq, !side);
-	BitBoard attackers = attacksTo(sq, !side, occupied);
+	BitBoard attackers = BitBoard(org);//attacksTo(sq, !side, occupied);
 
 	while (attackers and victim != Piece::KING) {
 		i++;
 		gain[i] = -gain[i - 1] + piece_value[victim];
 
 		victim = get_weakest_from(attackers, side);
-		processed |= BitBoard(Square((_piece_bb[side][victim] & ~processed).bitScanForward()));
+		processed |= BitBoard(Square((_piece_bb[side][victim] & attackers & ~processed).bitScanForward()));
 
 		side = !side;
 		attackers = attacksTo(sq, !side, occupied ^ processed) & ~processed;
