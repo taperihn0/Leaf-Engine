@@ -11,6 +11,7 @@ class Move;
 class Move {
 public:
 	enum class Castle;
+	enum class Notation;
 
 	Move() = default;
 
@@ -48,7 +49,12 @@ public:
 	template <Move::Castle Type>
 	static Move makeCastling(Square origin, Square target);
 
+	template <Move::Notation Notation>
 	static Move fromStr(const Position& pos, const std::string& str);
+
+	static Move fromData(const Position& pos, Square origin, Square target, Piece::enumType piece, 
+		bool capure, bool ep_capture, bool promotion, bool short_castle, 
+		bool long_castle, Piece::enumType promo_piece);
 
 	INLINE Square getOrigin() const {
 		return _rmove & ORIGIN;
@@ -138,6 +144,10 @@ public:
 
 	enum class Castle {
 		SHORT, LONG
+	};
+
+	enum class Notation {
+		PURE, ALGEBRAIC
 	};
 
 	static constexpr uint32_t null = 0_ui32;

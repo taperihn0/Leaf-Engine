@@ -11,6 +11,8 @@
 	basing on that calculate appopriate draw score
 	2. Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 	3. Also, try another depth when considering moves from game record in terms of repetitions.
+	4. Try to score captures only once (faster) instead of doing that every time a new capture is picked
+	5. Try different method of updating history tables for quiet moves
 */
 
 int main(int argc, const char* argv[]) {

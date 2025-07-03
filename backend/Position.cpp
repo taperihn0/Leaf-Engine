@@ -21,7 +21,7 @@ Position::Position(const std::string_view init_fen) { setByFEN(static_cast<std::
 
 void Position::setByFEN(const std::string fen) {
 	clearPieces();
-
+	
 	int x = 0, y = 7;
 
 	for (size_t i = 0; i < size(fen); i++) {
@@ -79,8 +79,16 @@ void Position::print() const {
 
 	_turn.print();
 	std::cout << ' ';
-	_castling_rights[WHITE].printByColor(WHITE);
-	_castling_rights[BLACK].printByColor(BLACK);
+
+	if (_castling_rights[WHITE].isAnyPossible())
+		_castling_rights[WHITE].printByColor(WHITE);
+	if (_castling_rights[BLACK].isAnyPossible())
+		_castling_rights[BLACK].printByColor(BLACK);
+
+	if (!_castling_rights[WHITE].isAnyPossible() and 
+		!_castling_rights[BLACK].isAnyPossible())
+		std::cout << '-';
+
 	std::cout << ' ';
 	_ep_square.print();
 	std::cout << ' ' << static_cast<int>(_halfmove_count)
@@ -388,7 +396,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 	i += 2;
 
 	_halfmove_count = 0;
-	for (; fen[i] != ' '; i++) {
+	for (; i < size(fen) and fen[i] != ' '; i++) {
 		_halfmove_count *= 10;
 		_halfmove_count += fen[i] - '0';
 	}
@@ -404,86 +412,15 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 	_hashing._key = _hashing.generateOnFly(*this);
 }
 
-/*
-INLINE BitBoard Position::leastValuableAttacker_withMask(const Square sq, enumColor attacked, BitBoard occupied, 
-	BitBoard mask, Piece::enumType& attacker) const {
-	BitBoard bb;
-
-	bb = pawnAttacks(sq, attacked) & getPawnsBySide(!attacked) & mask;
-	if (bb) {
-		attacker = Piece::PAWN;
-		return bb;
-	}
-
-	bb = knightAttacks(sq) & getKnightsBySide(!attacked) & mask;
-	if (bb) {
-		attacker = Piece::KNIGHT;
-		return bb;
-	}
-
-	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsBySide(!attacked) & mask;
-	if (bb) {
-		attacker = Piece::BISHOP;
-		return bb;
-	}
-
-	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksBySide(!attacked) & mask;
-	if (bb) {
-		attacker = Piece::ROOK;
-		return bb;
-	}
-
-	bb = SlidersMagics::queenAttacks(sq, occupied) & getQueensBySide(!attacked) & mask;
-	attacker = Piece::QUEEN;
-	return bb;
-}
-
-
-int Position::StaticExchangeEval(const Square sq) const {
-	static constexpr std::array<int, 6> piece_value = {
-		100, 300, 300, 500, 900, 10000
-	};
-
-	std::array<int, 33> gain;
-
-	enumColor side = _turn;
-	BitBoard processed = BitBoard::empty;
-
-	const BitBoard occupied = getOccupied();
-	
-	int i = 0;
-	gain[0] = 0;
-	Piece::enumType victim = pieceTypeOn(sq, !side), weakest_att;
-	BitBoard attackers = leastValuableAttacker_withMask(sq, !side, occupied, BitBoard::universe, weakest_att);
-	
-	while (attackers and victim != Piece::KING) {
-		i++;
-		gain[i] = -gain[i - 1] + piece_value[victim];
-
-		victim = weakest_att;
-		processed |= BitBoard(Square((_piece_bb[side][weakest_att] & ~processed).bitScanForward()));
-
-		side = !side;
-		attackers = leastValuableAttacker_withMask(sq, !side, occupied ^ processed, ~processed, weakest_att);
-	}
-
-	while (i > 1) {
-		gain[i - 1] = -std::max(-gain[i - 1], gain[i]);
-		i--;
-	}
-
-	return gain[1];
-}
-*/
-
 int Position::StaticExchangeEval(const Square org, const Square sq) const {
 	static constexpr std::array<int, 6> piece_value = {
 		100, 300, 300, 500, 900, 10000
 	};
 
-	static auto get_weakest_from = [this](BitBoard bb, enumColor side) _LAMBDA_FORCEINLINE {
-		for (auto p : Piece::piece_list)
+	static auto get_weakest_from = [this](BitBoard bb, enumColor side) _LAMBDA_FORCEINLINE{
+		for (auto p : Piece::piece_list) {
 			if (_piece_bb[side][p] & bb) return p;
+		}
 		return Piece::NONE;
 	};
 
@@ -496,14 +433,19 @@ int Position::StaticExchangeEval(const Square org, const Square sq) const {
 	int i = 0;
 	gain[0] = 0;
 	Piece::enumType victim = pieceTypeOn(sq, !side);
-	BitBoard attackers = BitBoard(org);//attacksTo(sq, !side, occupied);
+	BitBoard attackers = BitBoard(org);
 
 	while (attackers and victim != Piece::KING) {
 		i++;
 		gain[i] = -gain[i - 1] + piece_value[victim];
+		
+		// TO TEST
+		//if (std::max(-gain[i - 1], gain[i]) < 0)
+		//	break;
 
 		victim = get_weakest_from(attackers, side);
-		processed |= BitBoard(Square((_piece_bb[side][victim] & attackers & ~processed).bitScanForward()));
+		BitBoard vicmask = _piece_bb[side][victim] & attackers & ~processed;
+		processed |= vicmask & -vicmask;
 
 		side = !side;
 		attackers = attacksTo(sq, !side, occupied ^ processed) & ~processed;

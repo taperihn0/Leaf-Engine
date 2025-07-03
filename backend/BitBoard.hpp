@@ -89,6 +89,10 @@ public:
 		return ~_board;
 	}
 
+	INLINE constexpr BitBoard operator-() const {
+		return (uint64_t)-_board;
+	}
+
 	template <int Shift>
 	INLINE BitBoard genShift() const {
 		if constexpr (Shift < 0) return _board >> (-Shift);

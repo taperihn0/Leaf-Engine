@@ -161,4 +161,17 @@ namespace {
 		return kingAttacks(sq);
 	}
 
+	INLINE BitBoard attacks(Piece::enumType piece, Square sq, BitBoard occ) {
+		if (piece == Piece::KNIGHT)
+			return knightAttacks(sq);
+		else if (piece == Piece::BISHOP)
+			return SlidersMagics::bishopAttacks(sq, occ);
+		else if (piece == Piece::ROOK)
+			return SlidersMagics::rookAttacks(sq, occ);
+		else if (piece == Piece::QUEEN)
+			return SlidersMagics::queenAttacks(sq, occ);
+
+		return kingAttacks(sq);
+	}
+
 } // namespace

@@ -25,6 +25,10 @@ public:
 		return _queenside;
 	}
 
+	INLINE bool isAnyPossible() const {
+		return _kingside or _queenside;
+	}
+
 	template <enumColor Side>
 	bool notThroughCheck_Short(const Position& pos) const;
 	bool notThroughCheck_Short(const Position& pos, enumColor side) const;
@@ -150,6 +154,8 @@ public:
 
 	template <Piece::enumType Piece, enumColor Color>
 	BitBoard get() const;
+
+	BitBoard get(Piece::enumType piece, enumColor color) const;
 
 	INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
 		return _castling_rights[col_type];
@@ -329,6 +335,21 @@ INLINE BitBoard Position::get() const {
 		return getQueensBySide(Color);
 
 	return getKingBySide(Color);
+}
+
+INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
+	if (piece == Piece::PAWN)
+		return getPawnsBySide(color);
+	else if (piece == Piece::KNIGHT)
+		return getKnightsBySide(color);
+	else if (piece == Piece::BISHOP)
+		return getBishopsBySide(color);
+	else if (piece == Piece::ROOK)
+		return getRooksBySide(color);
+	else if (piece == Piece::QUEEN)
+		return getQueensBySide(color);
+
+	return getKingBySide(color);
 }
 
 INLINE bool Position::attacked(Square sq, enumColor side) const {

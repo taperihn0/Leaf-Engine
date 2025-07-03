@@ -93,9 +93,11 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 		given_fen += token;
 
 		// get side to move, castling rights, en passant square
-		// and get halfmove counter as fullmove counter
-		for (int i = 0; i < 5; i++) {
+		// and get halfmove counter as also fullmove counter
+		while (strm.rdbuf()->in_avail() != 0) {
 			strm >> std::skipws >> token;
+			if (token == "moves")
+				break;
 			given_fen += ' ' + token;
 		}
 
@@ -105,11 +107,13 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 		_pos.setStartingPos();
 		_game.clear();
 	}
-		
-	strm >> std::skipws >> token;
+	
+	if (token != "moves")
+		strm >> std::skipws >> token;
+
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
-			Move move = Move::fromStr(_pos, token);
+			Move move = Move::fromStr<Move::Notation::PURE>(_pos, token);
 
 			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move);
@@ -145,5 +149,6 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	std::string org, dst;
 	strm >> std::skipws >> org >> std::skipws >> dst;
 	std::cout << _pos.StaticExchangeEval(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
+	//std::cout << _pos.StaticExchangeEval2(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
 }
 #endif

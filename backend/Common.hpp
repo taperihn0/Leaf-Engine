@@ -25,17 +25,21 @@
 #define _LAMBDA_FORCEINLINE  
 #endif
 
+#define _NORETURN [[noreturn]]
+
 #define ENGINE_NAME "Leaf Lite"
-#define AUTHOR 	  "Szymon Belz"
+#define AUTHOR		"Szymon Belz"
 
 // move format, so far only pure notation supported
-#define PURE_NOTATION
+#define PURE_NOTATION_DISPLAY
 
 #if defined(_MSC_VER)
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
 #pragma warning(disable: 4293)
 // Warning: function uses 'X' bytes of stack. Consider moving some data to heap
 #pragma warning(disable: 6262)
+// error C4146: unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable: 4146)
 #endif
 
 using ull = unsigned long long;
@@ -58,10 +62,9 @@ inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
 
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 
-inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
+_NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
 	std::cout << text << '\n' << file << ", line " << line << '\n';
-	abort();
-	return true;
+	exit(0);
 }
 
 static constexpr int max_node_moves = 256;
