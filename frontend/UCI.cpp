@@ -2,6 +2,10 @@
 #include "../backend/Move.hpp"
 #include "../backend/Search.hpp"
 
+#if defined (DEBUG)
+#include "../unit/Units.hpp"
+#endif
+
 #include <sstream>
 
 SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
@@ -65,6 +69,7 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "isready") parseIsReady();
 #if defined(DEBUG)
 		else if (token == "see") parseSEE(strm);
+		else if (token == "test") parseTest();
 #endif
 
 	} while (_command != "quit");
@@ -113,7 +118,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
-			Move move = Move::fromStr<Move::Notation::ALGEBRAIC>(_pos, token);
+			Move move = Move::fromStr<Move::Notation::PURE>(_pos, token);
 
 			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move);
@@ -150,5 +155,11 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	strm >> std::skipws >> org >> std::skipws >> dst;
 	std::cout << _pos.StaticExchangeEval(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
 	//std::cout << _pos.StaticExchangeEval2(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
+}
+#endif
+
+#if defined (DEBUG)
+void UniversalChessInterface::parseTest() {
+	Units::runTests();
 }
 #endif

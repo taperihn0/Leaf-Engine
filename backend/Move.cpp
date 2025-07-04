@@ -56,12 +56,12 @@ Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::st
 	if (short_castle) {
 		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
 		origin = pos.getTurn() == WHITE ? Square::e1 : Square::e8;
-		target = pos.getTurn() == BLACK ? Square::g1 : Square::g8;
+		target = pos.getTurn() == WHITE ? Square::g1 : Square::g8;
 	}
 	else if (long_castle) {
 		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid castling move");
 		origin = pos.getTurn() == WHITE ? Square::e1 : Square::e8;
-		target = pos.getTurn() == BLACK ? Square::c1 : Square::c8;
+		target = pos.getTurn() == WHITE ? Square::c1 : Square::c8;
 	}
 	else if (promotion) {
 		ASSERT(last - 3 >= 0, "Invalid move format");

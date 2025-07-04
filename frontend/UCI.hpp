@@ -18,6 +18,7 @@ private:
 	void parseIsReady();
 #if defined (DEBUG)
 	void parseSEE(std::istringstream& strm);
+	void parseTest();
 #endif
 
 	Position _pos;

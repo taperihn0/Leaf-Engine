@@ -223,9 +223,6 @@ private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
 
-	//BitBoard leastValuableAttacker_withMask(const Square sq, enumColor side, 
-	//BitBoard occupied, BitBoard mask, Piece::enumType& attacker) const;
-
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
 	std::array<BitBoard, 2> _occupied;
 	Turn _turn;
@@ -240,6 +237,9 @@ private:
 
 	ZobristHash _hashing;
 };
+
+// wrapper treating pos as an argument
+int StaticExchangeEval_3a(const Position& pos, const Square org, const Square sq);
 
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {

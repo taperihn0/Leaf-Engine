@@ -6,6 +6,7 @@ project(Leaf)
 file(GLOB SOURCES CONFIGURE_DEPENDS
 	"frontend/*.cpp"
 	"backend/*.cpp"
+	"unit/*.hpp"
 )
 
 add_executable(Leaf ${SOURCES})

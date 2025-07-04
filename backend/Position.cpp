@@ -20,11 +20,13 @@ Position::Position(const std::string init_fen) { setByFEN(init_fen); }
 Position::Position(const std::string_view init_fen) { setByFEN(static_cast<std::string>(init_fen)); }
 
 void Position::setByFEN(const std::string fen) {
+	size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
+
 	clearPieces();
 	
 	int x = 0, y = 7;
 
-	for (size_t i = 0; i < size(fen); i++) {
+	for (size_t i = first; i < size(fen); i++) {
 		const char c = fen[i];
 
 		if (isdigit(c)) {
@@ -457,4 +459,8 @@ int Position::StaticExchangeEval(const Square org, const Square sq) const {
 	}
 
 	return gain[1];
+}
+
+int StaticExchangeEval_3a(const Position& pos, const Square org, const Square sq) {
+	return pos.StaticExchangeEval(org, sq);
 }
