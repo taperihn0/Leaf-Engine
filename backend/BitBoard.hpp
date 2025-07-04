@@ -151,15 +151,29 @@ public:
 		setBit(target);
 	}
 
+	INLINE BitBoard oneBit() const {
+		return _board & -_board;
+	}
+
 	template <int Rank>
 	static INLINE constexpr BitBoard rank() {
 		static_assert(1 <= Rank and Rank <= 8, "Invalid rank");
 		return BitBoard(0xff_ui64 << ((Rank - 1) * 8));
 	}
 
+	static INLINE constexpr BitBoard rank(int rank) {
+		ASSERT(1 <= rank and rank <= 8, "Invalid rank");
+		return BitBoard(0xff_ui64 << ((rank - 1) * 8));
+	}
+
 	template <File File_>
 	static INLINE constexpr BitBoard file() {
 		return BitBoard(a_file << static_cast<int>(File_));
+	}
+
+	static INLINE constexpr BitBoard file(int file) {
+		ASSERT(1 <= file and file <= 8, "Invalid file");
+		return BitBoard(a_file << file);
 	}
 
 	// crucial uint64_t constants

@@ -52,10 +52,6 @@ public:
 	template <Move::Notation Notation>
 	static Move fromStr(const Position& pos, const std::string& str);
 
-	static Move fromData(const Position& pos, Square origin, Square target, Piece::enumType piece, 
-		bool capure, bool ep_capture, bool promotion, bool short_castle, 
-		bool long_castle, Piece::enumType promo_piece);
-
 	INLINE Square getOrigin() const {
 		return _rmove & ORIGIN;
 	}

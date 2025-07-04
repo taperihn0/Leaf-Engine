@@ -75,7 +75,7 @@ class MoveGenerator;
 using MoveGen = MoveGenerator;
 
 enum class File : uint8_t {
-	A = 1, B, C, D, E, F, G, H
+	A = 0, B, C, D, E, F, G, H
 };
 
 INLINE bool isValidNumber(const std::string& str) {

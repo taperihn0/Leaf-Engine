@@ -35,7 +35,7 @@ public:
 	}
 
 	INLINE uint8_t getRank() const {
-		return _sq >> 3;
+		return _sq / 8;
 	}
 
 	INLINE bool isNotNull() const {
@@ -50,10 +50,15 @@ public:
 		return Square((file - 'a') + (rank - '1') * 8);
 	}
 
+	INLINE std::string toStr() const {
+		ASSERT(isValid(), "Invalid square");
+		if (isNull()) return "-";
+		return std::string{ "abcdefgh"[_sq & 7], static_cast<char>(_sq / 8 + '1') };
+	}
+
 	void print() const {
 		ASSERT(isValid(), "Trying to call print on invalid square");
-		if (isNull()) std::cout << '-';
-		else std::cout << "abcdefgh"[_sq & 7] << (_sq / 8 + 1);
+		std::cout << toStr();
 	}
 
 	INLINE constexpr bool isValid() const {
