@@ -7,6 +7,10 @@
 #include <iomanip>
 #include <fstream>
 
+#define _COLOR_RED	 "\033[0;31m"
+#define _COLOR_GREEN "\033[0;32m"
+#define _COLOR_RESET "\033[0m"
+
 #define _TESTCASE(expc, f, ...)													  \
 {																				  \
 	_testcase_assertion(f, expc, #f "(" #__VA_ARGS__ ")", __LINE__, __VA_ARGS__); \
@@ -18,9 +22,9 @@ template <typename Func, typename T, typename... Args>
 bool _testcase_assertion(Func f, T expected, std::string_view fstr, int line, Args&&... args) {
 	T fres = f(std::forward<Args>(args)...);
 	bool succes = fres == expected;
-	std::cout << "[n: " << std::setw(3) << test_counter << ", line: " << std::setw(3) << line << "] $ Testcase "
-		<< (succes ? "passed" : "failed") << ": " << fstr
-		<< (succes ? " == " : " != ") << expected << std::endl;
+	std::cout << "[NUM: " << std::setw(3) << test_counter << ", LINE: " << std::setw(3) << line << "] $ "
+		<< (succes ? _COLOR_GREEN "TESTCASE PASSED" : _COLOR_RED "TESTCASE FAILED") << _COLOR_RESET ": " << fstr
+		<< ", " << fres << (succes ? " == " : " != ") << expected << std::endl;
 	test_counter++;
 	return succes;
 }
@@ -72,9 +76,10 @@ static bool seeTests() {
 			}
 		}
 
-		if (move.isQuiet())
+		if (move.isQuiet() or move.isEnPassant())
 			continue;
 
+		std::cout << "[EPD]: " << line << '\n';
 		_TESTCASE(expected, StaticExchangeEval_3a, pos, move.getOrigin(), move.getTarget());
 	}
 
