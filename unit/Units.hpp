@@ -80,7 +80,9 @@ static bool seeTests() {
 			continue;
 
 		std::cout << "[EPD]: " << line << '\n';
-		_TESTCASE(expected, StaticExchangeEval_3a, pos, move.getOrigin(), move.getTarget());
+		Square dst = move.getTarget();
+		_TESTCASE(expected, StaticExchangeEval_3a, pos, move.getOrigin(), dst, 
+				  pos.pieceTypeOn(dst, !pos.getTurn()), move.getPerformerT());
 	}
 
 	return true;

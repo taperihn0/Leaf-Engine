@@ -414,61 +414,12 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 	_hashing._key = _hashing.generateOnFly(*this);
 }
 
-/*
-int Position::StaticExchangeEval(const Square org, const Square sq) const {
-	static constexpr std::array<int, 6> piece_value = {
-		100, 300, 300, 500, 900, 10000
-	};
-
-	static auto get_weakest_from = [this](BitBoard bb, enumColor side) _LAMBDA_FORCEINLINE{
-		for (auto p : Piece::piece_list) {
-			if (_piece_bb[side][p] & bb) return p;
-		}
-		return Piece::NONE;
-	};
-
-	std::array<int, 33> gain;
-
-	enumColor side = _turn;
-	BitBoard processed = BitBoard::empty;
-	const BitBoard occupied = getOccupied();
-
-	int i = 0;
-	gain[0] = 0;
-	Piece::enumType victim = pieceTypeOn(sq, !side);
-	BitBoard attackers = BitBoard(org);
-
-	while (attackers and victim != Piece::KING) {
-		i++;
-		gain[i] = -gain[i - 1] + piece_value[victim];
-		
-		// TO TEST
-		//if (std::max(-gain[i - 1], gain[i]) < 0)
-		//	break;
-
-		victim = get_weakest_from(attackers, side);
-		BitBoard vicmask = _piece_bb[side][victim] & attackers & ~processed;
-		processed |= vicmask & -vicmask;
-
-		side = !side;
-		attackers = attacksTo(sq, !side, occupied ^ processed) & ~processed;
-	}
-
-	while (i > 1) {
-		gain[i - 1] = -std::max(-gain[i - 1], gain[i]);
-		i--;
-	}
-
-	return gain[1];
-}
-*/
-
-INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueen, BitBoard rooksQueen) {
-	return ((bishopsQueen & attacks<Piece::BISHOP>(sq, occ))
-		    | (rooksQueen & attacks<Piece::ROOK>(sq, occ))) & occ;
+INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
+	return ((bishopsQueens & attacks<Piece::BISHOP>(sq, occ))
+		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
-int Position::StaticExchangeEval(Square org, Square sq) const {
+int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType attacker) const {
 	static constexpr std::array<int, 6> piece_value = {
 		100, 300, 300, 500, 900, 10000
 	};
@@ -478,52 +429,51 @@ int Position::StaticExchangeEval(Square org, Square sq) const {
 			BitBoard mask = _piece_bb[side][piece] & bb;
 			if (mask) return mask.oneBit();
 		}
-		return BitBoard(BitBoard::empty);
+		return BitBoard(0_ui64);
 	};
 
 	int gain[32];
 	int i = 0;
 
-	const BitBoard xray = getPawns() | getBishops() | getRooks() | getQueens();
+	const BitBoard bishopsQueens = getBishops() | getQueens();
+	const BitBoard rooksQueens = getRooks() | getQueens();
+	const BitBoard xray = getPawns() | bishopsQueens | rooksQueens;
 	const BitBoard targetbb = BitBoard(sq);
 
 	BitBoard from = BitBoard(org);
 	BitBoard occ = getOccupied() ^ from;
 	enumColor side2move = getTurn();
 
-	BitBoard attacks[2];
-	attacks[side2move] = attacksTo(sq, !side2move, occ) ^ from;
-	attacks[!side2move] = attacksTo(sq, side2move, occ);
+	BitBoard attacks = (attacksTo(sq, !side2move, occ) ^ from) | attacksTo(sq, side2move, occ);
 
-	uint8_t vic = pieceTypeOn(sq, !side2move);
+	uint8_t vic = target;
+	uint8_t att = attacker;
 	gain[i] = piece_value[vic];
 
-	vic = pieceTypeOn(org, side2move);
+	vic = att;
 	if (vic == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
 		gain[i] += piece_value[Piece::QUEEN] - piece_value[Piece::PAWN];
 		vic = Piece::QUEEN;
 	}
-	side2move = !side2move;
 
-	while (attacks[side2move]) {
+	side2move = !side2move;
+	from = get_weakest_from(attacks, side2move, att);
+
+	while (from != 0_ui64) {
 		i++;
 		gain[i] = -gain[i - 1] + piece_value[vic];
-		from = get_weakest_from(attacks[side2move], side2move, vic);
-		if (vic == Piece::KING and attacks[!side2move]) {
-			i--;
-			break;
-		}
-		attacks[side2move] ^= from;
+		attacks ^= from;
 		occ ^= from;
 		if (from & xray) {
-			attacks[side2move]  |= xRayAttackers(occ, sq, getBishopsQueens(side2move),  getRooksQueens(side2move));
-			attacks[!side2move] |= xRayAttackers(occ, sq, getBishopsQueens(!side2move), getRooksQueens(!side2move));
+			attacks |= xRayAttackers(occ, sq, bishopsQueens, rooksQueens);
 		}
-		if (vic == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
+		if (att == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
 			gain[i] += piece_value[Piece::QUEEN] - piece_value[Piece::PAWN];
-			vic = Piece::QUEEN;
+			att = Piece::QUEEN;
 		}
 		side2move = !side2move;
+		vic = att;
+		from = get_weakest_from(attacks, side2move, att);
 	}
 	
 	while (i > 0) {
@@ -534,6 +484,6 @@ int Position::StaticExchangeEval(Square org, Square sq) const {
 	return gain[0];
 }
 
-int StaticExchangeEval_3a(const Position& pos, const Square org, const Square sq) {
-	return pos.StaticExchangeEval(org, sq);
+int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker) {
+	return pos.StaticExchangeEval(org, sq, target, attacker);
 }

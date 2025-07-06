@@ -151,10 +151,12 @@ inline void UniversalChessInterface::parseIsReady() {
 
 #if defined (DEBUG)
 void UniversalChessInterface::parseSEE(std::istringstream& strm) {
-	std::string org, dst;
-	strm >> std::skipws >> org >> std::skipws >> dst;
-	std::cout << _pos.StaticExchangeEval(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
-	//std::cout << _pos.StaticExchangeEval2(Square::fromChar(org[0], org[1]), Square::fromChar(dst[0], dst[1])) << std::endl;
+	std::string os, ds;
+	strm >> std::skipws >> os >> std::skipws >> ds;
+	Square org = Square::fromChar(os[0], os[1]);
+	Square dst = Square::fromChar(ds[0], ds[1]);
+	int score = _pos.StaticExchangeEval(org, dst, _pos.pieceTypeOn(dst, !_pos.getTurn()), _pos.pieceTypeOn(org, _pos.getTurn()));
+	std::cout << score << std::endl;
 }
 #endif
 

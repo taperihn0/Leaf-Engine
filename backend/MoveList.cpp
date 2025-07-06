@@ -28,7 +28,7 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 			if (piece_value[att] <= piece_value[vic])
 				_moves[i].score = mvv_lva[att][vic];
 			else
-				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getOrigin(), _moves[i].move.getTarget());
+				_moves[i].score = pos.StaticExchangeEval(_moves[i].move.getOrigin(), _moves[i].move.getTarget(), vic, att);
 
 		}
 		else _moves[i].score = 2000;

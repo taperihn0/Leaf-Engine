@@ -96,11 +96,11 @@ public:
 		return _piece_bb[col_type][Piece::QUEEN];
 	}
 
-	INLINE BitBoard getBishopsQueens(enumColor col_type) const {
+	INLINE BitBoard getBishopsQueensBySide(enumColor col_type) const {
 		return getBishopsBySide(col_type) | getQueensBySide(col_type);
 	}
 
-	INLINE BitBoard getRooksQueens(enumColor col_type) const {
+	INLINE BitBoard getRooksQueensBySide(enumColor col_type) const {
 		return getRooksBySide(col_type) | getQueensBySide(col_type);
 	}
 
@@ -225,7 +225,7 @@ public:
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
-	int StaticExchangeEval(Square org, Square sq) const;
+	int StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType att) const;
 
 	IrreversibleState getIrreversibleState() const;
 
@@ -259,7 +259,7 @@ private:
 };
 
 // wrapper treating pos as an argument
-int StaticExchangeEval_3a(const Position& pos, const Square org, const Square sq);
+int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
 
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
@@ -376,8 +376,8 @@ INLINE bool Position::attacked(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
 	return (knightAttacks(sq) & getKnightsBySide(!side)) or
 		(pawnAttacks(sq, side) & getPawnsBySide(!side)) or
-		(SlidersMagics::rookAttacks(sq, occ) & getRooksQueens(!side)) or
-		(SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueens(!side));
+		(SlidersMagics::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
+		(SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
 }
 
 INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
@@ -406,12 +406,12 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 
 	uint8_t att_count = 0;
 
-	if (SlidersMagics::bishopAttacks(king_sq, occupied) & getBishopsQueens(!side))
+	if (SlidersMagics::bishopAttacks(king_sq, occupied) & getBishopsQueensBySide(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
 
-	if (SlidersMagics::rookAttacks(king_sq, occupied) & getRooksQueens(!side))
+	if (SlidersMagics::rookAttacks(king_sq, occupied) & getRooksQueensBySide(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
@@ -437,11 +437,11 @@ INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) 
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueens(!attacked);
+	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueensBySide(!attacked);
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueens(!attacked);
+	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueensBySide(!attacked);
 	if (bb)
 		return bb;
 
