@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <cstdlib>
 
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -64,7 +65,7 @@ inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
 
 _NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
 	std::cout << text << '\n' << file << ", line " << line << '\n';
-	exit(0);
+	exit(EXIT_FAILURE);
 }
 
 static constexpr int max_node_moves = 256;

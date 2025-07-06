@@ -2,6 +2,7 @@
 
 #include "Common.hpp"
 #include "Square.hpp"
+#include "Color.hpp"
 
 template <typename T>
 constexpr inline uint64_t U64(T val) {
@@ -164,6 +165,10 @@ public:
 	static INLINE constexpr BitBoard rank(int rank) {
 		ASSERT(1 <= rank and rank <= 8, "Invalid rank");
 		return BitBoard(0xff_ui64 << ((rank - 1) * 8));
+	}
+
+	static INLINE constexpr BitBoard promorank(enumColor side) {
+		return side == WHITE ? rank<8>() : rank<1>();
 	}
 
 	template <File File_>

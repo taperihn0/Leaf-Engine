@@ -112,16 +112,36 @@ public:
 		return _king_sq[col_type];
 	}
 
-	BitBoard getByColor(enumColor col_type) const;
+	BitBoard getBySide(enumColor col_type) const;
 
-	BitBoard getByColorOnFly(enumColor col_type) const;
+	BitBoard getBySideOnFly(enumColor col_type) const;
 
 	INLINE BitBoard getWhites() const {
-		return getByColor(WHITE);
+		return getBySide(WHITE);
 	}
 
 	INLINE BitBoard getBlacks() const {
-		return getByColor(BLACK);
+		return getBySide(BLACK);
+	}
+
+	INLINE BitBoard getPawns() const {
+		return getPawnsBySide(WHITE) | getPawnsBySide(BLACK);
+	}
+
+	INLINE BitBoard getKnights() const {
+		return getKnightsBySide(WHITE) | getKnightsBySide(BLACK);
+	}
+
+	INLINE BitBoard getBishops() const {
+		return getBishopsBySide(WHITE) | getBishopsBySide(BLACK);
+	}
+
+	INLINE BitBoard getRooks() const {
+		return getRooksBySide(WHITE) | getRooksBySide(BLACK);
+	}
+
+	INLINE BitBoard getQueens() const {
+		return getQueensBySide(WHITE) | getQueensBySide(BLACK);
 	}
 
 	INLINE BitBoard getOccupied() const {
@@ -129,11 +149,11 @@ public:
 	}
 
 	INLINE BitBoard getOppositePieces() const {
-		return getByColor(!_turn);
+		return getBySide(!_turn);
 	}
 
 	INLINE BitBoard getOwnPieces() const {
-		return getByColor(_turn);
+		return getBySide(_turn);
 	}
 
 	INLINE BitBoard getEmpties() const {
@@ -205,7 +225,7 @@ public:
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
-	int StaticExchangeEval(const Square org, const Square sq) const;
+	int StaticExchangeEval(Square org, Square sq) const;
 
 	IrreversibleState getIrreversibleState() const;
 
@@ -297,12 +317,12 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor s
 	return !(occupied & Intermediates);
 }
 
-INLINE BitBoard Position::getByColor(enumColor col_type) const {
-	assert(_occupied[col_type] == getByColorOnFly(col_type));
+INLINE BitBoard Position::getBySide(enumColor col_type) const {
+	assert(_occupied[col_type] == getBySideOnFly(col_type));
 	return _occupied[col_type];
 }
 
-INLINE BitBoard Position::getByColorOnFly(enumColor col_type) const {
+INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
 	return _piece_bb[col_type][Piece::PAWN]
 		| _piece_bb[col_type][Piece::KNIGHT]
 		| _piece_bb[col_type][Piece::BISHOP]
