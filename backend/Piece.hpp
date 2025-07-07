@@ -25,10 +25,6 @@ public:
 	inline Piece(enumType piece_t) { set(WHITE, piece_t); }
 	inline Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
 
-	INLINE constexpr operator int() const {
-		return static_cast<int>(_type);
-	}
-
 	static inline Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _whites_str.find_first_of(c)
 			: _blacks_str.find_first_of(c);

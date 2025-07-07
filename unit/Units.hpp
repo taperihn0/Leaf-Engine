@@ -107,7 +107,7 @@ static bool seeTests() {
 
 		 const Square dst = move.getTarget();
 		 const Piece::enumType piece = move.getPerformerT();
-		 const Piece::enumType target = pos.pieceTypeOn(dst, !pos.getTurn());
+		 const Piece::enumType target = pos.pieceTypeOn(dst, pos.getOppositeTurn());
 
 		_TESTCASE(lcnt, equal, expected, StaticExchangeEval_3a<true>, pos, move.getOrigin(), 
 				  dst, target, piece);

@@ -63,8 +63,8 @@ public:
 	std::string toStr() const;
 
 	static constexpr int16_t draw = 0,
-		infinity = std::numeric_limits<int16_t>::max(),
-		undef = infinity;
+							 infinity = std::numeric_limits<int16_t>::max(),
+							 undef = infinity;
 private:
 	int16_t _raw;
 };

@@ -1,3 +1,11 @@
+### commit _: smarter see
+Score of newsee vs oldsee: 262 - 292 - 387  [0.484] 941
+...      newsee playing White: 174 - 101 - 196  [0.577] 471
+...      newsee playing Black: 88 - 191 - 191  [0.390] 470
+...      White vs Black: 365 - 189 - 387  [0.594] 941
+Elo difference: -11.1 +/- 17.0, LOS: 10.1 %, DrawRatio: 41.1 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
 ### commit _: history heuristic without countermove heuristic + select sort + some structural changes in the code
 Score of history vs nonpv: 555 - 440 - 623  [0.536] 1618 <br>
 ...      history playing White: 315 - 177 - 317  [0.585] 809 <br>

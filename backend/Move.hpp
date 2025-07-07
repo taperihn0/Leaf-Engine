@@ -92,7 +92,7 @@ public:
 
 	INLINE bool isIrreversible() const {
 		return isCapture() or getPerformerT() == Piece::PAWN or 
-			isShortCastle() or isLongCastle();
+			   isShortCastle() or isLongCastle();
 	}
 
 	INLINE Piece::enumType getPerformerT() const {
@@ -115,7 +115,7 @@ public:
 		_rmove &= ~TARGET, _rmove |= static_cast<uint32_t>(target) << 6;
 	}
 
-	INLINE void setPromoPiece(Piece piece) {
+	INLINE void setPromoPiece(Piece::enumType piece) {
 		_rmove &= ~PROMO_PIECE, _rmove |= static_cast<uint32_t>(piece) << 4;
 	}
 

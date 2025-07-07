@@ -13,6 +13,7 @@
 	3. Also, try another depth when considering moves from game record in terms of repetitions.
 	4. Try to score captures only once (faster) instead of doing that every time a new capture is picked
 	5. Try different method of updating history tables for quiet moves (also, try different aging)
+	6. Recapture heuristic (in move order try to apply capture that captures last moved piece)
 */
 
 int main(int argc, const char* argv[]) {
