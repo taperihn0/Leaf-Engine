@@ -185,8 +185,8 @@ void generateByColor(const Position& pos, MoveList& move_list, const BitBoard oc
 
 	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
 	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::ROOK, Side, areCaptures>  (pos, move_list, pieces_mask, occupied);
-	generate<Piece::QUEEN, Side, areCaptures> (pos, move_list, pieces_mask, occupied);
+	generate<Piece::ROOK,   Side, areCaptures>(pos, move_list, pieces_mask, occupied);
+	generate<Piece::QUEEN,  Side, areCaptures>(pos, move_list, pieces_mask, occupied);
 
 	generateKingMoves<Side, areCaptures>(pos, move_list, gen_mask, occupied, check);
 }
@@ -194,7 +194,7 @@ void generateByColor(const Position& pos, MoveList& move_list, const BitBoard oc
 template <MoveGen::enumMode GenType>
 void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list) {
 	const BitBoard enemy_pieces = pos.getOppositePieces(),
-				   occupied = enemy_pieces | pos.getOwnPieces(),
+				   occupied = pos.getOccupied(),
 				   checkers = pos.getCheckers(pos.getTurn());
 
 	static_cast<enumColor>(pos.getTurn()) == WHITE ? 
@@ -233,7 +233,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list)
 template <>
 void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveList& move_list) {
 	const BitBoard enemy_pieces = pos.getOppositePieces(),
-				   occupied = enemy_pieces | pos.getOwnPieces(),
+				   occupied = pos.getOccupied(),
 				   checkers = pos.getCheckers(pos.getTurn());
 
 	if (pos.getTurn() == WHITE) {

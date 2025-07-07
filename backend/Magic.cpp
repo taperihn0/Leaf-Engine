@@ -113,7 +113,7 @@ void SlidersMagics::initAttackTables() {
 }
 
 BitBoard SlidersMagics::indexToSubset(uint64_t i, BitBoard relv_occ, int relv_bits) {
-    BitBoard subset = BitBoard::empty;
+    BitBoard subset = BitBoard(0_ui64);
 
     for (int j = 0; j < relv_bits; j++) {
         const int ls1b_idx = relv_occ.dropForward();
@@ -125,7 +125,7 @@ BitBoard SlidersMagics::indexToSubset(uint64_t i, BitBoard relv_occ, int relv_bi
 
 uint64_t SlidersMagics::generateBishopAttacks(Square sq, BitBoard relv_occ) {
     int f_rank = sq / 8, f_file = sq % 8;
-    uint64_t mask = BitBoard::empty;
+    uint64_t mask = BitBoard(0_ui64);
 
     for (int r = f_rank + 1, f = f_file + 1; r < 8 and f < 8; r++, f++) {
         mask |= BitBoard(Square(r * 8 + f));
@@ -152,7 +152,7 @@ uint64_t SlidersMagics::generateBishopAttacks(Square sq, BitBoard relv_occ) {
 
 uint64_t SlidersMagics::generateRookAttacks(Square sq, BitBoard relv_occ) {
     int f_rank = sq / 8, f_file = sq % 8;
-    uint64_t mask = BitBoard::empty;
+    uint64_t mask = BitBoard(0_ui64);
 
     for (int r = f_rank + 1; r < 8; r++) {
         mask |= BitBoard(Square(r * 8 + f_file));

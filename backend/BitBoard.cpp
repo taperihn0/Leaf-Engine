@@ -87,7 +87,7 @@ int BitBoard::bitScanReverse() const {
 #endif
 
 BitBoard RectangularTable::inBetweenOnFly(Square org, Square dst) {
-	BitBoard res = BitBoard::empty;
+	BitBoard res = BitBoard(0_ui64);
 
 	const Square sq_min = std::min(org, dst),
 		sq_max = std::max(org, dst);
@@ -110,7 +110,7 @@ BitBoard RectangularTable::inBetweenOnFly(Square org, Square dst) {
 	}
 
 	// if there is no straight path between org and dst, return universe
-	return res == BitBoard::empty ? BitBoard(BitBoard::universe) : res;
+	return res == BitBoard(0_ui64) ? BitBoard(BitBoard::universe) : res;
 }
 
 void RectangularTable::init() {

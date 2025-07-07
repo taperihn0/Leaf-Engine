@@ -38,8 +38,8 @@ uint64_t ZobristHash::generateOnFly(const Position& pos) {
 	for (int sq = 0; sq < 64; sq++) {
 		const Piece piece = pos.pieceOn(sq);
 
-		if (piece.getType() != Piece::NONE)
-			key ^= _piece_keys[piece.getColor()][piece.getType()][sq];
+		if (piece.type() != Piece::NONE)
+			key ^= _piece_keys[piece.color()][piece.type()][sq];
 	}
 
 	if (pos.getTurn() == BLACK)

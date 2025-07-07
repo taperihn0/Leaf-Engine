@@ -183,7 +183,6 @@ public:
 
 	// crucial uint64_t constants
 	static constexpr uint64_t universe = 0xffffffffffffffff_ui64,
-							  empty = 0_ui64,
 							  a_file = 0x0101010101010101_ui64,
 							  b_file = 0x0202020202020202_ui64,
 							  g_file = 0x4040404040404040_ui64,

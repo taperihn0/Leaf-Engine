@@ -12,10 +12,10 @@
 #define _COLOR_GREEN	  "\033[0;32m"
 #define _COLOR_RESET	  "\033[0m"
 
-#define _TESTCASE(lcnt, cmp, expc, f, ...)														   \
-{																								   \
-	_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, __LINE__, __VA_ARGS__); \
-}																								   \
+#define _TESTCASE(lcnt, cmp, expc, f, ...)																\
+{																										\
+	_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
+}																										\
 
 static size_t test_counter = 0;
 
@@ -36,7 +36,7 @@ using _cmp_func_t = bool(*)(const T&, const T&);
 
 template <typename Func, typename T, typename... Args>
 bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_view cmpnamestr, 
-	std::string_view fcallstr, long testline, long fileline, Args&&... args) {
+	std::string_view fcallstr, int testline, int fileline, Args&&... args) {
 	T fres = f(std::forward<Args>(args)...);
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;

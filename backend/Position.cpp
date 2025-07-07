@@ -45,7 +45,7 @@ void Position::setByFEN(const std::string fen) {
 		}
 
 		const enumColor col = islower(c) ? BLACK : WHITE;
-		_piece_bb[col][Piece::fromChar(col, c).toIndex()].setBit(in);
+		_piece_bb[col][Piece::fromChar(col, c).value()].setBit(in);
 		++x;
 	}
 

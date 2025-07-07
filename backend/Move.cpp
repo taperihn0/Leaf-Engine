@@ -104,7 +104,7 @@ Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::st
 		else {
 			Piece::enumType piece = Piece::typeFromChar(str[0]);
 			BitBoard bb = attacks(piece, target, pos.getOccupied()) & pos.get(piece, pos.getTurn());
-			ASSERT(bb != BitBoard::empty, "Invalid capture");
+			ASSERT(bb != BitBoard(0_ui64), "Invalid capture");
 
 			if (bb.popCount() > 1) {
 				char id = str[1];

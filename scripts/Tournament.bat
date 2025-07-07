@@ -1,2 +1,2 @@
 echo Tournament started
-cutechess-cli -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\5df7\Leaf.exe" name="newsee" -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\bc4b\Leaf.exe" name="oldsee" -each proto=uci tc=1+0.04 book="C:\Program Files (x86)\Cute Chess\LEAF\Titans.bin" -rounds 2 -games 4000 -draw movenumber=36 movecount=8 score=10
+cutechess-cli -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\e60b\Leaf.exe" name="seeprune" -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\5df7\Leaf.exe" name="newsee" -each proto=uci tc=1+0.04 book="C:\Program Files (x86)\Cute Chess\LEAF\Titans.bin" -rounds 2 -games 4000 -draw movenumber=36 movecount=8 score=10

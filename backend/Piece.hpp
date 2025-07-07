@@ -16,10 +16,8 @@ public:
 		ROOK,
 		QUEEN,
 		KING,
-
 		BISHOP_LIKE = BISHOP | QUEEN,
 		ROOK_LIKE   =   ROOK | QUEEN,
-
 		NONE,
 	};
 
@@ -53,15 +51,15 @@ public:
 		else std::cout << _blacks_str[_type];
 	}
 
-	inline int toIndex() const {
-		return static_cast<int>(_type);
+	inline Piece::uint_t value() const {
+		return static_cast<Piece::uint_t>(_type);
 	}
 
-	inline enumType getType() const {
+	inline enumType type() const {
 		return _type;
 	}
 
-	inline enumColor getColor() const {
+	inline enumColor color() const {
 		return _col;
 	}
 
@@ -75,11 +73,16 @@ public:
 	};
 
 private:
-	static constexpr std::string_view _whites_str = "PNBRQK", _blacks_str = "pnbrqk";
+	static constexpr std::string_view _whites_str = "PNBRQK", 
+									  _blacks_str = "pnbrqk";
 	enumType _type;
 	enumColor _col;
 };
 
 INLINE constexpr Piece::enumType operator|(Piece::enumType t1, Piece::enumType t2) {
 	return static_cast<Piece::enumType>(t1 | t2);
+}
+
+INLINE constexpr Piece::uint_t value(Piece::enumType p) {
+	return static_cast<Piece::uint_t>(p);
 }

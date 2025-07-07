@@ -1,5 +1,6 @@
 #include "MoveList.hpp"
 
+/*
 // MVV-LVA table taken directly from Austerlitz:
 // https://github.com/taperihn0/Austerlitz-Engine/blob/master/source/MoveOrder.h
 static constexpr std::array<std::array<int, 5>, 6> mvv_lva = { {
@@ -10,6 +11,7 @@ static constexpr std::array<std::array<int, 5>, 6> mvv_lva = { {
 	{ 1009, 2009, 3009, 4009, 5009 },
 	{ 1000, 2000, 3000, 4000, 5000 }
 } };
+*/
 
 static constexpr std::array<int, 6> piece_value = {
 	100, 300, 300, 500, 900, 10000
@@ -18,20 +20,21 @@ static constexpr std::array<int, 6> piece_value = {
 void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion()
-			and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
+			   and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
 
-		if (_moves[i].move.isCapture()) {
-			const Piece::enumType att = _moves[i].move.getPerformerT();
-			const Piece::enumType vic = _moves[i].move.isEnPassant() ? Piece::PAWN : 
-										pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
-
-			if (piece_value[att] <= piece_value[vic])
-				_moves[i].score = mvv_lva[att][vic];
-			else
-				_moves[i].score = pos.StaticExchangeEval<true>(_moves[i].move.getOrigin(), _moves[i].move.getTarget(), vic, att);
-
+		if (_moves[i].move.isEnPassant()) {
+			_moves[i].score = piece_value[Piece::PAWN] - value(Piece::PAWN);
 		}
-		else _moves[i].score = 2000;
+		else if (_moves[i].move.isCapture()) {
+			const Piece::enumType att = _moves[i].move.getPerformerT();
+			const Piece::enumType vic = pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
+			_moves[i].score = piece_value[vic] - value(att);
+		}
+
+		if (_moves[i].move.isPromotion()) {
+			const Piece::enumType promo = _moves[i].move.getPromoPieceT();
+			_moves[i].score += piece_value[promo];
+		}
 	}
 }
 

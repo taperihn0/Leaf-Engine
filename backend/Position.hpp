@@ -339,8 +339,8 @@ INLINE Position::IrreversibleState Position::getIrreversibleState() const {
 }
 
 INLINE void Position::clearPieces() {
-	std::wmemset((wchar_t*)_piece_bb.data(), BitBoard::empty, 6 * sizeof(BitBoard));
-	std::wmemset((wchar_t*)_occupied.data(), BitBoard::empty, 2 * sizeof(BitBoard));
+	std::memset(_piece_bb.data(), 0, 2 * 6 * sizeof(BitBoard));
+	std::memset(_occupied.data(), 0, 2 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>
@@ -447,7 +447,7 @@ INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) 
 	if (bb)
 		return bb;
 
-	return BitBoard::empty;
+	return BitBoard(0_ui64);
 }
 
 INLINE BitBoard Position::getCheckers(enumColor side) const {
