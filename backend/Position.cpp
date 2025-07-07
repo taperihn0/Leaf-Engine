@@ -102,7 +102,7 @@ bool Position::make(Move& move) {
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
 						  promotion = move.isPromotion();
-	const Piece::enumType piece_t = move.getPerformerT();
+	const Piece::enumType piece_t = move.getPiece();
 	const int			  dir = _turn == WHITE ? 8 : -8;
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
@@ -139,7 +139,7 @@ bool Position::make(Move& move) {
 	}
 
 	if (promotion) {
-		const Piece::enumType promo_piece_t = move.getPromoPieceT();
+		const Piece::enumType promo_piece_t = move.getPromoPiece();
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 
 		_piece_bb[_turn][piece_t].popBit(org);
@@ -219,7 +219,7 @@ bool Position::make(Move& move) {
 }
 
 void Position::unmake(Move move, const IrreversibleState& prev_state) {
-	const Piece::enumType piece_t = move.getPerformerT();
+	const Piece::enumType piece_t = move.getPiece();
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
@@ -229,7 +229,7 @@ void Position::unmake(Move move, const IrreversibleState& prev_state) {
 	_turn = !_turn;
 
 	if (promotion) {
-		const Piece::enumType promo_piece_t = move.getPromoPieceT();
+		const Piece::enumType promo_piece_t = move.getPromoPiece();
 
 		assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 		_piece_bb[_turn][piece_t].setBit(org);
@@ -250,7 +250,7 @@ void Position::unmake(Move move, const IrreversibleState& prev_state) {
 			_occupied[!_turn].setBit(dst - dir);
 		}
 		else {
-			const Piece::enumType captured = move.getCapturedT();
+			const Piece::enumType captured = move.getCapturedMoved();
 
 			assert(captured != Piece::NONE);
 			_piece_bb[!_turn][captured].setBit(dst);

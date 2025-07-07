@@ -106,7 +106,7 @@ static bool seeTests() {
 		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';
 
 		 const Square dst = move.getTarget();
-		 const Piece::enumType piece = move.getPerformerT();
+		 const Piece::enumType piece = move.getPiece();
 		 const Piece::enumType target = pos.pieceTypeOn(dst, pos.getOppositeTurn());
 
 		_TESTCASE(lcnt, equal, expected, StaticExchangeEval_3a<true>, pos, move.getOrigin(), 

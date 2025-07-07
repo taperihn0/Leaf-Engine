@@ -65,8 +65,7 @@ private:
 			return move == b.move;
 		}
 
-		Move move;
-		// TODO: move score datatype 
+		Move move; 
 		int16_t score;
 	};
 

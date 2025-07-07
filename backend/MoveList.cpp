@@ -7,19 +7,20 @@ static constexpr std::array<int, 6> piece_value = {
 void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion()
-			   and _moves[i].move.getPromoPieceT() == Piece::QUEEN));
+			   and _moves[i].move.getPromoPiece() == Piece::QUEEN));
 
 		if (_moves[i].move.isEnPassant()) {
 			_moves[i].score = piece_value[Piece::PAWN] - value(Piece::PAWN);
 		}
 		else if (_moves[i].move.isCapture()) {
-			const Piece::enumType att = _moves[i].move.getPerformerT();
+			const Piece::enumType att = _moves[i].move.getPiece();
 			const Piece::enumType vic = pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
 			_moves[i].score = piece_value[vic] - value(att);
 		}
 
 		if (_moves[i].move.isPromotion()) {
-			_moves[i].score += piece_value[Piece::QUEEN];
+			const Piece::enumType promo = _moves[i].move.getPromoPiece();
+			_moves[i].score += piece_value[promo];
 		}
 	}
 }
@@ -27,7 +28,7 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 void MoveList::scoreQuiets(size_t first, const Position& pos, int16_t (*history)[6][64]) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isQuiet());
-		_moves[i].score = history[pos.getTurn()][_moves[i].move.getPerformerT()][_moves[i].move.getTarget()];
+		_moves[i].score = history[pos.getTurn()][_moves[i].move.getPiece()][_moves[i].move.getTarget()];
 	}
 }
 

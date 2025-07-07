@@ -81,9 +81,9 @@ INLINE void MoveOrder<Type>::setKillerMove(Move m) {
 
 template <OrderType Type>
 INLINE void MoveOrder<Type>::updateHistory(Move curr, bool side, int depth) {
-	_history[side][curr.getPerformerT()][curr.getTarget()] += depth * depth;
+	_history[side][curr.getPiece()][curr.getTarget()] += depth * depth;
 
-	if (_history[side][curr.getPerformerT()][curr.getTarget()] > 16000) {
+	if (_history[side][curr.getPiece()][curr.getTarget()] > 16000) {
 		agingHistory();
 	}
 }

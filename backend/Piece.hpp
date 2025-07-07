@@ -75,10 +75,6 @@ private:
 	enumColor _col;
 };
 
-INLINE constexpr Piece::enumType operator|(Piece::enumType t1, Piece::enumType t2) {
-	return static_cast<Piece::enumType>(t1 | t2);
-}
-
 INLINE constexpr Piece::uint_t value(Piece::enumType p) {
 	return static_cast<Piece::uint_t>(p);
 }

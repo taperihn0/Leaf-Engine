@@ -197,7 +197,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (node.score > alpha) {
 				if (node.score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
-					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPieceT() != Piece::QUEEN)) {
+					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPiece() != Piece::QUEEN)) {
 						node.move_picker.setKillerMove(node.move);
 						node.move_picker.updateHistory(node.move, pos.getTurn(), depth);
 					}

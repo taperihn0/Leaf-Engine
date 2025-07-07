@@ -91,19 +91,21 @@ public:
 	}
 
 	INLINE bool isIrreversible() const {
-		return isCapture() or getPerformerT() == Piece::PAWN or 
+		return isCapture() or getPiece() == Piece::PAWN or 
 			   isShortCastle() or isLongCastle();
 	}
 
-	INLINE Piece::enumType getPerformerT() const {
+	INLINE Piece::enumType getPiece() const {
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 16);
 	}
 
-	INLINE Piece::enumType getCapturedT() const {
+	// use this field only after making a move -
+	// captured piece is saved only in making a move
+	INLINE Piece::enumType getCapturedMoved() const {
 		return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 19);
 	}
 
-	INLINE Piece::enumType getPromoPieceT() const {
+	INLINE Piece::enumType getPromoPiece() const {
 		return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 22);
 	}
 

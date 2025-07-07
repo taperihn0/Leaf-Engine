@@ -145,7 +145,7 @@ void Move::print() const {
 	}
 	else {
 		getOrigin().print(), getTarget().print();
-		if (isPromotion()) Piece(BLACK, getPromoPieceT()).print();
+		if (isPromotion()) Piece(BLACK, getPromoPiece()).print();
 	}
 #else
 	ASSERT(false, "Prining moves in algebraic notation not supported");
@@ -154,7 +154,7 @@ void Move::print() const {
 
 bool Move::isPseudoLegal(const Position& pos) const {
 	const Square org = getOrigin(), dst = getTarget();
-	const Piece::enumType p = getPerformerT(), d = pos.pieceTypeOn(dst, pos.getOppositeTurn());
+	const Piece::enumType p = getPiece(), d = pos.pieceTypeOn(dst, pos.getOppositeTurn());
 
 	if (p == Piece::KING) {
 		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
