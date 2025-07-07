@@ -16,8 +16,6 @@ public:
 		ROOK,
 		QUEEN,
 		KING,
-		BISHOP_LIKE = BISHOP | QUEEN,
-		ROOK_LIKE   =   ROOK | QUEEN,
 		NONE,
 	};
 

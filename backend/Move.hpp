@@ -121,11 +121,11 @@ public:
 		_rmove &= ~PROMO_PIECE, _rmove |= static_cast<uint32_t>(piece) << 4;
 	}
 
-	INLINE void setPerformerT(Piece::enumType piece) {
+	INLINE void setPiece(Piece::enumType piece) {
 		_rmove &= ~PERFORMER, _rmove |= static_cast<uint32_t>(piece) << 16;
 	}
 
-	INLINE void setCapturedT(Piece::enumType captured) {
+	INLINE void setCaptured(Piece::enumType captured) {
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 19;
 	}
 

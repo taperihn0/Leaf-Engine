@@ -116,7 +116,7 @@ bool Position::make(Move& move) {
 		}
 		else {
 			const Piece::enumType captured = pieceTypeOn(dst, !_turn);
-			move.setCapturedT(captured);
+			move.setCaptured(captured);
 
 			assert(captured != Piece::NONE);
 
