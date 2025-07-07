@@ -7,24 +7,48 @@
 #include <iomanip>
 #include <fstream>
 
-#define _COLOR_RED	 "\033[0;31m"
-#define _COLOR_GREEN "\033[0;32m"
-#define _COLOR_RESET "\033[0m"
+#define _COLOR_RED		  "\033[0;31m"
+#define _COLOR_BRIGHT_RED "\033[0;91m"
+#define _COLOR_GREEN	  "\033[0;32m"
+#define _COLOR_RESET	  "\033[0m"
 
-#define _TESTCASE(expc, f, ...)													  \
-{																				  \
-	_testcase_assertion(f, expc, #f "(" #__VA_ARGS__ ")", __LINE__, __VA_ARGS__); \
-}																				  \
+#define _TESTCASE(lcnt, cmp, expc, f, ...)														   \
+{																								   \
+	_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, __LINE__, __VA_ARGS__); \
+}																								   \
 
 static size_t test_counter = 0;
 
+template <typename T>
+bool equal(const T& a, const T& b) {
+	return a == b;
+}
+
+template <typename T>
+bool samesign(const T& a, const T& b) {
+	static_assert(std::is_integral<T>::value, "samesign handles only integer types");
+	return (a < 0ull and b < 0ull) or (a > 0ull and b > 0ull) 
+		   or (a == 0ull and b == 0ull);
+}
+
+template <typename T>
+using _cmp_func_t = bool(*)(const T&, const T&);
+
 template <typename Func, typename T, typename... Args>
-bool _testcase_assertion(Func f, T expected, std::string_view fstr, int line, Args&&... args) {
+bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_view cmpnamestr, 
+	std::string_view fcallstr, long testline, long fileline, Args&&... args) {
 	T fres = f(std::forward<Args>(args)...);
-	bool succes = fres == expected;
-	std::cout << "[NUM: " << std::setw(3) << test_counter << ", LINE: " << std::setw(3) << line << "] $ "
-		<< (succes ? _COLOR_GREEN "TESTCASE PASSED" : _COLOR_RED "TESTCASE FAILED") << _COLOR_RESET ": " << fstr
-		<< ", " << fres << (succes ? " == " : " != ") << expected << std::endl;
+	bool succes = cmp(fres, expected);
+	if (!succes) std::cout << _COLOR_RED;
+	std::cout << "["
+		<< "TESTNUM: " << std::setw(3) << test_counter 
+		<< ", TESTLINE: " << std::setw(3) << testline 
+		<< ", FILELINE: " << std::setw(3) << fileline 
+		<< "] $ "
+		<< (succes ? _COLOR_GREEN "TESTCASE PASSED" _COLOR_RESET : _COLOR_BRIGHT_RED "TESTCASE FAILED" _COLOR_RED)
+		<< ": " << fcallstr
+		<< ", " << cmpnamestr << "(" << fres << ", " << expected << ") = " << (succes ? "TRUE" : "FALSE")
+		<< _COLOR_RESET << std::endl;
 	test_counter++;
 	return succes;
 }
@@ -51,7 +75,7 @@ static bool seeTests() {
 		EXPECTED_NUM,
 	};
 
-	while (std::getline(file, line)) {
+	for (int lcnt = 0; std::getline(file, line); lcnt++) {
 		size_t ind = 0;
 		Move move = Move::null;
 		int expected = 0;
@@ -79,10 +103,17 @@ static bool seeTests() {
 		if (move.isQuiet() or move.isEnPassant())
 			continue;
 
-		std::cout << "[EPD]: " << line << '\n';
-		Square dst = move.getTarget();
-		_TESTCASE(expected, StaticExchangeEval_3a, pos, move.getOrigin(), dst, 
-				  pos.pieceTypeOn(dst, !pos.getTurn()), move.getPerformerT());
+		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';
+
+		 const Square dst = move.getTarget();
+		 const Piece::enumType piece = move.getPerformerT();
+		 const Piece::enumType target = pos.pieceTypeOn(dst, !pos.getTurn());
+
+		_TESTCASE(lcnt, equal, expected, StaticExchangeEval_3a<true>, pos, move.getOrigin(), 
+				  dst, target, piece);
+		_TESTCASE(lcnt, samesign, expected, StaticExchangeEval_3a<false>, pos, move.getOrigin(), 
+				  dst, target, piece);
+
 	}
 
 	return true;

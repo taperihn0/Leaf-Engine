@@ -7,7 +7,9 @@
 
 class Piece {
 public:
-	enum enumType : uint8_t {
+	using uint_t = uint8_t;
+
+	enum enumType : uint_t {
 		PAWN,
 		KNIGHT,
 		BISHOP,

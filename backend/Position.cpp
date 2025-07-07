@@ -419,19 +419,20 @@ INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, B
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
+template <bool ExactScore>
 int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType attacker) const {
 	static constexpr std::array<int, 6> piece_value = {
 		100, 300, 300, 500, 900, 10000
 	};
 
-	static auto get_weakest_from = [this](BitBoard bb, enumColor side, uint8_t& piece) _LAMBDA_FORCEINLINE {
+	static auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
 		for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
 			BitBoard mask = _piece_bb[side][piece] & bb;
 			if (mask) return mask.oneBit();
 		}
 		return BitBoard(0_ui64);
 	};
-
+	
 	int gain[32];
 	int i = 0;
 
@@ -446,8 +447,8 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 
 	BitBoard attacks = (attacksTo(sq, !side2move, occ) ^ from) | attacksTo(sq, side2move, occ);
 
-	uint8_t vic = target;
-	uint8_t att = attacker;
+	Piece::uint_t vic = target;
+	Piece::uint_t att = attacker;
 	gain[i] = piece_value[vic];
 
 	vic = att;
@@ -462,6 +463,10 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 	while (from != 0_ui64) {
 		i++;
 		gain[i] = -gain[i - 1] + piece_value[vic];
+		if constexpr (!ExactScore) {
+			if (std::max(-gain[i - 1], gain[i]) < 0)
+				break;
+		}
 		attacks ^= from;
 		occ ^= from;
 		if (from & xray) {
@@ -484,6 +489,13 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 	return gain[0];
 }
 
+template <bool ExactScore>
 int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker) {
-	return pos.StaticExchangeEval(org, sq, target, attacker);
+	return pos.StaticExchangeEval<ExactScore>(org, sq, target, attacker);
 }
+
+template int Position::StaticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType) const;
+template int Position::StaticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType) const;
+
+template int StaticExchangeEval_3a<false>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
+template int StaticExchangeEval_3a<true>(const Position&, Square, Square, Piece::enumType, Piece::enumType);

@@ -225,6 +225,7 @@ public:
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
 
+	template <bool ExactScore>
 	int StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType att) const;
 
 	IrreversibleState getIrreversibleState() const;
@@ -259,6 +260,7 @@ private:
 };
 
 // wrapper treating pos as an argument
+template <bool ExactScore>
 int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
 
 template <enumColor Side>
