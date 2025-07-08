@@ -77,11 +77,16 @@ public:
 
 	Search();
 
-	void bestMove(Position& pos, const Game& game, SearchLimits limits);
+	template <bool PrintInfo = true>
+	Move bestMove(Position& pos, const Game& game, SearchLimits limits);
+	static Move _bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits);
 
 	void registerNewGame();
 private:
-	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
+	template <bool PrintInfo>
+	Move iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
+
+	template <bool PrintInfo>
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>

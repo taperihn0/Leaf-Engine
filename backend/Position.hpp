@@ -265,9 +265,8 @@ private:
 	ZobristHash _hashing;
 };
 
-// wrapper treating pos as an argument
 template <bool ExactScore>
-int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
+int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
 
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {

@@ -27,6 +27,7 @@
 #endif
 
 #define _NORETURN [[noreturn]]
+#define _UNUSED   [[maybe_unused]]
 
 #define ENGINE_NAME "Leaf Lite"
 #define AUTHOR		"Szymon Belz"

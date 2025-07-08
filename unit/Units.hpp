@@ -3,21 +3,24 @@
 #include "../backend/Common.hpp"
 #include "../backend/Position.hpp"
 #include "../backend/Move.hpp"
+#include "../backend/Time.hpp"
+#include "../backend/Search.hpp"
+#include "../backend/Game.hpp"
 
 #include <iomanip>
 #include <fstream>
 
-#define _COLOR_RED		  "\033[0;31m"
-#define _COLOR_BRIGHT_RED "\033[0;91m"
-#define _COLOR_GREEN	  "\033[0;32m"
-#define _COLOR_RESET	  "\033[0m"
+#define _COLOR_RED		   "\033[0;31m"
+#define _COLOR_BRIGHT_RED  "\033[0;91m"
+#define _COLOR_BRIGHT_BLUE "\033[0;94m"
+#define _COLOR_GREY		   "\033[0;97m"
+#define _COLOR_GREEN	   "\033[0;32m"
+#define _COLOR_RESET	   "\033[0m"
 
 #define _TESTCASE(lcnt, cmp, expc, f, ...)																\
 {																										\
 	_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
 }																										\
-
-static size_t test_counter = 0;
 
 template <typename T>
 bool equal(const T& a, const T& b) {
@@ -25,11 +28,18 @@ bool equal(const T& a, const T& b) {
 }
 
 template <typename T>
+bool nonequal(const T& a, const T& b) {
+	return !(a == b);
+}
+
+template <typename T>
 bool samesign(const T& a, const T& b) {
-	static_assert(std::is_integral<T>::value, "samesign handles only integer types");
+	static_assert(std::is_integral<T>::value, "samesign function handles only integer types");
 	return (a < 0ull and b < 0ull) or (a > 0ull and b > 0ull) 
 		   or (a == 0ull and b == 0ull);
 }
+
+static size_t _test_counter = 0;
 
 template <typename T>
 using _cmp_func_t = bool(*)(const T&, const T&);
@@ -41,7 +51,7 @@ bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_vie
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;
 	std::cout << "["
-		<< "TESTNUM: " << std::setw(3) << test_counter 
+		<< "TESTNUM: " << std::setw(3) << _test_counter
 		<< ", TESTLINE: " << std::setw(3) << testline 
 		<< ", FILELINE: " << std::setw(3) << fileline 
 		<< "] $ "
@@ -49,7 +59,7 @@ bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_vie
 		<< ": " << fcallstr
 		<< ", " << cmpnamestr << "(" << fres << ", " << expected << ") = " << (succes ? "TRUE" : "FALSE")
 		<< _COLOR_RESET << std::endl;
-	test_counter++;
+	_test_counter++;
 	return succes;
 }
 
@@ -74,6 +84,8 @@ static bool seeTests() {
 		MOVE_NUM,
 		EXPECTED_NUM,
 	};
+	
+	std::cout << _COLOR_BRIGHT_BLUE "####### SEE TESTING #######\n" _COLOR_RESET;
 
 	for (int lcnt = 0; std::getline(file, line); lcnt++) {
 		size_t ind = 0;
@@ -109,9 +121,9 @@ static bool seeTests() {
 		 const Piece::enumType piece = move.getPiece();
 		 const Piece::enumType target = pos.pieceOn(dst, pos.getOppositeTurn());
 
-		_TESTCASE(lcnt, equal, expected, StaticExchangeEval_3a<true>, pos, move.getOrigin(), 
+		_TESTCASE(lcnt, equal, expected, _StaticExchangeEval_unittest<true>, pos, move.getOrigin(), 
 				  dst, target, piece);
-		_TESTCASE(lcnt, samesign, expected, StaticExchangeEval_3a<false>, pos, move.getOrigin(), 
+		_TESTCASE(lcnt, samesign, expected, _StaticExchangeEval_unittest<false>, pos, move.getOrigin(),
 				  dst, target, piece);
 
 	}
@@ -119,8 +131,68 @@ static bool seeTests() {
 	return true;
 }
 
-static bool runTests() {
+static bool ccrOneHourTest(Search& search) {
+	std::ifstream file("unit/ccronehour.txt");
+	ASSERT(file.is_open(), "Failed to open file ccronehour.txt");
+
+	// MODIFY TO CHANGE SEARCHING DEPTH
+	static constexpr int search_depth = 9;
+	static_assert(1 <= search_depth and search_depth <= max_depth);
+
+	// MODIFY TO CHANGE NUMBER OF POSITION
+	static constexpr int pos_limit = 25;
+	static_assert(1 <= pos_limit and pos_limit <= 25);
+
+	Position pos;
+	std::string line;
+	Move move;
+
+	Game tmpgame;
+	SearchLimits limits;
+	limits.depth = search_depth;
+
+	std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
+
+	Timer timer;
+	timer.go();
+
+	for (int lcnt = 0; lcnt < pos_limit and std::getline(file, line); lcnt++) {
+		size_t next = nextToken(line, 0);
+
+		std::string fen = line.substr(0, next);
+		pos.setByFEN(fen);
+		
+		std::string opt = line.substr(next, line.size());
+		size_t ind = opt.find("bm");
+
+		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';
+
+		if (ind != std::string::npos) {
+			ind += 3;
+			size_t last = nextToken(opt, ind);
+			move = Move::fromStr<Move::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			_TESTCASE(lcnt, equal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
+		}
+		else {
+			ind = opt.find("am");
+			ASSERT(ind != std::string::npos, "Invalid line");
+			ind += 3;
+			size_t last = nextToken(opt, ind);
+			move = Move::fromStr<Move::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			_TESTCASE(lcnt, nonequal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
+		}
+	}
+
+	timer.stop();
+	auto duration_ms = timer.duration();
+
+	std::cout << "TEST DURATION: " << duration_ms << "ms" << std::endl;
+	return true;
+}
+
+static bool runTests(Search& search) {
 	seeTests();
+	ccrOneHourTest(search);
 	return true;
 }
 

@@ -62,16 +62,23 @@ void Search::registerNewGame() {
 	_tt.clear();
 }
 
-void Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
+template <bool PrintInfo>
+Move Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
 
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	iterativeDeepening(pos, game, limits);
+	const Move bm = iterativeDeepening<PrintInfo>(pos, game, limits);
+	return bm;
 }
 
-void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
+Move Search::_bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits) {
+	return search.bestMove<false>(pos, game, limits);
+}
+
+template <bool PrintInfo>
+Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
 	search_results.tt_entries = _tt.getEntriesCount();
 
@@ -81,15 +88,17 @@ void Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 
 		_tree.clear();
 
-		if (!search(pos, game, limits, search_results))
+		if (!search<PrintInfo>(pos, game, limits, search_results))
 			break;
 
 		search_results.registerBestMove(_tree.getNode(0).best_move);
 	}
 
 	search_results.printBestMove();
+	return search_results.best_move;
 }
 
+template <bool PrintInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
 	results.timer.go();
 
@@ -100,7 +109,9 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 		return false;
 
 	results.timer.stop();
-	results.print(this, pos);
+
+	if constexpr (PrintInfo)
+		results.print(this, pos);
 
 	return true;
 }
@@ -323,3 +334,6 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
 
 	return false;
 }
+
+template Move Search::bestMove<true>(Position&, const Game&, SearchLimits);
+template Move Search::bestMove<false>(Position&, const Game&, SearchLimits);

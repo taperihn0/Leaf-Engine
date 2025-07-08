@@ -1,10 +1,7 @@
 #include "UCI.hpp"
 #include "../backend/Move.hpp"
 #include "../backend/Search.hpp"
-
-#if defined (DEBUG)
 #include "../unit/Units.hpp"
-#endif
 
 #include <sstream>
 
@@ -67,9 +64,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "print") _pos.print();
 		else if (token == "go") parseGo(strm);
 		else if (token == "isready") parseIsReady();
+		else if (token == "test") parseTest();
 #if defined(DEBUG)
 		else if (token == "see") parseSEE(strm);
-		else if (token == "test") parseTest();
 #endif
 
 	} while (_command != "quit");
@@ -150,6 +147,11 @@ inline void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
 
+
+void UniversalChessInterface::parseTest() {
+	Units::runTests(_search);
+}
+
 #if defined (DEBUG)
 void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	std::string os, ds;
@@ -159,11 +161,5 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	int score = _pos.StaticExchangeEval<true>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
 											  _pos.pieceOn(org, _pos.getTurn()));
 	std::cout << score << std::endl;
-}
-#endif
-
-#if defined (DEBUG)
-void UniversalChessInterface::parseTest() {
-	Units::runTests();
 }
 #endif

@@ -27,8 +27,7 @@ public:
 		return *this;
 	}
 
-	// do not consider whether move would be legally moved, since it's not a thing
-	// to compare
+	// do not consider whether move would be legally moved, since it's not a thing to compare
 	INLINE constexpr bool operator!=(Move b) const noexcept {
 		return (_rmove & ~LEGALLY_MOVED) != (b._rmove & ~LEGALLY_MOVED);
 	}
@@ -36,7 +35,7 @@ public:
 	INLINE constexpr bool operator==(Move b) const noexcept {
 		return (_rmove & ~LEGALLY_MOVED) == (b._rmove & ~LEGALLY_MOVED);
 	}
-	
+
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
 	static Move makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t);
@@ -210,4 +209,11 @@ INLINE Move Move::makeCastling(Square origin, Square target) {
 		| Field
 		| (static_cast<uint32_t>(target) << 6)
 		| origin);
+}
+
+// used only in testing templates.
+// prefered way to print a move is to use Move::print() method instead.
+INLINE std::ostream& operator<<(std::ostream& out, Move b) {
+	b.print();
+	return out;
 }

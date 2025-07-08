@@ -87,7 +87,7 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 
 #if defined(_DEBUG)
 void TranspositionTable::printDebug() {
-	std::cout << "Hash size: " << _size * sizeof(TTEntry) / 1024 / 1024 << "MB\n";
+	std::cout << "Hash size: " << _entry_cnt * sizeof(TTEntry) / 1024 / 1024 << "MB\n";
 }
 #endif
 

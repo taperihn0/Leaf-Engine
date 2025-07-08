@@ -490,12 +490,13 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 }
 
 template <bool ExactScore>
-int StaticExchangeEval_3a(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker) {
+int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, 
+	Piece::enumType target, Piece::enumType attacker) {
 	return pos.StaticExchangeEval<ExactScore>(org, sq, target, attacker);
 }
 
 template int Position::StaticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType) const;
 template int Position::StaticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType) const;
 
-template int StaticExchangeEval_3a<false>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
-template int StaticExchangeEval_3a<true>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
+template int _StaticExchangeEval_unittest<false>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
+template int _StaticExchangeEval_unittest<true>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
