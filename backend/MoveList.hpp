@@ -53,7 +53,7 @@ public:
 	}
 
 	void scoreCaptures(size_t first, const Position& pos);
-	void scoreQuiets(size_t first, const Position& pos, int16_t (*history)[6][64]);
+	void scoreQuiets(size_t first, const Position& pos, uint16_t (*history)[6][64]);
 
 	void selectSort(size_t first);
 
@@ -66,7 +66,7 @@ private:
 		}
 
 		Move move; 
-		int16_t score;
+		uint16_t score;
 	};
 
 	inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {

@@ -58,18 +58,23 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 	std::cout << '\n';
 }
 
+INLINE void SearchResults::printShort() {
+	std::cout << "Total nodes: " << nodes_cnt << '\n';
+	printBestMove();
+}
+
 void Search::registerNewGame() {
 	_tt.clear();
 }
 
-template <bool PrintInfo>
+template <bool PrintFullInfo>
 Move Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
 
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	const Move bm = iterativeDeepening<PrintInfo>(pos, game, limits);
+	const Move bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
 	return bm;
 }
 
@@ -77,7 +82,7 @@ Move Search::_bestMove_unittest(Search& search, Position& pos, const Game& game,
 	return search.bestMove<false>(pos, game, limits);
 }
 
-template <bool PrintInfo>
+template <bool PrintFullInfo>
 Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
 	search_results.tt_entries = _tt.getEntriesCount();
@@ -88,17 +93,21 @@ Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 
 		_tree.clear();
 
-		if (!search<PrintInfo>(pos, game, limits, search_results))
+		if (!search<PrintFullInfo>(pos, game, limits, search_results))
 			break;
 
 		search_results.registerBestMove(_tree.getNode(0).best_move);
 	}
 
-	search_results.printBestMove();
+	if constexpr (PrintFullInfo)
+		search_results.printBestMove();
+	else
+		search_results.printShort();
+
 	return search_results.best_move;
 }
 
-template <bool PrintInfo>
+template <bool PrintFullInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
 	results.timer.go();
 
@@ -110,7 +119,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 
 	results.timer.stop();
 
-	if constexpr (PrintInfo)
+	if constexpr (PrintFullInfo)
 		results.print(this, pos);
 
 	return true;

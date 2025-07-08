@@ -7,7 +7,7 @@ static constexpr std::array<int, 6> piece_value = {
 void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isCapture() or (_moves[i].move.isPromotion()
-			   and _moves[i].move.getPromoPiece() == Piece::QUEEN));
+			and _moves[i].move.getPromoPiece() == Piece::QUEEN));
 
 		if (_moves[i].move.isEnPassant()) {
 			_moves[i].score = piece_value[Piece::PAWN] - value(Piece::PAWN);
@@ -25,7 +25,7 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 	}
 }
 
-void MoveList::scoreQuiets(size_t first, const Position& pos, int16_t (*history)[6][64]) {
+void MoveList::scoreQuiets(size_t first, const Position& pos, uint16_t (*history)[6][64]) {
 	for (size_t i = first; i < _idx; i++) {
 		assert(_moves[i].move.isQuiet());
 		_moves[i].score = history[pos.getTurn()][_moves[i].move.getPiece()][_moves[i].move.getTarget()];
@@ -34,7 +34,7 @@ void MoveList::scoreQuiets(size_t first, const Position& pos, int16_t (*history)
 
 void MoveList::selectSort(size_t first) {
 	assert(first < _idx);
-	int16_t best = _moves[first].score;
+	uint16_t best = _moves[first].score;
 	size_t ind = first;
 
 	for (size_t i = first + 1; i < _idx; i++) {

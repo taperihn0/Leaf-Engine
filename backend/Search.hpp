@@ -31,6 +31,7 @@ struct SearchResults {
 
 	void printBestMove();
 	void print(const Search* search, const Position& pos);
+	void printShort();
 
 	unsigned depth      = 0,
 			 seldepth   = 0;
@@ -77,16 +78,16 @@ public:
 
 	Search();
 
-	template <bool PrintInfo = true>
+	template <bool PrintFullInfo = true>
 	Move bestMove(Position& pos, const Game& game, SearchLimits limits);
 	static Move _bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits);
 
 	void registerNewGame();
 private:
-	template <bool PrintInfo>
+	template <bool PrintFullInfo>
 	Move iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 
-	template <bool PrintInfo>
+	template <bool PrintFullInfo>
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
