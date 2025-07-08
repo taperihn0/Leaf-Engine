@@ -1,10 +1,18 @@
+### commit _: new MVV-LVA ordering without SEE and dedicated table
+Score of 611e vs 5df7: 1162 - 1008 - 1575  [0.521] 3745 <br>
+...      611e playing White: 695 - 399 - 779  [0.579] 1873 <br>
+...      611e playing Black: 467 - 609 - 796  [0.462] 1872 <br>
+...      White vs Black: 1304 - 866 - 1575  [0.558] 3745 <br>
+Elo difference: 14.3 +/- 8.5, LOS: 100.0 %, DrawRatio: 42.1 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: smarter see
-Score of newsee vs oldsee: 262 - 292 - 387  [0.484] 941
-...      newsee playing White: 174 - 101 - 196  [0.577] 471
-...      newsee playing Black: 88 - 191 - 191  [0.390] 470
-...      White vs Black: 365 - 189 - 387  [0.594] 941
-Elo difference: -11.1 +/- 17.0, LOS: 10.1 %, DrawRatio: 41.1 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+Score of newsee vs oldsee: 262 - 292 - 387  [0.484] 941 <br>
+...      newsee playing White: 174 - 101 - 196  [0.577] 471 <br>
+...      newsee playing Black: 88 - 191 - 191  [0.390] 470 <br>
+...      White vs Black: 365 - 189 - 387  [0.594] 941 <br>
+Elo difference: -11.1 +/- 17.0, LOS: 10.1 %, DrawRatio: 41.1 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### commit _: history heuristic without countermove heuristic + select sort + some structural changes in the code
 Score of history vs nonpv: 555 - 440 - 623  [0.536] 1618 <br>
