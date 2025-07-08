@@ -14,7 +14,7 @@ void MoveList::scoreCaptures(size_t first, const Position& pos) {
 		}
 		else if (_moves[i].move.isCapture()) {
 			const Piece::enumType att = _moves[i].move.getPiece();
-			const Piece::enumType vic = pos.pieceTypeOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
+			const Piece::enumType vic = pos.pieceOn(_moves[i].move.getTarget(), pos.getOppositeTurn());
 			_moves[i].score = piece_value[vic] - value(att);
 		}
 

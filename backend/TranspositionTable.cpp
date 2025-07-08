@@ -7,30 +7,29 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 
 TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == 16);
-	_size = 128_MB / sizeof(TTEntry);
-	_mem = memAlloc(_size);
+	_entry_cnt = 128_MB / sizeof(TTEntry);
+	_mem = memAlloc(_entry_cnt);
+	clear();
 }
 
 TranspositionTable::TranspositionTable(TranspositionTable&& rtt) noexcept {
 	memFree();
 	_mem = rtt._mem;
-	_size = rtt._size;
+	_entry_cnt = rtt._entry_cnt;
 }
 
 TranspositionTable::~TranspositionTable() { 
-	clear();
+	memFree();
 }
 
 void TranspositionTable::resize(size_t size_mb) {
 	memFree();
-	_size = size_mb * 1024 * 1024 / sizeof(TTEntry);
-	_mem = memAlloc(_size);
+	_entry_cnt = size_mb * 1024 * 1024 / sizeof(TTEntry);
+	_mem = memAlloc(_entry_cnt);
 }
 
 void TranspositionTable::clear() {
-	memFree();
-	_mem = nullptr;
-	_size = 0;
+	std::memset(_mem, 0, _entry_cnt * sizeof(TTEntry));
 }
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
@@ -40,7 +39,7 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	else if (node_score < -Score::infinity + static_cast<int16_t>(max_depth))
 		node_score -= node_ply;
 
-	TTEntry* const entry = _mem + (node_key & (_size - 1));
+	TTEntry* const entry = _mem + (node_key & (_entry_cnt - 1));
 
 	if (!entry->depth)
 		results.tt_hits++;
@@ -49,7 +48,7 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const {
-	const TTEntry* const entry = _mem + (key & (_size - 1));
+	const TTEntry* const entry = _mem + (key & (_entry_cnt - 1));
 
 	if (entry->key != key)
 		return false;

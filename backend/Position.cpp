@@ -68,7 +68,7 @@ void Position::print() const {
 			<< ' ' << h + 1 << " | ";
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
-			pieceOn(i).print();
+			fullPieceOn(i).print();
 			std::cout << " | ";
 		}
 
@@ -115,7 +115,7 @@ bool Position::make(Move& move) {
 			_hashing._key ^= _hashing._piece_keys[!_turn][Piece::PAWN][dst - dir];
 		}
 		else {
-			const Piece::enumType captured = pieceTypeOn(dst, !_turn);
+			const Piece::enumType captured = pieceOn(dst, !_turn);
 			move.setCaptured(captured);
 
 			assert(captured != Piece::NONE);

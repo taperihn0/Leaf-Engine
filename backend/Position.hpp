@@ -109,10 +109,14 @@ public:
 	}
 
 	INLINE Square getKingSquare(enumColor col_type) const {
+		assert(_king_sq[col_type] == _piece_bb[col_type][Piece::KING].bitScanForward());
 		return _king_sq[col_type];
 	}
 
-	BitBoard getBySide(enumColor col_type) const;
+	INLINE BitBoard getBySide(enumColor col_type) const {
+		assert(_occupied[col_type] == getBySideOnFly(col_type));
+		return _occupied[col_type];
+	}
 
 	BitBoard getBySideOnFly(enumColor col_type) const;
 
@@ -210,8 +214,8 @@ public:
 	// If no checkers found, returns empty board.
 	BitBoard getCheckers(enumColor side) const;
 
-	Piece::enumType pieceTypeOn(Square sq, enumColor by_color) const;
-	Piece pieceOn(Square sq) const;
+	Piece::enumType pieceOn(Square sq, enumColor by_color) const;
+	Piece fullPieceOn(Square sq) const;
 
 	// returns whether move is legal or pseudo-legal
 	bool make(Move& move);
@@ -220,7 +224,9 @@ public:
 	void makeNull(IrreversibleState& state);
 	void unmakeNull(const IrreversibleState& prev_state);
 
-	uint64_t getZobristKey() const;
+	INLINE uint64_t getZobristKey() const {
+		return _hashing._key;
+	}
 
 	template <bool Root = true>
 	uint64_t perft(unsigned depth);
@@ -317,11 +323,6 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor s
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
 
 	return !(occupied & Intermediates);
-}
-
-INLINE BitBoard Position::getBySide(enumColor col_type) const {
-	assert(_occupied[col_type] == getBySideOnFly(col_type));
-	return _occupied[col_type];
 }
 
 INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
@@ -454,7 +455,7 @@ INLINE BitBoard Position::getCheckers(enumColor side) const {
 	return leastValuableAttackers(getKingSquare(side), side);
 }
 
-INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) const {
+INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
 	for (Piece::enumType piece_t : Piece::piece_list) {
 		if (_piece_bb[by_color][piece_t].isOccupiedSq(sq))
 			return piece_t;
@@ -463,11 +464,7 @@ INLINE Piece::enumType Position::pieceTypeOn(Square sq, enumColor by_color) cons
 	return Piece::NONE;
 }
 
-INLINE Piece Position::pieceOn(Square sq) const {
-	const Piece::enumType type = pieceTypeOn(sq, WHITE);
-	return type != Piece::NONE ? Piece(WHITE, type) : Piece(BLACK, pieceTypeOn(sq, BLACK));
-}
-
-INLINE uint64_t Position::getZobristKey() const {
-	return _hashing._key;
+INLINE Piece Position::fullPieceOn(Square sq) const {
+	const Piece::enumType type = pieceOn(sq, WHITE);
+	return type != Piece::NONE ? Piece(WHITE, type) : Piece(BLACK, pieceOn(sq, BLACK));
 }

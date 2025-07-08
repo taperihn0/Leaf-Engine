@@ -84,6 +84,7 @@ void UniversalChessInterface::parseUCI() {
 inline void UniversalChessInterface::parseNewGame() {
 	_game.clear();
 	MoveOrder<STAGED>::clearHistory();
+	_search.registerNewGame();
 }
 
 void UniversalChessInterface::parsePosition(std::istringstream& strm) {
@@ -155,8 +156,8 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	strm >> std::skipws >> os >> std::skipws >> ds;
 	Square org = Square::fromChar(os[0], os[1]);
 	Square dst = Square::fromChar(ds[0], ds[1]);
-	int score = _pos.StaticExchangeEval<true>(org, dst, _pos.pieceTypeOn(dst, _pos.getOppositeTurn()), 
-											  _pos.pieceTypeOn(org, _pos.getTurn()));
+	int score = _pos.StaticExchangeEval<true>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
+											  _pos.pieceOn(org, _pos.getTurn()));
 	std::cout << score << std::endl;
 }
 #endif

@@ -50,9 +50,9 @@ private:
 	TTEntry* memAlloc(size_t size);
 
 	TTEntry* _mem;
-	size_t _size;
+	size_t _entry_cnt;
 };
 
 inline size_t TranspositionTable::getEntriesCount() const {
-	return _size;
+	return _entry_cnt;
 }

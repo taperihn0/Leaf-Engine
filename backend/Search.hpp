@@ -79,7 +79,7 @@ public:
 
 	void bestMove(Position& pos, const Game& game, SearchLimits limits);
 
-	INLINE TranspositionTable& getTranspositionTable() { return _tt; }
+	void registerNewGame();
 private:
 	void iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);

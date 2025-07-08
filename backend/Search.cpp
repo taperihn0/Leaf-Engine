@@ -58,6 +58,10 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 	std::cout << '\n';
 }
 
+void Search::registerNewGame() {
+	_tt.clear();
+}
+
 void Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
 

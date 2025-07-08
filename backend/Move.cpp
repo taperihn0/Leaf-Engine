@@ -9,7 +9,7 @@ Move Move::fromStr<Move::Notation::PURE>(const Position& pos, const std::string&
 
 	Square				  origin = Square::fromChar(str[0], str[1]),
 						  target = Square::fromChar(str[2], str[3]);
-	const Piece::enumType piece = pos.pieceTypeOn(origin, pos.getTurn());
+	const Piece::enumType piece = pos.pieceOn(origin, pos.getTurn());
 	const bool			  capture = pos.getOppositePieces().isOccupiedSq(target),
 						  ep_capture = piece == Piece::PAWN and target == pos.getEnPassantSq(),
 						  promotion = str.size() == 5,
@@ -79,12 +79,12 @@ Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::st
 
 		if (str.size() == 2 and !capture) {
 			if (pos.getTurn() == WHITE ? target.getRank() == 3 : target.getRank() == 4) {
-				Piece::enumType ddp = pos.pieceTypeOn(
+				Piece::enumType ddp = pos.pieceOn(
 					pos.getTurn() == WHITE ?
 						Square(static_cast<int>(target) - 16)
 						: Square(static_cast<int>(target) + 16), pos.getTurn());
 
-				Piece::enumType dp = pos.pieceTypeOn(
+				Piece::enumType dp = pos.pieceOn(
 					pos.getTurn() == WHITE ?
 						Square(static_cast<int>(target) - 8)
 						: Square(static_cast<int>(target) + 8), pos.getTurn());
@@ -154,7 +154,7 @@ void Move::print() const {
 
 bool Move::isPseudoLegal(const Position& pos) const {
 	const Square org = getOrigin(), dst = getTarget();
-	const Piece::enumType p = getPiece(), d = pos.pieceTypeOn(dst, pos.getOppositeTurn());
+	const Piece::enumType p = getPiece(), d = pos.pieceOn(dst, pos.getOppositeTurn());
 
 	if (p == Piece::KING) {
 		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
@@ -175,13 +175,13 @@ bool Move::isPseudoLegal(const Position& pos) const {
 		}
 	}
 	else if (isEnPassant()) {
-		return pos.pieceTypeOn(org, pos.getTurn()) == Piece::PAWN
+		return pos.pieceOn(org, pos.getTurn()) == Piece::PAWN
 			and pos.getEnPassantSq() == dst;
 	}
 
-	return p == pos.pieceTypeOn(org, pos.getTurn())
+	return p == pos.pieceOn(org, pos.getTurn())
 		and (!isCapture() or d != Piece::NONE)
-		and (!isQuiet() or (d == Piece::NONE and pos.pieceTypeOn(dst, pos.getTurn()) == Piece::NONE))
+		and (!isQuiet() or (d == Piece::NONE and pos.pieceOn(dst, pos.getTurn()) == Piece::NONE))
 		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
 }
 

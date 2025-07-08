@@ -36,7 +36,7 @@ uint64_t ZobristHash::generateOnFly(const Position& pos) {
 	uint64_t key = 0;
 
 	for (int sq = 0; sq < 64; sq++) {
-		const Piece piece = pos.pieceOn(sq);
+		const Piece piece = pos.fullPieceOn(sq);
 
 		if (piece.type() != Piece::NONE)
 			key ^= _piece_keys[piece.color()][piece.type()][sq];

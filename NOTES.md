@@ -1,4 +1,4 @@
-### commit _: new MVV-LVA ordering without SEE and dedicated table
+### commit 611e5d1: new MVV-LVA ordering without SEE and dedicated table
 Score of 611e vs 5df7: 1162 - 1008 - 1575  [0.521] 3745 <br>
 ...      611e playing White: 695 - 399 - 779  [0.579] 1873 <br>
 ...      611e playing Black: 467 - 609 - 796  [0.462] 1872 <br>
