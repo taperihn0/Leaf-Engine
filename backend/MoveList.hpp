@@ -7,37 +7,41 @@
 
 class MoveList {
 public:
+	struct Entry {
+		INLINE constexpr bool operator==(Entry b) const noexcept {
+			return move == b.move;
+		}
+
+		Move move;
+		uint16_t score;
+	};
+
 	INLINE void sort(size_t first, size_t end) {
-		std::sort(_moves.data() + first, _moves.data() + end, 
-			_greater_score);
+		std::sort(_moves.data() + first, _moves.data() + end, _greater_score);
 	}
 
 	INLINE void partialSort(size_t first, size_t mid, size_t end) {
-		std::partial_sort(_moves.data() + first, _moves.data() + mid, _moves.data() + end,
+		std::partial_sort(_moves.data() + first, _moves.data() + mid, _moves.data() + end, 
 			_greater_score);
 	}
 
 	INLINE void push(Move&& new_move) {
-		assert(_idx < _size);
+		assert(_idx < _max_size);
 		_moves[_idx++].move = new_move;
 	}
 
-	INLINE int32_t getScore(size_t idx) const {
-		ASSERT(idx < _size, "Index overflow while geting an item from move list");
-		return _moves[idx].score;
+	INLINE Entry* getEntry(size_t idx) {
+		assert(idx < _idx);
+		return _moves.data() + idx;
 	}
 
-	INLINE Move getMove(size_t idx) const {
-		ASSERT(idx < _size, "Index overflow while geting an item from move list");
+	INLINE Move getMove(size_t idx) {
+		assert(idx < _idx);
 		return _moves[idx].move;
 	}
 
 	INLINE size_t count() const {
 		return _idx;
-	}
-
-	INLINE int size() const {
-		return _size;
 	}
 
 	INLINE bool contains(Move m) const {
@@ -52,27 +56,15 @@ public:
 			_moves[i].move.print(), std::cout << '\n';
 	}
 
-	void scoreCaptures(size_t first, const Position& pos);
-	void scoreQuiets(size_t first, const Position& pos, uint16_t (*history)[6][64]);
-
 	void selectSort(size_t first);
 
 private:
-	static constexpr size_t _size = max_node_moves;
-
-	struct Entry {
-		INLINE constexpr bool operator==(Entry b) const noexcept {
-			return move == b.move;
-		}
-
-		Move move; 
-		uint16_t score;
-	};
+	static constexpr size_t _max_size = max_node_moves;
 
 	inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
 		return a.score > b.score;
 	};
 
 	size_t _idx = 0;
-	std::array<Entry, _size> _moves;
+	std::array<Entry, _max_size> _moves;
 };

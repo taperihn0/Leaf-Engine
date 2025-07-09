@@ -31,13 +31,13 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 	case enumStage::CAPTURES:
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
-		_move_list.scoreCaptures(0, pos);
+		scoreCaptures(0, pos);
 
 		_stage = enumStage::PICK_CAPTURES;
 
 		[[fallthrough]];
 	case enumStage::PICK_CAPTURES:
-		if (getFromList(next_move))
+		if (nextFromList(next_move))
 			return true;
 		
 		if constexpr (Type == QUIESCENT)
@@ -62,8 +62,8 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
-		_move_list.scoreQuiets(_iterator, pos, _history);
-		return getFromList(next_move);
+		scoreQuiets(_iterator, pos);
+		return nextFromList(next_move);
 	}
 
 	return false;
@@ -73,12 +73,55 @@ template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, cons
 template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
 
 template <OrderType Type>
-INLINE bool MoveOrder<Type>::getFromList(Move& move) {
+INLINE bool MoveOrder<Type>::nextFromList(Move& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
 	_move_list.selectSort(_iterator);
 	move = _move_list.getMove(_iterator++);
 
-	return move == _hash_move or move == _killer_move ? getFromList(move) : true;
+	return move == _hash_move or move == _killer_move ? nextFromList(move) : true;
+}
+
+static constexpr std::array<int, 6> piece_value = {
+	100, 300, 300, 500, 900, 10000
+};
+
+template <OrderType Type>
+void MoveOrder<Type>::scoreCaptures(size_t first, const Position& pos) {
+	for (size_t i = first; i < _move_list.count(); i++) {
+		MoveList::Entry* entry = _move_list.getEntry(i);
+		Move* move = &entry->move;
+		uint16_t* score = &entry->score;
+
+		assert(move->isCapture() or (move->isPromotion()
+			and move->getPromoPiece() == Piece::QUEEN));
+
+		if (move->isEnPassant()) {
+			*score = piece_value[Piece::PAWN] - value(Piece::PAWN);
+		}
+		else if (move->isCapture()) {
+			const Piece::enumType att = move->getPiece();
+			const Piece::enumType vic = pos.pieceOn(move->getTarget(), pos.getOppositeTurn());
+			*score = piece_value[vic] - value(att);
+		}
+
+		if (move->isPromotion()) {
+			const Piece::enumType promo = move->getPromoPiece();
+			*score += piece_value[promo];
+		}
+	}
+}
+
+template <OrderType Type>
+void MoveOrder<Type>::scoreQuiets(size_t first, const Position& pos) {
+	for (size_t i = first; i < _move_list.count(); i++) {
+		MoveList::Entry* entry = _move_list.getEntry(i);
+		Move* move = &entry->move;
+		uint16_t* score = &entry->score;
+
+		assert(move->isQuiet());
+
+		*score = _history[pos.getTurn()][move->getPiece()][move->getTarget()];
+	}
 }

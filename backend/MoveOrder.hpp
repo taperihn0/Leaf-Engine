@@ -37,7 +37,10 @@ public:
 	static void agingHistory();
 	static void clearHistory();
 private:
-	bool getFromList(Move& move);
+	bool nextFromList(Move& move);
+
+	void scoreCaptures(size_t first, const Position& pos);
+	void scoreQuiets(size_t first, const Position& pos);
 
 	enum class enumStage : uint8_t {
 		HASH_MOVE,
