@@ -69,9 +69,6 @@ bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const
 	return false;
 }
 
-template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
-template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
-
 template <OrderType Type>
 INLINE bool MoveOrder<Type>::nextFromList(Move& move) {
 	if (_iterator >= _move_list.count()) 
@@ -125,3 +122,6 @@ void MoveOrder<Type>::scoreQuiets(size_t first, const Position& pos) {
 		*score = _history[pos.getTurn()][move->getPiece()][move->getTarget()];
 	}
 }
+
+template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
+template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
