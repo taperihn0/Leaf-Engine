@@ -34,7 +34,7 @@ public:
 		return _moves.data() + idx;
 	}
 
-	INLINE Move getMove(size_t idx) {
+	INLINE Move getMove(size_t idx) const {
 		assert(idx < _idx);
 		return _moves[idx].move;
 	}

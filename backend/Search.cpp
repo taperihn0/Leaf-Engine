@@ -287,6 +287,12 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
 	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {
+		if (!move.isEnPassant() and !move.isPromotion() and
+			pos.StaticExchangeEval<false>(move.getOrigin(), move.getTarget(),
+				pos.pieceOn(move.getTarget(), pos.getOppositeTurn()), move.getPiece()) < 0) {
+			continue;
+		}
+
 		if (pos.make(move)) {
 			score = -quiesce(pos, limits, results, -beta, -alpha, ply + 1);
 		}
