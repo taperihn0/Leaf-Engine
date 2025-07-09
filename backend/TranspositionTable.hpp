@@ -46,9 +46,6 @@ private:
 	TranspositionTable(const TranspositionTable&) = delete;
 	TranspositionTable operator=(const TranspositionTable&) = delete;
 
-	void memFree() noexcept;
-	TTEntry* memAlloc(size_t size);
-
 	TTEntry* _mem;
 	size_t _entry_cnt;
 };

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 project(Leaf)
 
 file(GLOB SOURCES CONFIGURE_DEPENDS
@@ -10,8 +12,6 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 )
 
 add_executable(Leaf ${SOURCES})
-
-# MSVS IS NOT SPECIFIED FOR NOW
 
 if (MSVC)
 	# pass
@@ -24,10 +24,7 @@ endif ()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 endif()
 
-if (MSVC)
-	# pass
-else ()
+if (not MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-count-negative")
 endif ()
-

@@ -15,6 +15,16 @@
 #include <intrin.h>
 #endif
 
+#include <immintrin.h>
+
+#define _USE_SIMD
+
+#if defined(_USE_SIMD)
+//#define _AVX512
+#define _AVX2
+//#define _SSE
+#endif
+
 #if defined(_MSC_VER)
 // using __forceinline by default
 #define INLINE __forceinline 
@@ -33,7 +43,7 @@
 #define AUTHOR		"Szymon Belz"
 
 // move format, so far only pure notation supported
-#define PURE_NOTATION_DISPLAY
+#define PURE_NOTATION_DISPLAY 
 
 #if defined(_MSC_VER)
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
@@ -44,6 +54,7 @@
 #pragma warning(disable: 4146)
 #endif
 
+using byte = unsigned char;
 using ull = unsigned long long;
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
@@ -86,4 +97,52 @@ INLINE bool isValidNumber(const std::string& str) {
 
 INLINE bool isSigned(const std::string& str) {
 	return !str.empty() and str[0] == '-';
+}
+
+INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
+	byte* d = reinterpret_cast<byte*>(dst);
+
+#if defined (_AVX512)
+	ASSERT(cnt % 64 == 0, "Size must be a multiple of 64");
+	__m512i pack8i_ch = _mm512_set1_epi8(ch);
+
+	for (size_t i = 0; i < cnt; i += 64) {
+		_mm512_store_si512(reinterpret_cast<__m512*>(d + i), pack8i_ch);
+	}
+#elif defined (_AVX2)
+	ASSERT(cnt % 32 == 0, "Size must be a multiple of 32");
+	__m256i pack4i_ch = _mm256_set1_epi8(ch);
+
+	for (size_t i = 0; i < cnt; i += 32) {
+		_mm256_store_si256(reinterpret_cast<__m256i*>(d + i), pack4i_ch);
+	}
+#elif defined (_SSE)
+	ASSERT(cnt % 16 == 0, "Size must be a multiple of 16");
+	__m128i pack2i_ch = _mm_set1_epi8(ch);
+
+	for (size_t i = 0; i < cnt; i += 16) {
+		_mm_store_si128(reinterpret_cast<__m128i*>(d + i), pack2i_ch);
+	}
+#else
+	std::memset(dst, ch, cnt);
+#endif
+	return dst;
+}
+
+INLINE void* alignedMalloc(size_t size, size_t alignment) {
+#if defined (_MSC_VER)
+	void* m = _aligned_malloc(size, alignment);
+#else
+	void* m = std::aligned_alloc(alignment, size);
+#endif
+	ASSERT(m, "Failed to allocate memory");
+	return m;
+}
+
+INLINE void alignedFree(void* block) {
+#if defined (_MSC_VER)
+	_aligned_free(block);
+#else
+	std::free(block);
+#endif
 }

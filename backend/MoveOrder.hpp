@@ -56,7 +56,7 @@ private:
 	Move _hash_move		   = Move::null;
 	Move _killer_move	   = Move::null;
 
-	inline static uint16_t _history[2][6][64] = {};
+	inline static alignas(64) uint16_t _history[2][6][64] = {};
 
 	MoveList _move_list;
 };
@@ -98,5 +98,5 @@ INLINE void MoveOrder<Type>::agingHistory() {
 
 template <OrderType Type>
 INLINE void MoveOrder<Type>::clearHistory() {
-	std::memset(_history, 0, sizeof(_history));
+	alignedMemset(_history, 0, sizeof(_history));
 }

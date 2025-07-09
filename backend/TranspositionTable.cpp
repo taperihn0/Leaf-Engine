@@ -7,29 +7,29 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 
 TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == 16);
+	_mem = reinterpret_cast<TTEntry*>(alignedMalloc(128_MB, sizeof(TTEntry)));
 	_entry_cnt = 128_MB / sizeof(TTEntry);
-	_mem = memAlloc(_entry_cnt);
 	clear();
 }
 
 TranspositionTable::TranspositionTable(TranspositionTable&& rtt) noexcept {
-	memFree();
+	alignedFree(_mem);
 	_mem = rtt._mem;
 	_entry_cnt = rtt._entry_cnt;
 }
 
 TranspositionTable::~TranspositionTable() { 
-	memFree();
+	alignedFree(_mem);
 }
 
 void TranspositionTable::resize(size_t size_mb) {
-	memFree();
+	alignedFree(_mem);
+	_mem = reinterpret_cast<TTEntry*>(alignedMalloc(size_mb * 1024 * 1024, sizeof(TTEntry)));
 	_entry_cnt = size_mb * 1024 * 1024 / sizeof(TTEntry);
-	_mem = memAlloc(_entry_cnt);
 }
 
 void TranspositionTable::clear() {
-	std::memset(_mem, 0, _entry_cnt * sizeof(TTEntry));
+	alignedMemset(_mem, 0, _entry_cnt * sizeof(TTEntry));
 }
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
@@ -90,11 +90,3 @@ void TranspositionTable::printDebug() {
 	std::cout << "Hash size: " << _entry_cnt * sizeof(TTEntry) / 1024 / 1024 << "MB\n";
 }
 #endif
-
-inline void TranspositionTable::memFree() noexcept {
-	delete[] _mem;
-}
-
-inline TTEntry* TranspositionTable::memAlloc(size_t size) {
-	return new TTEntry[size];
-}

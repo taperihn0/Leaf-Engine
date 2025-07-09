@@ -3,8 +3,6 @@
 #include "Common.hpp"
 #include "Color.hpp"
 
-#include <vector>
-
 class Piece {
 public:
 	using uint_t = uint8_t;
