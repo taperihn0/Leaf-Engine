@@ -176,7 +176,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
 
-	const Move tt_move = tt_entry.key == pos.getZobristKey() 
+	const Move tt_move = tt_entry.key == pos.getZobristKey()
 						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
 	node->move_picker.clear();
@@ -187,29 +187,44 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->ply = ply;
 	node->best_move = Move::null;
 	node->best_score = -Score::infinity;
+	node->moves_searched = 0;
 
 	node->state = pos.getIrreversibleState();
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
 	while (node->move_picker.nextMove(_tree_stack, pos, node->move)) {
-		bool do_search = true;
+		bool do_full_search = true;
 
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
 			// Principle variation search
-			if (!tt_move.isNull() and node->move != tt_move and NodeType == PV_NODE) {
-				node->score = 
-					-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1, ply + 1);
+			//if (!tt_move.isNull() and node->move != tt_move and NodeType == PV_NODE) {
+			if (node->moves_searched > 0 and NodeType == PV_NODE) {
+
+				// Late Move Reduction
+				if (node->moves_searched >= 3 and depth >= 2 and !node->check) {
+					node->score =
+						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
+				}
+				else node->score = alpha + 1;
+				
+				if (node->score > alpha) {
+					node->score =
+						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1, ply + 1);
+				}
 
 				if (node->score <= alpha)
-					do_search = false;
+					do_full_search = false;
 			} 
 
-			if (do_search)
+			if (do_full_search) {
 				node->score =
 					-negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, -beta, -alpha, depth - 1, ply + 1);
+			}
+
+			node->moves_searched++;
 		}
 
 		pos.unmake(node->move, node->state);

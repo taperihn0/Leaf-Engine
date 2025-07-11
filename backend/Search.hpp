@@ -53,6 +53,7 @@ struct NodeInfo {
 	Score						best_score;
 	bool						check;
 	unsigned					ply;
+	size_t						moves_searched;
 };
 
 class TreeStack {
