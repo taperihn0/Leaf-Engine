@@ -1,10 +1,18 @@
+### commit _: new PV-Search + Late Move Reduction
+Score of pvs_lmr vs see_cutoff: 496 - 350 - 534  [0.553] 1380 <br>
+...      pvs_lmr playing White: 298 - 136 - 257  [0.617] 691 <br>
+...      pvs_lmr playing Black: 198 - 214 - 277  [0.488] 689 <br>
+...      White vs Black: 512 - 334 - 534  [0.564] 1380 <br>
+Elo difference: 36.9 +/- 14.4, LOS: 100.0 %, DrawRatio: 38.7 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: SEE pruning in qsearch
-Score of see_cutoff vs 7576: 1469 - 1375 - 2118  [0.509] 4962
-...      see_cutoff playing White: 866 - 542 - 1073  [0.565] 2481
-...      see_cutoff playing Black: 603 - 833 - 1045  [0.454] 2481
-...      White vs Black: 1699 - 1145 - 2118  [0.556] 4962
-Elo difference: 6.6 +/- 7.3, LOS: 96.1 %, DrawRatio: 42.7 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+Score of see_cutoff vs 7576: 1469 - 1375 - 2118  [0.509] 4962 <br>
+...      see_cutoff playing White: 866 - 542 - 1073  [0.565] 2481 <br>
+...      see_cutoff playing Black: 603 - 833 - 1045  [0.454] 2481 <br>
+...      White vs Black: 1699 - 1145 - 2118  [0.556] 4962 <br>
+Elo difference: 6.6 +/- 7.3, LOS: 96.1 %, DrawRatio: 42.7 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### commit 611e5d1: new MVV-LVA ordering without SEE and dedicated table
 Score of 611e vs 5df7: 1162 - 1008 - 1575  [0.521] 3745 <br>

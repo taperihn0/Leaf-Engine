@@ -5,7 +5,7 @@
 class Score {
 public:
 	INLINE Score() = default;
-	INLINE Score(uint16_t val)
+	INLINE Score(int16_t val)
 		: _raw(val) {}
 
 	INLINE Score operator+(Score b) const {
@@ -63,8 +63,8 @@ public:
 	std::string toStr() const;
 
 	static constexpr int16_t draw = 0,
-							 infinity = std::numeric_limits<int16_t>::max(),
-							 undef = infinity;
+							 infinity = std::numeric_limits<int16_t>::max() - 500,
+							 undef = std::numeric_limits<int16_t>::max() - 1;
 private:
 	int16_t _raw;
 };

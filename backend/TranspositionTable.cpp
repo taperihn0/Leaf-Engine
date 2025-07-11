@@ -49,9 +49,11 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const {
 	const TTEntry* const entry = _mem + (key & (_entry_cnt - 1));
-
-	if (entry->key != key)
+	
+	if (entry->key != key) {
+		out_entry = TTEntry{ 0 };
 		return false;
+	} 
 	else if (entry->depth < node_depth) {
 		out_entry = *entry;
 		return false;

@@ -153,6 +153,8 @@ void Move::print() const {
 }
 
 bool Move::isPseudoLegal(const Position& pos) const {
+	if (*this == Move::null) return false;
+
 	const Square org = getOrigin(), dst = getTarget();
 	const Piece::enumType p = getPiece(), d = pos.pieceOn(dst, pos.getOppositeTurn());
 

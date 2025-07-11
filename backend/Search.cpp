@@ -153,7 +153,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	node->check = pos.isInCheck(pos.getTurn());
 
-	if constexpr (NullMove) {
+	if constexpr (false and NullMove) {
 		static constexpr int R = 2;
 
 		if (!node->check and depth >= R + 1) {
@@ -176,8 +176,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
 	assert(alpha < beta);
 
-	const Move tt_move = tt_entry.key == pos.getZobristKey()
-						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
+	const Move tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
 	node->move_picker.clear();
 	node->move_picker.setHashMove(tt_move);
@@ -199,8 +198,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
-			// Principle variation search
-			//if (!tt_move.isNull() and node->move != tt_move and NodeType == PV_NODE) {
+			// Principle Variation Search
 			if (node->moves_searched > 0 and NodeType == PV_NODE) {
 
 				// Late Move Reduction

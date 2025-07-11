@@ -67,7 +67,7 @@ std::array<int16_t, 64> Eval::_mg_king_tables = {
 	-15,  36,  12, -54,   8, -28,  24,  14,
 };
 
-std::array<int8_t, 2> Eval::_convert_factor = { 56, 7 };
+std::array<int8_t, 2> Eval::_convert_factor = { 56, 0 };
 
 Score Eval::matEval(const Position& pos) {
 	const enumColor turn = pos.getTurn();
