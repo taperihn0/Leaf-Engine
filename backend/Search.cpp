@@ -87,16 +87,18 @@ Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 	SearchResults search_results;
 	search_results.tt_entries = _tt.getEntriesCount();
 
+	NodeInfo* root = _tree_stack.getRootNode();
+
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.nodes_cnt = 0;
 		search_results.depth = d;
 
-		_tree.clear();
+		_tree_stack.clear();
 
 		if (!search<PrintFullInfo>(pos, game, limits, search_results))
 			break;
 
-		search_results.registerBestMove(_tree.getNode(0).best_move);
+		search_results.registerBestMove(root->best_move);
 	}
 
 	if constexpr (PrintFullInfo)
@@ -112,7 +114,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	results.timer.go();
 
 	const Score score 
-		= -negaMax<true>(pos, limits, results, game, -Score::infinity, +Score::infinity, results.depth, 0);
+		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::infinity, +Score::infinity, results.depth, 0);
 
 	if (results.depth > 1 and !score.isValid())
 		return false;
@@ -126,10 +128,10 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 }
 
 template <bool Root, Search::enumNode NodeType, bool NullMove>
-Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, 
+Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 	if constexpr (!Root) {
-		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, ply)) {
+		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
 			return Score::draw;
 		}
 		else if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
@@ -149,22 +151,20 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	results.nodes_cnt++;
 
-	NodeInfo& node = _tree.getNode(ply);
-
-	node.check = pos.isInCheck(pos.getTurn());
+	node->check = pos.isInCheck(pos.getTurn());
 
 	if constexpr (NullMove) {
 		static constexpr int R = 2;
 
-		if (!node.check and depth >= R + 1) {
-			pos.makeNull(node.state);
+		if (!node->check and depth >= R + 1) {
+			pos.makeNull(node->state);
 			const Score score =
-				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, -beta, -beta + 1, depth - R - 1, ply + 1);
-			pos.unmakeNull(node.state);
+				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, -beta, -beta + 1, depth - R - 1, ply + 1);
+			pos.unmakeNull(node->state);
 
 			if (score >= beta) {
 				const Score verify = 
-					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, beta - 1, beta, depth - R - 1, ply);
+					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, beta - 1, beta, depth - R - 1, ply);
 
 				if (verify >= beta)
 					return verify;
@@ -179,88 +179,88 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	const Move tt_move = tt_entry.key == pos.getZobristKey() 
 						 and tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
-	node.move_picker.clear();
-	node.move_picker.setHashMove(tt_move);
+	node->move_picker.clear();
+	node->move_picker.setHashMove(tt_move);
+	
+	node->can_move = false;
+	node->score = 0;
+	node->ply = ply;
+	node->best_move = Move::null;
+	node->best_score = -Score::infinity;
 
-	node.can_move = false;
-	node.score = 0;
-	node.ply = ply;
-	node.best_move = Move::null;
-	node.best_score = -Score::infinity;
-
-	node.state = pos.getIrreversibleState();
+	node->state = pos.getIrreversibleState();
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node.move_picker.nextMove(_tree, node, pos, node.move)) {
+	while (node->move_picker.nextMove(_tree_stack, pos, node->move)) {
 		bool do_search = true;
 
-		if (pos.make(node.move)) {
-			node.can_move = true;
+		if (pos.make(node->move)) {
+			node->can_move = true;
 
 			// Principle variation search
-			if (!tt_move.isNull() and node.move != tt_move and NodeType == PV_NODE) {
-				node.score = 
-					-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, -alpha - 1, -alpha, depth - 1, ply + 1);
+			if (!tt_move.isNull() and node->move != tt_move and NodeType == PV_NODE) {
+				node->score = 
+					-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1, ply + 1);
 
-				if (node.score <= alpha)
+				if (node->score <= alpha)
 					do_search = false;
 			} 
 
 			if (do_search)
-				node.score =
-					-negaMax<false, NodeType, true>(pos, limits, results, game, -beta, -alpha, depth - 1, ply + 1);
+				node->score =
+					-negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, -beta, -alpha, depth - 1, ply + 1);
 		}
 
-		pos.unmake(node.move, node.state);
+		pos.unmake(node->move, node->state);
 
-		if (node.score.isValid() and node.move.isLegalMoved() and node.score > node.best_score) {
-			node.best_move = node.move;
-			node.best_score = node.score;
+		if (node->score.isValid() and node->move.isLegalMoved() and node->score > node->best_score) {
+			node->best_move = node->move;
+			node->best_score = node->score;
 
-			if (node.score > alpha) {
-				if (node.score >= beta) {
+			if (node->score > alpha) {
+				if (node->score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
-					if (node.move.isQuiet() and (!node.move.isPromotion() or node.move.getPromoPiece() != Piece::QUEEN)) {
-						node.move_picker.setKillerMove(node.move);
-						node.move_picker.updateHistory(node.move, pos.getTurn(), depth);
+					if (node->move.isQuiet() and (!node->move.isPromotion() or node->move.getPromoPiece() != Piece::QUEEN)) {
+						node->move_picker.setKillerMove(node->move);
+						node->move_picker.updateHistory(node->move, pos.getTurn(), depth);
 					}
 					break;
 				}
 
 				bound_type = TTEntry::EXACT;
-				alpha = node.score;
+				alpha = node->score;
 			}
 		}
-		else if (!node.score.isValid()) {
-			if (Root and node.best_move.isNull())
+		else if (!node->score.isValid()) {
+			if (Root and node->best_move.isNull())
 				// TODO: move at root assigned here might be illegal.
-				node.best_move = node.move;
+				node->best_move = node->move;
 
 			return -Score::undef;
 		}
 	}
 	
 	// detect checkmate or stealmate
-	if (!node.can_move) {
+	if (!node->can_move) {
 		bound_type = TTEntry::EXACT;
-		node.best_score = node.check ? -Score::infinity + ply : Score::draw;
+		node->best_score = node->check ? -Score::infinity + ply : Score::draw;
 	}
 
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node.best_score, node.best_move, results);
+	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
 
-	_tree.getNode(ply + 1).move_picker.setKillerMove(Move::null);
+	(node + 1)->move_picker.setKillerMove(Move::null);
 
 	if constexpr (Root) {
-		results.score_cp = node.best_score;
+		results.score_cp = node->best_score;
 	}
 
-	return node.best_score;
+	return node->best_score;
 }
 
-template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
+template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 	Score alpha, Score beta, unsigned depth, unsigned ply);
-template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
+template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 	Score alpha, Score beta, unsigned depth, unsigned ply);
 
 Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply) {
@@ -286,7 +286,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Score score = 0;
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
-	while (moves.nextMove(_tree, NodeInfo(), pos, move)) {
+	while (moves.nextMove(_tree_stack, pos, move)) {
 		if (!move.isEnPassant() and !move.isPromotion() and
 			pos.StaticExchangeEval<false>(move.getOrigin(), move.getTarget(),
 				pos.pieceOn(move.getTarget(), pos.getOppositeTurn()), move.getPiece()) < 0) {
@@ -310,21 +310,21 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	return alpha;
 }
 
-bool Search::isRepetitionCycle(const Position& pos, const Game& game, int ply) {
+bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply) {
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 
 	static constexpr int search_rep_depth = 11;
 	static_assert(search_rep_depth & 1);
 
-	for (ply = ply - 1; ply >= 0; ply--) {
-		const Move move = _tree.getNode(ply).move;
+	for (ply = ply - 1; ply >= 0; ply--, node--) {
+		const Move move = node->move;
 
 		if (move.isIrreversible())
 			return false;
 		else if (((my_ply - ply) & 1) == 1)
 			continue;
-		else if (my_hashkey == _tree.getNode(ply).state.hash_key /* previous hashkey */)
+		else if (my_hashkey == node->state.hash_key /* previous hashkey */)
 			return true;
 	}
 

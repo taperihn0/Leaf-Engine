@@ -18,14 +18,14 @@ enum OrderType {
 	QUIESCENT
 };
 
-class TreeInfo;
+class TreeStack;
 struct NodeInfo;
 
 template <OrderType Type>
 class MoveOrder {
 public:
 	void generateMoves(const Position& pos);
-	bool nextMove(const TreeInfo& tree, const NodeInfo& node, const Position& pos, Move& next_move);
+	bool nextMove(const TreeStack& tree, const Position& pos, Move& next_move);
 
 	void setHashMove(Move m);
 	void setKillerMove(Move m);

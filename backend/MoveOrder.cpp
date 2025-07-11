@@ -17,7 +17,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 */
 
 template <OrderType Type>
-bool MoveOrder<Type>::nextMove(const TreeInfo& tree, const NodeInfo& node, const Position& pos, Move& next_move) {
+bool MoveOrder<Type>::nextMove(const TreeStack& tree, const Position& pos, Move& next_move) {
 	switch (_stage) {
 	case enumStage::HASH_MOVE:
 		_stage = enumStage::CAPTURES;
@@ -123,5 +123,5 @@ void MoveOrder<Type>::scoreQuiets(size_t first, const Position& pos) {
 	}
 }
 
-template bool MoveOrder<STAGED>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
-template bool MoveOrder<QUIESCENT>::nextMove(const TreeInfo&, const NodeInfo&, const Position&, Move&);
+template bool MoveOrder<STAGED>::nextMove(const TreeStack&, const Position&, Move&);
+template bool MoveOrder<QUIESCENT>::nextMove(const TreeStack&, const Position&, Move&);

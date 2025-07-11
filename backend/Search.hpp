@@ -44,24 +44,24 @@ struct SearchResults {
 };
 
 struct NodeInfo {
-	MoveOrder<STAGED> move_picker;
+	MoveOrder<STAGED>			move_picker;
 	Position::IrreversibleState state;
-	Move move;
-	Move best_move;
-	Score score;
-	bool can_move;
-	Score best_score;
-	bool check;
-	unsigned ply;
+	Move						move;
+	Move						best_move;
+	Score						score;
+	bool						can_move;
+	Score						best_score;
+	bool						check;
+	unsigned					ply;
 };
 
-class TreeInfo {
+class TreeStack {
 public:
-	NodeInfo& getNode(unsigned ply);
-	const NodeInfo& getNode(unsigned ply) const;
+	NodeInfo* getRootNode();
+	const NodeInfo* getNode(unsigned ply) const;
 	void clear();
 private:
-	std::array<NodeInfo, max_depth> _node;
+	NodeInfo _stack[max_depth];
 };
 
 class Eval;
@@ -91,31 +91,31 @@ private:
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
-	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game,
+	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 
 	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply);
 
-	bool isRepetitionCycle(const Position& pos, const Game& game, int ply);
+	bool isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply);
 
-	TreeInfo _tree;
+	TreeStack _tree_stack;
 	Eval _eval;
 	TranspositionTable _tt;
 
 	static constexpr uint64_t _check_node_count = 4096;
 };
 
-INLINE NodeInfo& TreeInfo::getNode(unsigned ply) {
+INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
 	assert(ply < max_depth);
-	return _node[ply];
+	return _stack + ply;
 }
 
-INLINE const NodeInfo& TreeInfo::getNode(unsigned ply) const {
-	assert(ply < max_depth);
-	return _node[ply];
+INLINE NodeInfo* TreeStack::getRootNode() {
+	return _stack;
 }
 
-INLINE void TreeInfo::clear() {
-	for (auto& node : _node) 
-		node.move_picker.setKillerMove(Move::null);
+INLINE void TreeStack::clear() {
+	for (size_t i = 0; i < max_depth; i++) {
+		_stack[i].move_picker.setKillerMove(Move::null);
+	}
 }
