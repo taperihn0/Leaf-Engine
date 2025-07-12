@@ -44,7 +44,11 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	if (!entry->depth)
 		results.tt_hits++;
 
-	*entry = TTEntry{ node_key, node_depth, node_bound, node_score, node_move };
+	entry->key = node_key;
+	entry->depth = node_depth;
+	entry->bound = node_bound;
+	entry->score = node_score;
+	entry->move = node_move;
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const {

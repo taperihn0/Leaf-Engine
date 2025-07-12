@@ -153,7 +153,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	node->check = pos.isInCheck(pos.getTurn());
 
-	if constexpr (false and NullMove) {
+	if constexpr (NullMove) {
 		static constexpr int R = 2;
 
 		if (!node->check and depth >= R + 1) {
@@ -162,6 +162,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, -beta, -beta + 1, depth - R - 1, ply + 1);
 			pos.unmakeNull(node->state);
 
+			/* Unless Null Move Pruning is not handled properly in endgame, 
+			*  verification search is just needed 
+			*/
 			if (score >= beta) {
 				const Score verify = 
 					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, beta - 1, beta, depth - R - 1, ply);
@@ -198,10 +201,19 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
-			// Principle Variation Search
-			if (node->moves_searched > 0 and NodeType == PV_NODE) {
+			/* Principle Variation Search -
+			*  So far it was avoided in NON-PV nodes.
+			*  Now, always searching first move with full window, no matter what.
+			*  After that search, every other node is expected CUT node and 
+			*  is being search with null window.
+			*/
+			if (node->moves_searched > 0) {
 
-				// Late Move Reduction
+				/* Late Move Reduction -
+				*  Try to reduce late moves, since they are statistically less interesting.
+				*  Prove they fail low using null window search with some reduction.
+				*  If somehow they fail high, then re-search without reduction.
+				*/
 				if (node->moves_searched >= 3 and depth >= 2 and !node->check) {
 					node->score =
 						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
@@ -211,6 +223,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				if (node->score > alpha) {
 					node->score =
 						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1, ply + 1);
+
+					if constexpr (NodeType == NON_PV_NODE)
+						do_full_search = false;
 				}
 
 				if (node->score <= alpha)

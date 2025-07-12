@@ -64,7 +64,7 @@ public:
 
 	static constexpr int16_t draw = 0,
 							 infinity = std::numeric_limits<int16_t>::max() - 500,
-							 undef = std::numeric_limits<int16_t>::max() - 1;
+							 undef = std::numeric_limits<int16_t>::max();
 private:
 	int16_t _raw;
 };

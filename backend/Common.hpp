@@ -55,6 +55,7 @@
 #endif
 
 using byte = unsigned char;
+using ll = long long;
 using ull = unsigned long long;
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
