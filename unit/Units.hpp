@@ -183,8 +183,7 @@ static bool ccrOneHourTest(Search& search) {
 		}
 	}
 
-	timer.stop();
-	auto duration_ms = timer.duration();
+	time_ms_t duration_ms = timer.duration();
 
 	std::cout << "TEST DURATION: " << duration_ms << "ms" << std::endl;
 	return true;

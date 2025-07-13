@@ -7,7 +7,6 @@
 #include <sstream>
 
 INLINE bool SearchLimits::isTimeLeft() {
-	timer.stop();
 	return !search_time or timer.duration() < search_time;
 }
 
@@ -27,14 +26,13 @@ Search::Search()
 	: _tt() {}
 
 INLINE void SearchResults::print(const Search* search, const Position& pos) {
-	const auto duration_ms = timer.duration();
-	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration_ms ? duration_ms : 1));
+	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << "info depth " << depth
 		<< " seldepth " << seldepth
 		<< " score " << score_cp.toStr()
 		<< " nodes " << nodes_cnt
-		<< " time " << duration_ms 
+		<< " time " << duration
 		<< " nps " << nps 
 		<< " hashfull " << static_cast<unsigned>(static_cast<float>(tt_hits) / tt_entries * 1000)
 		<< " pv ";
@@ -90,7 +88,6 @@ Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 	NodeInfo* root = _tree_stack.getRootNode();
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
-		search_results.nodes_cnt = 0;
 		search_results.depth = d;
 
 		_tree_stack.clear();
@@ -111,15 +108,13 @@ Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& l
 
 template <bool PrintFullInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
-	results.timer.go();
-
 	const Score score
 		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::mate, +Score::mate, results.depth, 0);
 
 	if (results.depth > 1 and !limits.isTimeLeft())
 		return false;
 
-	results.timer.stop();
+	results.duration = limits.timer.duration();
 
 	if constexpr (PrintFullInfo)
 		results.print(this, pos);

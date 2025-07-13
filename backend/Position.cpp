@@ -350,9 +350,8 @@ uint64_t Position::perft(unsigned depth) {
 	}
 
 	if constexpr (Root) {
-		my_timer.stop();
-		auto duration_ms = my_timer.duration();
-		duration_ms = !duration_ms ? 1 : duration_ms;
+		time_ms_t duration_ms = my_timer.duration();
+		duration_ms = duration_ms ? duration_ms : 1;
 
 		std::cout << "total nodes: " << nodes << " (" << duration_ms / 1000.f << " seconds, " 
 			<< nodes / duration_ms << "kN/sec.)" << '\n';

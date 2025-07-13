@@ -15,13 +15,13 @@
 struct SearchLimits {
 	bool isTimeLeft();
 
-	unsigned depth = 0,
-			 wtime = 0, 
-			 btime = 0, 
-			 winc  = 0, 
-			 binc  = 0,
-			 search_time = 0;
-	Timer    timer;
+	unsigned  depth = 0,
+			  wtime = 0,
+			  btime = 0;
+	time_ms_t winc  = 0, 
+			  binc  = 0,
+			  search_time = 0;
+	Timer     timer;
 };
 
 class Search;
@@ -33,14 +33,14 @@ struct SearchResults {
 	void print(const Search* search, const Position& pos);
 	void printShort();
 
-	unsigned depth      = 0,
-			 seldepth   = 0;
-	Score	 score_cp   = 0;
-	uint64_t nodes_cnt  = 0;
-	size_t   tt_hits    = 0,
-			 tt_entries = 0;
-	Move     best_move  = Move::null;
-	Timer    timer;
+	unsigned  depth      = 0,
+			  seldepth   = 0;
+	Score	  score_cp   = 0;
+	uint64_t  nodes_cnt  = 0;
+	size_t    tt_hits    = 0,
+			  tt_entries = 0;
+	Move      best_move  = Move::null;
+	time_ms_t duration;
 };
 
 struct NodeInfo {
