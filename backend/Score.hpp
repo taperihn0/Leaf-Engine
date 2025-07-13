@@ -61,19 +61,21 @@ public:
 	}
 
 	std::string toStr() const;
-
-	static constexpr int16_t draw = 0,
-							 infinity = 32000,
-							 undef = std::numeric_limits<int16_t>::max();
+	
+	static constexpr int16_t draw		= 0,
+							 mate_bound = 30000,
+							 mate		= 32000,
+							 infinity   = std::numeric_limits<int16_t>::max(),
+							 undef      = 32500;
 private:
-	int16_t _raw;
+	int16_t					 _raw;
 };
 
 inline std::string Score::toStr() const {
-	if (_raw > 30000)//Score::infinity - static_cast<int16_t>(max_depth))
-		return "mate " + std::to_string((Score::infinity - _raw + 1) / 2);
-	else if (_raw < -30000)//-Score::infinity + static_cast<int16_t>(max_depth))
-		return "mate -" + std::to_string((_raw + Score::infinity + 1) / 2);
+	if (_raw > mate_bound)
+		return "mate " + std::to_string((Score::mate - _raw + 1) / 2);
+	else if (_raw < -mate_bound)
+		return "mate -" + std::to_string((_raw + Score::mate + 1) / 2);
 
 	return "cp " + std::to_string(_raw);
 }

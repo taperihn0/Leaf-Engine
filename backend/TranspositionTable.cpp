@@ -34,9 +34,9 @@ void TranspositionTable::clear() {
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
 	TTEntry::Bound node_bound, Score node_score, Move node_move, SearchResults& results) {
-	if (node_score > 30000)//Score::infinity - static_cast<int16_t>(max_depth))
+	if (node_score > Score::mate)
 		node_score += node_ply;
-	else if (node_score < -30000)//-Score::infinity + static_cast<int16_t>(max_depth))
+	else if (node_score < -Score::mate)
 		node_score -= node_ply;
 
 	TTEntry* const entry = _mem + (node_key & (_entry_cnt - 1));
@@ -44,11 +44,11 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	if (!entry->depth)
 		results.tt_hits++;
 
-	entry->key = node_key;
+	entry->key   = node_key;
 	entry->depth = node_depth;
 	entry->bound = node_bound;
 	entry->score = node_score;
-	entry->move = node_move;
+	entry->move  = node_move;
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const {
@@ -65,10 +65,10 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 
 	switch (entry->bound) {
 	case TTEntry::EXACT: {
-		const Score mate_score = entry->score > 30000 ? //Score::infinity  - static_cast<int16_t>(max_depth) ? 
+		const Score mate_score = entry->score > Score::mate_bound ?
 								 entry->score - node_ply :
-								 entry->score < -30000 ? //-Score::infinity + static_cast<int16_t>(max_depth) ? 
-							     entry->score + node_ply : 
+								 entry->score < -Score::mate_bound ?
+								 entry->score + node_ply : 
 								 entry->score;
 
 		out_entry = *entry;

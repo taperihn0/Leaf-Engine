@@ -113,8 +113,8 @@ template <bool PrintFullInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
 	results.timer.go();
 
-	const Score score 
-		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), Score(-32000), Score(+32000), results.depth, 0);
+	const Score score
+		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::mate, +Score::mate, results.depth, 0);
 
 	if (results.depth > 1 and !limits.isTimeLeft())
 		return false;
@@ -188,7 +188,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->score = 0;
 	node->ply = ply;
 	node->best_move = Move::null;
-	node->best_score = -32600;
+	node->best_score = -Score::infinity;
 	node->moves_searched = 0;
 
 	node->state = pos.getIrreversibleState();
@@ -272,7 +272,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		bound_type = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::infinity + ply : Score::draw;
+		node->best_score = node->check ? -Score::mate + ply : Score::draw;
 	}
 
 	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
