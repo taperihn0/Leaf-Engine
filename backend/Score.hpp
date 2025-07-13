@@ -57,22 +57,22 @@ public:
 	}
 
 	INLINE bool isValid() const {
-		return _raw != undef;
+		return _raw != undef and _raw != -undef;
 	}
 
 	std::string toStr() const;
 
 	static constexpr int16_t draw = 0,
-							 infinity = std::numeric_limits<int16_t>::max() - 500,
+							 infinity = 32000,
 							 undef = std::numeric_limits<int16_t>::max();
 private:
 	int16_t _raw;
 };
 
 inline std::string Score::toStr() const {
-	if (_raw > Score::infinity - (int16_t)max_depth)
+	if (_raw > 30000)//Score::infinity - static_cast<int16_t>(max_depth))
 		return "mate " + std::to_string((Score::infinity - _raw + 1) / 2);
-	else if (_raw < -Score::infinity + (int16_t)max_depth)
+	else if (_raw < -30000)//-Score::infinity + static_cast<int16_t>(max_depth))
 		return "mate -" + std::to_string((_raw + Score::infinity + 1) / 2);
 
 	return "cp " + std::to_string(_raw);

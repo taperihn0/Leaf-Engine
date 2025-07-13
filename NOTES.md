@@ -1,4 +1,12 @@
-### commit _: new PV-Search + Late Move Reduction
+### commit _: removed PV_NODE checking at PVS 
+Score of seachscorefix vs d2fa: 402 - 240 - 671  [0.562] 1313 <br>
+...      seachscorefix playing White: 246 - 102 - 308  [0.610] 656 <br>
+...      seachscorefix playing Black: 156 - 138 - 363  [0.514] 657 <br>
+...      White vs Black: 384 - 258 - 671  [0.548] 1313 <br>
+Elo difference: 43.1 +/- 13.1, LOS: 100.0 %, DrawRatio: 51.1 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit d2fa75f: new PV-Search + Late Move Reduction
 Score of pvs_lmr vs see_cutoff: 496 - 350 - 534  [0.553] 1380 <br>
 ...      pvs_lmr playing White: 298 - 136 - 257  [0.617] 691 <br>
 ...      pvs_lmr playing Black: 198 - 214 - 277  [0.488] 689 <br>
@@ -6,7 +14,7 @@ Score of pvs_lmr vs see_cutoff: 496 - 350 - 534  [0.553] 1380 <br>
 Elo difference: 36.9 +/- 14.4, LOS: 100.0 %, DrawRatio: 38.7 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
-### commit _: SEE pruning in qsearch
+### commit 6e0b0d2: SEE pruning in qsearch
 Score of see_cutoff vs 7576: 1469 - 1375 - 2118  [0.509] 4962 <br>
 ...      see_cutoff playing White: 866 - 542 - 1073  [0.565] 2481 <br>
 ...      see_cutoff playing Black: 603 - 833 - 1045  [0.454] 2481 <br>

@@ -114,9 +114,9 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	results.timer.go();
 
 	const Score score 
-		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::infinity, +Score::infinity, results.depth, 0);
+		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), Score(-32000), Score(+32000), results.depth, 0);
 
-	if (results.depth > 1 and !score.isValid())
+	if (results.depth > 1 and !limits.isTimeLeft())
 		return false;
 
 	results.timer.stop();
@@ -148,7 +148,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	if (!Root and tt_hit) {
 		return tt_entry.score;
 	}
-
+	
 	results.nodes_cnt++;
 
 	node->check = pos.isInCheck(pos.getTurn());
@@ -188,7 +188,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->score = 0;
 	node->ply = ply;
 	node->best_move = Move::null;
-	node->best_score = -Score::infinity;
+	node->best_score = -32600;
 	node->moves_searched = 0;
 
 	node->state = pos.getIrreversibleState();
@@ -242,7 +242,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(node->move, node->state);
 
-		if (node->score.isValid() and node->move.isLegalMoved() and node->score > node->best_score) {
+		if (limits.isTimeLeft() and node->move.isLegalMoved() and node->score > node->best_score) {
 			node->best_move = node->move;
 			node->best_score = node->score;
 
@@ -260,7 +260,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				alpha = node->score;
 			}
 		}
-		else if (!node->score.isValid()) {
+		else if (!limits.isTimeLeft()) {
 			if (Root and node->best_move.isNull())
 				// TODO: move at root assigned here might be illegal.
 				node->best_move = node->move;
