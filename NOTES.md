@@ -1,3 +1,10 @@
+### commit _: simplest check extension
+Score of check-ext-dev vs 46df: 994 - 902 - 2014  [0.512] 3910
+...      check-ext-dev playing White: 547 - 422 - 986  [0.532] 1955
+...      check-ext-dev playing Black: 447 - 480 - 1028  [0.492] 1955
+...      White vs Black: 1027 - 869 - 2014  [0.520] 3910
+Elo difference: 8.2 +/- 7.6, LOS: 98.3 %, DrawRatio: 51.5 %
+
 ### commit 46dfcc6: new Score boundaries
 Score of newscore vs 48a7: 591 - 340 - 1408  [0.554] 2339 <br>
 ...      newscore playing White: 334 - 143 - 693  [0.582] 1170 <br>

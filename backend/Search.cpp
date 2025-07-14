@@ -125,6 +125,10 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
+
+	assert(0 <= depth and depth < max_depth);
+	assert(alpha < beta);
+
 	if constexpr (!Root) {
 		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
 			return Score::draw;
@@ -150,7 +154,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	
 	results.nodes_cnt++;
 
-	node->check = pos.isInCheck(pos.getTurn());
+	if constexpr (Root)
+		node->check = pos.isInCheck(pos.getTurn());
 
 	if constexpr (NullMove) {
 		static constexpr int R = 2;
@@ -174,10 +179,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-
-	ASSERT(0 < depth and depth < max_depth, "Depth overflow");
-	assert(alpha < beta);
-
 	const Move tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
 
 	node->move_picker.clear();
@@ -189,7 +190,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->best_move = Move::null;
 	node->best_score = -Score::infinity;
 	node->moves_searched = 0;
-
 	node->state = pos.getIrreversibleState();
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
@@ -200,6 +200,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
+			int extend = 0;
+
 			/* Principle Variation Search -
 			*  So far it was avoided in NON-PV nodes.
 			*  Now, always searching first move with full window, no matter what.
@@ -208,12 +210,15 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			*/
 			if (node->moves_searched > 0) {
 
+				(node + 1)->check = pos.isInCheck(pos.getTurn());
+				extend = static_cast<int>((node + 1)->check);
+
 				/* Late Move Reduction -
 				*  Try to reduce late moves, since they are statistically less interesting.
 				*  Prove they fail low using null window search with some reduction.
 				*  If somehow they fail high, then re-search without reduction.
 				*/
-				if (node->moves_searched >= 3 and depth >= 2 and !node->check) {
+				if (node->moves_searched >= 3 and depth >= 2 and !extend) {
 					node->score =
 						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
 				}
@@ -221,7 +226,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				
 				if (node->score > alpha) {
 					node->score =
-						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1, ply + 1);
+						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1 + extend, ply + 1);
 
 					if constexpr (NodeType == NON_PV_NODE)
 						do_full_search = false;
@@ -233,7 +238,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 			if (do_full_search) {
 				node->score =
-					-negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, -beta, -alpha, depth - 1, ply + 1);
+					-negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, -beta, -alpha, depth - 1 + extend, ply + 1);
 			}
 
 			node->moves_searched++;
