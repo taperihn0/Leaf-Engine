@@ -34,11 +34,6 @@ void TranspositionTable::clear() {
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
 	TTEntry::Bound node_bound, Score node_score, Move node_move, SearchResults& results) {
-	if (node_score > Score::mate)
-		node_score += node_ply;
-	else if (node_score < -Score::mate)
-		node_score -= node_ply;
-
 	TTEntry* const entry = _mem + (node_key & (_entry_cnt - 1));
 
 	if (!entry->depth)
@@ -55,11 +50,11 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 	const TTEntry* const entry = _mem + (key & (_entry_cnt - 1));
 	
 	if (entry->key != key) {
-		out_entry = TTEntry{ 0 };
+		out_entry.move = Move::null;
 		return false;
 	} 
 	else if (entry->depth < node_depth) {
-		out_entry = *entry;
+		out_entry.move = entry->move;
 		return false;
 	}
 

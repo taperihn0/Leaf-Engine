@@ -136,8 +136,8 @@ static bool ccrOneHourTest(Search& search) {
 	ASSERT(file.is_open(), "Failed to open file ccronehour.txt");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH
-	static constexpr int search_depth = 9;
-	static_assert(1 <= search_depth and search_depth <= max_depth);
+	static constexpr int search_depth = 13;
+	static_assert(1 <= search_depth and search_depth < max_depth);
 
 	// MODIFY TO CHANGE NUMBER OF POSITION
 	static constexpr int pos_limit = 25;

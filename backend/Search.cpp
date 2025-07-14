@@ -139,9 +139,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	TTEntry tt_entry;
 	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth, ply);
-
-	if (!Root and tt_hit) {
-		return tt_entry.score;
+	
+	if constexpr (!Root and NodeType == NON_PV_NODE) {
+		if (tt_hit) return tt_entry.score;
+	}
+	else if constexpr (!Root) {
+		if (tt_hit and tt_entry.bound == TTEntry::EXACT) 
+			return tt_entry.score;
 	}
 	
 	results.nodes_cnt++;
@@ -269,8 +273,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		bound_type = TTEntry::EXACT;
 		node->best_score = node->check ? -Score::mate + ply : Score::draw;
 	}
-
-	_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
+	if (node->best_score > -Score::mate_bound and node->best_score < Score::mate_bound)
+		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
 
 	(node + 1)->move_picker.setKillerMove(Move::null);
 

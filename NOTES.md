@@ -1,4 +1,12 @@
-### commit _: removed PV_NODE checking at PVS 
+### commit 46dfcc6: new Score boundaries
+Score of newscore vs 48a7: 591 - 340 - 1408  [0.554] 2339 <br>
+...      newscore playing White: 334 - 143 - 693  [0.582] 1170 <br>
+...      newscore playing Black: 257 - 197 - 715  [0.526] 1169 <br>
+...      White vs Black: 531 - 400 - 1408  [0.528] 2339 <br>
+Elo difference: 37.4 +/- 8.8, LOS: 100.0 %, DrawRatio: 60.2 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit f2b5346: removed PV_NODE checking at PVS 
 Score of seachscorefix vs d2fa: 402 - 240 - 671  [0.562] 1313 <br>
 ...      seachscorefix playing White: 246 - 102 - 308  [0.610] 656 <br>
 ...      seachscorefix playing Black: 156 - 138 - 363  [0.514] 657 <br>
