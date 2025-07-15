@@ -25,19 +25,19 @@ template <OrderType Type>
 class MoveOrder {
 public:
 	void generateMoves(const Position& pos);
-	bool nextMove(const TreeStack& tree, const Position& pos, Move& next_move);
+	bool nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move);
 
-	void setHashMove(Move m);
-	void setKillerMove(Move m);
+	void setHashMove(Move32b m);
+	void setKillerMove(Move32b m);
 
-	void updateHistory(Move curr, bool side, int depth);
+	void updateHistory(Move32b curr, bool side, int depth);
 
 	void clear();
 	
 	static void agingHistory();
 	static void clearHistory();
 private:
-	bool nextFromList(Move& move);
+	bool nextFromList(Move32b& move);
 
 	void scoreCaptures(size_t first, const Position& pos);
 	void scoreQuiets(size_t first, const Position& pos);
@@ -56,8 +56,8 @@ private:
 	enumStage _stage       = _first_stage;
 	size_t _iterator       = 0;
 
-	Move _hash_move		   = Move::null;
-	Move _killer_move	   = Move::null;
+	Move32b _hash_move		   = Move32b::null;
+	Move32b _killer_move	   = Move32b::null;
 
 	inline static alignas(64) uint16_t _history[2][6][64] = {};
 
@@ -68,22 +68,22 @@ template <OrderType Type>
 INLINE void MoveOrder<Type>::clear() {
 	_iterator = 0;
 	_stage = _first_stage;
-	_hash_move = Move::null;
+	_hash_move = Move32b::null;
 	_move_list.clear();
 }
 
 template <OrderType Type>
-INLINE void MoveOrder<Type>::setHashMove(Move m) {
+INLINE void MoveOrder<Type>::setHashMove(Move32b m) {
 	_hash_move = m;
 }
 
 template <OrderType Type>
-INLINE void MoveOrder<Type>::setKillerMove(Move m) {
+INLINE void MoveOrder<Type>::setKillerMove(Move32b m) {
 	_killer_move = m;
 }
 
 template <OrderType Type>
-INLINE void MoveOrder<Type>::updateHistory(Move curr, bool side, int depth) {
+INLINE void MoveOrder<Type>::updateHistory(Move32b curr, bool side, int depth) {
 	_history[side][curr.getPiece()][curr.getTarget()] += depth * depth;
 
 	if (_history[side][curr.getPiece()][curr.getTarget()] > 16000) {

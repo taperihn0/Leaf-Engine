@@ -17,7 +17,7 @@ void MoveOrder<PLAIN>::generateMoves(const Position& pos) {
 */
 
 template <OrderType Type>
-bool MoveOrder<Type>::nextMove(const TreeStack& tree, const Position& pos, Move& next_move) {
+bool MoveOrder<Type>::nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move) {
 	switch (_stage) {
 	case enumStage::HASH_MOVE:
 		_stage = enumStage::CAPTURES;
@@ -70,7 +70,7 @@ bool MoveOrder<Type>::nextMove(const TreeStack& tree, const Position& pos, Move&
 }
 
 template <OrderType Type>
-INLINE bool MoveOrder<Type>::nextFromList(Move& move) {
+INLINE bool MoveOrder<Type>::nextFromList(Move32b& move) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
@@ -88,11 +88,12 @@ template <OrderType Type>
 void MoveOrder<Type>::scoreCaptures(size_t first, const Position& pos) {
 	for (size_t i = first; i < _move_list.count(); i++) {
 		MoveList::Entry* entry = _move_list.getEntry(i);
-		Move* move = &entry->move;
+		const Move32b* move = &entry->move;
 		uint16_t* score = &entry->score;
 
 		assert(move->isCapture() or (move->isPromotion()
-			and move->getPromoPiece() == Piece::QUEEN));
+			and move->getPromoPiece() == Piece::QUEEN
+			and !move->isLegalMoved()));
 
 		if (move->isEnPassant()) {
 			*score = piece_value[Piece::PAWN] - value(Piece::PAWN);
@@ -114,14 +115,14 @@ template <OrderType Type>
 void MoveOrder<Type>::scoreQuiets(size_t first, const Position& pos) {
 	for (size_t i = first; i < _move_list.count(); i++) {
 		MoveList::Entry* entry = _move_list.getEntry(i);
-		Move* move = &entry->move;
+		Move32b* move = &entry->move;
 		uint16_t* score = &entry->score;
 
-		assert(move->isQuiet());
+		assert(move->isQuiet() and !move->isLegalMoved());
 
 		*score = _history[pos.getTurn()][move->getPiece()][move->getTarget()];
 	}
 }
 
-template bool MoveOrder<STAGED>::nextMove(const TreeStack&, const Position&, Move&);
-template bool MoveOrder<QUIESCENT>::nextMove(const TreeStack&, const Position&, Move&);
+template bool MoveOrder<STAGED>::nextMove(const TreeStack&, const Position&, Move32b&);
+template bool MoveOrder<QUIESCENT>::nextMove(const TreeStack&, const Position&, Move32b&);

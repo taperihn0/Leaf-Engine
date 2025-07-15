@@ -3,8 +3,36 @@
 
 /* TODO: move validity restricted checking */
 
+Move32b createMove(const Position& pos, Square origin, Square target, Piece::enumType piece, bool capture, 
+	bool ep_capture, bool promotion, bool short_castle, bool long_castle, Piece::enumType promo_piece) {
+
+	ASSERT(piece != Piece::NONE, "Invalid move");
+	ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
+
+	Move32b res = Move32b::null;
+
+	if (promotion)
+		res = Move32b::makePromotion(origin, target, capture, promo_piece);
+	else if (ep_capture)
+		res = Move32b::makeEnPassant(origin, target);
+	else if (short_castle) {
+		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
+		res = Move32b::makeCastling<Move32b::Castle::SHORT>(origin, target);
+	}
+	else if (long_castle) {
+		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid castling move");
+		res = Move32b::makeCastling<Move32b::Castle::LONG>(origin, target);
+	}
+	else
+		res = Move32b::makeSimple(origin, target, capture, piece);
+
+	assert(res.isPseudoLegal(pos));
+	return res;
+}
+
 template <>
-Move Move::fromStr<Move::Notation::PURE>(const Position& pos, const std::string& str) {
+template <>
+Move32b Move32b::fromStr<Move32b::Notation::PURE>(const Position& pos, const std::string& str) {
 	ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
 
 	Square				  origin = Square::fromChar(str[0], str[1]),
@@ -17,34 +45,14 @@ Move Move::fromStr<Move::Notation::PURE>(const Position& pos, const std::string&
 						  long_castle = piece == Piece::KING and origin - target == 2;
 	const Piece::enumType promo_piece = promotion ? Piece::typeFromChar(str[4]) : Piece::NONE;
 
-	ASSERT(piece != Piece::NONE, "Invalid move");
-	ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
-
-	Move res = Move::null;
-
-	if (promotion)
-		res = Move::makePromotion(origin, target, capture, promo_piece);
-	else if (ep_capture)
-		res = Move::makeEnPassant(origin, target);
-	else if (short_castle) {
-		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
-		res = Move::makeCastling<Move::Castle::SHORT>(origin, target);
-	}
-	else if (long_castle) {
-		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid castling move");
-		res = Move::makeCastling<Move::Castle::LONG>(origin, target);
-	}
-	else
-		res = Move::makeSimple(origin, target, capture, piece);
-
-	assert(res.isPseudoLegal(pos));
-	return res;
+	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
 }
 
 template <>
-Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
-	Square	   origin = Move::null, 
-			   target = Move::null;
+template <>
+Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
+	Square	   origin = Move32b::null, 
+			   target = Move32b::null;
 	char	   chpromo = '\0';
 	const bool capture = str.find('x') != std::string::npos or str.find('X') != std::string::npos,
 			   promotion = str.find('=') != std::string::npos,
@@ -110,7 +118,7 @@ Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::st
 				char id = str[1];
 				int idn = 0;
 
-				if ((idn = (int)std::string_view("abcdefgh").find(id)) != std::string::npos) {
+				if ((idn = static_cast<int>(std::string_view("abcdefgh").find(id))) != std::string::npos) {
 					BitBoard file = BitBoard::file(idn);
 					bb &= file;
 					
@@ -135,25 +143,12 @@ Move Move::fromStr<Move::Notation::ALGEBRAIC>(const Position& pos, const std::st
 	std::string puremove = origin.toStr() + target.toStr();
 	if (promotion) puremove.append(1, chpromo);
 
-	return fromStr<Move::Notation::PURE>(pos, puremove);
+	return fromStr<Move32b::Notation::PURE>(pos, puremove);
 }
 
-void Move::print() const {
-#if defined(PURE_NOTATION_DISPLAY)
-	if (_rmove == null) {
-		std::cout << _null_str;
-	}
-	else {
-		getOrigin().print(), getTarget().print();
-		if (isPromotion()) Piece(BLACK, getPromoPiece()).print();
-	}
-#else
-	ASSERT(false, "Prining moves in algebraic notation not supported");
-#endif
-}
-
-bool Move::isPseudoLegal(const Position& pos) const {
-	if (*this == Move::null) return false;
+template <>
+bool Move32b::isPseudoLegal(const Position& pos) const {
+	if (*this == Move32b::null) return false;
 
 	const Square org = getOrigin(), dst = getTarget();
 	const Piece::enumType p = getPiece(), d = pos.pieceOn(dst, pos.getOppositeTurn());
@@ -187,12 +182,42 @@ bool Move::isPseudoLegal(const Position& pos) const {
 		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
 }
 
+template <>
 template <bool onlyQuiets>
-bool Move::isPseudoLegal_fromList(const Position& pos) const {
+bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
 	MoveList mlist;
 	MoveGen::generatePseudoLegalMoves<onlyQuiets ? MoveGen::QUIETS : MoveGen::ALL>(pos, mlist);
 	return mlist.contains(*this);
 }
 
-template bool Move::isPseudoLegal_fromList<true>(const Position& pos) const;
-template bool Move::isPseudoLegal_fromList<false>(const Position& pos) const;
+template <>
+void Move32b::print() const {
+#if defined(PURE_NOTATION_DISPLAY)
+	if (_rmove == null) {
+		std::cout << _null_str;
+	}
+	else {
+		getOrigin().print(), getTarget().print();
+		if (isPromotion()) Piece(BLACK, getPromoPiece()).print();
+	}
+#else
+	ASSERT(false, "Prining moves in algebraic notation not supported");
+#endif
+}
+
+Move32b unpacked(const Position& pos, Move16b move) {
+	Square				  origin = move.getOrigin(),
+						  target = move.getTarget();
+	const Piece::enumType piece = pos.pieceOn(origin, pos.getTurn());
+	const bool			  capture = pos.getOppositePieces().isOccupiedSq(target),
+						  ep_capture = piece == Piece::PAWN and target == pos.getEnPassantSq(),
+						  short_castle = piece == Piece::KING and origin - target == -2,
+						  long_castle = piece == Piece::KING and origin - target == 2;
+	const Piece::enumType promo_piece = move.getPromoPiece();
+	const bool			  promotion = move.isPromotion();
+
+	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
+}
+
+template bool Move32b::isPseudoLegal_fromList<true>(const Position& pos) const;
+template bool Move32b::isPseudoLegal_fromList<false>(const Position& pos) const;

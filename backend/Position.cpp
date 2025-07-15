@@ -97,7 +97,7 @@ void Position::print() const {
 		<< ' ' << _fullmove_count << '\n';
 }
 
-bool Position::make(Move& move) {
+bool Position::make(Move32b& move) {
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
@@ -218,7 +218,7 @@ bool Position::make(Move& move) {
 	return legal;
 }
 
-void Position::unmake(Move move, const IrreversibleState& prev_state) {
+void Position::unmake(Move32b move, const IrreversibleState& prev_state) {
 	const Piece::enumType piece_t = move.getPiece();
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
@@ -332,7 +332,7 @@ uint64_t Position::perft(unsigned depth) {
 	IrreversibleState state = getIrreversibleState();
 
 	for (size_t i = 0; i < move_list.count(); i++) {
-		Move move = move_list.getMove(i);
+		Move32b move = move_list.getMove(i);
 
 		if (make(move)) {
 			assert(_hashing._key == _hashing.generateOnFly(*this));

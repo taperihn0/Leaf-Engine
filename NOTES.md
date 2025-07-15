@@ -1,9 +1,17 @@
+### commit _: fixed check extension
+Score of new-check-ext-dev vs old-check-ext: 1159 - 746 - 2086  [0.552] 3991 <br>
+...      new-check-ext-dev playing White: 643 - 333 - 1019  [0.578] 1995 <br>
+...      new-check-ext-dev playing Black: 516 - 413 - 1067  [0.526] 1996 <br>
+...      White vs Black: 1056 - 849 - 2086  [0.526] 3991 <br>
+Elo difference: 36.1 +/- 7.4, LOS: 100.0 %, DrawRatio: 52.3 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: simplest check extension
-Score of check-ext-dev vs 46df: 994 - 902 - 2014  [0.512] 3910
-...      check-ext-dev playing White: 547 - 422 - 986  [0.532] 1955
-...      check-ext-dev playing Black: 447 - 480 - 1028  [0.492] 1955
-...      White vs Black: 1027 - 869 - 2014  [0.520] 3910
-Elo difference: 8.2 +/- 7.6, LOS: 98.3 %, DrawRatio: 51.5 %
+Score of check-ext-dev vs 46df: 994 - 902 - 2014  [0.512] 3910 <br>
+...      check-ext-dev playing White: 547 - 422 - 986  [0.532] 1955 <br>
+...      check-ext-dev playing Black: 447 - 480 - 1028  [0.492] 1955 <br>
+...      White vs Black: 1027 - 869 - 2014  [0.520] 3910 <br>
+Elo difference: 8.2 +/- 7.6, LOS: 98.3 %, DrawRatio: 51.5 % <br>
 
 ### commit 46dfcc6: new Score boundaries
 Score of newscore vs 48a7: 591 - 340 - 1408  [0.554] 2339 <br>

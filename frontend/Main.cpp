@@ -14,8 +14,8 @@
 	4. Try to score captures only once (faster) instead of doing that every time a new capture is picked
 	5. Try different method of updating history tables for quiet moves (also, try different aging)
 	6. Recapture heuristic (in move order try to apply capture that captures last moved piece)
-	7. Experiment with verification search in Null Move Pruning
-	8. Restrict Late Move Reduction
+	7. Experiment with verification search in Null Move32b Pruning
+	8. Restrict Late Move32b Reduction
 */
 
 int main(int argc, const char* argv[]) {

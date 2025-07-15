@@ -4,12 +4,12 @@
 template <MoveGen::enumMode GenType, bool Capture>
 inline void generatePromotions(Square origin, Square target, MoveList& move_list) {
 	if constexpr (GenType == MoveGen::CAPTURES or GenType == MoveGen::TACTICALS)
-		move_list.push(Move::makePromotion(origin, target, Capture, Piece::QUEEN));
+		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::QUEEN));
 
 	if constexpr (Capture or GenType == MoveGen::QUIETS or GenType == MoveGen::TACTICALS) {
-		move_list.push(Move::makePromotion(origin, target, Capture, Piece::KNIGHT));
-		move_list.push(Move::makePromotion(origin, target, Capture, Piece::BISHOP));
-		move_list.push(Move::makePromotion(origin, target, Capture, Piece::ROOK));
+		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::KNIGHT));
+		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::BISHOP));
+		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::ROOK));
 	}
 }
 
@@ -40,7 +40,7 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 
 	while (att) {
 		const Square dst = Square(att.dropForward());
-		move_list.push(Move::makeSimple(dst - WestDiag, dst, Captures, Piece::PAWN));
+		move_list.push(Move32b::makeSimple(dst - WestDiag, dst, Captures, Piece::PAWN));
 	}
 
 	// Eastern captures left
@@ -59,7 +59,7 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 
 	while (att) {
 		const Square dst = Square(att.dropForward());
-		move_list.push(Move::makeSimple(dst - EastDiag, dst, Captures, Piece::PAWN));
+		move_list.push(Move32b::makeSimple(dst - EastDiag, dst, Captures, Piece::PAWN));
 	}
 	
 	// En-passant validation
@@ -70,9 +70,9 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 	const BitBoard ep_bb = BitBoard(ep_sq);
 
 	if (pawns.pawnsAttack<WestDiag>() & ep_bb)
-		move_list.push(Move::makeEnPassant(ep_sq - WestDiag, ep_sq));
+		move_list.push(Move32b::makeEnPassant(ep_sq - WestDiag, ep_sq));
 	if (pawns.pawnsAttack<EastDiag>() & ep_bb)
-		move_list.push(Move::makeEnPassant(ep_sq - EastDiag, ep_sq));
+		move_list.push(Move32b::makeEnPassant(ep_sq - EastDiag, ep_sq));
 }
 
 template <MoveGen::enumMode GenType, enumColor Side>
@@ -102,12 +102,12 @@ void generatePawnPushes(const Position& pos, MoveList& move_list, BitBoard empti
 
 		while (double_pushable) {
 			const Square dst = Square(double_pushable.dropForward());
-			move_list.push(Move::makeSimple(dst -  2 * Dir, dst, nonCaptures, Piece::PAWN));
+			move_list.push(Move32b::makeSimple(dst -  2 * Dir, dst, nonCaptures, Piece::PAWN));
 		}
 
 		while (pushable) {
 			const Square dst = Square(pushable.dropForward());
-			move_list.push(Move::makeSimple(dst - Dir, dst, nonCaptures, Piece::PAWN));
+			move_list.push(Move32b::makeSimple(dst - Dir, dst, nonCaptures, Piece::PAWN));
 		}
 	}
 }
@@ -127,7 +127,7 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 
 	while (att) {
 		const Square dst = att.dropForward();
-		move_list.push(Move::makeSimple(org, dst, isCapture, Piece::KING));
+		move_list.push(Move32b::makeSimple(org, dst, isCapture, Piece::KING));
 	}
 
 	// handle castling 
@@ -142,12 +142,12 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	if (own_castling_state.isShortPossible() and
 		own_castling_state.notThroughPieces_Short<Side>(occupied) and
 		own_castling_state.notThroughCheck_Short<Side>(pos))
-		move_list.push(Move::makeCastling<Move::Castle::SHORT>(org, ShortCastleDst));
+		move_list.push(Move32b::makeCastling<Move32b::Castle::SHORT>(org, ShortCastleDst));
 
 	if (own_castling_state.isLongPossible() and
 		own_castling_state.notThroughPieces_Long<Side>(occupied) and
 		own_castling_state.notThroughCheck_Long<Side>(pos))
-		move_list.push(Move::makeCastling<Move::Castle::LONG>(org, LongCastleDst));
+		move_list.push(Move32b::makeCastling<Move32b::Castle::LONG>(org, LongCastleDst));
 }
 
 template <Piece::enumType Piece, enumColor Side, bool isCapture> 
@@ -163,7 +163,7 @@ inline void generate(const Position& pos, MoveList& move_list, BitBoard mask, Bi
 
 		while (att) {
 			const Square dst = Square(att.dropForward());
-			move_list.push(Move::makeSimple(org, dst, isCapture, Piece));
+			move_list.push(Move32b::makeSimple(org, dst, isCapture, Piece));
 		}
 	}
 }

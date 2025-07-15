@@ -10,7 +10,7 @@ INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
 
-INLINE void SearchResults::registerBestMove(Move move) {
+INLINE void SearchResults::registerBestMove(Move32b move) {
 	best_move = move;
 }
 
@@ -43,7 +43,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 		TTEntry tt_entry;
 		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0);
 
-		Move pv_move = tt_entry.move;
+		Move32b pv_move = tt_entry.move;
 
 		if (!tt_hit or pv_move.isNull()) 
 			break;
@@ -66,22 +66,22 @@ void Search::registerNewGame() {
 }
 
 template <bool PrintFullInfo>
-Move Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
+Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
 
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	const Move bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
+	const Move32b bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
 	return bm;
 }
 
-Move Search::_bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits) {
+Move32b Search::_bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits) {
 	return search.bestMove<false>(pos, game, limits);
 }
 
 template <bool PrintFullInfo>
-Move Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
+Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
 	search_results.tt_entries = _tt.getEntriesCount();
 
@@ -166,7 +166,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, -beta, -beta + 1, depth - R - 1, ply + 1);
 			pos.unmakeNull(node->state);
 
-			/* Unless Null Move Pruning is not handled properly in endgame, 
+			/* Unless Null Move32b Pruning is not handled properly in endgame, 
 			*  verification search is just needed 
 			*/
 			if (score >= beta) {
@@ -179,7 +179,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	const Move tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move::null;
+	const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::null;
 
 	node->move_picker.clear();
 	node->move_picker.setHashMove(tt_move);
@@ -187,7 +187,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->can_move = false;
 	node->score = 0;
 	node->ply = ply;
-	node->best_move = Move::null;
+	node->best_move = Move32b::null;
 	node->best_score = -Score::infinity;
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
@@ -200,7 +200,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
-			int extend = 0;
+			(node + 1)->check = pos.isInCheck(pos.getTurn());
+			const int extend = calculateExtension(pos, node);
 
 			/* Principle Variation Search -
 			*  So far it was avoided in NON-PV nodes.
@@ -210,15 +211,12 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			*/
 			if (node->moves_searched > 0) {
 
-				(node + 1)->check = pos.isInCheck(pos.getTurn());
-				extend = static_cast<int>((node + 1)->check);
-
 				/* Late Move Reduction -
 				*  Try to reduce late moves, since they are statistically less interesting.
 				*  Prove they fail low using null window search with some reduction.
 				*  If somehow they fail high, then re-search without reduction.
 				*/
-				if (node->moves_searched >= 3 and depth >= 2 and !extend) {
+				if (node->moves_searched >= 1 /* adjust */ and depth >= 2 and !extend) {
 					node->score =
 						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
 				}
@@ -281,7 +279,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	if (node->best_score > -Score::mate_bound and node->best_score < Score::mate_bound)
 		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
 
-	(node + 1)->move_picker.setKillerMove(Move::null);
+	(node + 1)->move_picker.setKillerMove(Move32b::null);
 
 	if constexpr (Root) {
 		results.score_cp = node->best_score;
@@ -314,7 +312,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 
 	MoveOrder<QUIESCENT> moves;
-	Move move;
+	Move32b move;
 	Score score = 0;
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
@@ -342,6 +340,10 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	return alpha;
 }
 
+INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
+	return (node + 1)->check;
+}
+
 bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply) {
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
@@ -350,7 +352,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 	static_assert(search_rep_depth & 1);
 
 	for (ply = ply - 1; ply >= 0; ply--, node--) {
-		const Move move = node->move;
+		const Move32b move = node->move;
 
 		if (move.isIrreversible())
 			return false;
@@ -369,7 +371,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 		if (cnt < 0) 
 			return false;
 
-		const Move move = game.getPrevMove(cnt);
+		const Move32b move = game.getPrevMove(cnt);
 
 		if (move.isIrreversible())
 			return false;
@@ -382,5 +384,5 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 	return false;
 }
 
-template Move Search::bestMove<true>(Position&, const Game&, SearchLimits);
-template Move Search::bestMove<false>(Position&, const Game&, SearchLimits);
+template Move32b Search::bestMove<true>(Position&, const Game&, SearchLimits);
+template Move32b Search::bestMove<false>(Position&, const Game&, SearchLimits);

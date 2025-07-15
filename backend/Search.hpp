@@ -27,7 +27,7 @@ struct SearchLimits {
 class Search;
 
 struct SearchResults {
-	void registerBestMove(Move move);
+	void registerBestMove(Move32b move);
 
 	void printBestMove();
 	void print(const Search* search, const Position& pos);
@@ -39,15 +39,15 @@ struct SearchResults {
 	uint64_t  nodes_cnt  = 0;
 	size_t    tt_hits    = 0,
 			  tt_entries = 0;
-	Move      best_move  = Move::null;
+	Move32b      best_move  = Move32b::null;
 	time_ms_t duration;
 };
 
 struct NodeInfo {
 	MoveOrder<STAGED>			move_picker;
 	Position::IrreversibleState state;
-	Move						move;
-	Move						best_move;
+	Move32b						move;
+	Move32b						best_move;
 	Score						score;
 	bool						can_move;
 	Score						best_score;
@@ -80,13 +80,13 @@ public:
 	Search();
 
 	template <bool PrintFullInfo = true>
-	Move bestMove(Position& pos, const Game& game, SearchLimits limits);
-	static Move _bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits);
+	Move32b bestMove(Position& pos, const Game& game, SearchLimits limits);
+	static Move32b _bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits);
 
 	void registerNewGame();
 private:
 	template <bool PrintFullInfo>
-	Move iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
+	Move32b iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
 
 	template <bool PrintFullInfo>
 	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
@@ -96,6 +96,8 @@ private:
 		Score alpha, Score beta, unsigned depth, unsigned ply);
 
 	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply);
+
+	int calculateExtension(Position& pos, NodeInfo* node);
 
 	bool isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply);
 
@@ -117,6 +119,6 @@ INLINE NodeInfo* TreeStack::getRootNode() {
 
 INLINE void TreeStack::clear() {
 	for (size_t i = 0; i < max_depth; i++) {
-		_stack[i].move_picker.setKillerMove(Move::null);
+		_stack[i].move_picker.setKillerMove(Move32b::null);
 	}
 }

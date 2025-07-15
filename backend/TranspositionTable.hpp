@@ -19,7 +19,7 @@ struct alignas(16) TTEntry {
 	uint8_t depth;
 	Bound bound;
 	Score score;
-	Move move;
+	Move32b move;
 };
 
 class TranspositionTable {
@@ -32,7 +32,7 @@ public:
 	void clear();
 
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-		TTEntry::Bound node_bound, Score node_score, Move node_move, SearchResults& results);
+		TTEntry::Bound node_bound, Score node_score, Move32b node_move, SearchResults& results);
 
 	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
 

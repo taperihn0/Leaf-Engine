@@ -5,8 +5,8 @@
 #include "Attacks.hpp"
 #include "Hash.hpp"
 #include "Color.hpp"
+#include "Move.hpp"
 
-class Move;
 class Position;
 
 // wrapper around castling rights for single player
@@ -218,8 +218,8 @@ public:
 	Piece fullPieceOn(Square sq) const;
 
 	// returns whether move is legal or pseudo-legal
-	bool make(Move& move);
-	void unmake(Move move, const IrreversibleState& prev_state);
+	bool make(Move32b& move);
+	void unmake(Move32b move, const IrreversibleState& prev_state);
 
 	void makeNull(IrreversibleState& state);
 	void unmakeNull(const IrreversibleState& prev_state);

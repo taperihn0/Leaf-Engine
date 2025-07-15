@@ -58,6 +58,8 @@ using byte = unsigned char;
 using ll = long long;
 using ull = unsigned long long;
 
+#define _IS_SAME_TYPE(t1, t2) std::is_same_v<t1, t2>
+
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
 	return static_cast<uint8_t>(a);
 }

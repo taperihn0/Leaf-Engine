@@ -11,7 +11,7 @@ public:
 			return move == b.move;
 		}
 
-		Move move;
+		Move32b move;
 		uint16_t score;
 	};
 
@@ -24,7 +24,7 @@ public:
 			_greater_score);
 	}
 
-	INLINE void push(Move&& new_move) {
+	INLINE void push(Move32b&& new_move) {
 		assert(_idx < _max_size);
 		_moves[_idx++].move = new_move;
 	}
@@ -34,7 +34,7 @@ public:
 		return _moves.data() + idx;
 	}
 
-	INLINE Move getMove(size_t idx) const {
+	INLINE Move32b getMove(size_t idx) const {
 		assert(idx < _idx);
 		return _moves[idx].move;
 	}
@@ -43,7 +43,7 @@ public:
 		return _idx;
 	}
 
-	INLINE bool contains(Move m) const {
+	INLINE bool contains(Move32b m) const {
 		return std::find_if(_moves.data(), _moves.data() + _idx, 
 			[m](Entry e) { return e.move == m; }) != _moves.data() + _idx;
 	}

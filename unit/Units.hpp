@@ -89,7 +89,7 @@ static bool seeTests() {
 
 	for (int lcnt = 0; std::getline(file, line); lcnt++) {
 		size_t ind = 0;
-		Move move = Move::null;
+		Move32b move = Move32b::null;
 		int expected = 0;
 
 		for (int i = 0; i < 3; i++) {
@@ -104,7 +104,7 @@ static bool seeTests() {
 				pos.setByFEN(token);
 				break;
 			case MOVE_NUM:
-				move = Move::fromStr<Move::Notation::ALGEBRAIC>(pos, token);
+				move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, token);
 				break;
 			case EXPECTED_NUM:
 				expected = std::atoi(token.data());
@@ -145,7 +145,7 @@ static bool ccrOneHourTest(Search& search) {
 
 	Position pos;
 	std::string line;
-	Move move;
+	Move32b move;
 
 	Game tmpgame;
 	SearchLimits limits;
@@ -170,7 +170,7 @@ static bool ccrOneHourTest(Search& search) {
 		if (ind != std::string::npos) {
 			ind += 3;
 			size_t last = nextToken(opt, ind);
-			move = Move::fromStr<Move::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
 			_TESTCASE(lcnt, equal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
 		}
 		else {
@@ -178,7 +178,7 @@ static bool ccrOneHourTest(Search& search) {
 			ASSERT(ind != std::string::npos, "Invalid line");
 			ind += 3;
 			size_t last = nextToken(opt, ind);
-			move = Move::fromStr<Move::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
 			_TESTCASE(lcnt, nonequal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
 		}
 	}
