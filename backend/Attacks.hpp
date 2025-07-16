@@ -174,4 +174,19 @@ namespace {
 		return kingAttacks(sq);
 	}
 
+	INLINE BitBoard attacksIncludePawns(Piece::enumType piece, Square sq, BitBoard occ, enumColor col) {
+		if (piece == Piece::PAWN)
+			return pawnAttacks(sq, col);
+		else if (piece == Piece::KNIGHT)
+			return knightAttacks(sq);
+		else if (piece == Piece::BISHOP)
+			return SlidersMagics::bishopAttacks(sq, occ);
+		else if (piece == Piece::ROOK)
+			return SlidersMagics::rookAttacks(sq, occ);
+		else if (piece == Piece::QUEEN)
+			return SlidersMagics::queenAttacks(sq, occ);
+
+		return kingAttacks(sq);
+	}
+
 } // namespace

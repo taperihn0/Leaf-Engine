@@ -100,6 +100,11 @@ public:
 		return _board << Shift;
 	}
 
+	INLINE BitBoard genShift(int shift) const {
+		if (shift < 0) return _board >> (-shift);
+		return _board << shift;
+	}
+
 	template <int Shift>
 	INLINE BitBoard pawnsAttack() const {
 		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
@@ -108,7 +113,7 @@ public:
 	}
 
 	// debug-purpose method
-	void printRaw() const;
+	void print() const;
 	
 	void set(uint64_t bb);
 

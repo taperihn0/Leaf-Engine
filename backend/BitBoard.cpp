@@ -1,6 +1,6 @@
 #include "BitBoard.hpp"
 
-void BitBoard::printRaw() const {
+void BitBoard::print() const {
 	for (int h = 7; h >= 0; h--) {
 		for (int i = h * 8; i < (h + 1) * 8; i++)
 			std::cout << static_cast<bool>((1_ui64 << i) & _board);

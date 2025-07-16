@@ -102,6 +102,9 @@ INLINE bool isSigned(const std::string& str) {
 	return !str.empty() and str[0] == '-';
 }
 
+// Target cacheline size is fixed
+#define CACHELINE_SIZE 64
+
 INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	byte* d = reinterpret_cast<byte*>(dst);
 

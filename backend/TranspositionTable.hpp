@@ -7,10 +7,12 @@
 class Score;
 struct SearchResults;
 
-struct alignas(16) TTEntry {
+#define ENTRY_TARGET_SIZE 16
+
+struct TTEntry {
 	enum Bound : uint8_t {
-		NONE = 0,
-		EXACT = 1,
+		NONE	   = 0,
+		EXACT	   = 1,
 		LOWERBOUND = 2,
 		UPPERBOUND = 3,
 	};
@@ -19,8 +21,13 @@ struct alignas(16) TTEntry {
 	uint8_t depth;
 	Bound bound;
 	Score score;
-	Move32b move;
+	Move16b move;
 };
+
+//struct alignas(CACHELINE_SIZE) TTBucket {
+//	static constexpr size_t internal_entries_cnt = 4;
+//	TTEntry entries[internal_entries_cnt];
+//};
 
 class TranspositionTable {
 public:
@@ -32,7 +39,7 @@ public:
 	void clear();
 
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-		TTEntry::Bound node_bound, Score node_score, Move32b node_move, SearchResults& results);
+		TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
 
 	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
 

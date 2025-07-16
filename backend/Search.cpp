@@ -43,7 +43,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 		TTEntry tt_entry;
 		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0);
 
-		Move32b pv_move = tt_entry.move;
+		Move32b pv_move = unpacked(cpy, tt_entry.move);
 
 		if (!tt_hit or pv_move.isNull()) 
 			break;
@@ -166,7 +166,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, -beta, -beta + 1, depth - R - 1, ply + 1);
 			pos.unmakeNull(node->state);
 
-			/* Unless Null Move32b Pruning is not handled properly in endgame, 
+			/* Unless Null Move Pruning is not handled properly in endgame, 
 			*  verification search is just needed 
 			*/
 			if (score >= beta) {
@@ -179,7 +179,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::null;
+	//const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::null;
+	const Move32b ttm32b = unpacked(pos, tt_entry.move);
+	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::null;
 
 	node->move_picker.clear();
 	node->move_picker.setHashMove(tt_move);
@@ -216,7 +218,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				*  Prove they fail low using null window search with some reduction.
 				*  If somehow they fail high, then re-search without reduction.
 				*/
-				if (node->moves_searched >= 1 /* adjust */ and depth >= 2 and !extend) {
+				if (node->moves_searched >= 2 and 
+					depth >= 2 and 
+					!extend) /* TODO: LMR criteria */
+				{
 					node->score =
 						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
 				}
@@ -244,14 +249,19 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		pos.unmake(node->move, node->state);
 
-		if (limits.isTimeLeft() and node->move.isLegalMoved() and node->score > node->best_score) {
+		if (limits.isTimeLeft() and 
+			node->move.isLegalMoved() and 
+			node->score > node->best_score) 
+		{
 			node->best_move = node->move;
 			node->best_score = node->score;
 
 			if (node->score > alpha) {
 				if (node->score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
-					if (node->move.isQuiet() and (!node->move.isPromotion() or node->move.getPromoPiece() != Piece::QUEEN)) {
+					if (node->move.isQuiet() and 
+						(!node->move.isPromotion() or node->move.getPromoPiece() != Piece::QUEEN)) 
+					{
 						node->move_picker.setKillerMove(node->move);
 						node->move_picker.updateHistory(node->move, pos.getTurn(), depth);
 					}
@@ -276,8 +286,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		bound_type = TTEntry::EXACT;
 		node->best_score = node->check ? -Score::mate + ply : Score::draw;
 	}
+
 	if (node->best_score > -Score::mate_bound and node->best_score < Score::mate_bound)
-		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, node->best_move, results);
+		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, packed(node->best_move), results);
 
 	(node + 1)->move_picker.setKillerMove(Move32b::null);
 

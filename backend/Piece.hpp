@@ -74,3 +74,7 @@ private:
 INLINE constexpr Piece::uint_t value(Piece::enumType p) {
 	return static_cast<Piece::uint_t>(p);
 }
+
+INLINE constexpr bool isSlider(Piece::enumType p) {
+	return p >= Piece::BISHOP and p <= Piece::QUEEN;
+}

@@ -29,6 +29,7 @@ public:
 
 	void setHashMove(Move32b m);
 	void setKillerMove(Move32b m);
+	Move32b getKillerMove();
 
 	void updateHistory(Move32b curr, bool side, int depth);
 
@@ -80,6 +81,11 @@ INLINE void MoveOrder<Type>::setHashMove(Move32b m) {
 template <OrderType Type>
 INLINE void MoveOrder<Type>::setKillerMove(Move32b m) {
 	_killer_move = m;
+}
+
+template <OrderType Type>
+INLINE Move32b MoveOrder<Type>::getKillerMove() {
+	return _killer_move;
 }
 
 template <OrderType Type>

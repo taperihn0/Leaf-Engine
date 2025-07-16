@@ -6,9 +6,9 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 }
 
 TranspositionTable::TranspositionTable() {
-	static_assert(sizeof(TTEntry) == 16);
-	_mem = reinterpret_cast<TTEntry*>(alignedMalloc(128_MB, sizeof(TTEntry)));
-	_entry_cnt = 128_MB / sizeof(TTEntry);
+	static_assert(sizeof(TTEntry) == ENTRY_TARGET_SIZE);
+	_mem = reinterpret_cast<TTEntry*>(alignedMalloc(32_MB, sizeof(TTEntry)));
+	_entry_cnt = 32_MB / sizeof(TTEntry);
 	clear();
 }
 
@@ -33,7 +33,7 @@ void TranspositionTable::clear() {
 }
 
 void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-	TTEntry::Bound node_bound, Score node_score, Move32b node_move, SearchResults& results) {
+	TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results) {
 	TTEntry* const entry = _mem + (node_key & (_entry_cnt - 1));
 
 	if (!entry->depth)

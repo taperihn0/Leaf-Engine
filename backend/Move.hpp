@@ -222,7 +222,8 @@ template <typename T>
 INLINE MoveData<T> MoveData<T>::makeEnPassant(Square origin, Square target) {
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
-		  EP_CAPTURE
+		  (static_cast<uint32_t>(Piece::PAWN) << 19)
+		| EP_CAPTURE
 		| CAPTURE
 		| (static_cast<uint32_t>(target) << 6)
 		|  static_cast<uint32_t>(origin));
@@ -232,8 +233,9 @@ template <typename T>
 INLINE MoveData<T> MoveData<T>::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
-		  (static_cast<uint32_t>(promo_piece_t) << 12)
+		  (static_cast<uint32_t>(Piece::PAWN) << 19)
 		| (static_cast<uint32_t>(is_capture) << 15)
+		| (static_cast<uint32_t>(promo_piece_t) << 12)
 		| (static_cast<uint32_t>(target) << 6)
 		|  static_cast<uint32_t>(origin));
 }

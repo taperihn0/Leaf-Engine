@@ -3,8 +3,9 @@
 
 /* TODO: move validity restricted checking */
 
-Move32b createMove(const Position& pos, Square origin, Square target, Piece::enumType piece, bool capture, 
-	bool ep_capture, bool promotion, bool short_castle, bool long_castle, Piece::enumType promo_piece) {
+Move32b createMove(const Position& pos, Square origin, Square target, Piece::enumType piece, 
+	bool capture, bool ep_capture, bool promotion, 
+	bool short_castle, bool long_castle, Piece::enumType promo_piece) {
 
 	ASSERT(piece != Piece::NONE, "Invalid move");
 	ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
@@ -16,15 +17,14 @@ Move32b createMove(const Position& pos, Square origin, Square target, Piece::enu
 	else if (ep_capture)
 		res = Move32b::makeEnPassant(origin, target);
 	else if (short_castle) {
-		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
+		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid O-O move");
 		res = Move32b::makeCastling<Move32b::Castle::SHORT>(origin, target);
 	}
 	else if (long_castle) {
-		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid castling move");
+		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid O-O-O move");
 		res = Move32b::makeCastling<Move32b::Castle::LONG>(origin, target);
 	}
-	else
-		res = Move32b::makeSimple(origin, target, capture, piece);
+	else res = Move32b::makeSimple(origin, target, capture, piece);
 
 	assert(res.isPseudoLegal(pos));
 	return res;
@@ -150,33 +150,38 @@ template <>
 bool Move32b::isPseudoLegal(const Position& pos) const {
 	if (*this == Move32b::null) return false;
 
-	const Square org = getOrigin(), dst = getTarget();
-	const Piece::enumType p = getPiece(), d = pos.pieceOn(dst, pos.getOppositeTurn());
+	const Square org = getOrigin(), 
+				 dst = getTarget();
+
+	const Piece::enumType p = getPiece(),
+						  d = pos.pieceOn(dst, pos.getOppositeTurn());
 
 	if (p == Piece::KING) {
 		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
 			return false;
 		else if (isShortCastle()) {
 			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
-			return own_castling_state.isShortPossible()
+
+			return   own_castling_state.isShortPossible()
 				and (own_castling_state.notThroughPieces_Short(pos.getOccupied(), pos.getTurn()))
 				and !pos.isInCheck(pos.getTurn())
 				and (own_castling_state.notThroughCheck_Short(pos, pos.getTurn()));
 		}
 		else if (isLongCastle()) {
 			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
-			return own_castling_state.isLongPossible()
+
+			return	 own_castling_state.isLongPossible()
 				and (own_castling_state.notThroughPieces_Long(pos.getOccupied(), pos.getTurn()))
 				and !pos.isInCheck(pos.getTurn())
 				and (own_castling_state.notThroughCheck_Long(pos, pos.getTurn()));
 		}
 	}
 	else if (isEnPassant()) {
-		return pos.pieceOn(org, pos.getTurn()) == Piece::PAWN
+		return  pos.pieceOn(org, pos.getTurn()) == Piece::PAWN
 			and pos.getEnPassantSq() == dst;
 	}
 
-	return p == pos.pieceOn(org, pos.getTurn())
+	return	 p == pos.pieceOn(org, pos.getTurn())
 		and (!isCapture() or d != Piece::NONE)
 		and (!isQuiet() or (d == Piece::NONE and pos.pieceOn(dst, pos.getTurn()) == Piece::NONE))
 		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
@@ -190,8 +195,8 @@ bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
 	return mlist.contains(*this);
 }
 
-template <>
-void Move32b::print() const {
+template <typename T>
+void MoveData<T>::print() const {
 #if defined(PURE_NOTATION_DISPLAY)
 	if (_rmove == null) {
 		std::cout << _null_str;
@@ -206,6 +211,8 @@ void Move32b::print() const {
 }
 
 Move32b unpacked(const Position& pos, Move16b move) {
+	if (move.isNull()) return Move32b::null;
+
 	Square				  origin = move.getOrigin(),
 						  target = move.getTarget();
 	const Piece::enumType piece = pos.pieceOn(origin, pos.getTurn());
@@ -215,9 +222,49 @@ Move32b unpacked(const Position& pos, Move16b move) {
 						  long_castle = piece == Piece::KING and origin - target == 2;
 	const Piece::enumType promo_piece = move.getPromoPiece();
 	const bool			  promotion = move.isPromotion();
+	const int			  dir = pos.getTurn() == WHITE ? 8 : -8;
+	const int			  pawn_start_rank = pos.getTurn() == WHITE ? 1 : 6;
+
+	if (piece == Piece::PAWN) {
+		const bool double_push = target - origin == 2 * dir;
+
+		if (double_push and origin.getRank() != pawn_start_rank)
+			return Move32b::null;
+
+		const BitBoard pawn_capt = pawnAttacks(origin, pos.getTurn()) & BitBoard(target);
+
+		if (pawn_capt and pawn_capt & pos.getEmpties() and pos.getEnPassantSq() != target)
+			return Move32b::null;
+		else if (!pawn_capt and !double_push and target - origin != dir)
+			return Move32b::null;
+	}
+	else if (short_castle and
+		!pos.getOwnCastling().isShortPossible()) {
+		return Move32b::null;
+	}
+	else if (long_castle and
+		!pos.getOwnCastling().isLongPossible()) {
+		return Move32b::null;
+	}
+	
+	if (piece == Piece::NONE or
+		pos.getOwnPieces().isOccupiedSq(target) or
+		pos.pieceOn(target, pos.getOppositeTurn()) == Piece::KING)
+		return Move32b::null;
+	else if 
+		(isSlider(piece) and
+	   !(attacks(piece, origin, pos.getOccupied()) & BitBoard(target)))
+		return Move32b::null;
+	else if 
+		(isSlider(piece) and
+		(inBetween(origin, target) & ~BitBoard(origin) & ~BitBoard(target) & pos.getOccupied()))
+		return Move32b::null;
 
 	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
 }
 
 template bool Move32b::isPseudoLegal_fromList<true>(const Position& pos) const;
 template bool Move32b::isPseudoLegal_fromList<false>(const Position& pos) const;
+
+template void Move16b::print() const;
+template void Move32b::print() const;
