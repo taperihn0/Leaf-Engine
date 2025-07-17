@@ -7,10 +7,10 @@
 class Score;
 struct SearchResults;
 
-#define ENTRY_TARGET_SIZE  16
+#define ENTRY_TARGET_SIZE  10
 #define BUCKET_TARGET_SIZE 32
 
-struct alignas(ENTRY_TARGET_SIZE) TTEntry {
+struct TTEntry {
 	enum Bound : uint8_t {
 		NONE = 0,
 		EXACT = 1,
@@ -18,21 +18,31 @@ struct alignas(ENTRY_TARGET_SIZE) TTEntry {
 		UPPERBOUND = 3,
 	};
 
-	INLINE bool isEmpty() { 
+	INLINE bool isEmpty() const { 
 		return depth == 0 and bound == NONE; 
 	}
 
-	uint64_t key;
+	INLINE void writeHash(uint32_t key) {
+		*reinterpret_cast<uint32_t*>(this) = key;
+	}
+
+	INLINE uint32_t getHash() const {
+		return *reinterpret_cast<const uint32_t*>(this);
+	}
+
+	uint16_t keylo;
+	uint16_t keyhi;
 	Move16b  move;
 	Score	 score;
 	uint8_t  depth;
-	Bound	 bound;
-	uint8_t  generation;
+	Bound	 bound : 2;
+	uint8_t  generation : 6;
 };
 
 struct alignas(BUCKET_TARGET_SIZE) TTBucket {
-	static constexpr size_t internal_entries_cnt = 2;
+	static constexpr size_t internal_entries_cnt = 3;
 	TTEntry entries[internal_entries_cnt];
+	_UNUSED uint16_t __alignment;
 };
 
 class TranspositionTable {

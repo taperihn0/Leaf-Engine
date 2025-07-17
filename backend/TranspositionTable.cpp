@@ -8,8 +8,8 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == ENTRY_TARGET_SIZE);
 	static_assert(sizeof(TTBucket) == BUCKET_TARGET_SIZE);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(16_MB, sizeof(TTBucket)));
-	_buckets_cnt = 16_MB / sizeof(TTBucket);
+	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(64_MB, sizeof(TTBucket)));
+	_buckets_cnt = 64_MB / sizeof(TTBucket);
 	clear();
 }
 
@@ -31,15 +31,19 @@ void TranspositionTable::clear() {
 	_hits = 0;
 }
 
-void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
+ull cnt = 0;
+
+void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t node_ply, 
 	TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results) {
+
+	const uint32_t node_key = (uint32_t)node_key64;
 
 	TTBucket* bucket = _mem + (node_key & (_buckets_cnt - 1));
 	int16_t min_relevance = std::numeric_limits<int16_t>::max();
 	size_t ind = 0;
 
 	for (size_t i = 0; i < TTBucket::internal_entries_cnt; i++) {
-		if (bucket->entries[i].key == node_key or bucket->entries[i].isEmpty()) {
+		if (bucket->entries[i].getHash() == node_key or bucket->entries[i].isEmpty()) {
 			ind = i;
 			break;
 		}
@@ -54,7 +58,7 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	}
 
 	if (!bucket->entries[ind].isEmpty() and
-		 bucket->entries[ind].key == node_key and
+		 bucket->entries[ind].getHash() == node_key and
 		 bucket->entries[ind].depth > node_depth * 2 and
 		 bucket->entries[ind].bound == TTEntry::EXACT and
 		 node_bound != TTEntry::EXACT)
@@ -63,26 +67,27 @@ void TranspositionTable::write(uint64_t node_key, uint8_t node_depth, uint8_t no
 	if (bucket->entries[ind].depth == 0)
 		_hits++;
 
-	bucket->entries[ind].key = node_key;
+	if (bucket->entries[ind].getHash() != node_key or !node_move.isNull())
+		bucket->entries[ind].move = node_move;
+
+	bucket->entries[ind].writeHash(node_key);
+
 	bucket->entries[ind].score = node_score;
 	bucket->entries[ind].depth = node_depth;
 	bucket->entries[ind].bound = node_bound;
 	bucket->entries[ind].generation = this->_generation;
-
-	if (bucket->entries[ind].key == node_key and node_move.isNull())
-		return;
-
-	bucket->entries[ind].move = node_move;
 }
 
-bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, 
+bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta, 
 	uint8_t node_depth, uint8_t node_ply) const {
 
+	const uint32_t key = (uint32_t)key64;
+
 	const TTBucket* bucket = _mem + (key & (_buckets_cnt - 1));
-	const TTEntry* entry = bucket->entries[0].key == key ? &bucket->entries[0] : 
-														   &bucket->entries[1];
+	const TTEntry* entry = bucket->entries[0].getHash() == key ? &bucket->entries[0] :
+																 &bucket->entries[1];
 	
-	if (entry->key != key) {
+	if (entry->getHash() != key) {
 		out_entry.move = Move32b::null;
 		return false;
 	} 
@@ -112,9 +117,9 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 	return false;
 }
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 void TranspositionTable::printDebug() {
-	std::cout << "Hash size: " << _entry_cnt * sizeof(TTEntry) / 1024 / 1024 << "MB\n";
+	std::cout << "Hash size: " << _buckets_cnt * sizeof(TTBucket) / 1024 / 1024 << "MB\n";
 }
 #endif
 
