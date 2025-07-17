@@ -7,32 +7,37 @@
 class Score;
 struct SearchResults;
 
-#define ENTRY_TARGET_SIZE 16
+#define ENTRY_TARGET_SIZE  16
+#define BUCKET_TARGET_SIZE 32
 
-struct TTEntry {
+struct alignas(ENTRY_TARGET_SIZE) TTEntry {
 	enum Bound : uint8_t {
-		NONE	   = 0,
-		EXACT	   = 1,
+		NONE = 0,
+		EXACT = 1,
 		LOWERBOUND = 2,
 		UPPERBOUND = 3,
 	};
 
+	INLINE bool isEmpty() { 
+		return depth == 0 and bound == NONE; 
+	}
+
 	uint64_t key;
-	uint8_t depth;
-	Bound bound;
-	Score score;
-	Move16b move;
+	Move16b  move;
+	Score	 score;
+	uint8_t  depth;
+	Bound	 bound;
+	uint8_t  generation;
 };
 
-//struct alignas(CACHELINE_SIZE) TTBucket {
-//	static constexpr size_t internal_entries_cnt = 4;
-//	TTEntry entries[internal_entries_cnt];
-//};
+struct alignas(BUCKET_TARGET_SIZE) TTBucket {
+	static constexpr size_t internal_entries_cnt = 2;
+	TTEntry entries[internal_entries_cnt];
+};
 
 class TranspositionTable {
 public:
 	TranspositionTable();
-	TranspositionTable(TranspositionTable&& rtt) noexcept;
 	~TranspositionTable();
 
 	void resize(size_t size_mb);
@@ -43,20 +48,24 @@ public:
 
 	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 	void printDebug();
 #endif
 
 	size_t getEntriesCount() const;
+	uint16_t getHashfull() const;
+
+	void newGeneration();
+	void clearHashfull();
 private:
 
+	TranspositionTable(TranspositionTable&&) = delete;
 	TranspositionTable(const TranspositionTable&) = delete;
-	TranspositionTable operator=(const TranspositionTable&) = delete;
+	TranspositionTable& operator=(const TranspositionTable&) = delete;
+	TranspositionTable& operator=(const TranspositionTable&&) = delete;
 
-	TTEntry* _mem;
-	size_t _entry_cnt;
+	TTBucket* _mem;
+	size_t _buckets_cnt;
+	uint8_t _generation;
+	ull _hits;
 };
-
-inline size_t TranspositionTable::getEntriesCount() const {
-	return _entry_cnt;
-}

@@ -25,7 +25,7 @@ INLINE void SearchResults::printBestMove() {
 Search::Search()
 	: _tt() {}
 
-INLINE void SearchResults::print(const Search* search, const Position& pos) {
+INLINE void SearchResults::print(const Search* search, const Position& pos, TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << "info depth " << depth
@@ -33,8 +33,8 @@ INLINE void SearchResults::print(const Search* search, const Position& pos) {
 		<< " score " << score_cp.toStr()
 		<< " nodes " << nodes_cnt
 		<< " time " << duration
-		<< " nps " << nps 
-		<< " hashfull " << static_cast<unsigned>(static_cast<float>(tt_hits) / tt_entries * 1000)
+		<< " nps " << nps
+		<< " hashfull " << tt.getHashfull()
 		<< " pv ";
 
 	Position cpy = pos;
@@ -71,6 +71,8 @@ Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
+	_tt.newGeneration();
+	_tt.clearHashfull();
 
 	const Move32b bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
 	return bm;
@@ -83,8 +85,7 @@ Move32b Search::_bestMove_unittest(Search& search, Position& pos, const Game& ga
 template <bool PrintFullInfo>
 Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
 	SearchResults search_results;
-	search_results.tt_entries = _tt.getEntriesCount();
-
+		
 	NodeInfo* root = _tree_stack.getRootNode();
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
@@ -117,7 +118,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 	results.duration = limits.timer.duration();
 
 	if constexpr (PrintFullInfo)
-		results.print(this, pos);
+		results.print(this, pos, _tt);
 
 	return true;
 }

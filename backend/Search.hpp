@@ -30,16 +30,15 @@ struct SearchResults {
 	void registerBestMove(Move32b move);
 
 	void printBestMove();
-	void print(const Search* search, const Position& pos);
+	void print(const Search* search, const Position& pos, TranspositionTable& tt);
 	void printShort();
 
 	unsigned  depth      = 0,
 			  seldepth   = 0;
 	Score	  score_cp   = 0;
 	uint64_t  nodes_cnt  = 0;
-	size_t    tt_hits    = 0,
-			  tt_entries = 0;
-	Move32b      best_move  = Move32b::null;
+	size_t	  tt_entries = 0;
+	Move32b   best_move  = Move32b::null;
 	time_ms_t duration;
 };
 
