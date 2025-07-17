@@ -8,8 +8,8 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == ENTRY_TARGET_SIZE);
 	static_assert(sizeof(TTBucket) == BUCKET_TARGET_SIZE);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(32_MB, sizeof(TTBucket)));
-	_buckets_cnt = 32_MB / sizeof(TTBucket);
+	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(16_MB, sizeof(TTBucket)));
+	_buckets_cnt = 16_MB / sizeof(TTBucket);
 	clear();
 }
 
@@ -79,7 +79,8 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key, Score alpha, Sc
 	uint8_t node_depth, uint8_t node_ply) const {
 
 	const TTBucket* bucket = _mem + (key & (_buckets_cnt - 1));
-	const TTEntry* entry = bucket->entries[0].key == key ? &bucket->entries[0] : &bucket->entries[1];
+	const TTEntry* entry = bucket->entries[0].key == key ? &bucket->entries[0] : 
+														   &bucket->entries[1];
 	
 	if (entry->key != key) {
 		out_entry.move = Move32b::null;

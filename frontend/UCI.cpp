@@ -54,15 +54,15 @@ void UniversalChessInterface::loop(int, const char*[]) {
 
 		strm >> std::skipws >> token;
 
-		if (token == "uci") parseUCI();
+		if (token == "uci")				parseUCI();
 		else if (token == "ucinewgame") parseNewGame();
-		else if (token == "position") parsePosition(strm);
-		else if (token == "print") _pos.print();
-		else if (token == "go") parseGo(strm);
-		else if (token == "isready") parseIsReady();
-		else if (token == "test") parseTest();
+		else if (token == "position")	parsePosition(strm);
+		else if (token == "print")		_pos.print();
+		else if (token == "go")			parseGo(strm);
+		else if (token == "isready")	parseIsReady();
+		else if (token == "test")		parseTest();
 #if defined(DEBUG)
-		else if (token == "see") parseSEE(strm);
+		else if (token == "see")		parseSEE(strm);
 #endif
 
 	} while (_command != "quit");

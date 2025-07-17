@@ -63,6 +63,7 @@ INLINE void SearchResults::printShort() {
 
 void Search::registerNewGame() {
 	_tt.clear();
+	_tt.clearHashfull();
 }
 
 template <bool PrintFullInfo>
@@ -72,7 +73,6 @@ Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 	_tt.newGeneration();
-	_tt.clearHashfull();
 
 	const Move32b bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
 	return bm;

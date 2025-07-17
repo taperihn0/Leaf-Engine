@@ -1,3 +1,17 @@
+### commit _: double-tier bucket and new replacement scheme
+*SIDE NOTE: TESTING WERE PERFORMED ON VERY TIGHT TIME CONTROL OF 1 SECOND + 40 MILLISECONDS.*
+*SIZE OF TT WAS SET TO ONLY 1MB TO SOMEHOW RECREATE RATES OF OVERWRITING ENTRIES.*
+*ENGINE GOT ABOUT x180 LESS TIME TO THINK, IT TRAVERSE ABOUT x180 LESS NODES AND THE 1MB TABLE SIZE*
+*IS 1 / 256 OF DEFAULT 256MB TABLE SIZE IN LONGER GAMES*
+*STILL, ENGINE PERFORMANCE MAY DIFFER IN LONGER GAMES.*
+
+Score of 1mb-buckets-tt-dev vs 1mb-tt: 154 - 101 - 232  [0.554] 487 <br>
+...      1mb-buckets-tt-dev playing White: 79 - 49 - 116  [0.561] 244 <br>
+...      1mb-buckets-tt-dev playing Black: 75 - 52 - 116  [0.547] 243 <br>
+...      White vs Black: 131 - 124 - 232  [0.507] 487 <br>
+Elo difference: 38.0 +/- 22.3, LOS: 100.0 %, DrawRatio: 47.6 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: fixed check extension
 Score of new-check-ext-dev vs old-check-ext: 1159 - 746 - 2086  [0.552] 3991 <br>
 ...      new-check-ext-dev playing White: 643 - 333 - 1019  [0.578] 1995 <br>
