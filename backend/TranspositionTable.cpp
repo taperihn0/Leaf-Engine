@@ -34,14 +34,14 @@ void TranspositionTable::clear() {
 void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t node_ply, 
 	TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results) {
 
-	const uint32_t node_key = (uint32_t)node_key64;
+	const uint32_t key = static_cast<uint32_t>(node_key64);
 
 	TTBucket* bucket = _mem + (node_key64 & (_buckets_cnt - 1));
 	int16_t min_relevance = std::numeric_limits<int16_t>::max();
 	size_t ind = 0;
 
 	for (size_t i = 0; i < TTBucket::internal_entries_cnt; i++) {
-		if (bucket->entries[i].getHash() == node_key or bucket->entries[i].isEmpty()) {
+		if (bucket->entries[i].getHash() == key or bucket->entries[i].isEmpty()) {
 			ind = i;
 			break;
 		}
@@ -55,18 +55,18 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 		}
 	}
 
-	if (bucket->entries[ind].getHash() == node_key and
+	if (bucket->entries[ind].getHash() == key and
 		bucket->entries[ind].depth > (node_depth * 3) >> 1 and
 		node_bound != TTEntry::EXACT)
 		return;
 
-	if (bucket->entries[ind].depth == 0)
+	if (bucket->entries[ind].isEmpty())
 		_hits++;
 
-	if (bucket->entries[ind].getHash() != node_key or !node_move.isNull())
+	if (bucket->entries[ind].getHash() != key or !node_move.isNull())
 		bucket->entries[ind].move = node_move;
 
-	bucket->entries[ind].writeHash(node_key);
+	bucket->entries[ind].writeHash(key);
 
 	bucket->entries[ind].score = node_score;
 	bucket->entries[ind].depth = node_depth;
@@ -77,7 +77,7 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta,
 	uint8_t node_depth, uint8_t node_ply) const {
 
-	const uint32_t key = (uint32_t)key64;
+	const uint32_t key = static_cast<uint32_t>(key64);
 
 	const TTBucket* bucket = _mem + (key64 & (_buckets_cnt - 1));
 
