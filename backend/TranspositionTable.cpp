@@ -8,8 +8,8 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == ENTRY_TARGET_SIZE);
 	static_assert(sizeof(TTBucket) == BUCKET_TARGET_SIZE);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(64_MB, sizeof(TTBucket)));
-	_buckets_cnt = 64_MB / sizeof(TTBucket);
+	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(1_MB, sizeof(TTBucket)));
+	_buckets_cnt = 1_MB / sizeof(TTBucket);
 	clear();
 }
 
@@ -31,14 +31,12 @@ void TranspositionTable::clear() {
 	_hits = 0;
 }
 
-ull cnt = 0;
-
 void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t node_ply, 
 	TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results) {
 
 	const uint32_t node_key = (uint32_t)node_key64;
 
-	TTBucket* bucket = _mem + (node_key & (_buckets_cnt - 1));
+	TTBucket* bucket = _mem + (node_key64 & (_buckets_cnt - 1));
 	int16_t min_relevance = std::numeric_limits<int16_t>::max();
 	size_t ind = 0;
 
@@ -57,11 +55,9 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 		}
 	}
 
-	if (!bucket->entries[ind].isEmpty() and
-		 bucket->entries[ind].getHash() == node_key and
-		 bucket->entries[ind].depth > node_depth * 2 and
-		 bucket->entries[ind].bound == TTEntry::EXACT and
-		 node_bound != TTEntry::EXACT)
+	if (bucket->entries[ind].getHash() == node_key and
+		bucket->entries[ind].depth > (node_depth * 3) >> 1 and
+		node_bound != TTEntry::EXACT)
 		return;
 
 	if (bucket->entries[ind].depth == 0)
@@ -78,20 +74,30 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 	bucket->entries[ind].generation = this->_generation;
 }
 
-bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta, 
+bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta,
 	uint8_t node_depth, uint8_t node_ply) const {
 
 	const uint32_t key = (uint32_t)key64;
 
-	const TTBucket* bucket = _mem + (key & (_buckets_cnt - 1));
-	const TTEntry* entry = bucket->entries[0].getHash() == key ? &bucket->entries[0] :
-																 &bucket->entries[1];
-	
-	if (entry->getHash() != key) {
+	const TTBucket* bucket = _mem + (key64 & (_buckets_cnt - 1));
+
+	size_t ind = TTBucket::internal_entries_cnt;
+
+	for (size_t i = 0; i < TTBucket::internal_entries_cnt; i++) {
+		if (bucket->entries[i].getHash() == key) {
+			ind = i;
+			break;
+		}
+	}
+
+	if (ind == TTBucket::internal_entries_cnt) {
 		out_entry.move = Move32b::null;
 		return false;
-	} 
-	else if (entry->depth < node_depth) {
+	}
+
+	const TTEntry* entry = &bucket->entries[ind];
+
+	if (entry->depth < node_depth) {
 		out_entry.move = entry->move;
 		return false;
 	}

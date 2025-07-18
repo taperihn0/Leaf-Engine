@@ -1,3 +1,13 @@
+### commit _: 3-tier bucket + another replacement scheme
+*SIDE NOTE: TESTING PERFORMED ON VERY SHORT TIME CONTROLS, RESULTS MAY DIFFER IN LONGER GAMES*
+
+Score of 1mb-3tier-tt-dev vs 1mb-2tier-tt: 676 - 620 - 1721  [0.509] 3017 <br>
+...      1mb-3tier-tt-dev playing White: 372 - 275 - 862  [0.532] 1509 <br>
+...      1mb-3tier-tt-dev playing Black: 304 - 345 - 859  [0.486] 1508 <br>
+...      White vs Black: 717 - 579 - 1721  [0.523] 3017 <br>
+Elo difference: 6.4 +/- 8.1, LOS: 94.0 %, DrawRatio: 57.0 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
 ### commit _: double-tier bucket and new replacement scheme
 *SIDE NOTE: TESTING WERE PERFORMED ON VERY TIGHT TIME CONTROL OF 1 SECOND + 40 MILLISECONDS.*
 *SIZE OF TT WAS SET TO ONLY 1MB TO SOMEHOW RECREATE RATES OF OVERWRITING ENTRIES.*
@@ -147,7 +157,7 @@ Score of t2 vs t1: 676 - 623 - 701  [0.513] 2000 <br>
 Elo difference: 9.2 +/- 12.3, LOS: 92.9 %, DrawRatio: 35.0 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
-### commit fc9fa56: storing PV line in TT <br>
+### commit fc9fa56: storing PV line in TT
 Score of t1 vs t2: 362 - 259 - 379  [0.551] 1000 <br>
 ... t1 playing White: 231 - 96 - 173  [0.635] 500 <br>
 ... t1 playing Black: 131 - 163 - 206  [0.468] 500 <br>
@@ -155,7 +165,7 @@ Score of t1 vs t2: 362 - 259 - 379  [0.551] 1000 <br>
 Elo difference: 35.9 +/- 17.0, LOS: 100.0 %, DrawRatio: 37.9 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
-### commit bf32e7a: added TT and fixed search bugs <br>
+### commit bf32e7a: added TT and fixed search bugs
 Score of t1 vs t2: 684 - 523 - 793  [0.540] 2000 <br>
 ... t1 playing White: 402 - 211 - 387  [0.596] 1000 <br>
 ... t1 playing Black: 282 - 312 - 406  [0.485] 1000 <br>
