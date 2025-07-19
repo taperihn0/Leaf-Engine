@@ -52,11 +52,13 @@
 #pragma warning(disable: 6262)
 // error C4146: unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable: 4146)
+// error C28020: The expression '0<=_Param_(1)&&_Param_(1)<=256-1' is not true at this call.Leaf
+#pragma warning(disable: 28020)
 #endif
 
 using byte = unsigned char;
-using ll = long long;
-using ull = unsigned long long;
+using ll   = long long;
+using ull  = unsigned long long;
 
 #define _IS_SAME_TYPE(t1, t2) std::is_same_v<t1, t2>
 
@@ -83,16 +85,18 @@ _NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_
 	exit(EXIT_FAILURE);
 }
 
-static constexpr int max_node_moves = 256;
-static constexpr unsigned max_depth = 256,
-						  max_game_moves = 512;
+static constexpr int	  MaxNodeMoves = 256;
+static constexpr unsigned MaxDepth	   = 256,
+						  MaxGameMoves = 512;
 
 class MoveGenerator;
 using MoveGen = MoveGenerator;
 
-enum class File : uint8_t {
-	A = 0, B, C, D, E, F, G, H
-};
+template <typename T>
+T sq(T x) {
+	static_assert(std::is_integral_v<T>);
+	return x * x;
+}
 
 INLINE bool isValidNumber(const std::string& str) {
 	return str.find_first_not_of("1234567890", 0) == std::string::npos;

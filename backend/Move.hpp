@@ -20,7 +20,7 @@ public:
 		: _rmove(raw) {}
 
 	INLINE bool isNull() const {
-		return _rmove == null;
+		return _rmove == Null;
 	}
 
 	INLINE constexpr MoveData operator=(T raw) {
@@ -89,6 +89,14 @@ public:
 
 	INLINE bool isPromotion() const {
 		return _rmove & PROMO_PIECE;
+	}
+
+	INLINE bool isQueenPromotion() const {
+		return getPromoPiece() == Piece::QUEEN;
+	}
+
+	INLINE bool isUnderPromotion() const {
+		return !isQueenPromotion();
 	}
 
 	// use this field only after making a move -
@@ -162,9 +170,9 @@ public:
 		PURE, ALGEBRAIC
 	};
 
-	static constexpr T null = 0;
+	static constexpr T Null = 0;
 private:
-	static constexpr std::string_view _null_str = "0000";
+	static constexpr std::string_view _NullStr = "0000";
 
 	enum enumLayout : uint32_t {
 		ORIGIN = 0x3f,

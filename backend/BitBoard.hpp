@@ -4,12 +4,6 @@
 #include "Square.hpp"
 #include "Color.hpp"
 
-template <typename T>
-constexpr inline uint64_t U64(T val) {
-	static_assert(std::is_integral<T>(), "U64 casting restricted to integer types");
-	return static_cast<uint64_t>(val);
-}
-
 // Distict type to wrap raw bitboard type
 class BitBoard {
 public:
@@ -17,13 +11,13 @@ public:
 	constexpr BitBoard(const BitBoard&) = default;
 	constexpr BitBoard(BitBoard&&) = default;
 
-	inline constexpr BitBoard(uint64_t raw_init)
+	INLINE constexpr BitBoard(uint64_t raw_init)
 		: _board(raw_init) {}
 
-	inline constexpr BitBoard(Square sq)
+	INLINE constexpr BitBoard(Square sq)
 		: _board(1_ui64 << sq) {}
 
-	inline constexpr BitBoard(Square::enumSquare sq)
+	INLINE constexpr BitBoard(Square::enumSquare sq)
 		: _board(1_ui64 << sq) {}
 
 	INLINE constexpr operator uint64_t() const {
@@ -91,7 +85,7 @@ public:
 	}
 
 	INLINE constexpr BitBoard operator-() const {
-		return (uint64_t)-_board;
+		return static_cast<uint64_t>(-_board);
 	}
 
 	template <int Shift>
@@ -108,13 +102,14 @@ public:
 	template <int Shift>
 	INLINE BitBoard pawnsAttack() const {
 		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
-		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? not_h_file : not_a_file;
+		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? Not_H_File : Not_A_File;
 		return genShift<Shift>() & ExclFile;
 	}
 
-	// debug-purpose method
+#if defined(DEBUG)
 	void print() const;
-	
+#endif
+
 	void set(uint64_t bb);
 
 	int popCount() const;
@@ -176,40 +171,42 @@ public:
 		return side == WHITE ? rank<8>() : rank<1>();
 	}
 
-	template <File File_>
+	template <File TFile>
 	static INLINE constexpr BitBoard file() {
-		return BitBoard(a_file << static_cast<int>(File_));
+		return BitBoard(A_File << static_cast<int>(TFile));
 	}
 
 	static INLINE constexpr BitBoard file(int file) {
 		ASSERT(1 <= file and file <= 8, "Invalid file");
-		return BitBoard(a_file << file);
+		return BitBoard(A_File << file);
 	}
 
 	// crucial uint64_t constants
-	static constexpr uint64_t universe = 0xffffffffffffffff_ui64,
-							  a_file = 0x0101010101010101_ui64,
-							  b_file = 0x0202020202020202_ui64,
-							  g_file = 0x4040404040404040_ui64,
-							  h_file = 0x8080808080808080_ui64,
-							  not_a_file = ~a_file,
-						      not_b_file = ~b_file,
-						      not_g_file = ~g_file,
-						      not_h_file = ~h_file,
-						      not_ab_file = not_a_file & not_b_file,
-						      not_gh_file = not_g_file & not_h_file;
+	static constexpr uint64_t Universe    = 0xffffffffffffffff_ui64,
+							  A_File	  = 0x0101010101010101_ui64,
+							  B_File	  = 0x0202020202020202_ui64,
+							  G_File	  = 0x4040404040404040_ui64,
+							  H_File	  = 0x8080808080808080_ui64,
+							  Not_A_File  = ~A_File,
+						      Not_B_File  = ~B_File,
+						      Not_G_File  = ~G_File,
+						      Not_H_File  = ~H_File,
+						      Not_AB_File = Not_A_File & Not_B_File,
+						      Not_GH_File = Not_G_File & Not_H_File;
 private:
 	uint64_t _board;
 };
 
 // Rectangular lookup for in-between routines
 struct RectangularTable {
+	using tab64x64_t = std::array<std::array<BitBoard, 64>, 64>;
+
 	RectangularTable() { init(); }
 
 	BitBoard inBetweenOnFly(Square org, Square dst);
 	void init();
 
-	std::array<std::array<BitBoard, 64>, 64> table;
+	tab64x64_t t64;
 };
 
 inline const RectangularTable rectangular;
@@ -229,64 +226,64 @@ namespace {
 	}
 
 	INLINE BitBoard westOne(BitBoard bb) {
-		return (bb >> 1) & BitBoard::not_h_file;
+		return (bb >> 1) & BitBoard::Not_H_File;
 	}
 
 	INLINE BitBoard eastOne(BitBoard bb) {
-		return (bb << 1) & BitBoard::not_a_file;
+		return (bb << 1) & BitBoard::Not_A_File;
 	}
 
 	INLINE BitBoard noEaOne(BitBoard bb) {
-		return (bb << 9) & BitBoard::not_a_file;
+		return (bb << 9) & BitBoard::Not_A_File;
 	}
 
 	INLINE BitBoard soEaOne(BitBoard bb) {
-		return (bb >> 7) & BitBoard::not_a_file;
+		return (bb >> 7) & BitBoard::Not_A_File;
 	}
 
 	INLINE BitBoard soWeOne(BitBoard bb) {
-		return (bb >> 9) & BitBoard::not_h_file;
+		return (bb >> 9) & BitBoard::Not_H_File;
 	}
 
 	INLINE BitBoard noWeOne(BitBoard bb) {
-		return (bb << 7) & BitBoard::not_h_file;
+		return (bb << 7) & BitBoard::Not_H_File;
 	}
 
 	INLINE BitBoard noNoEa(BitBoard bb) {
-		return (bb << 17) & BitBoard::not_a_file;
+		return (bb << 17) & BitBoard::Not_A_File;
 	}
 
 	INLINE BitBoard noEaEa(BitBoard bb) {
-		return (bb << 10) & BitBoard::not_ab_file;
+		return (bb << 10) & BitBoard::Not_AB_File;
 	}
 
 	INLINE BitBoard soEaEa(BitBoard bb) {
-		return (bb >> 6) & BitBoard::not_ab_file;
+		return (bb >> 6) & BitBoard::Not_AB_File;
 	}
 
 	INLINE BitBoard soSoEa(BitBoard bb) {
-		return (bb >> 15) & BitBoard::not_a_file;
+		return (bb >> 15) & BitBoard::Not_A_File;
 	}
 
 	INLINE BitBoard soSoWe(BitBoard bb) {
-		return (bb >> 17) & BitBoard::not_h_file;
+		return (bb >> 17) & BitBoard::Not_H_File;
 	}
 
 	INLINE BitBoard soWeWe(BitBoard bb) {
-		return (bb >> 10) & BitBoard::not_gh_file;
+		return (bb >> 10) & BitBoard::Not_GH_File;
 	}
 
 	INLINE BitBoard noWeWe(BitBoard bb) {
-		return (bb << 6) & BitBoard::not_gh_file;
+		return (bb << 6) & BitBoard::Not_GH_File;
 	}
 
 	INLINE BitBoard noNoWe(BitBoard bb) {
-		return (bb << 15) & BitBoard::not_h_file;
+		return (bb << 15) & BitBoard::Not_H_File;
 	}
 
 	INLINE BitBoard inBetween(Square org, Square dst) {
 		assert(org.isValid() and org.isNotNull() and dst.isValid() and dst.isNotNull());
-		return rectangular.table[org][dst];
+		return rectangular.t64[org][dst];
 	}
 
 } // namespace

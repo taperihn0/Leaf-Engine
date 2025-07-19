@@ -41,7 +41,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos, Tran
 
 	while (depth--) {
 		TTEntry tt_entry;
-		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::infinity, +Score::infinity, depth, 0);
+		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::Infinity, +Score::Infinity, depth, 0);
 
 		Move32b pv_move = unpacked(cpy, tt_entry.move);
 
@@ -68,7 +68,7 @@ void Search::registerNewGame() {
 
 template <bool PrintFullInfo>
 Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
-	ASSERT(1 <= limits.depth and limits.depth < max_depth, "Invalid depth");
+	ASSERT(1 <= limits.depth and limits.depth < MaxDepth, "Invalid depth");
 
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
@@ -91,8 +91,6 @@ Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
 
-		_tree_stack.clear();
-
 		if (!search<PrintFullInfo>(pos, game, limits, search_results))
 			break;
 
@@ -110,7 +108,7 @@ Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits
 template <bool PrintFullInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
 	const Score score
-		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::mate, +Score::mate, results.depth, 0);
+		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::Mate, +Score::Mate, results.depth, 0);
 
 	if (results.depth > 1 and !limits.isTimeLeft())
 		return false;
@@ -127,15 +125,15 @@ template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 	Score alpha, Score beta, unsigned depth, unsigned ply) {
 
-	assert(0 <= depth and depth < max_depth);
+	assert(0 <= depth and depth < MaxDepth);
 	assert(alpha < beta);
 
 	if constexpr (!Root) {
 		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
-			return Score::draw;
+			return Score::Draw;
 		}
-		else if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
-			return -Score::undef;
+		else if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+			return -Score::Undef;
 		}
 		else if (!depth) {
 			return quiesce(pos, limits, results, alpha, beta, ply);
@@ -180,9 +178,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	//const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::null;
+	//const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::Null;
 	const Move32b ttm32b = unpacked(pos, tt_entry.move);
-	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::null;
+	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
 
 	node->move_picker.clear();
 	node->move_picker.setHashMove(tt_move);
@@ -190,33 +188,35 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->can_move = false;
 	node->score = 0;
 	node->ply = ply;
-	node->best_move = Move32b::null;
-	node->best_score = -Score::infinity;
+	node->best_move = Move32b::Null;
+	node->best_score = -Score::Infinity;
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node->move_picker.nextMove(_tree_stack, pos, node->move)) {
+	const enumColor side2move = pos.getTurn();
+
+	while (node->move_picker.nextMove<Root>(_tree_stack, pos, node->move)) {
 		bool do_full_search = true;
 
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
-			(node + 1)->check = pos.isInCheck(pos.getTurn());
+			(node + 1)->check = pos.isInCheck(side2move);
 			const int extend = calculateExtension(pos, node);
 
 			/* Principle Variation Search -
 			*  So far it was avoided in NON-PV nodes.
 			*  Now, always searching first move with full window, no matter what.
 			*  After that search, every other node is expected CUT node and 
-			*  is being search with null window.
+			*  is being search with Null window.
 			*/
 			if (node->moves_searched > 0) {
 
 				/* Late Move Reduction -
 				*  Try to reduce late moves, since they are statistically less interesting.
-				*  Prove they fail low using null window search with some reduction.
+				*  Prove they fail low using Null window search with some reduction.
 				*  If somehow they fail high, then re-search without reduction.
 				*/
 				if (node->moves_searched >= 2 and 
@@ -260,12 +260,15 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (node->score > alpha) {
 				if (node->score >= beta) {
 					bound_type = TTEntry::UPPERBOUND;
+
 					if (node->move.isQuiet() and 
-						(!node->move.isPromotion() or node->move.getPromoPiece() != Piece::QUEEN)) 
+						!node->move.isQueenPromotion()) 
 					{
 						node->move_picker.setKillerMove(node->move);
-						node->move_picker.updateHistory(node->move, pos.getTurn(), depth);
+						node->move_picker.updateQuietsHistory<1>(node->best_move, side2move, depth);
+						node->move_picker.applyQuietsMaluses<false>(node->best_move, side2move, depth);
 					}
+
 					break;
 				}
 
@@ -278,20 +281,24 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				// TODO: move at root assigned here might be illegal.
 				node->best_move = node->move;
 
-			return -Score::undef;
+			return -Score::Undef;
 		}
 	}
 	
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		bound_type = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::mate + ply : Score::draw;
+		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
 	}
 
-	if (node->best_score > -Score::mate_bound and node->best_score < Score::mate_bound)
+	//if (node->best_score == alpha) {
+	//	node->move_picker.applyQuietsMaluses<true>(node->best_move, side2move, depth);
+	//}
+
+	if (node->best_score > -Score::MateBound and node->best_score < Score::MateBound)
 		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, packed(node->best_move), results);
 
-	(node + 1)->move_picker.setKillerMove(Move32b::null);
+	(node + 1)->move_picker.setKillerMove(Move32b::Null);
 
 	if constexpr (Root) {
 		results.score_cp = node->best_score;
@@ -306,9 +313,12 @@ template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, Searc
 	Score alpha, Score beta, unsigned depth, unsigned ply);
 
 Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply) {
-	if ((results.nodes_cnt & _check_node_count) == 0 and !limits.isTimeLeft()) {
-		return -Score::undef;
+	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+		return -Score::Undef;
 	}
+
+	static constexpr bool Root = false;
+	static constexpr bool SeeExactScore = false;
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, ply + 1);
@@ -328,10 +338,18 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Score score = 0;
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
-	while (moves.nextMove(_tree_stack, pos, move)) {
-		if (!move.isEnPassant() and !move.isPromotion() and
-			pos.StaticExchangeEval<false>(move.getOrigin(), move.getTarget(),
-				pos.pieceOn(move.getTarget(), pos.getOppositeTurn()), move.getPiece()) < 0) {
+	if (pos.isInCheck(pos.getTurn())) {
+		int a = 0;
+		pos.print();
+	}
+
+	while (moves.nextMove<Root>(_tree_stack, pos, move)) {
+		if (!move.isEnPassant() and 
+			!move.isPromotion() and
+			pos.StaticExchangeEval<SeeExactScore>(move.getOrigin(), move.getTarget(),
+												  pos.pieceOn(move.getTarget(), pos.getOppositeTurn()), 
+												  move.getPiece()) < 0) 
+		{
 			continue;
 		}
 
@@ -342,7 +360,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		pos.unmake(move, state);
 
 		if (!score.isValid())
-			return -Score::undef;
+			return -Score::Undef;
 		else if (move.isLegalMoved() and score > alpha) {
 			if (score >= beta) return beta;
 			alpha = score;

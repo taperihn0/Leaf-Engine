@@ -89,7 +89,7 @@ static bool seeTests() {
 
 	for (int lcnt = 0; std::getline(file, line); lcnt++) {
 		size_t ind = 0;
-		Move32b move = Move32b::null;
+		Move32b move = Move32b::Null;
 		int expected = 0;
 
 		for (int i = 0; i < 3; i++) {
@@ -133,11 +133,11 @@ static bool seeTests() {
 
 static bool ccrOneHourTest(Search& search) {
 	std::ifstream file("unit/ccronehour.txt");
-	ASSERT(file.is_open(), "Failed to open file ccronehour.txt");
+	ASSERT(file.is_open(), "Failed to open file ccronehour.epd");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH
 	static constexpr int search_depth = 12;
-	static_assert(1 <= search_depth and search_depth < max_depth);
+	static_assert(1 <= search_depth and search_depth < MaxDepth);
 
 	// MODIFY TO CHANGE NUMBER OF POSITION
 	static constexpr int pos_limit = 25;

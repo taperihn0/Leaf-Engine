@@ -2,10 +2,16 @@
 
 #include "Common.hpp"
 
+enum class File : uint8_t {
+	A = 0, B, C, D, E, F, G, H
+};
+
 class Square {
 public:
+	using uint_t = uint8_t;
+
 	// little endian rank-file mapping
-	enum enumSquare {
+	enum enumSquare : uint_t {
 		a1, b1, c1, d1, e1, f1, g1, h1,
 		a2, b2, c2, d2, e2, f2, g2, h2,
 		a3, b3, c3, d3, e3, f3, g3, h3,
@@ -17,12 +23,12 @@ public:
 	};
 
 	Square() = default;
-	INLINE constexpr Square(uint8_t cpy)
+	INLINE constexpr Square(uint_t cpy)
 		: _sq(cpy) { assert(isValid()); }
 	INLINE constexpr Square(enumSquare sq)
 		: _sq(sq)  { assert(isValid()); }
 
-	INLINE constexpr Square operator=(uint8_t sq) {
+	INLINE constexpr Square operator=(uint_t sq) {
 		return _sq = sq;
 	}
 
@@ -30,20 +36,20 @@ public:
 		return _sq;
 	}
 
-	INLINE uint8_t getFile() const {
+	INLINE uint_t getFile() const {
 		return _sq & 7;
 	}
 
-	INLINE uint8_t getRank() const {
+	INLINE uint_t getRank() const {
 		return _sq / 8;
 	}
 
 	INLINE bool isNotNull() const {
-		return _sq != none;
+		return _sq != None;
 	}
 
 	INLINE bool isNull() const {
-		return _sq == none;
+		return _sq == None;
 	}
 
 	static Square fromChar(char file, char rank) {
@@ -62,10 +68,10 @@ public:
 	}
 
 	INLINE constexpr bool isValid() const {
-		return _sq < 64 or _sq == none;
+		return _sq < 64 or _sq == None;
 	}
 
-	static constexpr uint8_t none = -1_ui8;
+	static constexpr uint_t None = -1_ui8;
 private:
-	uint8_t _sq;
+	uint_t _sq;
 };

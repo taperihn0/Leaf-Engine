@@ -57,7 +57,7 @@ void Position::setByFEN(const std::string fen) {
 }
 
 void Position::setStartingPos() {
-	setByFEN(static_cast<std::string>(starting_fen));
+	setByFEN(static_cast<std::string>(StartposFEN));
 }
 
 void Position::print() const {
@@ -118,7 +118,7 @@ bool Position::make(Move32b& move) {
 			const Piece::enumType captured = pieceOn(dst, !_turn);
 			move.setCaptured(captured);
 
-			assert(captured != Piece::NONE);
+			assert(captured != Piece::NONE and captured != Piece::KING);
 
 			_piece_bb[!_turn][captured].popBit(dst);
 			_occupied[!_turn].popBit(dst);
@@ -200,7 +200,7 @@ bool Position::make(Move32b& move) {
 		if (_ep_square.isNotNull())
 			_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
 
-		_ep_square = Square::none;
+		_ep_square = Square::None;
 
 		if (double_pawn_push) {
 			_ep_square = dst - dir;
@@ -300,7 +300,7 @@ void Position::makeNull(IrreversibleState& state) {
 	if (_ep_square.isNotNull())
 		_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
 
-	_ep_square = Square::none;
+	_ep_square = Square::None;
 }
 
 void Position::unmakeNull(const IrreversibleState& prev_state) {
@@ -388,7 +388,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 		}
 	}
 
-	_ep_square = Square::none;
+	_ep_square = Square::None;
 
 	if (fen[++i] != '-') {
 		_ep_square = Square::fromChar(fen[i], fen[i + 1]);
@@ -418,12 +418,12 @@ INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, B
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
+static constexpr std::array<int, 6> SeePieceValue = {
+	100, 300, 300, 500, 900, 10000
+};
+
 template <bool ExactScore>
 int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType attacker) const {
-	static constexpr std::array<int, 6> piece_value = {
-		100, 300, 300, 500, 900, 10000
-	};
-
 	static auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
 		for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
 			BitBoard mask = _piece_bb[side][piece] & bb;
@@ -448,11 +448,11 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 
 	Piece::uint_t vic = target;
 	Piece::uint_t att = attacker;
-	gain[i] = piece_value[vic];
+	gain[i] = SeePieceValue[vic];
 
 	vic = att;
 	if (vic == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-		gain[i] += piece_value[Piece::QUEEN] - piece_value[Piece::PAWN];
+		gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
 		vic = Piece::QUEEN;
 	}
 
@@ -461,7 +461,7 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 
 	while (from != 0_ui64) {
 		i++;
-		gain[i] = -gain[i - 1] + piece_value[vic];
+		gain[i] = -gain[i - 1] + SeePieceValue[vic];
 		if constexpr (!ExactScore) {
 			if (std::max(-gain[i - 1], gain[i]) < 0)
 				break;
@@ -472,7 +472,7 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 			attacks |= xRayAttackers(occ, sq, bishopsQueens, rooksQueens);
 		}
 		if (att == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-			gain[i] += piece_value[Piece::QUEEN] - piece_value[Piece::PAWN];
+			gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
 			att = Piece::QUEEN;
 		}
 		side2move = !side2move;

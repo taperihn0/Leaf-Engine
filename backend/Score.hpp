@@ -4,8 +4,10 @@
 
 class Score {
 public:
+	using int_t = int16_t;
+
 	INLINE Score() = default;
-	INLINE Score(int16_t val)
+	INLINE Score(int_t val)
 		: _raw(val) {}
 
 	INLINE Score operator+(Score b) const {
@@ -52,30 +54,30 @@ public:
 		return -_raw;
 	}
 
-	INLINE int16_t toInt() const {
+	INLINE int_t toInt() const {
 		return _raw;
 	}
 
 	INLINE bool isValid() const {
-		return _raw != undef and _raw != -undef;
+		return _raw != Undef and _raw != -Undef;
 	}
 
 	std::string toStr() const;
 	
-	static constexpr int16_t draw		= 0,
-							 mate_bound = 30000,
-							 mate		= 32000,
-							 infinity   = std::numeric_limits<int16_t>::max(),
-							 undef      = 32500;
+	static constexpr int_t Draw		= 0,
+						   MateBound = 30000,
+						   Mate		= 32000,
+						   Infinity   = std::numeric_limits<int_t>::max(),
+						   Undef      = 32500;
 private:
-	int16_t					 _raw;
+	int_t				   _raw;
 };
 
 inline std::string Score::toStr() const {
-	if (_raw > mate_bound)
-		return "mate " + std::to_string((Score::mate - _raw + 1) / 2);
-	else if (_raw < -mate_bound)
-		return "mate -" + std::to_string((_raw + Score::mate + 1) / 2);
+	if (_raw > MateBound)
+		return "Mate " + std::to_string((Score::Mate - _raw + 1) / 2);
+	else if (_raw < -MateBound)
+		return "Mate -" + std::to_string((_raw + Score::Mate + 1) / 2);
 
 	return "cp " + std::to_string(_raw);
 }

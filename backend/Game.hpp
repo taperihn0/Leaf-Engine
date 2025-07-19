@@ -9,7 +9,7 @@ public:
 	Game() = default;
 
 	INLINE void recordInfo(uint64_t key, Move32b move) {
-		assert(_idx < max_game_moves);
+		assert(_idx < MaxGameMoves);
 		_move_history[_idx] = move;
 		_key_history[_idx++] = key;
 	}
@@ -27,7 +27,7 @@ public:
 	INLINE size_t currentHalfCount() const { return _idx; }
 	INLINE void clear() { _idx = 0; }
 private:
-	std::array<Move32b, max_game_moves> _move_history;
-	std::array<uint64_t, max_game_moves> _key_history;
+	std::array<Move32b,  MaxGameMoves> _move_history;
+	std::array<uint64_t, MaxGameMoves> _key_history;
 	size_t _idx = 0;
 };

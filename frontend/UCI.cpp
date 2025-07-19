@@ -7,7 +7,7 @@
 
 SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
-	limits.depth = max_depth - 1;
+	limits.depth = MaxDepth - 1;
 
 	if (token == "depth") {
 		strm >> std::skipws >> token;
@@ -76,7 +76,7 @@ void UniversalChessInterface::parseUCI() {
 
 inline void UniversalChessInterface::parseNewGame() {
 	_game.clear();
-	MoveOrder<STAGED>::clearHistory();
+	MoveOrder<STAGED>::clearQuietsHistory();
 	_search.registerNewGame();
 }
 

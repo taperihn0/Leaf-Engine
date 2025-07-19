@@ -244,8 +244,7 @@ public:
 		uint64_t hash_key;
 	};
 
-	static constexpr std::string_view starting_fen 
-		= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
@@ -334,8 +333,10 @@ INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
 }
 
 INLINE Position::IrreversibleState Position::getIrreversibleState() const {
-	return Position::IrreversibleState{ _ep_square, _halfmove_count,
-										_castling_rights, getZobristKey() };
+	return Position::IrreversibleState{ _ep_square, 
+										_halfmove_count,
+										_castling_rights, 
+										getZobristKey() };
 }
 
 INLINE void Position::clearPieces() {

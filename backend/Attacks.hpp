@@ -85,9 +85,9 @@ namespace {
 	}
 
 	BitBoard noEaRay(Square sq) {
-		static constexpr BitBoard excl_a = BitBoard::not_a_file,
-			excl_ab = excl_a & (excl_a << 9),
-			excl_abcd = excl_ab & (excl_ab << 18);
+		static constexpr BitBoard excl_a = BitBoard::Not_A_File,
+								  excl_ab = excl_a & (excl_a << 9),
+								  excl_abcd = excl_ab & (excl_ab << 18);
 
 		BitBoard bb(sq);
 		bb |= (bb << 9) & excl_a;
@@ -97,9 +97,9 @@ namespace {
 	}
 
 	BitBoard soEaRay(Square sq) {
-		static constexpr BitBoard excl_a = BitBoard::not_a_file,
-			excl_ab = excl_a & (excl_a >> 7),
-			excl_abcd = excl_ab & (excl_ab >> 14);
+		static constexpr BitBoard excl_a = BitBoard::Not_A_File,
+								  excl_ab = excl_a & (excl_a >> 7),
+								  excl_abcd = excl_ab & (excl_ab >> 14);
 
 		BitBoard bb(sq);
 		bb |= (bb >> 7) & excl_a;
@@ -109,9 +109,9 @@ namespace {
 	}
 
 	BitBoard soWeRay(Square sq) {
-		static constexpr BitBoard excl_h = BitBoard::not_h_file,
-			excl_gh = excl_h & (excl_h >> 9),
-			excl_efgh = excl_gh & (excl_gh >> 18);
+		static constexpr BitBoard excl_h = BitBoard::Not_H_File,
+								  excl_gh = excl_h & (excl_h >> 9),
+								  excl_efgh = excl_gh & (excl_gh >> 18);
 
 		BitBoard bb(sq);
 		bb |= (bb >> 9) & excl_h;
@@ -121,9 +121,9 @@ namespace {
 	}
 
 	BitBoard noWeRay(Square sq) {
-		static constexpr BitBoard excl_h = BitBoard::not_h_file,
-			excl_gh = excl_h & (excl_h << 7),
-			excl_efgh = excl_gh & (excl_gh << 14);
+		static constexpr BitBoard excl_h = BitBoard::Not_H_File,
+								  excl_gh = excl_h & (excl_h << 7),
+								  excl_efgh = excl_gh & (excl_gh << 14);
 
 		BitBoard bb(sq);
 		bb |= (bb << 7) & excl_h;

@@ -1,5 +1,6 @@
 #include "BitBoard.hpp"
 
+#if defined(DEBUG)
 void BitBoard::print() const {
 	for (int h = 7; h >= 0; h--) {
 		for (int i = h * 8; i < (h + 1) * 8; i++)
@@ -7,6 +8,7 @@ void BitBoard::print() const {
 		std::cout << '\n';
 	}
 }
+#endif
 
 void BitBoard::set(uint64_t bb) {
 	_board = bb;
@@ -90,7 +92,7 @@ BitBoard RectangularTable::inBetweenOnFly(Square org, Square dst) {
 	BitBoard res = BitBoard(0_ui64);
 
 	const Square sq_min = std::min(org, dst),
-		sq_max = std::max(org, dst);
+				 sq_max = std::max(org, dst);
 
 	// loop approach for each case: through file, rank and diagonal
 	if (org % 8 == dst % 8) {
@@ -109,12 +111,12 @@ BitBoard RectangularTable::inBetweenOnFly(Square org, Square dst) {
 		}
 	}
 
-	// if there is no straight path between org and dst, return universe
-	return res == BitBoard(0_ui64) ? BitBoard(BitBoard::universe) : res;
+	// if there is no straight path between org and dst, return Universe
+	return res == BitBoard(0_ui64) ? BitBoard(BitBoard::Universe) : res;
 }
 
 void RectangularTable::init() {
 	for (int i = 0; i < 64; i++)
 		for (int j = 0; j < 64; j++)
-			table[i][j] = inBetweenOnFly(i, j);
+			t64[i][j] = inBetweenOnFly(i, j);
 }

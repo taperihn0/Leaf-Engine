@@ -10,7 +10,7 @@ Move32b createMove(const Position& pos, Square origin, Square target, Piece::enu
 	ASSERT(piece != Piece::NONE, "Invalid move");
 	ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
 
-	Move32b res = Move32b::null;
+	Move32b res = Move32b::Null;
 
 	if (promotion)
 		res = Move32b::makePromotion(origin, target, capture, promo_piece);
@@ -51,8 +51,8 @@ Move32b Move32b::fromStr<Move32b::Notation::PURE>(const Position& pos, const std
 template <>
 template <>
 Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
-	Square	   origin = Move32b::null, 
-			   target = Move32b::null;
+	Square	   origin = Move32b::Null, 
+			   target = Move32b::Null;
 	char	   chpromo = '\0';
 	const bool capture = str.find('x') != std::string::npos or str.find('X') != std::string::npos,
 			   promotion = str.find('=') != std::string::npos,
@@ -148,7 +148,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
 template <>
 bool Move32b::isPseudoLegal(const Position& pos) const {
-	if (*this == Move32b::null) return false;
+	if (*this == Move32b::Null) return false;
 
 	const Square org = getOrigin(), 
 				 dst = getTarget();
@@ -198,8 +198,8 @@ bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
 template <typename T>
 void MoveData<T>::print() const {
 #if defined(PURE_NOTATION_DISPLAY)
-	if (_rmove == null) {
-		std::cout << _null_str;
+	if (_rmove == Null) {
+		std::cout << _NullStr;
 	}
 	else {
 		getOrigin().print(), getTarget().print();
@@ -211,7 +211,7 @@ void MoveData<T>::print() const {
 }
 
 Move32b unpacked(const Position& pos, Move16b move) {
-	if (move.isNull()) return Move32b::null;
+	if (move.isNull()) return Move32b::Null;
 
 	Square				  origin = move.getOrigin(),
 						  target = move.getTarget();
@@ -229,36 +229,36 @@ Move32b unpacked(const Position& pos, Move16b move) {
 		const bool double_push = target - origin == 2 * dir;
 
 		if (double_push and origin.getRank() != pawn_start_rank)
-			return Move32b::null;
+			return Move32b::Null;
 
 		const BitBoard pawn_capt = pawnAttacks(origin, pos.getTurn()) & BitBoard(target);
 
 		if (pawn_capt and pawn_capt & pos.getEmpties() and pos.getEnPassantSq() != target)
-			return Move32b::null;
+			return Move32b::Null;
 		else if (!pawn_capt and !double_push and target - origin != dir)
-			return Move32b::null;
+			return Move32b::Null;
 	}
 	else if (short_castle and
 		!pos.getOwnCastling().isShortPossible()) {
-		return Move32b::null;
+		return Move32b::Null;
 	}
 	else if (long_castle and
 		!pos.getOwnCastling().isLongPossible()) {
-		return Move32b::null;
+		return Move32b::Null;
 	}
 	
 	if (piece == Piece::NONE or
 		pos.getOwnPieces().isOccupiedSq(target) or
 		pos.pieceOn(target, pos.getOppositeTurn()) == Piece::KING)
-		return Move32b::null;
+		return Move32b::Null;
 	else if 
 		(isSlider(piece) and
 	   !(attacks(piece, origin, pos.getOccupied()) & BitBoard(target)))
-		return Move32b::null;
+		return Move32b::Null;
 	else if 
 		(isSlider(piece) and
 		(inBetween(origin, target) & ~BitBoard(origin) & ~BitBoard(target) & pos.getOccupied()))
-		return Move32b::null;
+		return Move32b::Null;
 
 	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
 }

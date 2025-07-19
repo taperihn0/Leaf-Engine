@@ -5,10 +5,10 @@
 
 /*
 	NOTES:
-	1. Not always return draw score. Sometimes it may be beneficial
+	1. Not always return Draw score. Sometimes it may be beneficial
 	to return different score, so called contempt factor. An idea
 	here would be to register approximate strenght of an opponent and 
-	basing on that calculate appopriate draw score
+	basing on that calculate appopriate Draw score
 	2. Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 	3. Also, try another depth when considering moves from game record in terms of repetitions.
 	4. Try to score captures only once (faster) instead of doing that every time a new capture is picked

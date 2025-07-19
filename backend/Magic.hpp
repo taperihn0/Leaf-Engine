@@ -35,18 +35,21 @@ private:
     static uint64_t generateRookAttacks(Square sq, BitBoard relv_occ);
 
     // magic bitboards for bishop and rook
-	static std::array<uint64_t, 64> _magics_bishop, _magics_rook;
+	static std::array<uint64_t, 64> _magics_bishop, 
+                                    _magics_rook;
 
     // look-up tables of rook and bishop attacks in Plain Magic Bitboards implementation
     // 4096 = 2 ^ 12 - maximum number of occupancy subsets for rook (rook at [a1, h8])
     // 512 = 2 ^ 9 - maximum number of occupancy subsets for bishop (bishop at board center [d4, d5, e4, e5])
     static std::array<std::array<uint64_t, 4096>, 64> _mrook_att;
-    static std::array<std::array<uint64_t, 512>, 64> _mbishop_att;
+    static std::array<std::array<uint64_t, 512>, 64>  _mbishop_att;
 
     // relevant occupancy pre-computed masks
-    static std::array<uint64_t, 64> _m_occupancy_bishop, _m_occupancy_rook;
+    static std::array<uint64_t, 64> _m_occupancy_bishop, 
+                                    _m_occupancy_rook;
 
     // relevant occupancy bits count for bishop and rook - later used in hash function
     // while shifting product number
-    static std::array<int, 64> _m_bits_bishop, _m_bits_rook;
+    static std::array<int, 64> _m_bits_bishop, 
+                               _m_bits_rook;
 };

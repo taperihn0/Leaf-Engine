@@ -7,8 +7,8 @@
 class Score;
 struct SearchResults;
 
-#define ENTRY_TARGET_SIZE  10
-#define BUCKET_TARGET_SIZE 32
+static constexpr size_t EntryTargetSize  = 10;
+static constexpr size_t BucketTargetSize = 32;
 
 struct TTEntry {
 	enum Bound : uint8_t {
@@ -39,7 +39,7 @@ struct TTEntry {
 	uint8_t  generation : 6;
 };
 
-struct alignas(BUCKET_TARGET_SIZE) TTBucket {
+struct alignas(BucketTargetSize) TTBucket {
 	static constexpr size_t internal_entries_cnt = 3;
 	TTEntry entries[internal_entries_cnt];
 	_UNUSED uint16_t __alignment;
@@ -54,7 +54,7 @@ public:
 	void clear();
 
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-		TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
+			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
 
 	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
 

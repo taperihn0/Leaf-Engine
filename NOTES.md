@@ -1,3 +1,11 @@
+### commit _: history gravity formula with maluses
+Score of history-gravity-dev vs 1mb-3tier-tt: 1092 - 917 - 2682  [0.519] 4691 <br>
+...      history-gravity-dev playing White: 614 - 405 - 1327  [0.545] 2346 <br>
+...      history-gravity-dev playing Black: 478 - 512 - 1355  [0.493] 2345 <br>
+...      White vs Black: 1126 - 883 - 2682  [0.526] 4691 <br>
+Elo difference: 13.0 +/- 6.5, LOS: 100.0 %, DrawRatio: 57.2 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: 3-tier bucket + another replacement scheme
 *SIDE NOTE: TESTING PERFORMED ON VERY SHORT TIME CONTROLS, RESULTS MAY DIFFER IN LONGER GAMES*
 
@@ -109,7 +117,7 @@ Score of t2 vs t1: 1709 - 1766 - 2324  [0.495] 5799 <br>
 Elo difference: -3.4 +/- 6.9, LOS: 16.7 %, DrawRatio: 40.1 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
-### commit _: null move pruning with verification search
+### commit _: Null move pruning with verification search
 Score of t2 vs t1: 248 - 113 - 198  [0.621] 559 <br>
 ... t2 playing White: 154 - 43 - 83  [0.698] 280 <br>
 ... t2 playing Black: 94 - 70 - 115  [0.543] 279 <br>

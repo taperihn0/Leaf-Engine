@@ -15,11 +15,11 @@
 struct SearchLimits {
 	bool isTimeLeft();
 
-	unsigned  depth = 0,
-			  wtime = 0,
-			  btime = 0;
-	time_ms_t winc  = 0, 
-			  binc  = 0,
+	unsigned  depth		  = 0,
+			  wtime		  = 0,
+			  btime		  = 0;
+	time_ms_t winc		  = 0, 
+			  binc		  = 0,
 			  search_time = 0;
 	Timer     timer;
 };
@@ -38,7 +38,7 @@ struct SearchResults {
 	Score	  score_cp   = 0;
 	uint64_t  nodes_cnt  = 0;
 	size_t	  tt_entries = 0;
-	Move32b   best_move  = Move32b::null;
+	Move32b   best_move  = Move32b::Null;
 	time_ms_t duration;
 };
 
@@ -59,9 +59,8 @@ class TreeStack {
 public:
 	NodeInfo* getRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
-	void clear();
 private:
-	NodeInfo _stack[max_depth];
+	NodeInfo _stack[MaxDepth];
 };
 
 class Eval;
@@ -104,20 +103,14 @@ private:
 	Eval _eval;
 	TranspositionTable _tt;
 
-	static constexpr uint64_t _check_node_count = 4096;
+	static constexpr uint64_t _CheckNodeCount = 4096;
 };
 
 INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
-	assert(ply < max_depth);
+	assert(ply < MaxDepth);
 	return _stack + ply;
 }
 
 INLINE NodeInfo* TreeStack::getRootNode() {
 	return _stack;
-}
-
-INLINE void TreeStack::clear() {
-	for (size_t i = 0; i < max_depth; i++) {
-		_stack[i].move_picker.setKillerMove(Move32b::null);
-	}
 }

@@ -87,7 +87,7 @@ std::array<int, 64> SlidersMagics::_m_bits_rook = {
     12,11,11,11,11,11,11,12,
 };
 
-std::array<std::array<uint64_t, 512>, 64> SlidersMagics::_mbishop_att;
+std::array<std::array<uint64_t, 512>, 64>  SlidersMagics::_mbishop_att;
 std::array<std::array<uint64_t, 4096>, 64> SlidersMagics::_mrook_att;
 
 template <Piece::enumType Piece>
