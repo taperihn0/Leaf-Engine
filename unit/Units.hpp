@@ -132,7 +132,7 @@ static bool seeTests() {
 }
 
 static bool ccrOneHourTest(Search& search) {
-	std::ifstream file("unit/ccronehour.txt");
+	std::ifstream file("unit/ccronehour.epd");
 	ASSERT(file.is_open(), "Failed to open file ccronehour.epd");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH

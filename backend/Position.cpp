@@ -2,6 +2,7 @@
 #include "Move.hpp"
 #include "MoveGen.hpp"
 #include "Time.hpp"
+#include "Search.hpp"
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
@@ -177,7 +178,6 @@ bool Position::make(Move32b& move) {
 	}
 
 	const bool legal = !isInCheck(_turn);
-
 	move.setLegalMoved(legal);
 
 	// Just leave castling flags untouched since the move is pseudo-legal.

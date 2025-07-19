@@ -8,6 +8,7 @@
 #include "Move.hpp"
 
 class Position;
+struct NodeInfo;
 
 // wrapper around castling rights for single player
 class CastlingRights {

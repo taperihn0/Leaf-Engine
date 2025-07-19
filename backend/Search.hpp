@@ -91,7 +91,7 @@ private:
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-		Score alpha, Score beta, unsigned depth, unsigned ply);
+				  Score alpha, Score beta, unsigned depth, unsigned ply);
 
 	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply);
 

@@ -143,7 +143,7 @@ void MoveOrder<Type>::scoreCaptures(size_t first_ind, const Position& pos) {
 		assert(move->isCapture() or 
 			  (move->isPromotion() and 
 			   move->isQueenPromotion() and 
-			  !move->isLegalMoved())); // legality not checked 
+			  !move->isLegalMoved())); // legality not checked yet
 
 		if (move->isEnPassant()) {
 			*score = CaptureScore[Piece::PAWN] - value(Piece::PAWN);
@@ -151,8 +151,6 @@ void MoveOrder<Type>::scoreCaptures(size_t first_ind, const Position& pos) {
 		else if (move->isCapture()) {
 			const Piece::uint_t piece_ind = value(move->getPiece());
 			const Piece::uint_t vic = value(pos.pieceOn(move->getTarget(), oppside));
-			if (vic == Piece::KING)
-				int a = 0;
 			*score = CaptureScore[vic] - piece_ind;
 		}
 

@@ -123,8 +123,8 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 
 template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-	Score alpha, Score beta, unsigned depth, unsigned ply) {
-
+					  Score alpha, Score beta, unsigned depth, unsigned ply) 
+{
 	assert(0 <= depth and depth < MaxDepth);
 	assert(alpha < beta);
 
@@ -136,7 +136,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			return -Score::Undef;
 		}
 		else if (!depth) {
-			return quiesce(pos, limits, results, alpha, beta, ply);
+			return quiesce(pos, limits, results, 
+						   alpha, 
+						   beta, 
+						   ply);
 		}
 	}
 
@@ -153,16 +156,20 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	
 	results.nodes_cnt++;
 
+	const enumColor side2move = pos.getTurn();
+
 	if constexpr (Root)
-		node->check = pos.isInCheck(pos.getTurn());
+		node->check = pos.isInCheck(side2move);
 
 	if constexpr (NullMove) {
 		static constexpr int R = 2;
 
 		if (!node->check and depth >= R + 1) {
 			pos.makeNull(node->state);
-			const Score score =
-				-negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, -beta, -beta + 1, depth - R - 1, ply + 1);
+			const Score score = -negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, 
+																	-beta, -beta + 1, 
+																	depth - R - 1, 
+																	ply + 1);
 			pos.unmakeNull(node->state);
 
 			/* Unless Null Move Pruning is not handled properly in endgame, 
@@ -170,7 +177,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			*/
 			if (score >= beta) {
 				const Score verify = 
-					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, beta - 1, beta, depth - R - 1, ply);
+					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, 
+													   beta - 1, beta, 
+													   depth - R - 1, 
+													   ply);
 
 				if (verify >= beta)
 					return verify;
@@ -195,15 +205,15 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	const enumColor side2move = pos.getTurn();
-
 	while (node->move_picker.nextMove<Root>(_tree_stack, pos, node->move)) {
 		bool do_full_search = true;
 
 		if (pos.make(node->move)) {
 			node->can_move = true;
 
-			(node + 1)->check = pos.isInCheck(side2move);
+			const enumColor next_side = !side2move;
+
+			(node + 1)->check = pos.isInCheck(next_side);
 			const int extend = calculateExtension(pos, node);
 
 			/* Principle Variation Search -
@@ -223,14 +233,18 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 					depth >= 2 and 
 					!extend) /* TODO: LMR criteria */
 				{
-					node->score =
-						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 2, ply + 1);
+					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 
+																	 -alpha - 1, -alpha, 
+																	 depth - 2, 
+																	 ply + 1);
 				}
 				else node->score = alpha + 1;
 				
 				if (node->score > alpha) {
-					node->score =
-						-negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, -alpha - 1, -alpha, depth - 1 + extend, ply + 1);
+					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 
+																	 -alpha - 1, -alpha, 
+																	 depth - 1 + extend, 
+																	 ply + 1);
 
 					if constexpr (NodeType == NON_PV_NODE)
 						do_full_search = false;
@@ -241,8 +255,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			} 
 
 			if (do_full_search) {
-				node->score =
-					-negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, -beta, -alpha, depth - 1 + extend, ply + 1);
+				node->score = -negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, 
+															  -beta, -alpha, 
+															  depth - 1 + extend, 
+															  ply + 1);
 			}
 
 			node->moves_searched++;
@@ -277,9 +293,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			}
 		}
 		else if (!limits.isTimeLeft()) {
-			if (Root and node->best_move.isNull())
+			if (Root and node->best_move.isNull()) {
 				// TODO: move at root assigned here might be illegal.
 				node->best_move = node->move;
+			}
 
 			return -Score::Undef;
 		}
@@ -291,12 +308,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
 	}
 
-	//if (node->best_score == alpha) {
-	//	node->move_picker.applyQuietsMaluses<true>(node->best_move, side2move, depth);
-	//}
-
-	if (node->best_score > -Score::MateBound and node->best_score < Score::MateBound)
-		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, packed(node->best_move), results);
+	if (node->best_score > -Score::MateBound and node->best_score < Score::MateBound) {
+		const Move16b bestmove16b = packed(node->best_move);
+		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, bestmove16b, results);
+	}
 
 	(node + 1)->move_picker.setKillerMove(Move32b::Null);
 
@@ -338,11 +353,6 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Score score = 0;
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
-	if (pos.isInCheck(pos.getTurn())) {
-		int a = 0;
-		pos.print();
-	}
-
 	while (moves.nextMove<Root>(_tree_stack, pos, move)) {
 		if (!move.isEnPassant() and 
 			!move.isPromotion() and
@@ -354,7 +364,9 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 
 		if (pos.make(move)) {
-			score = -quiesce(pos, limits, results, -beta, -alpha, ply + 1);
+			score = -quiesce(pos, limits, results, 
+							 -beta, -alpha, 
+							 ply + 1);
 		}
 
 		pos.unmake(move, state);
