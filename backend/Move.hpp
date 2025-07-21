@@ -108,8 +108,10 @@ public:
 
 	INLINE bool isIrreversible() const {
 		static_assert(_IS_SAME_TYPE(T, uint32_t));
-		return isCapture() or getPiece() == Piece::PAWN or 
-			isShortCastle() or isLongCastle();
+		return isCapture() or 
+			   getPiece() == Piece::PAWN or 
+			   isShortCastle() or 
+			   isLongCastle();
 	}
 
 	INLINE Piece::enumType getPiece() const {
@@ -175,15 +177,15 @@ private:
 	static constexpr std::string_view _NullStr = "0000";
 
 	enum enumLayout : uint32_t {
-		ORIGIN = 0x3f,
-		TARGET = 0xfc0,
-		PROMO_PIECE = 0x7000,
-		CAPTURE = 0x8000,
-		EP_CAPTURE = 0x10000,
-		SHORT_CASTLE = 0x20000,
-		LONG_CASTLE = 0x40000,
-		PERFORMER = 0x380000,
-		CAPTURED = 0x1C00000,
+		ORIGIN		  = 0x3f,
+		TARGET		  = 0xfc0,
+		PROMO_PIECE	  = 0x7000,
+		CAPTURE		  = 0x8000,
+		EP_CAPTURE	  = 0x10000,
+		SHORT_CASTLE  = 0x20000,
+		LONG_CASTLE	  = 0x40000,
+		PERFORMER	  = 0x380000,
+		CAPTURED	  = 0x1C00000,
 		LEGALLY_MOVED = 0x2000000
 	};
 

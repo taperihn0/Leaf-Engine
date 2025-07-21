@@ -40,8 +40,8 @@ struct TTEntry {
 };
 
 struct alignas(BucketTargetSize) TTBucket {
-	static constexpr size_t internal_entries_cnt = 3;
-	TTEntry entries[internal_entries_cnt];
+	static constexpr size_t InternalEntriesCnt = 3;
+	TTEntry entries[InternalEntriesCnt];
 	_UNUSED uint16_t __alignment;
 };
 

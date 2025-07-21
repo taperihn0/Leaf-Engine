@@ -40,7 +40,7 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 	int16_t min_relevance = std::numeric_limits<int16_t>::max();
 	size_t ind = 0;
 
-	for (size_t i = 0; i < TTBucket::internal_entries_cnt; i++) {
+	for (size_t i = 0; i < TTBucket::InternalEntriesCnt; i++) {
 		if (bucket->entries[i].getHash() == key or bucket->entries[i].isEmpty()) {
 			ind = i;
 			break;
@@ -81,16 +81,16 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, 
 
 	const TTBucket* bucket = _mem + (key64 & (_buckets_cnt - 1));
 
-	size_t ind = TTBucket::internal_entries_cnt;
+	size_t ind = TTBucket::InternalEntriesCnt;
 
-	for (size_t i = 0; i < TTBucket::internal_entries_cnt; i++) {
+	for (size_t i = 0; i < TTBucket::InternalEntriesCnt; i++) {
 		if (bucket->entries[i].getHash() == key) {
 			ind = i;
 			break;
 		}
 	}
 
-	if (ind == TTBucket::internal_entries_cnt) {
+	if (ind == TTBucket::InternalEntriesCnt) {
 		out_entry.move = Move32b::Null;
 		return false;
 	}
@@ -130,7 +130,7 @@ void TranspositionTable::printDebug() {
 #endif
 
 size_t TranspositionTable::getEntriesCount() const {
-	return _buckets_cnt * TTBucket::internal_entries_cnt;
+	return _buckets_cnt * TTBucket::InternalEntriesCnt;
 }
 
 uint16_t TranspositionTable::getHashfull() const {

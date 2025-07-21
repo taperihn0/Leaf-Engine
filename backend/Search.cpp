@@ -281,8 +281,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 						!node->move.isQueenPromotion()) 
 					{
 						node->move_picker.setKillerMove(node->move);
-						node->move_picker.updateQuietsHistory<1>(node->best_move, side2move, depth);
-						node->move_picker.applyQuietsMaluses<false>(node->best_move, side2move, depth);
+						node->move_picker.updateQuietsHistory(node->best_move, side2move, depth);
 					}
 
 					break;
@@ -341,8 +340,11 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	assert(alpha < beta);
 
 	const Score stand_pat = _eval.staticEval(pos);
-	
-	// standing pat cutoff
+
+	const enumColor side2move = pos.getTurn();
+
+	/* Standing Pat Cutoff
+	*/
 	if (stand_pat > alpha) {
 		if (stand_pat >= beta) return beta;
 		alpha = stand_pat;
@@ -354,11 +356,14 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	Position::IrreversibleState state = pos.getIrreversibleState();
 
 	while (moves.nextMove<Root>(_tree_stack, pos, move)) {
+		/* Static Exchange Evaluation Pruning -
+		*  ignore losing captures, that can be avoided.
+		*/
 		if (!move.isEnPassant() and 
 			!move.isPromotion() and
 			pos.StaticExchangeEval<SeeExactScore>(move.getOrigin(), move.getTarget(),
-												  pos.pieceOn(move.getTarget(), pos.getOppositeTurn()), 
-												  move.getPiece()) < 0) 
+												  pos.pieceOn(move.getTarget(), pos.getOppositeTurn()),
+												  move.getPiece()) < 0)
 		{
 			continue;
 		}

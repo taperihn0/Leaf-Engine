@@ -79,7 +79,7 @@ bool MoveOrder<Type>::nextMove(const TreeStack& tree, const Position& pos, Move3
 
 template <OrderType Type>
 template <int8_t Sign>
-void MoveOrder<Type>::updateQuietsHistory(Move32b move, enumColor side, int depth) {
+void MoveOrder<Type>::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	static_assert(Type == STAGED);
 	static_assert(Sign == -1 or Sign == 1);
 
@@ -94,12 +94,12 @@ void MoveOrder<Type>::updateQuietsHistory(Move32b move, enumColor side, int dept
 }
 
 template <OrderType Type>
-template <bool ForAll>
-void MoveOrder<Type>::applyQuietsMaluses(Move32b bestmove, enumColor side, int depth) {
+void MoveOrder<Type>::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
 	static_assert(Type == STAGED);
 
-	if constexpr (!ForAll) 
-		assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
+	assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
+
+	updateQuietEntry<1>(bestmove, side, depth);
 
 	for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
 		MoveList::Entry* entry = _move_list.getEntry(i);
@@ -107,12 +107,10 @@ void MoveOrder<Type>::applyQuietsMaluses(Move32b bestmove, enumColor side, int d
 
 		assert(move->isQuiet() and !move->isQueenPromotion());
 
-		if constexpr (!ForAll) {
-			if (*move == bestmove) 
-				break;
-		}
+		if (*move == bestmove)
+			break;
 
-		updateQuietsHistory<-1>(*move, side, depth);
+		updateQuietEntry<-1>(*move, side, depth);
 	}
 }
 
@@ -183,8 +181,7 @@ template bool MoveOrder<STAGED>::nextMove<false>(const TreeStack&, const Positio
 template bool MoveOrder<STAGED>::nextMove<true> (const TreeStack&, const Position&, Move32b&);
 template bool MoveOrder<QUIESCENT>::nextMove<false>(const TreeStack&, const Position&, Move32b&);
 
-template void MoveOrder<STAGED>::updateQuietsHistory<-1>(Move32b, enumColor, int);
-template void MoveOrder<STAGED>::updateQuietsHistory<1> (Move32b, enumColor, int);
+template void MoveOrder<STAGED>::updateQuietsHistory(Move32b, enumColor, int);
 
-template void MoveOrder<STAGED>::applyQuietsMaluses<false>(Move32b, enumColor, int);
-template void MoveOrder<STAGED>::applyQuietsMaluses<true> (Move32b, enumColor, int);
+template void MoveOrder<STAGED>::updateQuietEntry<-1>(Move32b, enumColor, int);
+template void MoveOrder<STAGED>::updateQuietEntry<1> (Move32b, enumColor, int);

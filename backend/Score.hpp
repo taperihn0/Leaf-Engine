@@ -64,9 +64,9 @@ public:
 
 	std::string toStr() const;
 	
-	static constexpr int_t Draw		= 0,
-						   MateBound = 30000,
-						   Mate		= 32000,
+	static constexpr int_t Draw		  = 0,
+						   MateBound  = 30000,
+						   Mate		  = 32000,
 						   Infinity   = std::numeric_limits<int_t>::max(),
 						   Undef      = 32500;
 private:

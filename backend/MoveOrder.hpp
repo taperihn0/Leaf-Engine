@@ -30,10 +30,8 @@ public:
 	Move32b getKillerMove();
 
 	template <int8_t Sign>
-	void updateQuietsHistory(Move32b move, enumColor side, int depth);
-
-	template <bool All>
-	void applyQuietsMaluses(Move32b bestmove, enumColor side, int depth);
+	void updateQuietEntry(Move32b move, enumColor side, int depth);
+	void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
 
 	static void clearQuietsHistory();
 
