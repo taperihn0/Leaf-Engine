@@ -1,3 +1,11 @@
+### commit _: fixed gravity formula (integer overflow)
+Score of gravity-fix-dev vs history-gravity: 720 - 644 - 1697  [0.512] 3061
+...      gravity-fix-dev playing White: 384 - 285 - 862  [0.532] 1531
+...      gravity-fix-dev playing Black: 336 - 359 - 835  [0.492] 1530
+...      White vs Black: 743 - 621 - 1697  [0.520] 3061
+Elo difference: 8.6 +/- 8.2, LOS: 98.0 %, DrawRatio: 55.4 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
 ### commit _: history gravity formula with maluses
 Score of history-gravity-dev vs 1mb-3tier-tt: 1092 - 917 - 2682  [0.519] 4691 <br>
 ...      history-gravity-dev playing White: 614 - 405 - 1327  [0.545] 2346 <br>

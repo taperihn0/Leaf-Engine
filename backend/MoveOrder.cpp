@@ -88,7 +88,7 @@ void MoveOrder<Type>::updateQuietEntry(Move32b move, enumColor side, int depth) 
 
 	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), _MaxQuietsHistory);
 
-	_quiets_history[side][piece][dst] += Sign * bonus - (_quiets_history[side][piece][dst] * bonus / _MaxQuietsHistory);
+	_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_quiets_history[side][piece][dst] * bonus) >> _MaxQuietsPower);
 
 	assert(abs(_quiets_history[side][piece][dst]) <= _MaxQuietsHistory);
 }
