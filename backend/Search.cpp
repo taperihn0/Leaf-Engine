@@ -182,13 +182,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->move = Move32b::Null;
 
 	if constexpr (NullMove) {
-		static constexpr int R = 2;
+		static constexpr int NullReduction = 2;
 
-		if (!node->check and depth >= R + 1) {
+		if (!node->check and depth >= NullReduction + 1) {
 			pos.makeNull(node->state);
 			const Score score = -negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, 
 																	-beta, -beta + 1, 
-																	depth - R - 1, 
+																	depth - NullReduction - 1, 
 																	ply + 1);
 			pos.unmakeNull(node->state);
 
@@ -199,7 +199,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				const Score verify = 
 					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, 
 													   beta - 1, beta, 
-													   depth - R - 1, 
+													   depth - NullReduction - 1, 
 													   ply);
 
 				if (verify >= beta)
@@ -212,8 +212,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
 
 	static constexpr OrderType OrderPolicy = STAGED;
-
-	const Move32b prev_move = ply > 0 ? (node - 1)->move : Move32b::Null;
+	static constexpr int LmrMoveCount = 2;
+	static constexpr int LmrDepthMargin = 2;
 
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
@@ -225,30 +225,34 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->best_score = -Score::Infinity;
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
+	node->static_eval = Score::Undef;
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) {
-		bool do_full_search = true;
-
-		/*
+	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
+	{
 		if (!node->check and
-			depth <= 2 and
-			node->moves_searched > 5 and
+			depth <= 1 and
+			node->moves_searched > 0 and
 			node->move.isQuiet() and
-			!node->move.isPromotion() and
-			node->move != node->move_picker.getKillerMove())
+			!node->move.isPromotion())
 		{
-			const Square org = node->move.getOrigin();
-			const Square dst = node->move.getTarget();
-			const Piece::enumType vic = pos.pieceOn(node->move.getTarget(), pos.getOppositeTurn());
-			const Piece::enumType piece = node->move.getPiece();
+			if (!node->static_eval.isValid())
+				node->static_eval = _eval.staticEval(pos);
 
-			const int see_score = pos.StaticExchangeEval<false>(org, dst, vic, piece);
+			if (node->static_eval + 50 < alpha) {
+				node->score = alpha;
 
-			if (see_score < 0) continue;
+				if (node->score > node->best_score) {
+					node->best_score = node->score;
+					node->best_move = node->move;
+				}
+
+				continue;
+			}
 		}
-		*/
+
+		bool do_full_search = true;
 
 		if (pos.make(node->move)) {
 			node->can_move = true;
@@ -271,8 +275,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				*  Prove they fail low using Null window search with some reduction.
 				*  If somehow they fail high, then re-search without reduction.
 				*/
-				if (node->moves_searched >= 2 and 
-					depth >= 2 and 
+				if (node->moves_searched >= LmrMoveCount and 
+					depth >= LmrDepthMargin and 
 					!extend) /* TODO: LMR criteria */
 				{
 					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 
@@ -391,6 +395,10 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	const enumColor side2move = pos.getTurn();
 	const Score stand_pat = _eval.staticEval(pos);
 
+	/* Delta Pruning -
+	*  when no move has any chance to raise alpha
+	*  then prune all of the branches.
+	*/
 	if (stand_pat + MaterialDelta < alpha)
 		return alpha;
 	/* Standing Pat Cutoff */

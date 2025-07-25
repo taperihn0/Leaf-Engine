@@ -1,3 +1,11 @@
+### commit _: futility pruning
+Score of fut-prune-dev vs delta-prune: 967 - 740 - 2079  [0.530] 3786 <br>
+...      fut-prune-dev playing White: 531 - 321 - 1042  [0.555] 1894 <br>
+...      fut-prune-dev playing Black: 436 - 419 - 1037  [0.504] 1892 <br>
+...      White vs Black: 950 - 757 - 2079  [0.525] 3786 <br>
+Elo difference: 20.9 +/- 7.4, LOS: 100.0 %, DrawRatio: 54.9 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: simplest delta pruning
 Score of delta-prune-dev vs tt-0-probe: 571 - 535 - 1396  [0.507] 2502 <br>
 ...      delta-prune-dev playing White: 300 - 245 - 706  [0.522] 1251 <br>

@@ -53,6 +53,7 @@ struct NodeInfo {
 	bool						check;
 	unsigned					ply;
 	uint8_t						moves_searched;
+	Score					    static_eval;
 };
 
 class TreeStack {

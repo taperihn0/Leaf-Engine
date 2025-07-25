@@ -433,7 +433,6 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 	};
 
 	if (!ExactScore and
-		target != Piece::NONE and
 		SeePieceValue[target] > SeePieceValue[attacker])
 	{
 		return 1;
