@@ -96,7 +96,7 @@ public:
 	}
 
 	INLINE bool isUnderPromotion() const {
-		return !isQueenPromotion();
+		return isPromotion() and !isQueenPromotion();
 	}
 
 	// use this field only after making a move -

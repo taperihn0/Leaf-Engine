@@ -17,6 +17,12 @@
 
 #include <immintrin.h>
 
+#if __cplusplus >= 202002L
+#define _CPP_STANDARD_20
+#elif __cplusplus >= 201702L
+#define _CPP_STANDARD_17
+#endif
+
 #define _USE_SIMD
 
 #if defined(_USE_SIMD)
@@ -38,6 +44,12 @@
 
 #define _NORETURN [[noreturn]]
 #define _UNUSED   [[maybe_unused]]
+
+#if defined(_CPP_STANDARD_20)
+#define _UNLIKELY [[unlikely]]
+#else
+#define _UNLIKELY
+#endif
 
 #define ENGINE_NAME "Leaf Lite"
 #define AUTHOR		"Szymon Belz"
@@ -85,8 +97,9 @@ _NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_
 	exit(EXIT_FAILURE);
 }
 
-static constexpr int	  MaxNodeMoves = 256;
-static constexpr unsigned MaxDepth	   = 256,
+static constexpr int	  MaxNodeMoves = 128;
+static constexpr unsigned MaxDepth = 128,
+						  MaxSelDepth = 128,
 						  MaxGameMoves = 512;
 
 class MoveGenerator;

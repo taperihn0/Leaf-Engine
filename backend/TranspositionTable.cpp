@@ -9,6 +9,7 @@ TranspositionTable::TranspositionTable() {
 	static_assert(sizeof(TTEntry) == EntryTargetSize);
 	static_assert(sizeof(TTBucket) == BucketTargetSize);
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(1_MB, sizeof(TTBucket)));
+	ASSERT(_mem != nullptr, "Failed to allocate memory");
 	_buckets_cnt = 1_MB / sizeof(TTBucket);
 	clear();
 }
@@ -20,6 +21,7 @@ TranspositionTable::~TranspositionTable() {
 void TranspositionTable::resize(size_t size_mb) {
 	alignedFree(_mem);
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(size_mb * 1024 * 1024, sizeof(TTBucket)));
+	ASSERT(_mem != nullptr, "Failed to allocate memory");
 	_buckets_cnt = size_mb * 1024 * 1024 / sizeof(TTBucket);
 	_generation = 0;
 	_hits = 0;
@@ -75,7 +77,7 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 }
 
 bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta,
-							   uint8_t node_depth, uint8_t node_ply) const 
+							   uint8_t node_depth) const 
 {
 	const uint32_t key = static_cast<uint32_t>(key64);
 

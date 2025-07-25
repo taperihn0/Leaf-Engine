@@ -22,9 +22,6 @@ INLINE void SearchResults::printBestMove() {
 	std::cout << '\n';
 }
 
-Search::Search()
-	: _tt() {}
-
 INLINE void SearchResults::print(const Search* search, const Position& pos, TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
@@ -41,7 +38,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos, Tran
 
 	while (depth--) {
 		TTEntry tt_entry;
-		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::Infinity, +Score::Infinity, depth, 0);
+		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::Infinity, +Score::Infinity, depth);
 
 		Move32b pv_move = unpacked(cpy, tt_entry.move);
 
@@ -64,6 +61,25 @@ INLINE void SearchResults::printShort() {
 void Search::registerNewGame() {
 	_tt.clear();
 	_tt.clearHashfull();
+	MoveOrder::clearQuietsHistory();
+}
+
+TreeStack::TreeStack() {
+	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(_Count * sizeof(NodeInfo),  CACHELINE_SIZE));
+	ASSERT(_stack != nullptr, "Failed to allocate memory");
+}
+
+TreeStack::~TreeStack() {
+	alignedFree(_stack);
+}
+
+INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
+	assert(ply < _Count);
+	return _stack + ply;
+}
+
+INLINE NodeInfo* TreeStack::getRootNode() {
+	return _stack;
 }
 
 template <bool PrintFullInfo>
@@ -107,8 +123,10 @@ Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits
 
 template <bool PrintFullInfo>
 bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
-	const Score score
-		= -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), -Score::Mate, +Score::Mate, results.depth, 0);
+	const Score score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
+									   -Score::Mate, +Score::Mate, 
+									   results.depth, 
+									   0);
 
 	if (results.depth > 1 and !limits.isTimeLeft())
 		return false;
@@ -123,28 +141,20 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 
 template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-					  Score alpha, Score beta, unsigned depth, unsigned ply) 
+					  Score alpha, Score beta, int depth, int ply) 
 {
 	assert(0 <= depth and depth < MaxDepth);
 	assert(alpha < beta);
 
-	if constexpr (!Root) {
-		if (pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
-			return Score::Draw;
-		}
-		else if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
-			return -Score::Undef;
-		}
-		else if (!depth) {
-			return quiesce(pos, limits, results, 
-						   alpha, 
-						   beta, 
-						   ply);
-		}
+	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
+		return Score::Draw;
+	}
+	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+		return -Score::Undef;
 	}
 
 	TTEntry tt_entry;
-	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth, ply);
+	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth);
 	
 	if constexpr (!Root and NodeType == NON_PV_NODE) {
 		if (tt_hit) return tt_entry.score;
@@ -153,6 +163,14 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (tt_hit and tt_entry.bound == TTEntry::EXACT) 
 			return tt_entry.score;
 	}
+
+	if (!depth) {
+		return quiesce(pos, limits, results, node,
+					   alpha, 
+					   beta, 
+					   depth,
+					   ply);
+	}
 	
 	results.nodes_cnt++;
 
@@ -160,6 +178,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	if constexpr (Root)
 		node->check = pos.isInCheck(side2move);
+	
+	node->move = Move32b::Null;
 
 	if constexpr (NullMove) {
 		static constexpr int R = 2;
@@ -188,11 +208,14 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	//const Move32b tt_move = tt_entry.move.isPseudoLegal(pos) ? tt_entry.move : Move32b::Null;
 	const Move32b ttm32b = unpacked(pos, tt_entry.move);
 	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
 
-	node->move_picker.clear();
+	static constexpr OrderType OrderPolicy = STAGED;
+
+	const Move32b prev_move = ply > 0 ? (node - 1)->move : Move32b::Null;
+
+	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
 	
 	node->can_move = false;
@@ -205,8 +228,27 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
-	while (node->move_picker.nextMove<Root>(_tree_stack, pos, node->move)) {
+	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) {
 		bool do_full_search = true;
+
+		/*
+		if (!node->check and
+			depth <= 2 and
+			node->moves_searched > 5 and
+			node->move.isQuiet() and
+			!node->move.isPromotion() and
+			node->move != node->move_picker.getKillerMove())
+		{
+			const Square org = node->move.getOrigin();
+			const Square dst = node->move.getTarget();
+			const Piece::enumType vic = pos.pieceOn(node->move.getTarget(), pos.getOppositeTurn());
+			const Piece::enumType piece = node->move.getPiece();
+
+			const int see_score = pos.StaticExchangeEval<false>(org, dst, vic, piece);
+
+			if (see_score < 0) continue;
+		}
+		*/
 
 		if (pos.make(node->move)) {
 			node->can_move = true;
@@ -322,65 +364,85 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 }
 
 template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-	Score alpha, Score beta, unsigned depth, unsigned ply);
+									 Score alpha, Score beta, int depth, int ply);
 template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-	Score alpha, Score beta, unsigned depth, unsigned ply);
+									  Score alpha, Score beta, int depth, int ply);
 
-Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply) {
+Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
+					  Score alpha, Score beta, int depth, int ply) 
+{
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
+	else if (ply >= MaxSelDepth) _UNLIKELY {
+		return _eval.staticEval(pos);
+	}
 
 	static constexpr bool Root = false;
-	static constexpr bool SeeExactScore = false;
+	static constexpr bool SeeNonExactScore = false;
+	static constexpr Score MaterialDelta = 900;
+	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
 
 	results.nodes_cnt++;
-	results.seldepth = std::max(results.seldepth, ply + 1);
+	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
 
 	assert(alpha < beta);
 
+	const enumColor side2move = pos.getTurn();
 	const Score stand_pat = _eval.staticEval(pos);
 
-	const enumColor side2move = pos.getTurn();
-
-	/* Standing Pat Cutoff
-	*/
-	if (stand_pat > alpha) {
+	if (stand_pat + MaterialDelta < alpha)
+		return alpha;
+	/* Standing Pat Cutoff */
+	else if (stand_pat > alpha) {
 		if (stand_pat >= beta) return beta;
-		alpha = stand_pat;
+		node->score = alpha = stand_pat;
 	}
 
-	MoveOrder<QUIESCENT> moves;
-	Move32b move;
-	Score score = 0;
-	Position::IrreversibleState state = pos.getIrreversibleState();
+	node->move_picker.clear<QuiescentOrderPolicy>();
 
-	while (moves.nextMove<Root>(_tree_stack, pos, move)) {
+	node->moves_searched = 0;
+	node->state = pos.getIrreversibleState();
+
+	while (node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move)) {
+
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, that can be avoided.
 		*/
-		if (!move.isEnPassant() and 
-			!move.isPromotion() and
-			pos.StaticExchangeEval<SeeExactScore>(move.getOrigin(), move.getTarget(),
-												  pos.pieceOn(move.getTarget(), pos.getOppositeTurn()),
-												  move.getPiece()) < 0)
+		if (!node->move.isEnPassant() and 
+			!node->move.isPromotion())
 		{
-			continue;
+			const Square org = node->move.getOrigin();
+			const Square dst = node->move.getTarget();
+			const Piece::enumType vic = pos.pieceOn(node->move.getTarget(), pos.getOppositeTurn());
+			const Piece::enumType piece = node->move.getPiece();
+
+			const int capt_see_score = pos.StaticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
+
+			if (capt_see_score < 0)
+				continue;
 		}
 
-		if (pos.make(move)) {
-			score = -quiesce(pos, limits, results, 
-							 -beta, -alpha, 
-							 ply + 1);
+		if (pos.make(node->move)) {
+			node->score = -quiesce(pos, limits, results, node + 1,
+								   -beta, -alpha,
+								   depth - 1,
+								   ply + 1);
+
+			node->moves_searched++;
 		}
 
-		pos.unmake(move, state);
-
-		if (!score.isValid())
+		pos.unmake(node->move, node->state);
+		
+		if (limits.isTimeLeft() and 
+			node->move.isLegalMoved() and 
+			node->score > alpha) 
+		{
+			if (node->score >= beta) return beta;
+			alpha = node->score;
+		}
+		else if (!limits.isTimeLeft()) {
 			return -Score::Undef;
-		else if (move.isLegalMoved() and score > alpha) {
-			if (score >= beta) return beta;
-			alpha = score;
 		}
 	}
 

@@ -418,8 +418,8 @@ INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, B
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
-static constexpr std::array<int, 6> SeePieceValue = {
-	100, 300, 300, 500, 900, 10000
+static constexpr std::array<int, 7> SeePieceValue = {
+	100, 300, 300, 500, 900, 10000, 0
 };
 
 template <bool ExactScore>
@@ -431,6 +431,13 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 		}
 		return BitBoard(0_ui64);
 	};
+
+	if (!ExactScore and
+		target != Piece::NONE and
+		SeePieceValue[target] > SeePieceValue[attacker])
+	{
+		return 1;
+	}
 	
 	int gain[32];
 	int i = 0;

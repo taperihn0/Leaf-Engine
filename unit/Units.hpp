@@ -35,8 +35,8 @@ bool nonequal(const T& a, const T& b) {
 template <typename T>
 bool samesign(const T& a, const T& b) {
 	static_assert(std::is_integral<T>::value, "samesign function handles only integer types");
-	return (a < 0ull and b < 0ull) or (a > 0ull and b > 0ull) 
-		   or (a == 0ull and b == 0ull);
+	return (a < 0ll and b < 0ll) or (a > 0ll and b > 0ll) 
+		   or (a == 0ll and b == 0ll);
 }
 
 static size_t _test_counter = 0;
@@ -112,7 +112,7 @@ static bool seeTests() {
 			}
 		}
 
-		if (move.isQuiet() or move.isEnPassant())
+		if (move.isEnPassant())
 			continue;
 
 		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';

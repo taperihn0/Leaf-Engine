@@ -56,7 +56,7 @@ public:
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
 			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
 
-	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth, uint8_t node_ply) const;
+	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth) const;
 
 #if defined(DEBUG)
 	void printDebug();

@@ -7,7 +7,7 @@ public:
 	using int_t = int16_t;
 
 	INLINE Score() = default;
-	INLINE Score(int_t val)
+	INLINE constexpr Score(int_t val)
 		: _raw(val) {}
 
 	INLINE Score operator+(Score b) const {

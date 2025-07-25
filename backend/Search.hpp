@@ -43,7 +43,7 @@ struct SearchResults {
 };
 
 struct NodeInfo {
-	MoveOrder<STAGED>			move_picker;
+	MoveOrder					move_picker;
 	Position::IrreversibleState state;
 	Move32b						move;
 	Move32b						best_move;
@@ -52,15 +52,19 @@ struct NodeInfo {
 	Score						best_score;
 	bool						check;
 	unsigned					ply;
-	size_t						moves_searched;
+	uint8_t						moves_searched;
 };
 
 class TreeStack {
 public:
+	TreeStack();
+	~TreeStack();
+
 	NodeInfo* getRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
 private:
-	NodeInfo _stack[MaxDepth];
+	static constexpr size_t _Count = MaxSelDepth;
+	NodeInfo* _stack;
 };
 
 class Eval;
@@ -70,12 +74,14 @@ class Search {
 public:
 	friend struct SearchResults;
 
-	enum enumNode {
-		PV_NODE,
-		NON_PV_NODE,
+	enum enumNode : int8_t {
+		PV_NODE = 1,
+		NON_PV_NODE = 2,
+		SEARCH_NODE = PV_NODE | NON_PV_NODE,
+		QUIESCE_NODE = ~SEARCH_NODE,
 	};
 
-	Search();
+	Search() = default;
 
 	template <bool PrintFullInfo = true>
 	Move32b bestMove(Position& pos, const Game& game, SearchLimits limits);
@@ -91,9 +97,10 @@ private:
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
-				  Score alpha, Score beta, unsigned depth, unsigned ply);
+				  Score alpha, Score beta, int depth, int ply);
 
-	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, Score alpha, Score beta, unsigned ply);
+	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
+				  Score alpha, Score beta, int depth, int ply);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 
@@ -105,12 +112,3 @@ private:
 
 	static constexpr uint64_t _CheckNodeCount = 4096;
 };
-
-INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
-	assert(ply < MaxDepth);
-	return _stack + ply;
-}
-
-INLINE NodeInfo* TreeStack::getRootNode() {
-	return _stack;
-}

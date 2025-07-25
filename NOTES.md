@@ -1,10 +1,26 @@
-### commit _: fixed gravity formula (integer overflow)
-Score of gravity-fix-dev vs history-gravity: 720 - 644 - 1697  [0.512] 3061
-...      gravity-fix-dev playing White: 384 - 285 - 862  [0.532] 1531
-...      gravity-fix-dev playing Black: 336 - 359 - 835  [0.492] 1530
-...      White vs Black: 743 - 621 - 1697  [0.520] 3061
-Elo difference: 8.6 +/- 8.2, LOS: 98.0 %, DrawRatio: 55.4 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+### commit _: simplest delta pruning
+Score of delta-prune-dev vs tt-0-probe: 571 - 535 - 1396  [0.507] 2502 <br>
+...      delta-prune-dev playing White: 300 - 245 - 706  [0.522] 1251 <br>
+...      delta-prune-dev playing Black: 271 - 290 - 690  [0.492] 1251 <br>
+...      White vs Black: 590 - 516 - 1396  [0.515] 2502 <br>
+Elo difference: 5.0 +/- 9.0, LOS: 86.0 %, DrawRatio: 55.8 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit _: tt probe at 0 depth
+Score of tt-probe-0-dev vs history-gravity-fix: 674 - 395 - 1369  [0.557] 2438 <br>
+...      tt-probe-0-dev playing White: 368 - 169 - 682  [0.582] 1219 <br>
+...      tt-probe-0-dev playing Black: 306 - 226 - 687  [0.533] 1219 <br>
+...      White vs Black: 594 - 475 - 1369  [0.524] 2438 <br>
+Elo difference: 39.9 +/- 9.1, LOS: 100.0 %, DrawRatio: 56.2 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit _: fixed gravity formula
+Score of gravity-fix-dev vs history-gravity: 720 - 644 - 1697  [0.512] 3061 <br>
+...      gravity-fix-dev playing White: 384 - 285 - 862  [0.532] 1531 <br>
+...      gravity-fix-dev playing Black: 336 - 359 - 835  [0.492] 1530 <br>
+...      White vs Black: 743 - 621 - 1697  [0.520] 3061 <br>
+Elo difference: 8.6 +/- 8.2, LOS: 98.0 %, DrawRatio: 55.4 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### commit _: history gravity formula with maluses
 Score of history-gravity-dev vs 1mb-3tier-tt: 1092 - 917 - 2682  [0.519] 4691 <br>
@@ -21,8 +37,8 @@ Score of 1mb-3tier-tt-dev vs 1mb-2tier-tt: 676 - 620 - 1721  [0.509] 3017 <br>
 ...      1mb-3tier-tt-dev playing White: 372 - 275 - 862  [0.532] 1509 <br>
 ...      1mb-3tier-tt-dev playing Black: 304 - 345 - 859  [0.486] 1508 <br>
 ...      White vs Black: 717 - 579 - 1721  [0.523] 3017 <br>
-Elo difference: 6.4 +/- 8.1, LOS: 94.0 %, DrawRatio: 57.0 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+Elo difference: 6.4 +/- 8.1, LOS: 94.0 %, DrawRatio: 57.0 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### commit _: double-tier bucket and new replacement scheme
 *SIDE NOTE: TESTING WERE PERFORMED ON VERY TIGHT TIME CONTROL OF 1 SECOND + 40 MILLISECONDS.*
@@ -187,4 +203,4 @@ Score of t1 vs t2: 684 - 523 - 793  [0.540] 2000 <br>
 ... t1 playing Black: 282 - 312 - 406  [0.485] 1000 <br>
 ... White vs Black: 714 - 493 - 793  [0.555] 2000 <br>
 Elo difference: 28.0 +/- 11.8, LOS: 100.0 %, DrawRatio: 39.6 % <br>
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
