@@ -12,7 +12,9 @@ template <OrderType Type, bool Root>
 bool MoveOrder::nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move) {
 	static_assert(!Root or Type == STAGED);
 	assert(_stage != enumStage::NONE);
-	assert(Type != QUIESCENT or _stage == enumStage::PICK_CAPTURES or _stage == enumStage::CAPTURES);
+	assert(Type != QUIESCENT or 
+		   _stage == enumStage::PICK_CAPTURES or 
+		   _stage == enumStage::CAPTURES);
 
 	switch (_stage) {
 	case enumStage::HASH_MOVE:
@@ -67,10 +69,11 @@ bool MoveOrder::nextMove(const TreeStack& tree, const Position& pos, Move32b& ne
 
 		[[fallthrough]];
 	case enumStage::PICK_QUIETS:
+		assert(Type != QUIESCENT);
+
 		const enumColor side = pos.getTurn();
 
-		if constexpr (Type == QUIESCENT) assert(false);
-		else							 scoreQuiets(_quiets_ind, side);
+		scoreQuiets(_quiets_ind, side);
 
 		return nextFromList(next_move);
 	}

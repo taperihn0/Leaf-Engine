@@ -143,7 +143,7 @@ template <bool Root, Search::enumNode NodeType, bool NullMove>
 Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 					  Score alpha, Score beta, int depth, int ply) 
 {
-	assert(0 <= depth and depth < MaxDepth);
+	assert(0 <= depth and depth < MaxDepth - 1);
 	assert(alpha < beta);
 
 	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
@@ -186,10 +186,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		if (!node->check and depth >= NullReduction + 1) {
 			pos.makeNull(node->state);
-			const Score score = -negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node + 1, 
-																	-beta, -beta + 1, 
-																	depth - NullReduction - 1, 
-																	ply + 1);
+			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node + 1,
+																		-beta, -beta + 1, 
+																		depth - NullReduction - 1, 
+																		ply + 1);
 			pos.unmakeNull(node->state);
 
 			/* Unless Null Move Pruning is not handled properly in endgame, 
@@ -197,10 +197,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			*/
 			if (score >= beta) {
 				const Score verify = 
-					negaMax<false, NON_PV_NODE, false>(pos, limits, results, game, node, 
-													   beta - 1, beta, 
-													   depth - NullReduction - 1, 
-													   ply);
+					negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+														   beta - 1, beta, 
+														   depth - NullReduction - 1, 
+														   ply);
 
 				if (verify >= beta)
 					return verify;
@@ -212,10 +212,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
 
 	static constexpr OrderType OrderPolicy = STAGED;
-	static constexpr int LmrMoveCount = 2;
-	static constexpr int LmrDepthMargin = 2;
-	static constexpr int FutilityDepthMargin = 1;
-	static constexpr Score FutilityDelta = 50;
+	static constexpr int	   LmrMoveCount = 2;
+	static constexpr int	   LmrDepthMargin = 2;
+	static constexpr int	   FutilityDepthMargin = 4;
+	static constexpr Score	   FutilityDelta = 32;
 
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
@@ -245,7 +245,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (!node->static_eval.isValid())
 				node->static_eval = _eval.staticEval(pos);
 
-			if (node->static_eval + FutilityDelta < alpha) {
+			if (node->static_eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {

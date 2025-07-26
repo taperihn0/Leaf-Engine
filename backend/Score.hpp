@@ -7,7 +7,7 @@ public:
 	using int_t = int16_t;
 
 	INLINE Score() = default;
-	INLINE constexpr Score(int_t val)
+	INLINE constexpr Score(int_t val) 
 		: _raw(val) {}
 
 	INLINE Score operator+(Score b) const {
@@ -48,6 +48,10 @@ public:
 
 	INLINE bool operator<(Score b) const {
 		return _raw < b._raw;
+	}
+
+	INLINE Score operator*(Score b) const {
+		return _raw * b._raw;
 	}
 
 	INLINE Score operator-() const {
