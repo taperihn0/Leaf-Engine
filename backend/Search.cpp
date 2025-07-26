@@ -214,6 +214,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	static constexpr OrderType OrderPolicy = STAGED;
 	static constexpr int LmrMoveCount = 2;
 	static constexpr int LmrDepthMargin = 2;
+	static constexpr int FutilityDepthMargin = 1;
+	static constexpr Score FutilityDelta = 50;
 
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
@@ -231,8 +233,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
 	{
+		/* Futility Pruning -
+		*  at shallow depths, skip moves that won't change alpha propably
+		*/
 		if (!node->check and
-			depth <= 1 and
+			depth <= FutilityDepthMargin and
 			node->moves_searched > 0 and
 			node->move.isQuiet() and
 			!node->move.isPromotion())
@@ -240,7 +245,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			if (!node->static_eval.isValid())
 				node->static_eval = _eval.staticEval(pos);
 
-			if (node->static_eval + 50 < alpha) {
+			if (node->static_eval + FutilityDelta < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
