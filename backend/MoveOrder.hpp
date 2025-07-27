@@ -42,6 +42,8 @@ public:
 	
 	template <OrderType Order>
 	void clear();
+
+	void skipQuiets();
 private:
 	bool nextFromList(Move32b& move);
 
@@ -75,21 +77,6 @@ private:
 	MoveList _move_list;
 };
 
-template <OrderType Type>
-INLINE void MoveOrder::clear() {
-	static constexpr enumStage _FirstStage = Type == QUIESCENT ? enumStage::CAPTURES :
-																 enumStage::HASH_MOVE;
-	_stage = _FirstStage;
-	_iterator = 0;
-	_quiets_ind = 0;
-	_hash_move = Move32b::Null;
-
-	if constexpr (Type == QUIESCENT)
-		_killer_move = Move32b::Null;
-
-	_move_list.clear();
-}
-
 INLINE void MoveOrder::setHashMove(Move32b m) {
 	_hash_move = m;
 }
@@ -108,4 +95,24 @@ INLINE Move32b MoveOrder::getKillerMove() {
 
 INLINE void MoveOrder::clearQuietsHistory() {
 	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
+}
+
+
+template <OrderType Type>
+INLINE void MoveOrder::clear() {
+	static constexpr enumStage _FirstStage = Type == QUIESCENT ? enumStage::CAPTURES :
+		enumStage::HASH_MOVE;
+	_stage = _FirstStage;
+	_iterator = 0;
+	_quiets_ind = 0;
+	_hash_move = Move32b::Null;
+
+	if constexpr (Type == QUIESCENT)
+		_killer_move = Move32b::Null;
+
+	_move_list.clear();
+}
+
+INLINE void MoveOrder::skipQuiets() {
+	_iterator = _move_list.count();
 }

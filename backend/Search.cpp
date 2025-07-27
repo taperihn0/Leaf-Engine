@@ -192,7 +192,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 																		ply + 1);
 			pos.unmakeNull(node->state);
 
-			/* Unless Null Move Pruning is not handled properly in endgame, 
+			/* Unless Null Move Pruning is not handled properly in the endgame, 
 			*  verification search is just needed 
 			*/
 			if (score >= beta) {
@@ -208,14 +208,43 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
+	static constexpr OrderType OrderPolicy = STAGED;
+	static constexpr int	   FutilityDepth = 4;
+	static constexpr Score	   FutilityDelta = 32;
+	static constexpr int	   LmrDepth = 2;
+	static constexpr int	   LmrMoveCount = 2;
+	static constexpr int 	   RazorDepth = 2;
+	static constexpr Score 	   RazorBaseDelta = 150;
+	static constexpr Score 	   RazorMultDelta = 25;
+
+	node->static_eval = Score::Undef;
+
+	/* Razoring - 
+	*  if we're at lower depth and the eval is really low
+	*  it means there is high propability no move can increase the alpha bar.
+	*  To ensure our intuition, we dive into quiescence search to verify the position.
+	*  If we fail low, we've got a cutoff.
+	*/
+	if constexpr (NodeType == NON_PV_NODE) {
+		if (!node->check and
+			depth <= RazorDepth)
+		{
+			node->static_eval = _eval.staticEval(pos);
+
+			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+				const Score qscore = quiesce(pos, limits, results, node + 1, 
+											 alpha - 1, alpha, 
+											 depth, 
+											 ply);
+
+				if (qscore < alpha)
+					return qscore;
+			}
+		}
+	}
+
 	const Move32b ttm32b = unpacked(pos, tt_entry.move);
 	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
-
-	static constexpr OrderType OrderPolicy = STAGED;
-	static constexpr int	   LmrMoveCount = 2;
-	static constexpr int	   LmrDepthMargin = 2;
-	static constexpr int	   FutilityDepthMargin = 4;
-	static constexpr Score	   FutilityDelta = 32;
 
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
@@ -227,8 +256,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->best_score = -Score::Infinity;
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
-	node->static_eval = Score::Undef;
-
 	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
 
 	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
@@ -237,10 +264,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		*  at shallow depths, skip moves that won't change alpha propably
 		*/
 		if (!node->check and
-			depth <= FutilityDepthMargin and
+			depth <= FutilityDepth and
 			node->moves_searched > 0 and
 			node->move.isQuiet() and
-			!node->move.isPromotion())
+			!node->move.isQueenPromotion())
 		{
 			if (!node->static_eval.isValid())
 				node->static_eval = _eval.staticEval(pos);
@@ -253,6 +280,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 					node->best_move = node->move;
 				}
 
+				node->move_picker.skipQuiets();
 				continue;
 			}
 		}
@@ -281,7 +309,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				*  If somehow they fail high, then re-search without reduction.
 				*/
 				if (node->moves_searched >= LmrMoveCount and 
-					depth >= LmrDepthMargin and 
+					depth >= LmrDepth and 
 					!extend) /* TODO: LMR criteria */
 				{
 					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 

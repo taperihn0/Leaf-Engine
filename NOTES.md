@@ -1,3 +1,11 @@
+### commit _: razoring
+Score of razor-prune-dev vs fut-prune: 573 - 351 - 1141  [0.554] 2065 <br>
+...      razor-prune-dev playing White: 298 - 162 - 573  [0.566] 1033 <br>
+...      razor-prune-dev playing Black: 275 - 189 - 568  [0.542] 1032 <br>
+...      White vs Black: 487 - 437 - 1141  [0.512] 2065 <br>
+Elo difference: 37.5 +/- 10.0, LOS: 100.0 %, DrawRatio: 55.3 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: futility pruning
 Score of fut-prune-dev vs delta-prune: 967 - 740 - 2079  [0.530] 3786 <br>
 ...      fut-prune-dev playing White: 531 - 321 - 1042  [0.555] 1894 <br>
