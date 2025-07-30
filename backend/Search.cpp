@@ -226,27 +226,34 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	*/
 	if constexpr (!Root and NodeType == NON_PV_NODE) {
 		if (!node->check and
+			depth <= 6 and
 			tt_move.isQuiet())
 		{
 			if (!node->static_eval.isValid())
 				node->static_eval = _eval.staticEval(pos);
 
 			if (node->static_eval - RfpMultDelta * depth >= beta)
-				return beta;//node->static_eval - (depth << 6);
+				return node->static_eval - (depth << 6);
 		}
 	}
 
+	NodeInfo* next_node = node + 1;
+
+	/* Null Move Pruning -
+	*  if we're doing so well even after not making a move, we must be winning here.
+	*  So we can do beta cutoff.
+	*/
 	if constexpr (NullMove) {
 		if (!node->check and depth >= NullReduction + 1) {
 			pos.makeNull(node->state);
-			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node + 1,
+			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																		-beta, -beta + 1, 
 																		depth - NullReduction - 1, 
 																		ply + 1);
 			pos.unmakeNull(node->state);
 
 			/* Unless Null Move Pruning is not handled properly in the endgame, 
-			*  verification search is just needed 
+			*  verification search is just needed to prevent Zugzwang
 			*/
 			if (score >= beta) {
 				const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
@@ -327,7 +334,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 					depth >= LmrDepth and 
 					!extend) /* TODO: LMR criteria */
 				{
-					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 
+					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
 																	 -alpha - 1, -alpha, 
 																	 depth - 2, 
 																	 ply + 1);
@@ -335,7 +342,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				else node->score = alpha + 1;
 				
 				if (node->score > alpha) {
-					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, node + 1, 
+					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
 																	 -alpha - 1, -alpha, 
 																	 depth - 1 + extend, 
 																	 ply + 1);
@@ -349,7 +356,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			} 
 
 			if (do_full_search) {
-				node->score = -negaMax<false, NodeType, true>(pos, limits, results, game, node + 1, 
+				node->score = -negaMax<false, NodeType, true>(pos, limits, results, game, next_node,
 															  -beta, -alpha, 
 															  depth - 1 + extend, 
 															  ply + 1);
@@ -406,7 +413,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		_tt.write(pos.getZobristKey(), depth, ply, node->bound, node->best_score, bestmove16b, results);
 	}
 
-	(node + 1)->move_picker.setKillerMove(Move32b::Null);
+	next_node->move_picker.setKillerMove(Move32b::Null);
 
 	if constexpr (Root) {
 		results.score_cp = node->best_score;
@@ -424,9 +431,9 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 					  Score alpha, Score beta, int depth, int ply) 
 {
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
-	static constexpr bool Root = false;
-	static constexpr bool SeeNonExactScore = false;
-	static constexpr Score MaterialDelta = 900;
+	static constexpr bool	   Root = false;
+	static constexpr bool	   SeeNonExactScore = false;
+	static constexpr Score	   MaterialDelta = 900;
 
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -476,8 +483,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
-	while (node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move)) {
-
+	while (node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move)) 
+	{
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
 		*/
@@ -524,9 +531,10 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	return alpha;
 }
 
-// TODO: smarter extension calculator
+// TODO: smarter extension calculation
 INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
-	return (node + 1)->check;
+	NodeInfo* next_node = node + 1;
+	return next_node->check;
 }
 
 bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply) {
