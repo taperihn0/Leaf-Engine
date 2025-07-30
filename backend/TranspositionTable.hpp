@@ -22,17 +22,19 @@ struct TTEntry {
 		return depth == 0 and bound == NONE; 
 	}
 
-	INLINE void writeHash(uint32_t key) {
-		*reinterpret_cast<uint32_t*>(this) = key;
+	INLINE void writeHash(uint64_t key) {
+		*reinterpret_cast<uint32_t*>(this) = static_cast<uint32_t>(key);
+		key34 = (key & 0x300000000) >> 32;
 	}
 
-	INLINE uint32_t getHash() const {
-		return *reinterpret_cast<const uint32_t*>(this);
+	INLINE uint64_t getHash() const {
+		return *reinterpret_cast<const uint64_t*>(this) & 0x3FFFFFFFF;
 	}
 
-	uint16_t keyhi;
-	uint16_t keylo;
-	uint8_t  depth;
+	uint16_t key16;
+	uint16_t key32;
+	uint8_t	 key34 : 2;
+	uint8_t  depth : 6;
 	Bound	 bound : 2;
 	uint8_t  generation : 6;
 	Move16b  move;
