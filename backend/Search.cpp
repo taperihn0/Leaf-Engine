@@ -147,14 +147,16 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	assert(alpha < beta);
 
 	static constexpr OrderType OrderPolicy = STAGED;
+	static constexpr int 	   RazorDepth = 2;
+	static constexpr Score 	   RazorBaseDelta = 150;
+	static constexpr Score 	   RazorMultDelta = 25;
+	//static constexpr int	   RfpDepth = 5;
+	static constexpr Score	   RfpMultDelta = 150;
 	static constexpr int	   NullReduction = 2;
 	static constexpr int	   FutilityDepth = 4;
 	static constexpr Score	   FutilityDelta = 32;
 	static constexpr int	   LmrDepth = 2;
 	static constexpr int	   LmrMoveCount = 2;
-	static constexpr int 	   RazorDepth = 2;
-	static constexpr Score 	   RazorBaseDelta = 150;
-	static constexpr Score 	   RazorMultDelta = 25;
 
 	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
 		return Score::Draw;
@@ -189,6 +191,50 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		node->check = pos.isInCheck(side2move);
 
 	node->move = Move32b::Null;
+	node->static_eval = Score::Undef;
+
+	/* Razoring -
+	*  if we're at lower depth and the eval is really low
+	*  it means there is high propability no move can increase the alpha bar.
+	*  To ensure our intuition, we dive into quiescence search to verify the position.
+	*  If we fail low, we've got a cutoff.
+	*/
+	if constexpr (!Root and NodeType == NON_PV_NODE) {
+		if (!node->check and
+			depth <= RazorDepth)
+		{
+			node->static_eval = _eval.staticEval(pos);
+
+			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+				const Score qscore = quiesce(pos, limits, results, node + 1,
+											 alpha - 1, alpha,
+											 depth,
+											 ply);
+
+				if (qscore < alpha)
+					return qscore;
+			}
+		}
+	}
+
+	const Move32b ttm32b = unpacked(pos, tt_entry.move);
+	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+
+	/* Reverse Futility Pruning (Static Null Move Pruning) -
+	*  basically, when we're doing very well, we can prune.
+	*  Idea similar to Standing Pat cutoff in Q-Search
+	*/
+	if constexpr (!Root and NodeType == NON_PV_NODE) {
+		if (!node->check and
+			tt_move.isQuiet())
+		{
+			if (!node->static_eval.isValid())
+				node->static_eval = _eval.staticEval(pos);
+
+			if (node->static_eval - RfpMultDelta * depth >= beta)
+				return beta;//node->static_eval - (depth << 6);
+		}
+	}
 
 	if constexpr (NullMove) {
 		if (!node->check and depth >= NullReduction + 1) {
@@ -214,35 +260,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	node->static_eval = Score::Undef;
-
-	/* Razoring - 
-	*  if we're at lower depth and the eval is really low
-	*  it means there is high propability no move can increase the alpha bar.
-	*  To ensure our intuition, we dive into quiescence search to verify the position.
-	*  If we fail low, we've got a cutoff.
-	*/
-	if constexpr (NodeType == NON_PV_NODE) {
-		if (!node->check and
-			depth <= RazorDepth)
-		{
-			node->static_eval = _eval.staticEval(pos);
-
-			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce(pos, limits, results, node + 1, 
-											 alpha - 1, alpha, 
-											 depth, 
-											 ply);
-
-				if (qscore < alpha)
-					return qscore;
-			}
-		}
-	}
-
-	const Move32b ttm32b = unpacked(pos, tt_entry.move);
-	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
-
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
 	
@@ -257,6 +274,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
 	{
+
 		/* Futility Pruning -
 		*  at shallow depths, skip moves that won't change alpha propably
 		*/
@@ -383,7 +401,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
 	}
 
-	if (node->best_score > -Score::MateBound and node->best_score < Score::MateBound) {
+	if (!node->best_score.isMateScore()) {
 		const Move16b bestmove16b = packed(node->best_move);
 		_tt.write(pos.getZobristKey(), depth, ply, node->bound, node->best_score, bestmove16b, results);
 	}
@@ -439,7 +457,9 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	*/
 	if (stand_pat + MaterialDelta < alpha)
 		return alpha;
-	/* Standing Pat Cutoff */
+	/* Standing Pat Cutoff -
+	*  when we're already above the beta, we can make a cutoff.
+	*/
 	else if (stand_pat > alpha) {
 		if (stand_pat >= beta) return beta;
 		node->score = alpha = stand_pat;
@@ -459,7 +479,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	while (node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move)) {
 
 		/* Static Exchange Evaluation Pruning -
-		*  ignore losing captures, that can be avoided.
+		*  ignore losing captures, as they aren't likely to rise alpha anyway.
 		*/
 		if (node->move.isCapture() and
 			!node->move.isEnPassant() and 
@@ -504,6 +524,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	return alpha;
 }
 
+// TODO: smarter extension calculator
 INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	return (node + 1)->check;
 }

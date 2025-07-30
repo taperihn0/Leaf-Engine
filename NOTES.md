@@ -1,3 +1,19 @@
+### commit _: late null move pruning
+Score of rfp-dev vs rfp: 1329 - 1259 - 3286  [0.506] 5874 <br>
+...      rfp-dev playing White: 711 - 580 - 1646  [0.522] 2937 <br>
+...      rfp-dev playing Black: 618 - 679 - 1640  [0.490] 2937 <br>
+...      White vs Black: 1390 - 1198 - 3286  [0.516] 5874 <br>
+Elo difference: 4.1 +/- 5.9, LOS: 91.6 %, DrawRatio: 55.9 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### commit _: reverse futility pruning
+Score of rfp-dev vs ttq: 1739 - 1461 - 4171  [0.519] 7371 <br>
+...      rfp-dev playing White: 929 - 663 - 2094  [0.536] 3686 <br>
+...      rfp-dev playing Black: 810 - 798 - 2077  [0.502] 3685 <br>
+...      White vs Black: 1727 - 1473 - 4171  [0.517] 7371 <br>
+Elo difference: 13.1 +/- 5.2, LOS: 100.0 %, DrawRatio: 56.6 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: razoring
 Score of razor-prune-dev vs fut-prune: 573 - 351 - 1141  [0.554] 2065 <br>
 ...      razor-prune-dev playing White: 298 - 162 - 573  [0.566] 1033 <br>

@@ -54,6 +54,10 @@ public:
 		return _raw * b._raw;
 	}
 
+	INLINE Score operator/(Score b) const {
+		return _raw / b._raw;
+	}
+
 	INLINE Score operator-() const {
 		return -_raw;
 	}
@@ -66,11 +70,15 @@ public:
 		return _raw != Undef and _raw != -Undef;
 	}
 
+	INLINE bool isMateScore() const {
+		return _raw > MateBound or _raw < -MateBound;
+	}
+
 	std::string toStr() const;
 	
 	static constexpr int_t Draw		  = 0,
-						   MateBound  = 30000,
 						   Mate		  = 32000,
+						   MateBound  = Mate - MaxDepth,
 						   Infinity   = std::numeric_limits<int_t>::max(),
 						   Undef      = 32500;
 private:

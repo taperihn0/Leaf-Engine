@@ -64,6 +64,8 @@ private:
 
 	inline static alignas(CACHELINE_SIZE) int16_t _quiets_history[2][6][64] = {};
 
+	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
+
 	enumStage _stage       = enumStage::NONE;
 	size_t _iterator       = 0;
 	size_t _quiets_ind	   = 0;
@@ -99,11 +101,8 @@ INLINE void MoveOrder::clearQuietsHistory() {
 	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
 }
 
-
 template <OrderType Type>
 INLINE void MoveOrder::clear() {
-	static constexpr enumStage _FirstStage = Type == QUIESCENT ? enumStage::HASH_MOVE : // ATTEMPT
-																 enumStage::HASH_MOVE;
 	_stage = _FirstStage;
 	_iterator = 0;
 	_quiets_ind = 0;
