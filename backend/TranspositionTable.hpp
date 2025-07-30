@@ -30,13 +30,13 @@ struct TTEntry {
 		return *reinterpret_cast<const uint32_t*>(this);
 	}
 
-	uint16_t keylo;
 	uint16_t keyhi;
-	Move16b  move;
-	Score	 score;
+	uint16_t keylo;
 	uint8_t  depth;
 	Bound	 bound : 2;
 	uint8_t  generation : 6;
+	Move16b  move;
+	Score	 score;
 };
 
 struct alignas(BucketTargetSize) TTBucket {

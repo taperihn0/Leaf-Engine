@@ -54,6 +54,7 @@ struct NodeInfo {
 	unsigned					ply;
 	uint8_t						moves_searched;
 	Score					    static_eval;
+	TTEntry::Bound				bound;
 };
 
 class TreeStack {

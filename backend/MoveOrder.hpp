@@ -44,6 +44,8 @@ public:
 	void clear();
 
 	void skipQuiets();
+
+	int16_t getQuietScore(Move32b move, enumColor side);
 private:
 	bool nextFromList(Move32b& move);
 
@@ -100,8 +102,8 @@ INLINE void MoveOrder::clearQuietsHistory() {
 
 template <OrderType Type>
 INLINE void MoveOrder::clear() {
-	static constexpr enumStage _FirstStage = Type == QUIESCENT ? enumStage::CAPTURES :
-		enumStage::HASH_MOVE;
+	static constexpr enumStage _FirstStage = Type == QUIESCENT ? enumStage::HASH_MOVE : // ATTEMPT
+																 enumStage::HASH_MOVE;
 	_stage = _FirstStage;
 	_iterator = 0;
 	_quiets_ind = 0;
@@ -115,4 +117,8 @@ INLINE void MoveOrder::clear() {
 
 INLINE void MoveOrder::skipQuiets() {
 	_iterator = _move_list.count();
+}
+
+INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
+	return _quiets_history[side][move.getPiece()][move.getTarget()];
 }

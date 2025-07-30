@@ -146,11 +146,28 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	assert(0 <= depth and depth < MaxDepth - 1);
 	assert(alpha < beta);
 
+	static constexpr OrderType OrderPolicy = STAGED;
+	static constexpr int	   NullReduction = 2;
+	static constexpr int	   FutilityDepth = 4;
+	static constexpr Score	   FutilityDelta = 32;
+	static constexpr int	   LmrDepth = 2;
+	static constexpr int	   LmrMoveCount = 2;
+	static constexpr int 	   RazorDepth = 2;
+	static constexpr Score 	   RazorBaseDelta = 150;
+	static constexpr Score 	   RazorMultDelta = 25;
+
 	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
 		return Score::Draw;
 	}
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
+	}
+	else if (!depth) {
+		return quiesce(pos, limits, results, node,
+					   alpha,
+					   beta,
+					   depth,
+					   ply);
 	}
 
 	TTEntry tt_entry;
@@ -163,14 +180,6 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (tt_hit and tt_entry.bound == TTEntry::EXACT) 
 			return tt_entry.score;
 	}
-
-	if (!depth) {
-		return quiesce(pos, limits, results, node,
-					   alpha, 
-					   beta, 
-					   depth,
-					   ply);
-	}
 	
 	results.nodes_cnt++;
 
@@ -178,12 +187,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	if constexpr (Root)
 		node->check = pos.isInCheck(side2move);
-	
+
 	node->move = Move32b::Null;
 
 	if constexpr (NullMove) {
-		static constexpr int NullReduction = 2;
-
 		if (!node->check and depth >= NullReduction + 1) {
 			pos.makeNull(node->state);
 			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node + 1,
@@ -196,26 +203,16 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			*  verification search is just needed 
 			*/
 			if (score >= beta) {
-				const Score verify = 
-					negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
-														   beta - 1, beta, 
-														   depth - NullReduction - 1, 
-														   ply);
+				const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+																			beta - 1, beta, 
+																			depth - NullReduction - 1, 
+																			ply);
 
 				if (verify >= beta)
 					return verify;
 			}
 		}
 	}
-
-	static constexpr OrderType OrderPolicy = STAGED;
-	static constexpr int	   FutilityDepth = 4;
-	static constexpr Score	   FutilityDelta = 32;
-	static constexpr int	   LmrDepth = 2;
-	static constexpr int	   LmrMoveCount = 2;
-	static constexpr int 	   RazorDepth = 2;
-	static constexpr Score 	   RazorBaseDelta = 150;
-	static constexpr Score 	   RazorMultDelta = 25;
 
 	node->static_eval = Score::Undef;
 
@@ -256,7 +253,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->best_score = -Score::Infinity;
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
-	TTEntry::Bound bound_type = TTEntry::LOWERBOUND;
+	node->bound = TTEntry::LOWERBOUND;
 
 	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
 	{
@@ -354,7 +351,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 			if (node->score > alpha) {
 				if (node->score >= beta) {
-					bound_type = TTEntry::UPPERBOUND;
+					node->bound = TTEntry::UPPERBOUND;
 
 					if (node->move.isQuiet() and 
 						!node->move.isQueenPromotion()) 
@@ -366,7 +363,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 					break;
 				}
 
-				bound_type = TTEntry::EXACT;
+				node->bound = TTEntry::EXACT;
 				alpha = node->score;
 			}
 		}
@@ -382,13 +379,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	
 	// detect checkmate or stealmate
 	if (!node->can_move) {
-		bound_type = TTEntry::EXACT;
+		node->bound = TTEntry::EXACT;
 		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
 	}
 
 	if (node->best_score > -Score::MateBound and node->best_score < Score::MateBound) {
 		const Move16b bestmove16b = packed(node->best_move);
-		_tt.write(pos.getZobristKey(), depth, ply, bound_type, node->best_score, bestmove16b, results);
+		_tt.write(pos.getZobristKey(), depth, ply, node->bound, node->best_score, bestmove16b, results);
 	}
 
 	(node + 1)->move_picker.setKillerMove(Move32b::Null);
@@ -408,6 +405,11 @@ template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, Searc
 Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
 					  Score alpha, Score beta, int depth, int ply) 
 {
+	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
+	static constexpr bool Root = false;
+	static constexpr bool SeeNonExactScore = false;
+	static constexpr Score MaterialDelta = 900;
+
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
@@ -415,10 +417,13 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		return _eval.staticEval(pos);
 	}
 
-	static constexpr bool Root = false;
-	static constexpr bool SeeNonExactScore = false;
-	static constexpr Score MaterialDelta = 900;
-	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
+	TTEntry tt_entry;
+	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
+
+	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, probe_depth);
+
+	if (tt_hit and depth <= 0) 
+		return tt_entry.score;
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
@@ -440,7 +445,13 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		node->score = alpha = stand_pat;
 	}
 
+	const Move32b ttm32b = unpacked(pos, tt_entry.move);
+	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+
 	node->move_picker.clear<QuiescentOrderPolicy>();
+
+	if (tt_move.isCapture() or tt_move.isQueenPromotion())
+		node->move_picker.setHashMove(tt_move);
 
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
@@ -450,7 +461,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, that can be avoided.
 		*/
-		if (!node->move.isEnPassant() and 
+		if (node->move.isCapture() and
+			!node->move.isEnPassant() and 
 			!node->move.isPromotion())
 		{
 			const Square org = node->move.getOrigin();
@@ -479,7 +491,9 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 			node->move.isLegalMoved() and 
 			node->score > alpha) 
 		{
-			if (node->score >= beta) return beta;
+			if (node->score >= beta)
+				return beta;
+			
 			alpha = node->score;
 		}
 		else if (!limits.isTimeLeft()) {
