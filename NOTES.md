@@ -1,3 +1,11 @@
+### commit _: reverse fut-pruning return value
+Score of rfp-dev vs rfp: 736 - 660 - 1829  [0.512] 3225 <br>
+...      rfp-dev playing White: 392 - 301 - 920  [0.528] 1613 <br>
+...      rfp-dev playing Black: 344 - 359 - 909  [0.495] 1612 <br>
+...      White vs Black: 751 - 645 - 1829  [0.516] 3225 <br>
+Elo difference: 8.2 +/- 7.9, LOS: 97.9 %, DrawRatio: 56.7 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### commit _: late null move pruning
 Score of rfp-dev vs rfp: 1329 - 1259 - 3286  [0.506] 5874 <br>
 ...      rfp-dev playing White: 711 - 580 - 1646  [0.522] 2937 <br>

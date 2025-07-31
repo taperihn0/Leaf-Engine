@@ -174,7 +174,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	TTEntry tt_entry;
 	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth);
-	
+
 	if constexpr (!Root and NodeType == NON_PV_NODE) {
 		if (tt_hit) return tt_entry.score;
 	}
@@ -219,6 +219,20 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	const Move32b ttm32b = unpacked(pos, tt_entry.move);
 	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+
+	/* TODO: IID
+	if (depth >= 6 and tt_move.isNull()) {
+		negaMax<false, NodeType, NullMove>(pos, limits, results, game, node, 
+										   alpha, beta, 
+										   depth - 2, 
+										   ply);
+
+		_tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth);
+
+		ttm32b = unpacked(pos, tt_entry.move);
+		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+	}
+	*/
 
 	/* Reverse Futility Pruning (Static Null Move Pruning) -
 	*  basically, when we're doing very well, we can prune.
