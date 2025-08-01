@@ -101,11 +101,13 @@ private:
 	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 				  Score alpha, Score beta, int depth, int ply);
 
+	template <Search::enumNode NodeType>
 	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
 				  Score alpha, Score beta, int depth, int ply);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 
+	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply);
 
 	TreeStack _tree_stack;

@@ -148,7 +148,8 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
 template <>
 bool Move32b::isPseudoLegal(const Position& pos) const {
-	if (*this == Move32b::Null) return false;
+	if (*this == Move32b::Null) 
+		return false;
 
 	const Square org = getOrigin(), 
 				 dst = getTarget();
@@ -211,7 +212,8 @@ void MoveData<T>::print() const {
 }
 
 Move32b unpacked(const Position& pos, Move16b move) {
-	if (move.isNull()) return Move32b::Null;
+	if (move.isNull()) 
+		return Move32b::Null;
 
 	Square				  origin = move.getOrigin(),
 						  target = move.getTarget();
@@ -261,6 +263,11 @@ Move32b unpacked(const Position& pos, Move16b move) {
 		return Move32b::Null;
 
 	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
+}
+
+bool isCapturePacked(const Position& pos, Move16b move) {
+	const Square dst = move.getTarget();
+	return pos.getOppositePieces().isOccupiedSq(dst);
 }
 
 template bool Move32b::isPseudoLegal_fromList<true>(const Position& pos) const;

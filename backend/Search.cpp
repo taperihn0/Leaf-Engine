@@ -147,10 +147,14 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	assert(alpha < beta);
 
 	static constexpr OrderType OrderPolicy = STAGED;
+	static constexpr bool	   IsPV = NodeType == PV_NODE;
+
 	static constexpr int 	   RazorDepth = 2;
 	static constexpr Score 	   RazorBaseDelta = 150;
 	static constexpr Score 	   RazorMultDelta = 25;
-	//static constexpr int	   RfpDepth = 5;
+	static constexpr int	   IidDepth = 3;
+	static constexpr int	   IidDivShift = 1;
+	static constexpr int	   RfpDepth = 6;
 	static constexpr Score	   RfpMultDelta = 150;
 	static constexpr int	   NullReduction = 2;
 	static constexpr int	   FutilityDepth = 4;
@@ -158,24 +162,26 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	static constexpr int	   LmrDepth = 2;
 	static constexpr int	   LmrMoveCount = 2;
 
-	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle(pos, game, node - 1, ply)) {
+	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle<IsPV>(pos, game, node - 1, ply)) {
 		return Score::Draw;
 	}
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
 	else if (!depth) {
-		return quiesce(pos, limits, results, node,
-					   alpha,
-					   beta,
-					   depth,
-					   ply);
+		return quiesce<NodeType>(pos, limits, results, node,
+								 alpha,
+								 beta,
+								 depth,
+								 ply);
 	}
 
-	TTEntry tt_entry;
-	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth);
+	const uint64_t hash = pos.getZobristKey();
 
-	if constexpr (!Root and NodeType == NON_PV_NODE) {
+	TTEntry tt_entry;
+	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
+
+	if constexpr (!Root and !IsPV) {
 		if (tt_hit) return tt_entry.score;
 	}
 	else if constexpr (!Root) {
@@ -199,17 +205,17 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	*  To ensure our intuition, we dive into quiescence search to verify the position.
 	*  If we fail low, we've got a cutoff.
 	*/
-	if constexpr (!Root and NodeType == NON_PV_NODE) {
+	if constexpr (!Root and !IsPV) {
 		if (!node->check and
 			depth <= RazorDepth)
 		{
 			node->static_eval = _eval.staticEval(pos);
 
 			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce(pos, limits, results, node + 1,
-											 alpha - 1, alpha,
-											 depth,
-											 ply);
+				const Score qscore = quiesce<NodeType>(pos, limits, results, node + 1,
+													   alpha - 1, alpha,
+													   depth,
+													   ply);
 
 				if (qscore < alpha)
 					return qscore;
@@ -217,30 +223,35 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 	}
 
-	const Move32b ttm32b = unpacked(pos, tt_entry.move);
-	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+	Move32b ttm32b = unpacked(pos, tt_entry.move);
+	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : 
+												  Move32b::Null;
 
-	/* TODO: IID
-	if (depth >= 6 and tt_move.isNull()) {
-		negaMax<false, NodeType, NullMove>(pos, limits, results, game, node, 
-										   alpha, beta, 
-										   depth - 2, 
-										   ply);
+	TTEntry iid_entry;
 
-		_tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, depth);
+	if constexpr (IsPV) {
+		if (depth >= IidDepth and tt_move.isNull()) {
+			_UNUSED const Score iid_score =
+				negaMax<false, NodeType, NullMove>(pos, limits, results, game, node,
+												   alpha, beta,
+												   depth >> IidDivShift,
+												   ply);
 
-		ttm32b = unpacked(pos, tt_entry.move);
-		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
+			_tt.probe(iid_entry, hash, alpha, beta, depth);
+
+			ttm32b = unpacked(pos, iid_entry.move);
+			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
+												  Move32b::Null;
+		}
 	}
-	*/
 
 	/* Reverse Futility Pruning (Static Null Move Pruning) -
 	*  basically, when we're doing very well, we can prune.
-	*  Idea similar to Standing Pat cutoff in Q-Search
+	*  Idea similar to Standing Pat cutoff in Q-Search.
 	*/
-	if constexpr (!Root and NodeType == NON_PV_NODE) {
+	if constexpr (!Root and !IsPV) {
 		if (!node->check and
-			depth <= 6 and
+			depth <= RfpDepth and
 			tt_move.isQuiet())
 		{
 			if (!node->static_eval.isValid())
@@ -267,7 +278,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			pos.unmakeNull(node->state);
 
 			/* Unless Null Move Pruning is not handled properly in the endgame, 
-			*  verification search is just needed to prevent Zugzwang
+			*  verification search is just needed to prevent Zugzwang.
 			*/
 			if (score >= beta) {
 				const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
@@ -297,7 +308,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	{
 
 		/* Futility Pruning -
-		*  at shallow depths, skip moves that won't change alpha propably
+		*  at shallow depths, skip moves that aren't like to rise alpha.
 		*/
 		if (!node->check and
 			depth <= FutilityDepth and
@@ -424,7 +435,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	if (!node->best_score.isMateScore()) {
 		const Move16b bestmove16b = packed(node->best_move);
-		_tt.write(pos.getZobristKey(), depth, ply, node->bound, node->best_score, bestmove16b, results);
+		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, results);
 	}
 
 	next_node->move_picker.setKillerMove(Move32b::Null);
@@ -441,12 +452,15 @@ template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, Search
 template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
 									  Score alpha, Score beta, int depth, int ply);
 
+template <Search::enumNode NodeType>
 Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
 					  Score alpha, Score beta, int depth, int ply) 
 {
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
+	static constexpr bool	   IsPV = NodeType == PV_NODE;
 	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
+
 	static constexpr Score	   MaterialDelta = 900;
 
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
@@ -456,13 +470,23 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		return _eval.staticEval(pos);
 	}
 
-	TTEntry tt_entry;
+	const uint64_t hash = pos.getZobristKey();
 	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
 
-	const bool tt_hit = _tt.probe(tt_entry, pos.getZobristKey(), alpha, beta, probe_depth);
+	TTEntry tt_entry;
+	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
 
-	if (tt_hit and depth <= 0) 
-		return tt_entry.score;
+	if constexpr (!IsPV) {
+		if (tt_hit and depth <= 0)
+			return tt_entry.score;
+	}
+	else {
+		if (tt_hit and 
+			depth <= 0 and 
+			tt_entry.bound == TTEntry::EXACT)
+			return tt_entry.score;
+	}
+	
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
@@ -478,21 +502,28 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	*/
 	if (stand_pat + MaterialDelta < alpha)
 		return alpha;
+	
 	/* Standing Pat Cutoff -
 	*  when we're already above the beta, we can make a cutoff.
 	*/
 	else if (stand_pat > alpha) {
-		if (stand_pat >= beta) return beta;
+		if (stand_pat >= beta) 
+			return beta;
 		node->score = alpha = stand_pat;
 	}
 
-	const Move32b ttm32b = unpacked(pos, tt_entry.move);
-	const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : Move32b::Null;
-
 	node->move_picker.clear<QuiescentOrderPolicy>();
+	
+	const Move16b ttm16b = tt_entry.move;
 
-	if (tt_move.isCapture() or tt_move.isQueenPromotion())
+	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and 
+		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion())) 
+	{
+		const Move32b ttm32b = unpacked(pos, tt_entry.move);
+		const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
+															Move32b::Null;
 		node->move_picker.setHashMove(tt_move);
+	}
 
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
@@ -518,16 +549,16 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		}
 
 		if (pos.make(node->move)) {
-			node->score = -quiesce(pos, limits, results, node + 1,
-								   -beta, -alpha,
-								   depth - 1,
-								   ply + 1);
+			node->score = -quiesce<NodeType>(pos, limits, results, node + 1,
+											 -beta, -alpha,
+											 depth - 1,
+											 ply + 1);
 
 			node->moves_searched++;
 		}
 
 		pos.unmake(node->move, node->state);
-		
+
 		if (limits.isTimeLeft() and 
 			node->move.isLegalMoved() and 
 			node->score > alpha) 
@@ -551,28 +582,39 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	return next_node->check;
 }
 
+template <bool IsPV>
 bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply) {
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 
-	static constexpr int search_rep_depth = 11;
-	static_assert(search_rep_depth & 1);
+	int rep_cnt = 0;
+
+	static constexpr int SearchRepDepth = 15;
+	static_assert(SearchRepDepth % 2);
 
 	for (ply = ply - 1; ply >= 0; ply--, node--) {
 		const Move32b move = node->move;
 
-		if (move.isIrreversible())
-			return false;
-		else if (((my_ply - ply) & 1) == 1)
+		if (((my_ply - ply) & 1) == 1)
 			continue;
-		else if (my_hashkey == node->state.hash_key /* previous hashkey */)
-			return true;
+		else if (move.isIrreversible())
+			return false;
+		else if (my_hashkey == node->state.hash_key /* previous hashkey */) 
+		{
+			if constexpr (IsPV) 
+				return true;
+
+			rep_cnt++;
+
+			if (rep_cnt >= 2)
+				return true;
+		}
 	}
 
 	const int my_cnt = static_cast<int>(game.currentHalfCount());
 
 	// iterate through only a subset of all game moves
-	for (int i = 1; i <= search_rep_depth; i++) {
+	for (int i = 1; i <= SearchRepDepth; i++) {
 		const int cnt = my_cnt - i;
 
 		if (cnt < 0) 
@@ -580,12 +622,20 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 
 		const Move32b move = game.getPrevMove(cnt);
 
-		if (move.isIrreversible())
-			return false;
-		else if ((i & 1) == 0)
+		if ((i & 1) == 0)
 			continue;
+		else if (move.isIrreversible())
+			return false;
 		else if (my_hashkey == game.getPrevKey(cnt))
-			return true;
+		{
+			if constexpr (IsPV)
+				return true;
+
+			rep_cnt++;
+
+			if (rep_cnt >= 2)
+				return true;
+		}
 	}
 
 	return false;
