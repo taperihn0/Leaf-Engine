@@ -71,7 +71,7 @@ public:
 	}
 
 	INLINE bool isMateScore() const {
-		return _raw > MateBound or _raw < -MateBound;
+		return isValid() and (_raw > MateBound or _raw < -MateBound);
 	}
 
 	std::string toStr() const;

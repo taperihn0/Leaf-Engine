@@ -15,8 +15,7 @@ INLINE void SearchResults::registerBestMove(Move32b move) {
 }
 
 INLINE void SearchResults::printBestMove() {
-	ASSERT(!best_move.isNull(), "Null bestmove error");
-
+	ASSERT(!best_move.isNull(), "Null bestmove");
 	std::cout << "bestmove ";
 	best_move.print();
 	std::cout << '\n';
@@ -25,20 +24,22 @@ INLINE void SearchResults::printBestMove() {
 INLINE void SearchResults::print(const Search* search, const Position& pos, TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
-	std::cout << "info depth " << depth
-		<< " seldepth " << seldepth
-		<< " score " << score_cp.toStr()
-		<< " nodes " << nodes_cnt
-		<< " time " << duration
-		<< " nps " << nps
-		<< " hashfull " << tt.getHashfull()
-		<< " pv ";
+	std::cout << 
+		   "info depth " << depth			 << ' '
+		<< "seldepth "   << seldepth		 << ' '
+		<< "score "      << score_cp.toStr() << ' '
+		<< "nodes "      << nodes_cnt		 << ' '
+		<< "time "       << duration		 << ' '
+		<< "nps "        << nps				 << ' '
+		<< "hashfull "   << tt.getHashfull() << ' '
+		<< "pv ";
 
 	Position cpy = pos;
 
+	// print PV line
 	while (depth--) {
 		TTEntry tt_entry;
-		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::Infinity, +Score::Infinity, depth);
+		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::MateBound, +Score::MateBound, depth);
 
 		Move32b pv_move = unpacked(cpy, tt_entry.move);
 
@@ -51,12 +52,52 @@ INLINE void SearchResults::print(const Search* search, const Position& pos, Tran
 	}
 
 	std::cout << '\n';
+
+#if defined(_COLLECT_SEARCH_STATS)
+	printSearchStats();
+#endif
 }
 
 INLINE void SearchResults::printShort() {
 	std::cout << "Total nodes: " << nodes_cnt << '\n';
 	printBestMove();
+#if defined(_COLLECT_SEARCH_STATS)
+	printSearchStats();
+#endif
 }
+
+#if defined(_COLLECT_SEARCH_STATS)
+void SearchResults::printSearchStats() {
+	std::cout << "--SEARCH STATISTICS--";
+
+	const float qnodes_rate      = static_cast<float>(qnodes_cnt) / nodes_cnt * 100;
+	const float pvnodes_rate     = static_cast<float>(pvnodes_cnt) / nodes_cnt * 100;
+	const float npvnodes_rate    = static_cast<float>(npvnodes_cnt) / nodes_cnt * 100;
+
+	const float qprobes_rate     = static_cast<float>(qtt_probe_cnt) / tt_probe_cnt * 100;
+	const float cuts_rate        = static_cast<float>(tt_cut_cnt) / tt_probe_cnt * 100;
+	const float qcuts_rate       = static_cast<float>(qtt_cut_cnt) / qtt_probe_cnt * 100;
+
+	const float ttmove_cut_rate  = static_cast<float>(ttmove_cut_cnt) / tt_probe_cnt * 100;
+	const float qttmove_rate	 = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
+	const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qttmove_probe_cnt * 100;
+
+	std::cout <<
+		   "\nQUIESCENT NODES:         " << qnodes_cnt        << ", " << qnodes_rate << '%'
+		<< "\nPV NODES:                " << pvnodes_cnt       << ", " << pvnodes_rate << '%'
+		<< "\nNON PV NODES:            " << npvnodes_cnt      << ", " << npvnodes_rate << '%'
+		<< "\nTT PROBES:               " << tt_probe_cnt
+		<< "\nTT PROBES IN QSEARCH:    " << qtt_probe_cnt     << ", " << qprobes_rate << '%'
+		<< "\nTT CUTS:                 " << tt_cut_cnt        << ", " << cuts_rate << '%'
+		<< "\nTT CUTS IN QSEARCH:      " << qtt_cut_cnt       << ", " << qcuts_rate << '%'
+		<< "\nTTMOVE CUT:              " << ttmove_cut_cnt    << ", " << ttmove_cut_rate << '%'
+		<< "\nTTMOVE PROBE IN QSEARCH: " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
+		<< "\nTTMOVE CUT IN QSEARCH:   " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
+		<< '\n';
+
+	std::cout << "---------------------\n";
+}
+#endif
 
 void Search::registerNewGame() {
 	_tt.clear();
@@ -178,18 +219,27 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 	const uint64_t hash = pos.getZobristKey();
 
+#if defined(_COLLECT_SEARCH_STATS)
+	results.tt_probe_cnt++;
+#endif
+
 	TTEntry tt_entry;
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
+	const bool exact_hit = (!IsPV and tt_hit) or
+						   ( IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
-	if constexpr (!Root and !IsPV) {
-		if (tt_hit) return tt_entry.score;
-	}
-	else if constexpr (!Root) {
-		if (tt_hit and tt_entry.bound == TTEntry::EXACT) 
-			return tt_entry.score;
+	if (!Root and exact_hit) {
+#if defined(_COLLECT_SEARCH_STATS)
+		results.tt_cut_cnt++;
+#endif
+		return tt_entry.score;
 	}
 	
 	results.nodes_cnt++;
+#if defined(_COLLECT_SEARCH_STATS)
+	results.pvnodes_cnt += IsPV;
+	results.npvnodes_cnt += !IsPV;
+#endif
 
 	const enumColor side2move = pos.getTurn();
 
@@ -228,7 +278,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 												  Move32b::Null;
 
 	TTEntry iid_entry;
-
+	
+	/* Internal Iterative Deepening -
+	*  done only in PV Nodes. When no hash move is found for said node, 
+	*  we allow to do some shallow research in order to obtain one.
+	*  That strategy can only pay off when the move ordering is actually 
+	*  very important.
+	*/
 	if constexpr (IsPV) {
 		if (depth >= IidDepth and tt_move.isNull()) {
 			_UNUSED const Score iid_score =
@@ -339,7 +395,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 			const enumColor next_side = !side2move;
 
-			(node + 1)->check = pos.isInCheck(next_side);
+			next_node->check = pos.isInCheck(next_side);
 			const int extend = calculateExtension(pos, node);
 
 			/* Principle Variation Search -
@@ -371,8 +427,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 																	 -alpha - 1, -alpha, 
 																	 depth - 1 + extend, 
 																	 ply + 1);
-
-					if constexpr (NodeType == NON_PV_NODE)
+					/* full search already done */
+					if constexpr (!IsPV)
 						do_full_search = false;
 				}
 
@@ -409,6 +465,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 						node->move_picker.setKillerMove(node->move);
 						node->move_picker.updateQuietsHistory(node->best_move, side2move, depth);
 					}
+
+#if defined(_COLLECT_SEARCH_STATS)
+					if (node->move == tt_move)
+						results.ttmove_cut_cnt++;
+#endif
 
 					break;
 				}
@@ -473,23 +534,29 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	const uint64_t hash = pos.getZobristKey();
 	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
 
+#if defined(_COLLECT_SEARCH_STATS)
+	results.tt_probe_cnt++;
+	results.qtt_probe_cnt++;
+#endif
+
 	TTEntry tt_entry;
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
+	const bool exact_hit = (!IsPV and tt_hit) or 
+						   ( IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
-	if constexpr (!IsPV) {
-		if (tt_hit and depth <= 0)
-			return tt_entry.score;
+	if (exact_hit and depth <= 0) {
+#if defined(_COLLECT_SEARCH_STATS)
+		results.tt_cut_cnt++;
+		results.qtt_cut_cnt++;
+#endif
+		return tt_entry.score;
 	}
-	else {
-		if (tt_hit and 
-			depth <= 0 and 
-			tt_entry.bound == TTEntry::EXACT)
-			return tt_entry.score;
-	}
-	
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
+#if defined(_COLLECT_SEARCH_STATS)
+	results.qnodes_cnt++;
+#endif
 
 	assert(alpha < beta);
 
@@ -509,20 +576,26 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	else if (stand_pat > alpha) {
 		if (stand_pat >= beta) 
 			return beta;
+
 		node->score = alpha = stand_pat;
 	}
 
 	node->move_picker.clear<QuiescentOrderPolicy>();
 	
 	const Move16b ttm16b = tt_entry.move;
+	Move32b tt_move = Move32b::Null;
 
 	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and 
 		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion())) 
 	{
 		const Move32b ttm32b = unpacked(pos, tt_entry.move);
-		const Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
-															Move32b::Null;
+		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
+											  Move32b::Null;
 		node->move_picker.setHashMove(tt_move);
+
+#if defined(_COLLECT_SEARCH_STATS)
+		results.qttmove_probe_cnt++;
+#endif
 	}
 
 	node->moves_searched = 0;
@@ -539,7 +612,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		{
 			const Square org = node->move.getOrigin();
 			const Square dst = node->move.getTarget();
-			const Piece::enumType vic = pos.pieceOn(node->move.getTarget(), pos.getOppositeTurn());
+			const Piece::enumType vic = node->move.getCaptured(pos);
 			const Piece::enumType piece = node->move.getPiece();
 
 			const int capt_see_score = pos.StaticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
@@ -563,8 +636,13 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 			node->move.isLegalMoved() and 
 			node->score > alpha) 
 		{
-			if (node->score >= beta)
+			if (node->score >= beta) {
+#if defined(_COLLECT_SEARCH_STATS)
+				if (node->move == tt_move)
+					results.qttmove_cut_cnt++;
+#endif
 				return beta;
+			}
 			
 			alpha = node->score;
 		}
@@ -589,7 +667,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 
 	int rep_cnt = 0;
 
-	static constexpr int SearchRepDepth = 15;
+	static constexpr int SearchRepDepth = 37;
 	static_assert(SearchRepDepth % 2);
 
 	for (ply = ply - 1; ply >= 0; ply--, node--) {
@@ -599,9 +677,9 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 			continue;
 		else if (move.isIrreversible())
 			return false;
-		else if (my_hashkey == node->state.hash_key /* previous hashkey */) 
+		else if (my_hashkey == node->state.hash_key) 
 		{
-			if constexpr (IsPV) 
+			if constexpr (!IsPV) 
 				return true;
 
 			rep_cnt++;
@@ -628,7 +706,7 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 			return false;
 		else if (my_hashkey == game.getPrevKey(cnt))
 		{
-			if constexpr (IsPV)
+			if constexpr (!IsPV)
 				return true;
 
 			rep_cnt++;

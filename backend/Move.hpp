@@ -119,6 +119,8 @@ public:
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 19);
 	}
 
+	Piece::enumType getCaptured(const Position& pos) const;
+
 	// use this field only after making a move -
 	// captured piece is saved only in making a move
 	INLINE Piece::enumType getCapturedMoved() const {
@@ -279,5 +281,3 @@ INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
 Move32b unpacked(const Position& pos, Move16b move);
 
 bool isCapturePacked(const Position& pos, Move16b move);
-
-

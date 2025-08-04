@@ -12,6 +12,8 @@
 
 #include <numeric>
 
+#define _COLLECT_SEARCH_STATS
+
 struct SearchLimits {
 	bool isTimeLeft();
 
@@ -33,13 +35,32 @@ struct SearchResults {
 	void print(const Search* search, const Position& pos, TranspositionTable& tt);
 	void printShort();
 
+#if defined (_COLLECT_SEARCH_STATS)
+	void printSearchStats();
+#endif
+
 	unsigned  depth      = 0,
 			  seldepth   = 0;
 	Score	  score_cp   = 0;
-	uint64_t  nodes_cnt  = 0;
+	ull		  nodes_cnt  = 0;
 	size_t	  tt_entries = 0;
 	Move32b   best_move  = Move32b::Null;
-	time_ms_t duration;
+	time_ms_t duration   = 0;
+
+#if defined (_COLLECT_SEARCH_STATS)
+	ull		  qnodes_cnt		= 0,
+			  pvnodes_cnt		= 0,
+			  npvnodes_cnt		= 0;
+
+	ull		  tt_probe_cnt		= 0,
+			  qtt_probe_cnt		= 0,
+			  tt_cut_cnt		= 0,
+			  qtt_cut_cnt		= 0,
+			  qttmove_probe_cnt = 0;
+
+	ull		  ttmove_cut_cnt	= 0,
+			  qttmove_cut_cnt	= 0;
+#endif
 };
 
 struct NodeInfo {

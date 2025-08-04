@@ -1,11 +1,13 @@
 #include "Move.hpp"
 #include "MoveGen.hpp"
+#include "Position.hpp"
 
 /* TODO: move validity restricted checking */
 
 Move32b createMove(const Position& pos, Square origin, Square target, Piece::enumType piece, 
-	bool capture, bool ep_capture, bool promotion, 
-	bool short_castle, bool long_castle, Piece::enumType promo_piece) {
+				   bool capture, bool ep_capture, bool promotion, 
+				   bool short_castle, bool long_castle, Piece::enumType promo_piece) 
+{
 
 	ASSERT(piece != Piece::NONE, "Invalid move");
 	ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
@@ -146,6 +148,12 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 	return fromStr<Move32b::Notation::PURE>(pos, puremove);
 }
 
+template <typename T>
+Piece::enumType MoveData<T>::getCaptured(const Position& pos) const {
+	const Square dst = getTarget();
+	return pos.pieceOn(dst, pos.getOppositeTurn());
+}
+
 template <>
 bool Move32b::isPseudoLegal(const Position& pos) const {
 	if (*this == Move32b::Null) 
@@ -270,8 +278,11 @@ bool isCapturePacked(const Position& pos, Move16b move) {
 	return pos.getOppositePieces().isOccupiedSq(dst);
 }
 
-template bool Move32b::isPseudoLegal_fromList<true>(const Position& pos) const;
-template bool Move32b::isPseudoLegal_fromList<false>(const Position& pos) const;
+template Piece::enumType Move16b::getCaptured(const Position&) const;
+template Piece::enumType Move32b::getCaptured(const Position&) const;
+
+template bool Move32b::isPseudoLegal_fromList<true>(const Position&) const;
+template bool Move32b::isPseudoLegal_fromList<false>(const Position&) const;
 
 template void Move16b::print() const;
 template void Move32b::print() const;

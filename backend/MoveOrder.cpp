@@ -152,7 +152,7 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 		}
 		else if (move->isCapture()) {
 			const Piece::uint_t piece_ind = value(move->getPiece());
-			const Piece::uint_t vic = value(pos.pieceOn(move->getTarget(), oppside));
+			const Piece::uint_t vic = move->getCaptured(pos);
 			*score = CaptureScore[vic] - piece_ind;
 		}
 

@@ -1,3 +1,11 @@
+### commit _: IID
+Score of leaf-iid-dev vs leaf-rfp: 686 - 643 - 1679  [0.507] 3008
+...      leaf-iid-dev playing White: 384 - 276 - 844  [0.536] 1504
+...      leaf-iid-dev playing Black: 302 - 367 - 835  [0.478] 1504
+...      White vs Black: 751 - 578 - 1679  [0.529] 3008
+Elo difference: 5.0 +/- 8.2, LOS: 88.1 %, DrawRatio: 55.8 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
 ### commit _: reverse fut-pruning return value
 Score of rfp-dev vs rfp: 736 - 660 - 1829  [0.512] 3225 <br>
 ...      rfp-dev playing White: 392 - 301 - 920  [0.528] 1613 <br>
