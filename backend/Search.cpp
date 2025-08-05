@@ -77,9 +77,9 @@ void SearchResults::printSearchStats() {
 	const float cuts_rate        = static_cast<float>(tt_cut_cnt) / tt_probe_cnt * 100;
 	const float qcuts_rate       = static_cast<float>(qtt_cut_cnt) / qtt_probe_cnt * 100;
 
-	const float ttmove_cut_rate  = static_cast<float>(ttmove_cut_cnt) / tt_probe_cnt * 100;
-	const float qttmove_rate	 = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
-	const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qttmove_probe_cnt * 100;
+	const float ttmove_cut_rate  = static_cast<float>(ttmove_cut_cnt) / beta_cut_cnt * 100;
+	const float qttmove_rate     = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
+	const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qbeta_cut_cnt * 100;
 
 	std::cout << "\n--SEARCH STATISTICS--";
 
@@ -600,8 +600,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	const Move16b ttm16b = tt_entry.move;
 	Move32b tt_move = Move32b::Null;
 
-	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and 
-		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion())) 
+	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and
+		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion()))
 	{
 		const Move32b ttm32b = unpacked(pos, tt_entry.move);
 		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
@@ -653,10 +653,13 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		{
 			if (node->score >= beta) {
 #if defined(_COLLECT_SEARCH_STATS)
-				if (node->move == tt_move)
+				if (node->move == tt_move) {
+					results.ttmove_cut_cnt++;
 					results.qttmove_cut_cnt++;
+				}
 
 				results.beta_cut_cnt++;
+				results.qbeta_cut_cnt++;
 
 				results.move_cut_cnt[node->move_index]++;
 #endif

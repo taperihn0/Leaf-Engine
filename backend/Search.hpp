@@ -61,7 +61,8 @@ struct SearchResults {
 	ull		  ttmove_cut_cnt	= 0,
 			  qttmove_cut_cnt	= 0;
 
-	ull		  beta_cut_cnt		= 0;
+	ull		  beta_cut_cnt		= 0,
+			  qbeta_cut_cnt		= 0;
 
 	ull		  move_cut_cnt[MaxNodeMoves] = {};
 #endif
