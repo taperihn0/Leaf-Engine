@@ -119,5 +119,7 @@ INLINE void MoveOrder::skipQuiets() {
 }
 
 INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
-	return _quiets_history[side][move.getPiece()][move.getTarget()];
+	const Piece::uint_t piece_ind = value(move.getPiece());
+	const Square dst = move.getTarget();
+	return _quiets_history[side][piece_ind][dst];
 }

@@ -5,6 +5,7 @@
 #include "TranspositionTable.hpp"
 
 #include <sstream>
+#include <iomanip>
 
 INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
@@ -68,8 +69,6 @@ INLINE void SearchResults::printShort() {
 
 #if defined(_COLLECT_SEARCH_STATS)
 void SearchResults::printSearchStats() {
-	std::cout << "--SEARCH STATISTICS--";
-
 	const float qnodes_rate      = static_cast<float>(qnodes_cnt) / nodes_cnt * 100;
 	const float pvnodes_rate     = static_cast<float>(pvnodes_cnt) / nodes_cnt * 100;
 	const float npvnodes_rate    = static_cast<float>(npvnodes_cnt) / nodes_cnt * 100;
@@ -82,8 +81,10 @@ void SearchResults::printSearchStats() {
 	const float qttmove_rate	 = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
 	const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qttmove_probe_cnt * 100;
 
-	std::cout <<
-		   "\nQUIESCENT NODES:         " << qnodes_cnt        << ", " << qnodes_rate << '%'
+	std::cout << "\n--SEARCH STATISTICS--";
+
+	std::cout
+		<< "\nQUIESCENT NODES:         " << qnodes_cnt        << ", " << qnodes_rate << '%'
 		<< "\nPV NODES:                " << pvnodes_cnt       << ", " << pvnodes_rate << '%'
 		<< "\nNON PV NODES:            " << npvnodes_cnt      << ", " << npvnodes_rate << '%'
 		<< "\nTT PROBES:               " << tt_probe_cnt
@@ -95,7 +96,18 @@ void SearchResults::printSearchStats() {
 		<< "\nTTMOVE CUT IN QSEARCH:   " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
 		<< '\n';
 
-	std::cout << "---------------------\n";
+	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
+
+	// print beta cutoff rate for each move index
+	for (size_t i = 0; i < MaxNodeMoves; i++) {
+		const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
+
+		if (ind_cut_rate > 0.01) {
+			std::cout << "\nMOVEIND " << std::setw(3) << i << ": " << ind_cut_rate << '%';
+		}
+	}
+
+	std::cout << "\n---------------------\n";
 }
 #endif
 
@@ -360,7 +372,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->state = pos.getIrreversibleState();
 	node->bound = TTEntry::LOWERBOUND;
 
-	while (node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move)) 
+	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++)
 	{
 
 		/* Futility Pruning -
@@ -469,6 +481,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 #if defined(_COLLECT_SEARCH_STATS)
 					if (node->move == tt_move)
 						results.ttmove_cut_cnt++;
+
+					results.beta_cut_cnt++;
+					results.move_cut_cnt[node->move_index]++;
 #endif
 
 					break;
@@ -601,7 +616,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
-	while (node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move)) 
+	for (node->move_index = 0; node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++)
 	{
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
@@ -640,6 +655,10 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 #if defined(_COLLECT_SEARCH_STATS)
 				if (node->move == tt_move)
 					results.qttmove_cut_cnt++;
+
+				results.beta_cut_cnt++;
+
+				results.move_cut_cnt[node->move_index]++;
 #endif
 				return beta;
 			}

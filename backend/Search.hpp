@@ -39,13 +39,13 @@ struct SearchResults {
 	void printSearchStats();
 #endif
 
-	unsigned  depth      = 0,
-			  seldepth   = 0;
-	Score	  score_cp   = 0;
-	ull		  nodes_cnt  = 0;
-	size_t	  tt_entries = 0;
-	Move32b   best_move  = Move32b::Null;
-	time_ms_t duration   = 0;
+	unsigned  depth				= 0,
+			  seldepth			= 0;
+	Score	  score_cp			= 0;
+	ull		  nodes_cnt			= 0;
+	size_t	  tt_entries		= 0;
+	Move32b   best_move			= Move32b::Null;
+	time_ms_t duration			= 0;
 
 #if defined (_COLLECT_SEARCH_STATS)
 	ull		  qnodes_cnt		= 0,
@@ -60,6 +60,10 @@ struct SearchResults {
 
 	ull		  ttmove_cut_cnt	= 0,
 			  qttmove_cut_cnt	= 0;
+
+	ull		  beta_cut_cnt		= 0;
+
+	ull		  move_cut_cnt[MaxNodeMoves] = {};
 #endif
 };
 
@@ -74,6 +78,7 @@ struct NodeInfo {
 	bool						check;
 	unsigned					ply;
 	uint8_t						moves_searched;
+	uint8_t						move_index;
 	Score					    static_eval;
 	TTEntry::Bound				bound;
 };

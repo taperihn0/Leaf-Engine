@@ -43,7 +43,7 @@ void UniversalChessInterface::loop(int, const char*[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
 
-	std::cout << "Polish Chess Engine, " << ENGINE_NAME << " by " << AUTHOR << '\n';
+	std::cout << "Polish Chess Engine, " << EngineName << " by " << Author << '\n';
 
 	do {
 		if (!std::getline(std::cin, _command))
@@ -69,9 +69,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 }
 
 void UniversalChessInterface::parseUCI() {
-	std::cout << "id name " << ENGINE_NAME << '\n'
-		<< "id author " << AUTHOR << '\n'
-		<< "uciok" << '\n';
+	std::cout << "id name " << EngineName << '\n'
+			  << "id author " << Author << '\n'
+			  << "uciok" << '\n';
 }
 
 inline void UniversalChessInterface::parseNewGame() {

@@ -33,12 +33,12 @@
 
 #if defined(_MSC_VER)
 // using __forceinline by default
-#define INLINE __forceinline 
-#define _FORCEINLINE __forceinline
+#define INLINE				__forceinline 
+#define _FORCEINLINE		__forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]] 
 #else
-#define INLINE inline
-#define _FORCEINLINE inline
+#define INLINE				inline
+#define _FORCEINLINE		inline
 #define _LAMBDA_FORCEINLINE  
 #endif
 
@@ -51,8 +51,8 @@
 #define _UNLIKELY
 #endif
 
-#define ENGINE_NAME "Leaf Lite"
-#define AUTHOR		"Szymon Belz"
+static constexpr std::string_view EngineName = "Leaf Lite";
+static constexpr std::string_view Author     = "Szymon Belz";
 
 // move format, so far only pure notation supported
 #define PURE_NOTATION_DISPLAY 
@@ -72,7 +72,12 @@ using byte = unsigned char;
 using ll   = long long;
 using ull  = unsigned long long;
 
-#define _IS_SAME_TYPE(t1, t2) std::is_same_v<t1, t2>
+template <typename T1, typename T2>
+inline constexpr bool _is_same_type() {
+	return std::is_same_v<T1, T2>;
+};
+
+#define _IS_SAME_TYPE(t1, t2) _is_same_type<t1, t2>()
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
 	return static_cast<uint8_t>(a);
