@@ -12,8 +12,6 @@
 
 #include <numeric>
 
-#define _COLLECT_SEARCH_STATS
-
 struct SearchLimits {
 	bool isTimeLeft();
 

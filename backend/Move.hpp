@@ -281,3 +281,9 @@ INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
 Move32b unpacked(const Position& pos, Move16b move);
 
 bool isCapturePacked(const Position& pos, Move16b move);
+
+// GCC somehow needs that
+#if defined(__GNUG__)
+template <>
+bool Move32b::isPseudoLegal(const Position& pos) const;
+#endif

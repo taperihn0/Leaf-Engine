@@ -1,7 +1,9 @@
 #include "UCI.hpp"
 #include "../backend/Move.hpp"
 #include "../backend/Search.hpp"
+#if defined (_INCLUDE_TESTS)
 #include "../unit/Units.hpp"
+#endif
 
 #include <sstream>
 
@@ -60,7 +62,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "print")		_pos.print();
 		else if (token == "go")			parseGo(strm);
 		else if (token == "isready")	parseIsReady();
+#if defined (_INCLUDE_TESTS)
 		else if (token == "test")		parseTest();
+#endif
 #if defined(DEBUG)
 		else if (token == "see")		parseSEE(strm);
 #endif
@@ -142,10 +146,11 @@ inline void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
 
-
+#if defined (_INCLUDE_TESTS)
 void UniversalChessInterface::parseTest() {
 	Units::runTests(_search);
 }
+#endif
 
 #if defined (DEBUG)
 void UniversalChessInterface::parseSEE(std::istringstream& strm) {

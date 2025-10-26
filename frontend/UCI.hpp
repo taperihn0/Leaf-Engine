@@ -16,7 +16,9 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
+#if defined (_INCLUDE_TESTS)
 	void parseTest();
+#endif
 #if defined (DEBUG)
 	void parseSEE(std::istringstream& strm);
 #endif

@@ -54,7 +54,7 @@ void Position::setByFEN(const std::string fen) {
 	_occupied[BLACK] = getBySideOnFly(BLACK);
 
 	_king_sq[WHITE] = getKingBySide(WHITE).bitScanForward();
-	_king_sq[BLACK] = getKingBySide(BLACK).bitScanReverse();
+	_king_sq[BLACK] = getKingBySide(BLACK).bitScanForward();
 }
 
 void Position::setStartingPos() {

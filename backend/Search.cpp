@@ -52,7 +52,8 @@ INLINE void SearchResults::print(const Search* search, const Position& pos, Tran
 		cpy.make(pv_move);
 	}
 
-	std::cout << '\n';
+	// flush every line
+	std::cout << std::endl;
 
 #if defined(_COLLECT_SEARCH_STATS)
 	printSearchStats();
@@ -215,7 +216,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	static constexpr int	   LmrDepth = 2;
 	static constexpr int	   LmrMoveCount = 2;
 
-	if (!Root and pos.halfmoveClock() >= 100 or isRepetitionCycle<IsPV>(pos, game, node - 1, ply)) {
+	if (!Root and (pos.halfmoveClock() >= 100 or isRepetitionCycle<IsPV>(pos, game, node - 1, ply))) {
 		return Score::Draw;
 	}
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
@@ -542,7 +543,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
-	else if (ply >= MaxSelDepth) _UNLIKELY {
+	else if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
 		return _eval.staticEval(pos);
 	}
 

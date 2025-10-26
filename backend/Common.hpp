@@ -1,6 +1,9 @@
 #pragma once
 
-#include <iostream>
+#define _USE_SIMD
+#include "Simd.hpp"
+
+#include <iostream>	
 #include <string>
 #include <cassert>
 #include <type_traits>
@@ -11,35 +14,21 @@
 #include <limits>
 #include <cstdlib>
 
-#if defined(_MSC_VER)
-#include <intrin.h>
-#endif
-
-#include <immintrin.h>
-
 #if __cplusplus >= 202002L
 #define _CPP_STANDARD_20
 #elif __cplusplus >= 201702L
 #define _CPP_STANDARD_17
 #endif
 
-#define _USE_SIMD
-
-#if defined(_USE_SIMD)
-//#define _AVX512
-#define _AVX2
-//#define _SSE
-#endif
-
 #if defined(_MSC_VER)
-// using __forceinline by default
+// using __forceinline by default - that came out to be more efficient
 #define INLINE				__forceinline 
 #define _FORCEINLINE		__forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]] 
 #else
 #define INLINE				inline
-#define _FORCEINLINE		inline
-#define _LAMBDA_FORCEINLINE  
+#define _FORCEINLINE		__attribute__((always_inline))
+#define _LAMBDA_FORCEINLINE __attribute__((always_inline))
 #endif
 
 #define _NORETURN [[noreturn]]
@@ -64,7 +53,7 @@ static constexpr std::string_view Author     = "Szymon Belz";
 #pragma warning(disable: 6262)
 // error C4146: unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable: 4146)
-// error C28020: The expression '0<=_Param_(1)&&_Param_(1)<=256-1' is not true at this call.Leaf
+// error C28020: The expression '0<=_Param_(1)&&_Param_(1)<=256-1' is not true at this call.
 #pragma warning(disable: 28020)
 #endif
 
@@ -77,6 +66,7 @@ inline constexpr bool _is_same_type() {
 	return std::is_same_v<T1, T2>;
 };
 
+// keep this macro for compatibility with some blocks of code
 #define _IS_SAME_TYPE(t1, t2) _is_same_type<t1, t2>()
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {

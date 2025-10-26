@@ -62,7 +62,7 @@ private:
 		PICK_QUIETS,
 	};
 
-	inline static alignas(CACHELINE_SIZE) int16_t _quiets_history[2][6][64] = {};
+	alignas(CACHELINE_SIZE) inline static int16_t _quiets_history[2][6][64] = {};
 
 	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
 

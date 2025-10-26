@@ -74,7 +74,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 		target = pos.getTurn() == WHITE ? Square::c1 : Square::c8;
 	}
 	else if (promotion) {
-		ASSERT(last - 3 >= 0, "Invalid move format");
+		ASSERT(last >= 3, "Invalid move format");
 		target = Square::fromChar(str[last - 3], str[last - 2]);
 
 		if (!capture)
@@ -118,7 +118,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
 			if (bb.popCount() > 1) {
 				char id = str[1];
-				int idn = 0;
+				size_t idn = 0;
 
 				if ((idn = static_cast<int>(std::string_view("abcdefgh").find(id))) != std::string::npos) {
 					BitBoard file = BitBoard::file(idn);
