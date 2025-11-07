@@ -17,8 +17,8 @@ endif ()
 message("CMake build type: ${CMAKE_BUILD_TYPE}")
 
 file(GLOB SOURCES CONFIGURE_DEPENDS
-	"frontend/*.cpp"
-	"backend/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/frontend/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/backend/*.cpp"
 )
 
 add_executable(Leaf ${SOURCES})
@@ -31,16 +31,26 @@ target_compile_definitions(Leaf PUBLIC
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(COLLECT_SEARCH_STATS "Collect additional search info" OFF)
-option(INCLUDE_TESTS "Build and include tests header" OFF)
+option(COLLECT_SEARCH_STATS "Collect additional search info" ON)
+option(INCLUDE_TESTS "Build and include tests header" ON)
+
+message("Collecting Search Stats: ON")
+message("Include test header: ON")
 
 if (COLLECT_SEARCH_STATS)
-target_compile_definitions(Leaf PRIVATE _COLLECT_SEARCH_STATS)
+	target_compile_definitions(Leaf PRIVATE _COLLECT_SEARCH_STATS)
 endif ()
 
 if (INCLUDE_TESTS)
-target_compile_definitions(Leaf PRIVATE _INCLUDE_TESTS)
+	target_compile_definitions(Leaf PRIVATE _INCLUDE_TESTS)
 endif ()
+
+target_include_directories(Leaf PRIVATE 
+	"${CMAKE_SOURCE_DIR}/src"
+	"${CMAKE_SOURCE_DIR}/src/backend"
+	"${CMAKE_SOURCE_DIR}/srcquit/frontend"
+	"${CMAKE_SOURCE_DIR}/src/unit"
+)
 
 if (MSVC)
 	# pass

@@ -1,2 +1,0 @@
-echo Tournament started
-cutechess-cli -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\dev\Leaf.exe" name="leaf-iid-dev" -engine cmd="C:\Program Files (x86)\Cute Chess\LEAF\rfp\Leaf.exe" name="leaf-rfp" -each proto=uci tc=1+0.04 book="C:\Program Files (x86)\Cute Chess\LEAF\Titans.bin" -rounds 2 -games 2000 -draw movenumber=36 movecount=8 score=10 -concurrency 2 

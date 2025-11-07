@@ -1,0 +1,80 @@
+#pragma once
+
+#include "Common.hpp"
+#include "Color.hpp"
+
+class Piece {
+public:
+	using uint_t = uint8_t;
+
+	enum enumType : uint_t {
+		PAWN,
+		KNIGHT,
+		BISHOP,
+		ROOK,
+		QUEEN,
+		KING,
+		NONE,
+	};
+
+	Piece() = default;
+	inline Piece(enumType piece_t) { set(WHITE, piece_t); }
+	inline Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
+
+	static inline Piece fromChar(enumColor col_t, char c) {
+		auto id = col_t == WHITE ? _WhitesStr.find_first_of(c)
+			: _BlacksStr.find_first_of(c);
+		return Piece(col_t, enumType(id));
+	}
+
+	static inline enumType typeFromChar(char c) {
+		c = tolower(c);
+		auto id = _BlacksStr.find_first_of(c);
+		return enumType(id);
+	}
+
+	inline void set(enumColor col_t, enumType piece_t) { 
+		_col = col_t, _type = piece_t;
+	}
+
+	void print() const {
+		if (_type == NONE) std::cout << ' ';
+		else if (_col == WHITE) std::cout << _WhitesStr[_type];
+		else std::cout << _BlacksStr[_type];
+	}
+
+	inline Piece::uint_t value() const {
+		return static_cast<Piece::uint_t>(_type);
+	}
+
+	inline enumType type() const {
+		return _type;
+	}
+
+	inline enumColor color() const {
+		return _col;
+	}
+
+	static constexpr std::array<enumType, 6> piece_list = { 
+		Piece::PAWN, 
+		Piece::KNIGHT, 
+		Piece::BISHOP, 
+		Piece::ROOK, 
+		Piece::QUEEN, 
+		Piece::KING
+	};
+
+private:
+	static constexpr std::string_view _WhitesStr = "PNBRQK", 
+									  _BlacksStr = "pnbrqk";
+	enumType _type;
+	enumColor _col;
+};
+
+INLINE constexpr Piece::uint_t value(Piece::enumType p) {
+	return static_cast<Piece::uint_t>(p);
+}
+
+INLINE constexpr bool isSlider(Piece::enumType p) {
+	return p >= Piece::BISHOP and p <= Piece::QUEEN;
+}
