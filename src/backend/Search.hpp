@@ -108,22 +108,22 @@ public:
 		QUIESCE_NODE = ~SEARCH_NODE,
 	};
 
-	Search() = default;
+	Search(TranspositionTable&& tt);
 
 	template <bool PrintFullInfo = true>
-	Move32b bestMove(Position& pos, const Game& game, SearchLimits limits);
-	static Move32b _bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits);
+	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
+	static Move32b _bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits);
 
 	void registerNewGame();
 private:
 	template <bool PrintFullInfo>
-	Move32b iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits);
+	Move32b iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits);
 
 	template <bool PrintFullInfo>
-	bool search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results);
+	bool search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
-	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
+	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
 				  Score alpha, Score beta, int depth, int ply);
 
 	template <Search::enumNode NodeType>
@@ -133,7 +133,7 @@ private:
 	int calculateExtension(Position& pos, NodeInfo* node);
 
 	template <bool IsPV>
-	bool isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply);
+	bool isRepetitionCycle(const Position& pos, const FullInfoRecord& game, NodeInfo* node, int ply);
 
 	TreeStack _tree_stack;
 	Eval _eval;

@@ -2,6 +2,10 @@
 #include "Position.hpp"
 #include "Search.hpp"
 
+MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) { 
+
+}
+
 /* 
 *	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
 *   Both generates appropiate moves on fly, during move picking as stage is 

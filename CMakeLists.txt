@@ -7,7 +7,7 @@ project(Leaf)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug
-		CACHE STRING "Choose one of build types: Debug, Release."
+		CACHE STRING "Choose one of build types: Debug, Release, RelWithDebInfo"
 		FORCE)
 	message(STATUS "CMAKE_BUILD_TYPE not specified. Defaulting to Debug.")
 else ()
@@ -26,16 +26,17 @@ add_executable(Leaf ${SOURCES})
 target_compile_definitions(Leaf PUBLIC 
 	$<$<CONFIG:Debug>:DEBUG>
 	$<$<CONFIG:Release>:RELEASE>
+	$<$<CONFIG:RelWithDebInfo>:RELEASE>
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(COLLECT_SEARCH_STATS "Collect additional search info" ON)
-option(INCLUDE_TESTS "Build and include tests header" ON)
+option(COLLECT_SEARCH_STATS "Collect additional search info" OFF)
+option(INCLUDE_TESTS "Build and include tests header" OFF)
 
-message("Collecting Search Stats: ON")
-message("Include test header: ON")
+message("Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
+message("Include test header: " ${INCLUDE_TESTS})
 
 if (COLLECT_SEARCH_STATS)
 	target_compile_definitions(Leaf PRIVATE _COLLECT_SEARCH_STATS)
@@ -48,7 +49,8 @@ endif ()
 target_include_directories(Leaf PRIVATE 
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/src/backend"
-	"${CMAKE_SOURCE_DIR}/srcquit/frontend"
+	"${CMAKE_SOURCE_DIR}/src/frontend"
+	"${CMAKE_SOURCE_DIR}/src/util"
 	"${CMAKE_SOURCE_DIR}/src/unit"
 )
 

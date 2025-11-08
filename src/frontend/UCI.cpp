@@ -17,6 +17,8 @@ SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
 			limits.depth = std::stoi(token);
 		}
+
+		strm >> std::skipws >> token;
 	}
 
 	if (token == "wtime") {
@@ -32,12 +34,12 @@ SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
 		strm >> std::skipws >> token >> std::skipws >> token;
 		limits.binc = std::stoi(token);
 	}
-
+	
 	return limits;
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _search() 
+	: _search(TranspositionTable(1_MB)) 
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW

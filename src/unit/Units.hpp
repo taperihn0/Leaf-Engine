@@ -17,10 +17,12 @@
 #define _COLOR_GREEN	   "\033[0;32m"
 #define _COLOR_RESET	   "\033[0m"
 
-#define _TESTCASE(lcnt, cmp, expc, f, ...)																\
-{																										\
-	_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
-}																										\
+#define _TESTCASE(lcnt, cmp, expc, f, ...)																		 \
+{																												 \
+	::Units::_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
+}																												 \
+
+namespace Units {
 
 template <typename T>
 bool equal(const T& a, const T& b) {
@@ -70,11 +72,9 @@ inline size_t nextToken(std::string& line, size_t first) {
 	return last;
 }
 
-namespace Units {
-
 static bool seeTests() {
-	std::ifstream file("unit/sets/seeset.epd");
-	ASSERT(file.is_open(), "Could not open file unit/sets/seeset.epd");
+	std::ifstream file("src/unit/sets/seeset.epd");
+	ASSERT(file.is_open(), "Could not open file src/unit/sets/seeset.epd");
 
 	Position pos;
 	std::string line;
@@ -132,8 +132,8 @@ static bool seeTests() {
 }
 
 static bool ccrOneHourTest(Search& search) {
-	std::ifstream file("unit/sets/ccronehour.epd");
-	ASSERT(file.is_open(), "Failed to open file unit/sets/ccronehour.epd");
+	std::ifstream file("src/unit/sets/ccronehour.epd");
+	ASSERT(file.is_open(), "Failed to open file src/unit/sets/ccronehour.epd");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH
 	static constexpr int search_depth = 13;
@@ -147,7 +147,7 @@ static bool ccrOneHourTest(Search& search) {
 	std::string line;
 	Move32b move;
 
-	Game tmpgame;
+	FullInfoRecord tmpgame;
 	SearchLimits limits;
 	limits.depth = search_depth;
 

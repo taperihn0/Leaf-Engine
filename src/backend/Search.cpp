@@ -136,8 +136,11 @@ INLINE NodeInfo* TreeStack::getRootNode() {
 	return _stack;
 }
 
+Search::Search(TranspositionTable&& tt) 
+: _tt(std::move(tt)) {}
+
 template <bool PrintFullInfo>
-Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
+Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < MaxDepth, "Invalid depth");
 
 	limits.timer.go();
@@ -148,12 +151,12 @@ Move32b Search::bestMove(Position& pos, const Game& game, SearchLimits limits) {
 	return bm;
 }
 
-Move32b Search::_bestMove_unittest(Search& search, Position& pos, const Game& game, SearchLimits limits) {
+Move32b Search::_bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits) {
 	return search.bestMove<false>(pos, game, limits);
 }
 
 template <bool PrintFullInfo>
-Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits& limits) {
+Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits) {
 	SearchResults search_results;
 		
 	NodeInfo* root = _tree_stack.getRootNode();
@@ -176,7 +179,7 @@ Move32b Search::iterativeDeepening(Position& pos, const Game& game, SearchLimits
 }
 
 template <bool PrintFullInfo>
-bool Search::search(Position& pos, const Game& game, SearchLimits& limits, SearchResults& results) {
+bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results) {
 	const Score score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
 									   -Score::Mate, +Score::Mate, 
 									   results.depth, 
@@ -194,7 +197,7 @@ bool Search::search(Position& pos, const Game& game, SearchLimits& limits, Searc
 }
 
 template <bool Root, Search::enumNode NodeType, bool NullMove>
-Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
+Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
 					  Score alpha, Score beta, int depth, int ply) 
 {
 	assert(0 <= depth and depth < MaxDepth - 1);
@@ -524,9 +527,9 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	return node->best_score;
 }
 
-template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
+template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
 									 Score alpha, Score beta, int depth, int ply);
-template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const Game& game, NodeInfo* node,
+template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
 									  Score alpha, Score beta, int depth, int ply);
 
 template <Search::enumNode NodeType>
@@ -684,7 +687,7 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 }
 
 template <bool IsPV>
-bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* node, int ply) {
+bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, NodeInfo* node, int ply) {
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 
@@ -742,5 +745,5 @@ bool Search::isRepetitionCycle(const Position& pos, const Game& game, NodeInfo* 
 	return false;
 }
 
-template Move32b Search::bestMove<true>(Position&, const Game&, SearchLimits);
-template Move32b Search::bestMove<false>(Position&, const Game&, SearchLimits);
+template Move32b Search::bestMove<true>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::bestMove<false>(Position&, const FullInfoRecord&, SearchLimits);

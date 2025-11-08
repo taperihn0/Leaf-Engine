@@ -25,7 +25,7 @@ private:
 
 	Position _pos;
 	Search _search;
-	Game _game;
+	FullInfoRecord _game;
 
 	std::string _command;
 };

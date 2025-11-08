@@ -49,7 +49,8 @@ struct alignas(BucketTargetSize) TTBucket {
 
 class TranspositionTable {
 public:
-	TranspositionTable();
+	TranspositionTable(size_t mb_size = 1_MB);
+	TranspositionTable(TranspositionTable&& tt);
 	~TranspositionTable();
 
 	void resize(size_t size_mb);
@@ -70,14 +71,12 @@ public:
 	void newGeneration();
 	void clearHashfull();
 private:
-
-	TranspositionTable(TranspositionTable&&) = delete;
 	TranspositionTable(const TranspositionTable&) = delete;
 	TranspositionTable& operator=(const TranspositionTable&) = delete;
-	TranspositionTable& operator=(const TranspositionTable&&) = delete;
+	TranspositionTable& operator=(TranspositionTable&&) = delete;
 
 	TTBucket* _mem;
-	size_t _buckets_cnt;
-	uint8_t _generation;
-	ull _hits;
+	size_t    _buckets_cnt;
+	uint8_t   _generation;
+	ull       _hits;
 };

@@ -1,17 +1,22 @@
 #include "TranspositionTable.hpp"
 #include "Search.hpp"
 
-inline constexpr size_t operator""_MB(ull mb_count) {
-	return mb_count * 1024 * 1024;
-}
+static_assert(sizeof(TTEntry) == EntryTargetSize);
+static_assert(sizeof(TTBucket) == BucketTargetSize);
 
-TranspositionTable::TranspositionTable() {
-	static_assert(sizeof(TTEntry) == EntryTargetSize);
-	static_assert(sizeof(TTBucket) == BucketTargetSize);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(1_MB, sizeof(TTBucket)));
+TranspositionTable::TranspositionTable(size_t mb_size) {
+	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
 	_buckets_cnt = 1_MB / sizeof(TTBucket);
 	clear();
+}
+
+TranspositionTable::TranspositionTable(TranspositionTable&& tt) {
+	_mem = tt._mem;
+	_buckets_cnt = tt._buckets_cnt;
+	_generation = tt._generation;
+	_hits = tt._hits;
+	std::memset(&tt, 0, sizeof(tt));
 }
 
 TranspositionTable::~TranspositionTable() { 

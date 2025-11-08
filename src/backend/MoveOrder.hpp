@@ -3,10 +3,33 @@
 #include "MoveList.hpp"
 #include "MoveGen.hpp"
 
+class TreeStack;
+class MoveOrder;
+
+/* It is basically a part of MoveOrder interface.
+*  It contains tables used in move ordering with history data, for instance 
+*  piece-square or from-to tables.
+*  It implements differentiation of history data between each Search object,
+*  as it is part of Search class.
+*/
+class MoveOrderHistoryTables {
+public:
+	friend class MoveOrder;
+	
+	MoveOrderHistoryTables()
+	: _quiets_history({}) {}
+
+	void clearQuietsHistoryTable();
+	// ...
+private:
+	alignas(CACHELINE_SIZE) int16_t _quiets_history[2][6][64];
+	// ...
+};
+
 /*
 *	MoveOrder<STAGED>:
-*	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
-*	MoveOrder<QUIESCE>
+*	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>
+*	MoveOrder<QUIESCE>:
 *	 - Generates only captures in quiescent node.
 */
 
@@ -15,11 +38,9 @@ enum OrderType {
 	QUIESCENT
 };
 
-class TreeStack;
-
 class MoveOrder {
 public:
-	MoveOrder() = default;
+	MoveOrder(MoveOrderHistoryTables* history_tables);
 
 	template <OrderType Order, bool Root>
 	bool nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move);
@@ -81,6 +102,10 @@ private:
 	MoveList _move_list;
 };
 
+INLINE void MoveOrderHistoryTables::clearQuietsHistoryTable() {
+	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
+}
+
 INLINE void MoveOrder::setHashMove(Move32b m) {
 	_hash_move = m;
 }
@@ -98,7 +123,7 @@ INLINE Move32b MoveOrder::getKillerMove() {
 }
 
 INLINE void MoveOrder::clearQuietsHistory() {
-	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
+	// TODOs
 }
 
 template <OrderType Type>

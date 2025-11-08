@@ -1,0 +1,52 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "COLLECT_SEARCH_STATS": "ON",
+                "INCLUDE_TESTS": "ON",
+                "ENABLE_SIMD_AVX2": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "INCLUDE_TESTS": "OFF",
+                "ENABLE_SIMD_AVX2": "ON"
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "displayName": "RelWithDebInfo",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/RelWithDebInfo",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "COLLECT_SEARCH_STATS": "ON",
+                "INCLUDE_TESTS": "ON",
+                "ENABLE_SIMD_AVX2": "ON"
+            }
+        },
+        {
+            "name": "Custom configure preset",
+            "displayName": "Custom configure preset",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            }
+        }
+    ]
+}
