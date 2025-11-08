@@ -115,12 +115,18 @@ void SearchResults::printSearchStats() {
 void Search::registerNewGame() {
 	_tt.clear();
 	_tt.clearHashfull();
-	MoveOrder::clearQuietsHistory();
+	_history_buff->clearQuietsHistory();
 }
 
 TreeStack::TreeStack() {
 	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(_Count * sizeof(NodeInfo),  CACHELINE_SIZE));
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
+}
+
+void TreeStack::initTreeStack(MoveOrderHistoryTables* history_buffer) {
+	for (size_t i = 0; i < _Count; i++) {
+		_stack[i].move_picker.setHistoryBuffer(history_buffer);
+	}
 }
 
 TreeStack::~TreeStack() {
@@ -137,7 +143,17 @@ INLINE NodeInfo* TreeStack::getRootNode() {
 }
 
 Search::Search(TranspositionTable&& tt) 
-: _tt(std::move(tt)) {}
+: _tree_stack()
+, _tt(std::move(tt)) {
+	_history_buff = reinterpret_cast<MoveOrderHistoryTables*>(alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE));
+	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
+	registerNewGame();
+	_tree_stack.initTreeStack(_history_buff);
+}
+
+Search::~Search() {
+	alignedFree(_history_buff);
+}
 
 template <bool PrintFullInfo>
 Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {

@@ -16,7 +16,7 @@ TranspositionTable::TranspositionTable(TranspositionTable&& tt) {
 	_buckets_cnt = tt._buckets_cnt;
 	_generation = tt._generation;
 	_hits = tt._hits;
-	std::memset(&tt, 0, sizeof(tt));
+	std::memset(reinterpret_cast<void*>(&tt), 0, sizeof(tt));
 }
 
 TranspositionTable::~TranspositionTable() { 

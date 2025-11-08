@@ -2,9 +2,12 @@
 #include "Position.hpp"
 #include "Search.hpp"
 
-MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) { 
-
+MoveOrderHistoryTables::MoveOrderHistoryTables() {
+	clearQuietsHistory();
 }
+
+MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) 
+: _tables(history_tables) {}
 
 /* 
 *	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
@@ -15,6 +18,7 @@ MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) {
 template <OrderType Type, bool Root>
 bool MoveOrder::nextMove(const TreeStack&, const Position& pos, Move32b& next_move) {
 	static_assert(!Root or Type == STAGED);
+	assert(_tables != nullptr);
 	
 	switch (_stage) {
 	// GCC requires that, without that case it reports warning [-Wswitch]
@@ -88,15 +92,16 @@ template <int8_t Sign, OrderType Type>
 void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	static_assert(Type == STAGED);
 	static_assert(Sign == -1 or Sign == 1);
+	assert(_tables != nullptr);
 
 	const Piece::uint_t piece = value(move.getPiece());
 	const Square dst = move.getTarget();
 
 	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), _MaxQuietsHistory);
 
-	_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_quiets_history[side][piece][dst] * bonus) >> _MaxQuietsPower);
+	_tables->_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_tables->_quiets_history[side][piece][dst] * bonus) >> _MaxQuietsPower);
 
-	assert(abs(_quiets_history[side][piece][dst]) <= _MaxQuietsHistory);
+	assert(abs(_tables->_quiets_history[side][piece][dst]) <= _MaxQuietsHistory);
 }
 
 template <OrderType Type>
@@ -172,6 +177,8 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 }
 
 void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
+	assert(_tables != nullptr);
+
 	for (size_t i = first_ind; i < _move_list.count(); i++) {
 		MoveList::Entry* entry = _move_list.getEntry(i);
 		const Move32b* move = &entry->move;
@@ -182,7 +189,7 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 		const Piece::uint_t piece = value(move->getPiece());
 		const Square dst = move->getTarget();
 
-		*score = _quiets_history[side][piece][dst] + _MaxQuietsHistory;
+		*score = _tables->_quiets_history[side][piece][dst] + _MaxQuietsHistory;
 	}
 }
 

@@ -87,6 +87,8 @@ public:
 	TreeStack();
 	~TreeStack();
 
+	void initTreeStack(MoveOrderHistoryTables* history_buffer);
+
 	NodeInfo* getRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
 private:
@@ -109,6 +111,7 @@ public:
 	};
 
 	Search(TranspositionTable&& tt);
+	~Search();
 
 	template <bool PrintFullInfo = true>
 	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
@@ -138,6 +141,11 @@ private:
 	TreeStack _tree_stack;
 	Eval _eval;
 	TranspositionTable _tt;
+	
+	// Each Search instance should have own history buffer with tables 
+	// for very MoveOrder in TreeStack.
+	// Also, Search class in responsible for allocation and deallocation.
+	MoveOrderHistoryTables* _history_buff;
 
 	static constexpr uint64_t _CheckNodeCount = 4096;
 };

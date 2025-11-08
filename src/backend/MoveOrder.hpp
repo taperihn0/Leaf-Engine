@@ -15,15 +15,19 @@ class MoveOrder;
 class MoveOrderHistoryTables {
 public:
 	friend class MoveOrder;
-	
-	MoveOrderHistoryTables()
-	: _quiets_history({}) {}
 
-	void clearQuietsHistoryTable();
+	MoveOrderHistoryTables(); 
+
+	void clearQuietsHistory();
 	// ...
 private:
-	alignas(CACHELINE_SIZE) int16_t _quiets_history[2][6][64];
+	int16_t _quiets_history[2][6][64];
 	// ...
+};
+
+enum OrderType {
+	STAGED,
+	QUIESCENT
 };
 
 /*
@@ -32,15 +36,11 @@ private:
 *	MoveOrder<QUIESCE>:
 *	 - Generates only captures in quiescent node.
 */
-
-enum OrderType {
-	STAGED,
-	QUIESCENT
-};
-
 class MoveOrder {
 public:
-	MoveOrder(MoveOrderHistoryTables* history_tables);
+	MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
+
+	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
 	template <OrderType Order, bool Root>
 	bool nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move);
@@ -58,8 +58,6 @@ public:
 
 	template <OrderType Order = STAGED>
 	void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
-
-	static void clearQuietsHistory();
 	
 	template <OrderType Order>
 	void clear();
@@ -83,9 +81,9 @@ private:
 		PICK_QUIETS,
 	};
 
-	alignas(CACHELINE_SIZE) inline static int16_t _quiets_history[2][6][64] = {};
-
 	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
+
+	MoveOrderHistoryTables* _tables;
 
 	enumStage _stage       = enumStage::NONE;
 	size_t _iterator       = 0;
@@ -102,49 +100,4 @@ private:
 	MoveList _move_list;
 };
 
-INLINE void MoveOrderHistoryTables::clearQuietsHistoryTable() {
-	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
-}
-
-INLINE void MoveOrder::setHashMove(Move32b m) {
-	_hash_move = m;
-}
-
-template <OrderType Type>
-INLINE void MoveOrder::setKillerMove(Move32b m) {
-	static_assert(Type == STAGED);
-	_killer_move = m;
-}
-
-template <OrderType Type>
-INLINE Move32b MoveOrder::getKillerMove() {
-	static_assert(Type == STAGED);
-	return _killer_move;
-}
-
-INLINE void MoveOrder::clearQuietsHistory() {
-	// TODOs
-}
-
-template <OrderType Type>
-INLINE void MoveOrder::clear() {
-	_stage = _FirstStage;
-	_iterator = 0;
-	_quiets_ind = 0;
-	_hash_move = Move32b::Null;
-
-	if constexpr (Type == QUIESCENT)
-		_killer_move = Move32b::Null;
-
-	_move_list.clear();
-}
-
-INLINE void MoveOrder::skipQuiets() {
-	_iterator = _move_list.count();
-}
-
-INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
-	const Piece::uint_t piece_ind = value(move.getPiece());
-	const Square dst = move.getTarget();
-	return _quiets_history[side][piece_ind][dst];
-}
+#include "MoveOrder.inl"
