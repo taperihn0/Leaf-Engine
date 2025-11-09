@@ -166,6 +166,10 @@ public:
 	template <bool onlyQuiets>
 	bool isPseudoLegal_fromList(const Position& pos) const;
 
+	// That function explicitly use make/unmake on given a position.
+	// That is generally speaking costly, so use it only when really needed.
+	bool isLegal(Position& pos);
+
 	enum class Castle {
 		SHORT, LONG
 	};

@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Move.hpp"
 #include "Hash.hpp"
+#include "Time.hpp"
 
 class MoveRecord
 {
@@ -39,8 +40,7 @@ public:
 		MoveRecord::recordMove(move);
 	}
 
-	INLINE Move32b getPrevMove(size_t halfmove_cnt) const
-	{
+	INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
 		return MoveRecord::getPrevMove(halfmove_cnt);
 	}
 
@@ -59,3 +59,38 @@ public:
 private:
 	std::array<uint64_t, MaxGameMoves> _key_history;
 };
+
+/* Contains full game info - move record, time left and current position of the game.
+*  Can detect game termination, either draw or win (lose).
+*/
+class Game {
+public:
+	enum GameResult {
+		DRAW, WIN_OR_LOSE
+	};
+
+	Game(Position&& from, time_ms_t time_white, time_ms_t time_black);
+
+	void applyMove(Move32b move, time_ms_t think_time);
+
+	bool isWin();
+	bool isDraw();
+
+	Position& getPosition();
+
+	FullInfoRecord& getHistoryRecord();
+private:
+	bool isGameCycle();
+	bool isStaleMate();
+
+	bool isAnyResponse();
+
+	Position _current_pos;
+	FullInfoRecord _pos_record;
+	time_ms_t _time_left_sided[2];
+
+	// Cache game state needed when asking for game result
+	bool _is_cached_any_response;
+	bool _any_response_avaible;
+};
+

@@ -13,6 +13,8 @@
 #include <cstring>
 #include <limits>
 #include <cstdlib>
+#include <random>
+#include <algorithm>
 
 #if __cplusplus >= 202002L
 #define _CPP_STANDARD_20
@@ -104,9 +106,6 @@ static constexpr unsigned MaxDepth = 128,
 						  MaxSelDepth = 128,
 						  MaxGameMoves = 512;
 
-class MoveGenerator;
-using MoveGen = MoveGenerator;
-
 template <typename T>
 T sq(T x) {
 	static_assert(std::is_integral_v<T>);
@@ -172,3 +171,15 @@ INLINE void alignedFree(void* block) {
 	std::free(block);
 #endif
 }
+
+static constexpr int DefaultIntSeed = (1 << 13) + 5;
+
+template <typename Integer = int>
+INLINE Integer random(Integer l, Integer r, int seed = DefaultIntSeed)
+{
+    static std::random_device rd;
+    static std::mt19937 mt(seed);
+    std::uniform_int_distribution<Integer> dist(l, r);
+    return dist(mt);
+}
+

@@ -63,8 +63,25 @@ public:
 
 	void selectSort(size_t first_ind);
 
+	INLINE Move32b getRandomMove() {
+		size_t random_idx = random<size_t>(0, _idx - 1, _RandomMoveSeed);
+		return _moves[random_idx].move;
+	}
+
+	template <typename CallableBool>
+	INLINE bool any(CallableBool f) {
+		static_assert(std::is_invocable_v<CallableBool, Move32b>);
+
+		for (size_t i = 0; i < _idx; i++) {
+			if (f(_moves[i].move)) return true;
+		}
+
+		return false;
+	}
+
 private:
 	static constexpr size_t _MaxSize = MaxNodeMoves;
+	static constexpr int    _RandomMoveSeed = 1;
 
 	inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
 		return a.score > b.score;

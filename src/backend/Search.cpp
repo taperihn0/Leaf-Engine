@@ -698,6 +698,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 
 // TODO: smarter extension calculation
 INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
+	_declUnused(pos);
 	NodeInfo* next_node = node + 1;
 	return next_node->check;
 }

@@ -204,6 +204,15 @@ bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
 	return mlist.contains(*this);
 }
 
+template <>
+bool Move32b::isLegal(Position& pos) {
+	const Position::IrreversibleState state = pos.getIrreversibleState();
+	pos.make(*this);
+	bool legal = isLegalMoved();
+	pos.unmake(*this, state);
+	return legal;
+}
+
 template <typename T>
 void MoveData<T>::print() const {
 #if defined(PURE_NOTATION_DISPLAY)
