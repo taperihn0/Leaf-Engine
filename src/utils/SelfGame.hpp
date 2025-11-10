@@ -3,6 +3,7 @@
 #include "backend/Game.hpp"
 #include "backend/Search.hpp"
 #include "Opening.hpp"
+#include "PackedPosition.hpp"
 
 namespace Utils {
 
@@ -10,7 +11,7 @@ class SelfGame {
 public:
     SelfGame(size_t tt_size = 1_MB);
 
-    Game start(SearchLimits limits);
+    void start(std::vector<PackedPosition>& positions, SearchLimits limits);
 private:
     static inline const std::string _OpeningFile = "src/assets/openingsPositions/crafty_2500_new.epd";
 

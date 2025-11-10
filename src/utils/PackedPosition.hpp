@@ -2,6 +2,8 @@
 
 #include "backend/Position.hpp"
 
+#include <fstream>
+
 namespace Utils {
     
 class PackedPosition {
