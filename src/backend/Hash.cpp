@@ -6,62 +6,61 @@
 static constexpr int RandomSeed = 0xfff;
 
 INLINE uint64_t randomU64() {
-	static std::mt19937_64 engine(RandomSeed);
-	static std::uniform_int_distribution<uint64_t> dist(1, std::numeric_limits<uint64_t>::max());
-	return dist(engine) & dist(engine);
+	return random<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff)
+		   & random<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff);
 }
 
 void ZobristHash::fillKeys() {
 	for (int sq = 0; sq < 64; sq++) {
 		for (enumColor col : { WHITE, BLACK }) {
 			for (auto piece_t : Piece::piece_list) {
-				_piece_keys[col][piece_t][sq] = randomU64();
+				piece_keys[col][piece_t][sq] = randomU64();
 			}
 		}
 	}
 
-	_black_key = randomU64();
+	black_key = randomU64();
 
 	for (int file = 0; file < 8; file++) {
-		_ep_file_keys[file] = randomU64();
+		ep_file_keys[file] = randomU64();
 	}
 
 	for (enumColor col : { WHITE, BLACK }) {
-		_short_castle_keys[col] = randomU64();
-		_long_castle_keys[col] = randomU64();
+		short_castle_keys[col] = randomU64();
+		long_castle_keys[col] = randomU64();
 	}
 }
 
-uint64_t ZobristHash::generateOnFly(const Position& pos) {
+ZobristHash ZobristHash::generateOnFly(const Position& pos) {
 	uint64_t key = 0;
 
 	for (int sq = 0; sq < 64; sq++) {
 		const Piece piece = pos.fullPieceOn(sq);
 
 		if (piece.type() != Piece::NONE)
-			key ^= _piece_keys[piece.color()][piece.type()][sq];
+			key ^= piece_keys[piece.color()][piece.type()][sq];
 	}
 
 	if (pos.getTurn() == BLACK)
-		key ^= _black_key;
+		key ^= black_key;
 
 	const Square ep_sq = pos.getEnPassantSq();
 
 	assert(ep_sq.isValid());
 	if (ep_sq.isNotNull())
-		key ^= _ep_file_keys[ep_sq.getFile()];
+		key ^= ep_file_keys[ep_sq.getFile()];
 
 	if (pos.getCastlingByColor(WHITE).isShortPossible())
-		key ^= _short_castle_keys[WHITE];
+		key ^= short_castle_keys[WHITE];
 	if (pos.getCastlingByColor(BLACK).isShortPossible())
-		key ^= _short_castle_keys[BLACK];
+		key ^= short_castle_keys[BLACK];
 
 	if (pos.getCastlingByColor(WHITE).isLongPossible())
-		key ^= _long_castle_keys[WHITE];
+		key ^= long_castle_keys[WHITE];
 	if (pos.getCastlingByColor(BLACK).isLongPossible())
-		key ^= _long_castle_keys[BLACK];
+		key ^= long_castle_keys[BLACK];
 
-	return key;
+	return static_cast<ZobristHash>(key);
 }
 
 #if defined(_DEBUG)

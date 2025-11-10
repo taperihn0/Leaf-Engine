@@ -240,7 +240,7 @@ public:
 	void unmakeNull(const IrreversibleState& prev_state);
 
 	INLINE uint64_t getZobristKey() const {
-		return _hashing._key;
+		return _zhash;
 	}
 
 	template <bool Root = true>
@@ -277,7 +277,7 @@ private:
 
 	std::array<Square, 2> _king_sq;
 
-	ZobristHash _hashing;
+	ZobristHash _zhash;
 };
 
 template <bool ExactScore>

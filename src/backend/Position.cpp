@@ -19,7 +19,7 @@ Position::Position() {
 	std::memset(reinterpret_cast<void*>(_piece_bb[1].data()), 0, sizeof(_piece_bb[1]));
 	_occupied[0] = 0_ui64;
 	_occupied[1] = 0_ui64;
-	_hashing._key = 0_ui64;
+	_zhash = 0_ui64;
 }
 
 Position::Position(const std::string init_fen) { setByFEN(init_fen); }
@@ -154,7 +154,7 @@ bool Position::make(Move32b& move) {
 			assert(piece_t == Piece::PAWN);
 			_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
 			_occupied[!_turn].popBit(dst - dir);
-			_hashing._key ^= _hashing._piece_keys[!_turn][Piece::PAWN][dst - dir];
+			_zhash ^= ZobristHash::piece_keys[!_turn][Piece::PAWN][dst - dir];
 		}
 		else {
 			const Piece::enumType captured = pieceOn(dst, !_turn);
@@ -164,17 +164,17 @@ bool Position::make(Move32b& move) {
 
 			_piece_bb[!_turn][captured].popBit(dst);
 			_occupied[!_turn].popBit(dst);
-			_hashing._key ^= _hashing._piece_keys[!_turn][captured][dst];
+			_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
 
 			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
 				LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
 			if (_castling_rights[!_turn].isShortPossible() and dst == RightCornerOpponent) {
-				_hashing._key ^= _hashing._short_castle_keys[!_turn];
+				_zhash ^= ZobristHash::short_castle_keys[!_turn];
 				_castling_rights[!_turn].setKingSide(false);
 			}
 			else if (_castling_rights[!_turn].isLongPossible() and dst == LeftCornerOpponent) {
-				_hashing._key ^= _hashing._long_castle_keys[!_turn];
+				_zhash ^= ZobristHash::long_castle_keys[!_turn];
 				_castling_rights[!_turn].setQueenSide(false);
 			}
 		}
@@ -188,15 +188,15 @@ bool Position::make(Move32b& move) {
 		_piece_bb[_turn][promo_piece_t].setBit(dst);
 		_occupied[_turn].moveBit(org, dst);
 
-		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][org];
-		_hashing._key ^= _hashing._piece_keys[_turn][promo_piece_t][dst];
+		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
+		_zhash ^= ZobristHash::piece_keys[_turn][promo_piece_t][dst];
 	}
 	else { // if not a promotion - just move a piece on its own bitboard 
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
 		_occupied[_turn].moveBit(org, dst);
 
-		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][org];
-		_hashing._key ^= _hashing._piece_keys[_turn][piece_t][dst];
+		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
+		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
 	}
 
 	if (piece_t == Piece::KING) {
@@ -204,15 +204,15 @@ bool Position::make(Move32b& move) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
 			_occupied[_turn].moveBit(dst + 1, dst - 1);
 
-			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
-			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 1];
+			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
+			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 1];
 		}
 		else if (move.isLongCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
 			_occupied[_turn].moveBit(dst - 2, dst + 1);
 
-			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst - 2];
-			_hashing._key ^= _hashing._piece_keys[_turn][Piece::ROOK][dst + 1];
+			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 2];
+			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
 		}
 
 		_king_sq[_turn] = dst;
@@ -228,27 +228,27 @@ bool Position::make(Move32b& move) {
 			LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
 		if (_castling_rights[_turn].isShortPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))) {
-			_hashing._key ^= _hashing._short_castle_keys[_turn];
+			_zhash ^= ZobristHash::short_castle_keys[_turn];
 			_castling_rights[_turn].setKingSide(false);
 		}
 
 		if (_castling_rights[_turn].isLongPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))) {
-			_hashing._key ^= _hashing._long_castle_keys[_turn];
+			_zhash ^= ZobristHash::long_castle_keys[_turn];
 			_castling_rights[_turn].setQueenSide(false);
 		}
 
 		// reset old en passant square state
 		if (_ep_square.isNotNull())
-			_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+			_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 
 		_ep_square = Square::None;
 
 		if (double_pawn_push) {
 			_ep_square = dst - dir;
-			_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+			_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 		}
 
-		_hashing._key ^= _hashing._black_key;
+		_zhash ^= ZobristHash::black_key;
 
 		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	}
@@ -324,22 +324,22 @@ void Position::unmake(Move32b move, const IrreversibleState& prev_state) {
 	_castling_rights = prev_state.castling_rights;
 
 	// TEMPORARY
-	_hashing._key = prev_state.hash_key;
+	_zhash = prev_state.hash_key;
 }
 
 void Position::makeNull(IrreversibleState& state) {
 	_halfmove_count++;
 	_fullmove_count += static_cast<uint16_t>(_turn);
 
-	state.hash_key = _hashing._key;
+	state.hash_key = _zhash;
 
 	_turn = !_turn;
-	_hashing._key ^= _hashing._black_key;
+	_zhash ^= ZobristHash::black_key;
 
 	state.ep_sq = _ep_square;
 
 	if (_ep_square.isNotNull())
-		_hashing._key ^= _hashing._ep_file_keys[_ep_square.getFile()];
+		_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 
 	_ep_square = Square::None;
 }
@@ -350,7 +350,7 @@ void Position::unmakeNull(const IrreversibleState& prev_state) {
 	_halfmove_count--;
 	_fullmove_count -= static_cast<uint16_t>(_turn);
 
-	_hashing._key = prev_state.hash_key;
+	_zhash = prev_state.hash_key;
 
 	_ep_square = prev_state.ep_sq;
 }
@@ -376,7 +376,7 @@ uint64_t Position::perft(unsigned depth) {
 		Move32b move = move_list.getMove(i);
 
 		if (make(move)) {
-			assert(_hashing._key == _hashing.generateOnFly(*this));
+			assert(_zhash == ZobristHash::generateOnFly(*this));
 
 			child_nodes = perft<false>(depth - 1);
 			nodes += child_nodes;
@@ -451,7 +451,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 		_fullmove_count += fen[i] - '0';
 	}
 
-	_hashing._key = _hashing.generateOnFly(*this);
+	_zhash = ZobristHash::generateOnFly(*this);
 }
 
 INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {

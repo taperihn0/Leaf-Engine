@@ -170,7 +170,7 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	pos._king_sq[WHITE] = pos.getKingBySide(WHITE).bitScanForward();
 	pos._king_sq[BLACK] = pos.getKingBySide(BLACK).bitScanForward();
 
-	pos._hashing.set(pos._hashing.generateOnFly(pos));
+	pos._zhash = ZobristHash::generateOnFly(pos);
 
 	return pos;
 }
