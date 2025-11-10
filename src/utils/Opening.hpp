@@ -19,7 +19,7 @@ public:
 
     void getFilePositions();
 
-    Position get();
+    Position getPosition();
 private:
 
     /* Avaible opening sets are usually really small and compact, 
@@ -29,7 +29,8 @@ private:
     */
     Position randomizePosition(Position& pos);
 
-    static constexpr int MinRandomMoves = 6;
+    static constexpr int _MinRandomMoves = 6;
+    static constexpr int _OpeningEvalThreshold = 400;
 
     std::vector<Position> _positions;
     std::string _openings_file_path;

@@ -3,7 +3,7 @@
 #include "Common.hpp"
 
 enum enumColor : bool {
-	WHITE, BLACK
+	WHITE = 0, BLACK
 };
 
 INLINE constexpr enumColor operator!(enumColor opp) {

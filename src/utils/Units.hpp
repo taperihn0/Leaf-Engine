@@ -6,6 +6,7 @@
 #include "backend/Time.hpp"
 #include "backend/Search.hpp"
 #include "backend/Game.hpp"
+#include "PackedPosition.hpp"
 
 #include <iomanip>
 #include <fstream>
@@ -19,10 +20,10 @@
 
 #define _TESTCASE(lcnt, cmp, expc, f, ...)																		 \
 {																												 \
-	::Units::_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
+	::Utils::_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
 }																												 \
 
-namespace Units {
+namespace Utils {
 
 template <typename T>
 bool equal(const T& a, const T& b) {
@@ -48,7 +49,7 @@ using _cmp_func_t = bool(*)(const T&, const T&);
 
 template <typename Func, typename T, typename... Args>
 bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_view cmpnamestr, 
-	std::string_view fcallstr, int testline, int fileline, Args&&... args) {
+						 std::string_view fcallstr, int testline, int fileline, Args&&... args) {
 	T fres = f(std::forward<Args>(args)...);
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;
@@ -73,8 +74,8 @@ inline size_t nextToken(std::string& line, size_t first) {
 }
 
 static bool seeTests() {
-	std::ifstream file("src/unit/sets/seeset.epd");
-	ASSERT(file.is_open(), "Could not open file src/unit/sets/seeset.epd");
+	std::ifstream file("src/assets/sets/seeset.epd");
+	ASSERT(file.is_open(), "Could not open file src/assets/sets/seeset.epd");
 
 	Position pos;
 	std::string line;
@@ -132,8 +133,8 @@ static bool seeTests() {
 }
 
 static bool ccrOneHourTest(Search& search) {
-	std::ifstream file("src/unit/sets/ccronehour.epd");
-	ASSERT(file.is_open(), "Failed to open file src/unit/sets/ccronehour.epd");
+	std::ifstream file("src/assetss/sets/ccronehour.epd");
+	ASSERT(file.is_open(), "Failed to open file src/assets/sets/ccronehour.epd");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH
 	static constexpr int search_depth = 13;
@@ -189,10 +190,35 @@ static bool ccrOneHourTest(Search& search) {
 	return true;
 }
 
+static bool packedPositionTests() {
+	std::ifstream file("src/assets/lichess/lichess_2023-07.epd");
+
+	if (!file) {
+		ASSERT(false, "Failed to open file: src/assets/lichess/lichess_2023-07.epd");
+		return false;
+	}
+
+	std::string line;
+	for (size_t i = 0; i < 200000 and std::getline(file, line); i++) {
+		Position pos(line);
+		std::cout << i << ": " << line << '\n';
+
+		if (PackedPosition::unpacked(PackedPosition::packed(pos)) != pos) {
+			pos.print();
+			ASSERT(false, "Failed packaging a position");
+			return false;
+		}
+	}
+
+	std::cout << "All tests passed" << std::endl;
+	return true;
+}
+
 static bool runTests(Search& search) {
 	seeTests();
+	packedPositionTests();
 	ccrOneHourTest(search);
 	return true;
 }
 
-} // namespace Units
+} // namespace Utils

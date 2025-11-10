@@ -3,10 +3,10 @@
 
 #include <random>
 
-static constexpr int random_seed = 0xfff;
+static constexpr int RandomSeed = 0xfff;
 
 INLINE uint64_t randomU64() {
-	static std::mt19937_64 engine(random_seed);
+	static std::mt19937_64 engine(RandomSeed);
 	static std::uniform_int_distribution<uint64_t> dist(1, std::numeric_limits<uint64_t>::max());
 	return dist(engine) & dist(engine);
 }

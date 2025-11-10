@@ -257,7 +257,9 @@ Move32b MoveGen::generateRandomMove(const Position& pos) {
 template void MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(const Position&, MoveList&);
 template void MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, MoveList&);
 template void MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(const Position&, MoveList&);
+template void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position&, MoveList&);
 
 template Move32b MoveGen::generateRandomMove<MoveGen::CAPTURES>(const Position&);
 template Move32b MoveGen::generateRandomMove<MoveGen::TACTICALS>(const Position&);
 template Move32b MoveGen::generateRandomMove<MoveGen::QUIETS>(const Position&);
+template Move32b MoveGen::generateRandomMove<MoveGen::ALL>(const Position&);

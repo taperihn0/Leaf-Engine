@@ -14,7 +14,13 @@ void CastlingRights::printByColor(enumColor col_type) const {
 	std::cout << msg;
 }
 
-Position::Position() { setStartingPos(); }
+Position::Position() {
+	std::memset(reinterpret_cast<void*>(_piece_bb[0].data()), 0, sizeof(_piece_bb[0]));
+	std::memset(reinterpret_cast<void*>(_piece_bb[1].data()), 0, sizeof(_piece_bb[1]));
+	_occupied[0] = 0_ui64;
+	_occupied[1] = 0_ui64;
+	_hashing._key = 0_ui64;
+}
 
 Position::Position(const std::string init_fen) { setByFEN(init_fen); }
 
@@ -96,6 +102,41 @@ void Position::print() const {
 	_ep_square.print();
 	std::cout << ' ' << static_cast<int>(_halfmove_count)
 		<< ' ' << _fullmove_count << '\n';
+}
+
+bool Position::operator==(const Position& pos) const {
+		 if (getOccupied() != pos.getOccupied())
+		return false;
+
+	else if (getTurn() != pos.getTurn())
+		return false;
+
+	else if (getCastlingByColor(WHITE) != pos.getCastlingByColor(WHITE)
+	      or getCastlingByColor(BLACK) != pos.getCastlingByColor(BLACK))
+		return false;
+		
+	else if (getEnPassantSq() != pos.getEnPassantSq())
+		return false;
+
+	else if (halfmoveClock() != pos.halfmoveClock()
+	      or fullmoveClock() != pos.fullmoveClock())
+		return false;
+	
+	else if (getKingSquare(WHITE) != pos.getKingSquare(WHITE)
+		  or getKingBySide(BLACK) != pos.getKingBySide(BLACK))
+		return false;
+
+	else if (getZobristKey() != pos.getZobristKey())
+		return false;
+
+	for (enumColor col : { WHITE, BLACK}) {
+		for (Piece::enumType piece : Piece::piece_list) {
+			if (get(piece, col) != pos.get(piece, col))
+				return false;
+		}
+	}
+	
+	return true;
 }
 
 bool Position::make(Move32b& move) {

@@ -36,6 +36,30 @@
                 "INCLUDE_TESTS": "ON",
                 "ENABLE_SIMD_AVX2": "ON"
             }
+        },
+        {
+            "name": "debugutils",
+            "displayName": "DebugUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_AVX2": "ON"
+            }
+        },
+        {
+            "name": "releaseutils",
+            "displayName": "ReleaseUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_AVX2": "ON"
+            }
         }
     ]
 }

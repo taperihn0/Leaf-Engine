@@ -22,6 +22,14 @@ public:
 		a8, b8, c8, d8, e8, f8, g8, h8
 	};
 
+	enum enumFile : uint_t {
+		a = 0, b, c, d, e, f, g, h
+	};
+	
+	enum enumRank : uint_t {
+		r1 = 0, r2, r3, r4, r5, r6, r7, r8s
+	};
+
 	Square() = default;
 	INLINE constexpr Square(uint_t cpy)
 		: _sq(cpy) { assert(isValid()); }
@@ -36,12 +44,12 @@ public:
 		return _sq;
 	}
 
-	INLINE uint_t getFile() const {
-		return _sq & 7;
+	INLINE enumFile getFile() const {
+		return static_cast<enumFile>(_sq & 7);
 	}
 
-	INLINE uint_t getRank() const {
-		return _sq / 8;
+	INLINE enumRank getRank() const {
+		return static_cast<enumRank>(_sq / 8);
 	}
 
 	INLINE bool isNotNull() const {

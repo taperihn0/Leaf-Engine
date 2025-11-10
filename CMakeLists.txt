@@ -21,7 +21,30 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_SOURCE_DIR}/src/backend/*.cpp"
 )
 
-add_executable(Leaf ${SOURCES})
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(COLLECT_SEARCH_STATS "Collect additional search info" OFF)
+option(BUILD_UTILS "Build utils sources" OFF)
+
+message("Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
+
+if (BUILD_UTILS)
+	add_library(Leaf STATIC ${SOURCES})
+	add_subdirectory(src/utils)
+	message("Building Leaf utils")
+else ()
+	add_executable(Leaf ${SOURCES})
+	message("Building Leaf sources")
+endif ()
+
+if (COLLECT_SEARCH_STATS)
+	target_compile_definitions(Leaf PUBLIC _COLLECT_SEARCH_STATS)
+endif ()
+
+if (INCLUDE_TESTS)
+	target_compile_definitions(Leaf PUBLIC _INCLUDE_TESTS)
+endif ()
 
 target_compile_definitions(Leaf PUBLIC 
 	$<$<CONFIG:Debug>:DEBUG>
@@ -29,30 +52,32 @@ target_compile_definitions(Leaf PUBLIC
 	$<$<CONFIG:RelWithDebInfo>:RELEASE>
 )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-option(COLLECT_SEARCH_STATS "Collect additional search info" OFF)
-option(INCLUDE_TESTS "Build and include tests header" OFF)
-
-message("Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
-message("Include test header: " ${INCLUDE_TESTS})
-
-if (COLLECT_SEARCH_STATS)
-	target_compile_definitions(Leaf PRIVATE _COLLECT_SEARCH_STATS)
-endif ()
-
-if (INCLUDE_TESTS)
-	target_compile_definitions(Leaf PRIVATE _INCLUDE_TESTS)
-endif ()
-
-target_include_directories(Leaf PRIVATE 
+target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/src/backend"
 	"${CMAKE_SOURCE_DIR}/src/frontend"
 	"${CMAKE_SOURCE_DIR}/src/util"
-	"${CMAKE_SOURCE_DIR}/src/unit"
 )
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	if (NOT MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og")
+	else ()
+		#
+	endif ()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+	if (NOT MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+	else ()
+		#
+	endif ()
+elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+	if (NOT MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+	else ()
+		#
+	endif()
+endif ()
 
 if (MSVC)
 	# pass
@@ -60,7 +85,6 @@ else ()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 endif()
 
 if (MSVC)
@@ -165,6 +189,8 @@ elseif (ENABLE_SIMD_AVX512)
 
 	message(STATUS "SIMD instructions enabled - AVX512 instruction set")
 endif()
+
+message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS}")
 
 set_target_properties(Leaf PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY 

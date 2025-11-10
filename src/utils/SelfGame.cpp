@@ -14,9 +14,9 @@ Game SelfGame::start(SearchLimits limits) {
         search.registerNewGame();
 
     Timer timer;
-    Game game(_openings.get(), limits.wtime, limits.btime);
+    Game game(_openings.getPosition(), limits.wtime, limits.btime);
 
-    while (true) {
+    while (!game.isWin() and !game.isDraw()) {
         Position& pos = game.getPosition();
         bool side2move = pos.getTurn();
         Search& curr_search = _search_by_side[side2move];
@@ -28,14 +28,10 @@ Game SelfGame::start(SearchLimits limits) {
 
         game.applyMove(move, think_time);
 
-        if (game.isWin() or game.isDraw())
-            break;
-
-        if (side2move == WHITE) {
+        if (side2move == WHITE)
             limits.wtime -= think_time - limits.winc;
-        } else {
+        else
             limits.btime -= think_time - limits.binc;
-        }
     }
 
     return game;

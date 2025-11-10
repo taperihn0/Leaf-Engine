@@ -16,6 +16,9 @@ public:
 	CastlingRights() = default;
 	CastlingRights(bool kinit, bool qinit);
 
+	bool operator==(const CastlingRights& rights);
+	bool operator!=(const CastlingRights& rights);
+
 	void printByColor(enumColor col_type) const;
 
 	INLINE bool isShortPossible() const {
@@ -61,10 +64,14 @@ private:
 	bool _kingside, _queenside;
 };
 
+namespace Utils { class PackedPosition; }
+
 // internal board state, including piece distribution 
 // and game flags like castling
 class Position {
 public:
+	friend class Utils::PackedPosition;
+
 	struct IrreversibleState;
 
 	Position();
@@ -76,6 +83,9 @@ public:
 	void setStartingPos();
 
 	void print() const;
+
+	bool operator==(const Position& pos) const;
+	bool operator!=(const Position& pos) const;
 
 	INLINE BitBoard getPawnsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::PAWN];
@@ -194,6 +204,10 @@ public:
 		return _halfmove_count;
 	}
 
+	INLINE uint16_t fullmoveClock() const {
+		return _fullmove_count;
+	}
+
 	INLINE void setTurn(enumColor col_to_move) {
 		_turn = col_to_move;
 	}
@@ -241,7 +255,8 @@ public:
 		Square ep_sq;
 		uint8_t halfmove_count;
 		std::array<CastlingRights, 2> castling_rights;
-		// TEMPORARY
+		// It is not really required to store previous hash key,
+		// since it can be computed. But keep it here for simplicity and efficiency.
 		uint64_t hash_key;
 	};
 
@@ -256,8 +271,8 @@ private:
 
 	std::array<CastlingRights, 2> _castling_rights;
 	Square _ep_square;
+	
 	uint8_t _halfmove_count;
-
 	uint16_t _fullmove_count;
 
 	std::array<Square, 2> _king_sq;
@@ -267,6 +282,15 @@ private:
 
 template <bool ExactScore>
 int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
+
+INLINE bool CastlingRights::operator==(const CastlingRights& rights) {
+	return _queenside == rights._queenside
+		   and _kingside == rights._kingside;
+}
+
+INLINE bool CastlingRights::operator!=(const CastlingRights& rights) {
+	return !(*this == rights);
+}
 
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
@@ -322,6 +346,10 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor s
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
 
 	return !(occupied & Intermediates);
+}
+
+INLINE bool Position::operator!=(const Position& pos) const {
+	return !(*this == pos);
 }
 
 INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {

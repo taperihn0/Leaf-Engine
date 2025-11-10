@@ -2,6 +2,7 @@
 #include "backend/Magic.hpp"
 #include "backend/Attacks.hpp"
 #include "backend/MoveGen.hpp"
+#include "backend/Hash.hpp"
 
 /*
 	NOTES:
@@ -19,6 +20,7 @@
 */
 
 int main(int argc, const char* argv[]) {
+	ZobristHash::fillKeys();
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
 	SlidersMagics::initAttackTables<Piece::ROOK>();
 
