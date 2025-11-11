@@ -3,6 +3,21 @@
 namespace Utils
 {
 
+PackedPosition::PackedPosition() {
+    std::memset(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
+}
+
+bool PackedPosition::operator==(const PackedPosition& p) const {
+    if (_occupancy_mask != p._occupancy_mask)
+        return false;
+    else if (_details_mask.halfmove_clock != p._details_mask.halfmove_clock 
+          or _details_mask.fullmove_clock != p._details_mask.fullmove_clock)
+        return false;
+
+    size_t cmp_bytes = static_cast<size_t>((_piece_cnt - 1 ) / 2 + 1);
+    return !static_cast<bool>(std::memcmp(&_details_mask.pieces, &p._details_mask.pieces, cmp_bytes));
+}
+
 PackedPosition PackedPosition::fromFEN(const std::string& fen) {
     return packed(Position(fen));
 }
@@ -181,47 +196,46 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	return pos;
 }
 
-void PackedPosition::write(std::ofstream& output) const {
-    byte mem[sizeof(BitBoard) + sizeof(DetailData)];
+void PackedPosition::write(std::ostream& output) const {
+    byte mem[_PackedSize];
     *reinterpret_cast<BitBoard*>(mem) = _occupancy_mask;
     
-    size_t i = 4;
+    size_t i = 0;
     size_t j = 0;
 
-    for (; i < _piece_cnt + 4; i += 2, j++) {
+    for (; i < _piece_cnt; i += 2, j++) {
         uint8_t piece_mask = _details_mask.pieces[j].lo;
-        mem[i] = piece_mask;
+        mem[j + 8] = piece_mask;
 
         int pieces_left = _piece_cnt - i - 1;
 
-        if (!pieces_left) 
-            break;
-
-        piece_mask = _details_mask.pieces[j].hi;
-        mem[i] = piece_mask << 4;
+        if (pieces_left) {
+            piece_mask = _details_mask.pieces[j].hi;
+            mem[j + 8] |= piece_mask << 4;
+        }
     }
 
-    mem[i] = _details_mask.halfmove_clock;
-    *reinterpret_cast<uint16_t*>(mem + i + 1) = _details_mask.fullmove_clock;
+    mem[j + 8] = _details_mask.halfmove_clock;
+    *reinterpret_cast<uint16_t*>(mem + j + 9) = _details_mask.fullmove_clock;
 
-    assert(output.is_open());
-
-    output.write(reinterpret_cast<const char*>(mem), i + 3);
+    assert(output);
+    output.write(reinterpret_cast<const char*>(mem), j + 11);
+    output.flush();
 }
 
-PackedPosition PackedPosition::read(std::ifstream& input) {
+PackedPosition PackedPosition::read(std::istream& input) {
     PackedPosition packed;
 
-    assert(input.is_open());
+    assert(input);
 
     // get bytes left
     auto curr_bytes = input.tellg();
     input.seekg(0, std::ios::end);
     auto end_bytes = input.tellg();
     input.seekg(curr_bytes);
-    
+
     size_t bytes_left = end_bytes - curr_bytes;
-    size_t to_read = sizeof(BitBoard) + sizeof(DetailData);
+    size_t to_read = _PackedSize;
 
     to_read = std::min(to_read, bytes_left);
 
@@ -231,19 +245,20 @@ PackedPosition PackedPosition::read(std::ifstream& input) {
     packed._occupancy_mask = *reinterpret_cast<BitBoard*>(mem);
 
     size_t piece_cnt = packed._occupancy_mask.popCount();
+    
+    packed._piece_cnt = piece_cnt;
 
     size_t i = 0;
-    size_t j = 4;
+    size_t j = 8;
 
     for (; i < piece_cnt; i += 2, j++) {
-        packed._details_mask.pieces[j - 4].lo = mem[j] & 0x0f;
+        packed._details_mask.pieces[j - 8].lo = mem[j] & 0x0f;
 
         int pieces_left = piece_cnt - i - 1;
 
-        if (!pieces_left) 
-            break;
-
-        packed._details_mask.pieces[j - 4].hi = (mem[j] & 0xf0) >> 4;
+        if (pieces_left) {
+            packed._details_mask.pieces[j - 8].hi = (mem[j] & 0xf0) >> 4;
+        }
     }
 
     packed._details_mask.halfmove_clock = mem[j];

@@ -8,7 +8,11 @@ namespace Utils {
     
 class PackedPosition {
 public:
-    PackedPosition() = default;
+    PackedPosition();
+
+    bool operator==(const PackedPosition& p) const;
+
+    INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
     
     static PackedPosition fromFEN(const std::string& fen);
 
@@ -16,9 +20,9 @@ public:
 
     static Position unpacked(const PackedPosition& pack);
 
-    void write(std::ofstream& output) const;
+    void write(std::ostream& output) const;
 
-    static PackedPosition read(std::ifstream& input);
+    static PackedPosition read(std::istream& input);
 
     struct alignas(1) Nibble {
         uint8_t lo : 4;
@@ -50,6 +54,8 @@ private:
     static uint8_t maskFromPiece(Piece piece, Square sq, const Position& pos);
 
     static void placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part);
+
+    static constexpr int _PackedSize = 8 + 19;
 
     BitBoard _occupancy_mask;
     DetailData _details_mask;

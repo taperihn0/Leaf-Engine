@@ -66,7 +66,7 @@ void OpeningGenerator::load() {
 Position OpeningGenerator::getPosition() {
     ASSERT(!_positions.empty(), "Empty position buffer");
     size_t random_index = random<size_t>(0, _positions.size() - 1);
-    return _positions.at(random_index);
+    return _positions[random_index];
 }
 
 } // namespace Utils

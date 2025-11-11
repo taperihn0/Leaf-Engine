@@ -11,7 +11,6 @@ namespace Utils {
 /* OpeningGenerator takes care of openings set.
 *  Usually, these are too small to be just used while setting up 
 *  very long tournamets, so we need to add some noise to the existing positions.
-*  See randomizePosition for more details.
 */
 class OpeningGenerator {
 public:

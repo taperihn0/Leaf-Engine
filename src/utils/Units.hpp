@@ -192,20 +192,41 @@ static bool ccrOneHourTest(Search& search) {
 
 static bool packedPositionTests() {
 	std::ifstream file("src/assets/lichess/lichess_2023-07.epd");
+	std::fstream tmp_stream("src/utils/tmp/tmp.pck", std::ios::in | std::ios::out | std::ios_base::binary);
 
 	if (!file) {
 		ASSERT(false, "Failed to open file: src/assets/lichess/lichess_2023-07.epd");
 		return false;
 	}
+	else if (!tmp_stream) {
+		ASSERT(false, "Failed to open file: src/utils/tmp/tmp.pck");
+		return false;
+	}
 
 	std::string line;
-	for (size_t i = 0; i < 200000 and std::getline(file, line); i++) {
+	for (size_t i = 0; i < 400000 and std::getline(file, line); i++) {
 		Position pos(line);
 		std::cout << i << ": " << line << '\n';
 
-		if (PackedPosition::unpacked(PackedPosition::packed(pos)) != pos) {
+		PackedPosition&& packed = PackedPosition::packed(pos);
+
+		if (PackedPosition::unpacked(packed) != pos) {
 			pos.print();
-			ASSERT(false, "Failed packaging a position");
+			ASSERT(false, "Failed to pack a position");
+			return false;
+		}
+
+		tmp_stream.seekp(0, std::ios::beg);
+		packed.write(tmp_stream);
+
+		tmp_stream.seekg(0, std::ios_base::beg);
+		tmp_stream.clear();
+
+		PackedPosition wr_packed = PackedPosition::read(tmp_stream);
+
+		if (packed != wr_packed) {
+			pos.print();
+			ASSERT(false, "Failed to read/write a packed position");
 			return false;
 		}
 	}
