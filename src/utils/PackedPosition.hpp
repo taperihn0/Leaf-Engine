@@ -55,7 +55,7 @@ private:
 
     static void placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part);
 
-    static constexpr int _PackedSize = 8 + 19;
+    static constexpr size_t _PackedSize = 8 + 19;
 
     BitBoard _occupancy_mask;
     DetailData _details_mask;

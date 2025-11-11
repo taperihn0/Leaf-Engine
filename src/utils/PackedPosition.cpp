@@ -220,7 +220,14 @@ void PackedPosition::write(std::ostream& output) const {
 
     assert(output);
     output.write(reinterpret_cast<const char*>(mem), j + 11);
-    output.flush();
+}
+
+INLINE size_t bytesLeft(std::istream& input) {
+    auto curr_bytes = input.tellg();
+    input.seekg(0, std::ios::end);
+    auto end_bytes = input.tellg();
+    input.seekg(curr_bytes);
+    return end_bytes - curr_bytes;
 }
 
 PackedPosition PackedPosition::read(std::istream& input) {
@@ -228,16 +235,8 @@ PackedPosition PackedPosition::read(std::istream& input) {
 
     assert(input);
 
-    // get bytes left
-    auto curr_bytes = input.tellg();
-    input.seekg(0, std::ios::end);
-    auto end_bytes = input.tellg();
-    input.seekg(curr_bytes);
-
-    size_t bytes_left = end_bytes - curr_bytes;
-    size_t to_read = _PackedSize;
-
-    to_read = std::min(to_read, bytes_left);
+    size_t bytes_left = bytesLeft(input);
+    size_t to_read = std::min(_PackedSize, bytes_left);
 
     byte* mem = reinterpret_cast<byte*>(alloca(to_read));
     input.read(reinterpret_cast<char*>(mem), to_read);

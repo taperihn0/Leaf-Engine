@@ -12,7 +12,7 @@ SelfGame::SelfGame(size_t tt_size)
     _openings.load();
 }
 
-void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits) {
+Game::Result SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits) {
     for (Search& search : _search_by_side)
         search.registerNewGame();
 
@@ -20,8 +20,9 @@ void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits
     const bool time_constraint = limits.wtime != 0 and limits.btime != 0;
 
     Game game(_openings.getPosition(), time_constraint, limits.wtime, limits.btime);
-    
-    while (!game.isWin() and !game.isDraw()) {
+    Game::Result game_result;
+
+    while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         bool side2move = pos.getTurn();
         Search& curr_search = _search_by_side[side2move];
@@ -30,7 +31,7 @@ void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits
         positions.push_back(PackedPosition::packed(game.getPosition()));
 
         timer.go();
-        Move32b move = curr_search.bestMove(pos, record, limits);
+        Move32b move = curr_search.bestMove<false>(pos, record, limits);
         time_ms_t think_time = timer.duration();
 
         game.applyMove(move, think_time);
@@ -40,6 +41,8 @@ void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits
         else if (time_constraint)
             limits.btime -= think_time - limits.binc;
     }
+
+    return game_result;
 }
 
 } // namespace Utils

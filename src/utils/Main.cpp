@@ -21,7 +21,7 @@ void parseSelfPlay(Utils::DataCollector& collector, std::istringstream& strm) {
 	strm >> std::skipws >> token;
 	SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
-	collector.startTournament(games_count, "src/utils/selfPlayData/selfplay.epd", limits);
+	collector.startTournament(games_count, limits);
 }
 
 int main(int argc, char* argv[]) {

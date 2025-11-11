@@ -218,6 +218,7 @@ static bool packedPositionTests() {
 
 		tmp_stream.seekp(0, std::ios::beg);
 		packed.write(tmp_stream);
+		tmp_stream.flush();
 
 		tmp_stream.seekg(0, std::ios_base::beg);
 		tmp_stream.clear();

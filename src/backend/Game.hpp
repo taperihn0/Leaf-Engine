@@ -65,16 +65,30 @@ private:
 */
 class Game {
 public:
-	enum GameResult {
-		DRAW, WIN_OR_LOSE
-	};
+    enum Result {
+        WHITE_WIN_BY_MATE,
+        BLACK_WIN_BY_MATE,
+        WHITE_WIN_BY_ADJUCATION,
+        BLACK_WIN_BY_ADJUCATION,
+        WHITE_WIN_BY_TIMEOUT,
+        BLACK_WIN_BY_TIMEOUT,
+        DRAW_BY_HALF_MOVES_LIMIT,
+        DRAW_BY_STEALMATE,
+		DRAW_BY_REPETITIONS
+    };
 
 	Game(Position&& from, bool time_constraint, time_ms_t time_white = 0, time_ms_t time_black = 0);
 
 	void applyMove(Move32b move, time_ms_t think_time);
 
-	bool isWin();
-	bool isDraw();
+	// Returns true whether there is a win on the board.
+	// 'full' parameter contains detailed info.
+	// If there is no win, then full is undefined.
+	bool isWin(Result& full);
+
+	// Returns true whether there is a draw on the board.
+	// 'full' parameter contains detailed info.
+	bool isDraw(Result& full);
 
 	Position& getPosition();
 
@@ -95,3 +109,4 @@ private:
 	bool _any_response_avaible;
 };
 
+std::string toStr(Game::Result game_result);
