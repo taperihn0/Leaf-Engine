@@ -3,18 +3,23 @@
 
 namespace Utils {
 
+OpeningGenerator SelfGame::_openings(_OpeningFile);
+
 SelfGame::SelfGame(size_t tt_size)
-: _openings(_OpeningFile)
-, _search_by_side{ Search(TranspositionTable(tt_size)),
+: _search_by_side{ Search(TranspositionTable(tt_size)),
                    Search(TranspositionTable(tt_size)) } 
-{}
+{
+    _openings.load();
+}
 
 void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits) {
     for (Search& search : _search_by_side)
         search.registerNewGame();
 
     Timer timer;
-    Game game(_openings.getPosition(), limits.wtime, limits.btime);
+    const bool time_constraint = limits.wtime != 0 and limits.btime != 0;
+
+    Game game(_openings.getPosition(), time_constraint, limits.wtime, limits.btime);
     
     while (!game.isWin() and !game.isDraw()) {
         Position& pos = game.getPosition();
@@ -30,9 +35,9 @@ void SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits
 
         game.applyMove(move, think_time);
 
-        if (side2move == WHITE)
+        if (time_constraint and side2move == WHITE)
             limits.wtime -= think_time - limits.winc;
-        else
+        else if (time_constraint)
             limits.btime -= think_time - limits.binc;
     }
 }

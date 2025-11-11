@@ -18,10 +18,8 @@ void DataCollector::startTournament(size_t games_count, std::string file, Search
         _match.start(positions, limits);
 
         for (size_t j = 0; j < positions.size(); j++) {
-            const PackedPosition* packed_position = positions.data() + j;
-
-            ASSERT(output.write(reinterpret_cast<const char*>(packed_position), sizeof(PackedPosition)), 
-                   "Failed to write packed position");
+            const PackedPosition& packed_position = positions[j];
+            packed_position.write(output);
         }
 
         positions.clear();

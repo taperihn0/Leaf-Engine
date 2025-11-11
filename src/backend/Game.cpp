@@ -1,14 +1,17 @@
 #include "Game.hpp"
 #include "MoveGen.hpp"
 
-Game::Game(Position&& from, time_ms_t time_white, time_ms_t time_black)
+Game::Game(Position&& from,  bool time_constraint, time_ms_t time_white, time_ms_t time_black)
 : _current_pos(from)
-, _time_left_sided{ time_white, time_black } 
+, _time_left_sided{ time_white, time_black }
+, _time_constraint(time_constraint)
 {}
 
 void Game::applyMove(Move32b move, time_ms_t think_time) {
     bool side2move = _current_pos.getTurn();
-    _time_left_sided[side2move] -= think_time;
+
+    if (_time_constraint)
+        _time_left_sided[side2move] -= think_time;
 
     _current_pos.make(move);
 
@@ -21,7 +24,7 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
 bool Game::isWin() {
     bool side2move = _current_pos.getTurn();
 
-    if (_time_left_sided[side2move] <= 0)
+    if (_time_constraint and _time_left_sided[side2move] < 0)
         return true;
     else if (_is_cached_any_response)
         return _any_response_avaible;    
@@ -29,7 +32,7 @@ bool Game::isWin() {
     _any_response_avaible = isAnyResponse();
     _is_cached_any_response = true;
 
-    return _any_response_avaible;
+    return !_any_response_avaible;
 }
 
 bool Game::isDraw() {
@@ -49,10 +52,10 @@ FullInfoRecord& Game::getHistoryRecord() {
 bool Game::isGameCycle()  {
     uint64_t hash_key = _current_pos.getZobristKey();
 
-    int halfmove_cnt = _current_pos.halfmoveClock();
+    int halfmove_cnt = _pos_record.currentHalfCount();
     int repetition_cnt = 0;
 
-    for (int i = 1; i <= halfmove_cnt; ) {
+    for (int i = 1; i <= halfmove_cnt; i++) {
 		const int cnt = halfmove_cnt - i;
 
 		const Move32b move = _pos_record.getPrevMove(cnt);

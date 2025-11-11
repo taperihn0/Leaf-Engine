@@ -17,20 +17,14 @@ class OpeningGenerator {
 public:
     OpeningGenerator(std::string epd_openings);
 
-    void getFilePositions();
+    void load();
 
     Position getPosition();
 private:
-
-    /* Avaible opening sets are usually really small and compact, 
-    *  containing at most few thousands positions.
-    *  Here, we randomize some random position from set by applying 
-    *  few more random moves.
-    */
-    Position randomizePosition(Position& pos);
-
-    static constexpr int _MinRandomMoves = 6;
-    static constexpr int _OpeningEvalThreshold = 400;
+    static constexpr int _OpeningEvalThreshold = 300;
+    static constexpr int _RandomPerPos   = 10;
+    static constexpr int _MinRandomMoves = 2;
+    static constexpr int _MaxRandomMoves = 10;
 
     std::vector<Position> _positions;
     std::string _openings_file_path;

@@ -13,6 +13,8 @@ PackedPosition PackedPosition::packed(const Position& pos) {
     BitBoard occupied = pos.getOccupied();
     packed._occupancy_mask = occupied;
 
+    packed._piece_cnt = 0;
+
     for (size_t i = 0; occupied and i < 16; i++) {
         Nibble nibble;
         nibble.lo = 0;
@@ -23,6 +25,8 @@ PackedPosition PackedPosition::packed(const Position& pos) {
         uint8_t mask = maskFromPiece(piece, sq, pos);
 
         nibble.lo = mask;
+
+        packed._piece_cnt++;
         
         if (occupied) {
             sq = occupied.dropForward();
@@ -30,6 +34,8 @@ PackedPosition PackedPosition::packed(const Position& pos) {
             mask = maskFromPiece(piece, sq, pos);
 
             nibble.hi = mask;
+
+            packed._piece_cnt++;
         }
 
         packed._details_mask.pieces[i] = nibble;
@@ -173,6 +179,77 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	pos._zhash = ZobristHash::generateOnFly(pos);
 
 	return pos;
+}
+
+void PackedPosition::write(std::ofstream& output) const {
+    byte mem[sizeof(BitBoard) + sizeof(DetailData)];
+    *reinterpret_cast<BitBoard*>(mem) = _occupancy_mask;
+    
+    size_t i = 4;
+    size_t j = 0;
+
+    for (; i < _piece_cnt + 4; i += 2, j++) {
+        uint8_t piece_mask = _details_mask.pieces[j].lo;
+        mem[i] = piece_mask;
+
+        int pieces_left = _piece_cnt - i - 1;
+
+        if (!pieces_left) 
+            break;
+
+        piece_mask = _details_mask.pieces[j].hi;
+        mem[i] = piece_mask << 4;
+    }
+
+    mem[i] = _details_mask.halfmove_clock;
+    *reinterpret_cast<uint16_t*>(mem + i + 1) = _details_mask.fullmove_clock;
+
+    assert(output.is_open());
+
+    output.write(reinterpret_cast<const char*>(mem), i + 3);
+}
+
+PackedPosition PackedPosition::read(std::ifstream& input) {
+    PackedPosition packed;
+
+    assert(input.is_open());
+
+    // get bytes left
+    auto curr_bytes = input.tellg();
+    input.seekg(0, std::ios::end);
+    auto end_bytes = input.tellg();
+    input.seekg(curr_bytes);
+    
+    size_t bytes_left = end_bytes - curr_bytes;
+    size_t to_read = sizeof(BitBoard) + sizeof(DetailData);
+
+    to_read = std::min(to_read, bytes_left);
+
+    byte* mem = reinterpret_cast<byte*>(alloca(to_read));
+    input.read(reinterpret_cast<char*>(mem), to_read);
+
+    packed._occupancy_mask = *reinterpret_cast<BitBoard*>(mem);
+
+    size_t piece_cnt = packed._occupancy_mask.popCount();
+
+    size_t i = 0;
+    size_t j = 4;
+
+    for (; i < piece_cnt; i += 2, j++) {
+        packed._details_mask.pieces[j - 4].lo = mem[j] & 0x0f;
+
+        int pieces_left = piece_cnt - i - 1;
+
+        if (!pieces_left) 
+            break;
+
+        packed._details_mask.pieces[j - 4].hi = (mem[j] & 0xf0) >> 4;
+    }
+
+    packed._details_mask.halfmove_clock = mem[j];
+    packed._details_mask.fullmove_clock = *reinterpret_cast<uint16_t*>(mem + j + 1);
+
+    return packed;
 }
 
 BitBoard PackedPosition::getOccupancy() const {

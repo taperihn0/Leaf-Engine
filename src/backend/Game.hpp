@@ -69,7 +69,7 @@ public:
 		DRAW, WIN_OR_LOSE
 	};
 
-	Game(Position&& from, time_ms_t time_white, time_ms_t time_black);
+	Game(Position&& from, bool time_constraint, time_ms_t time_white = 0, time_ms_t time_black = 0);
 
 	void applyMove(Move32b move, time_ms_t think_time);
 
@@ -88,7 +88,8 @@ private:
 	Position _current_pos;
 	FullInfoRecord _pos_record;
 	time_ms_t _time_left_sided[2];
-
+	bool _time_constraint;
+	
 	// Cache game state needed when asking for game result
 	bool _is_cached_any_response;
 	bool _any_response_avaible;

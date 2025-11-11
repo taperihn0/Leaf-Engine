@@ -9,6 +9,8 @@ public:
 	UniversalChessInterface();
 	~UniversalChessInterface() = default;
 
+	static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
+
 	void loop(int argc, const char* argv[]);
 private:
 	void parseUCI();

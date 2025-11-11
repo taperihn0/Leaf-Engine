@@ -4,7 +4,7 @@
 
 #include <sstream>
 
-SearchLimits loadSearchInfo(std::istringstream& strm, std::string token) {
+SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth - 1;
 
@@ -135,7 +135,7 @@ inline void UniversalChessInterface::parseGo(std::istringstream& strm) {
 		return;
 	}
 	
-	SearchLimits limits = loadSearchInfo(strm, token);
+	SearchLimits limits = loadSearchLimits(strm, token);
 	_search.bestMove(_pos, _game, limits);
 }
 

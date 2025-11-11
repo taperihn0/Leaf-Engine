@@ -743,6 +743,7 @@ bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, 
 
 		const Move32b move = game.getPrevMove(cnt);
 
+		// TODO: move.isIrreversible() first?
 		if ((i & 1) == 0)
 			continue;
 		else if (move.isIrreversible())

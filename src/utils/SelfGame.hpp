@@ -16,7 +16,7 @@ private:
     static inline const std::string _OpeningFile = "src/assets/openingsPositions/crafty_2500_new.epd";
 
     Search _search_by_side[2];
-    OpeningGenerator _openings;
+    static OpeningGenerator _openings;
 };
 
 } // namespace Utils

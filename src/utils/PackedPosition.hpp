@@ -16,6 +16,10 @@ public:
 
     static Position unpacked(const PackedPosition& pack);
 
+    void write(std::ofstream& output) const;
+
+    static PackedPosition read(std::ifstream& input);
+
     struct alignas(1) Nibble {
         uint8_t lo : 4;
         uint8_t hi : 4;
@@ -49,6 +53,8 @@ private:
 
     BitBoard _occupancy_mask;
     DetailData _details_mask;
+
+    uint8_t _piece_cnt;
 };
 
 } // namespace Utils

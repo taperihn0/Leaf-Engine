@@ -18,7 +18,7 @@ int BitBoard::popCount() const {
 #if defined(__INTEL_COMPILER) or defined(_MSC_VER)
 	return static_cast<int>(_mm_popcnt_u64(_board));
 #elif defined(__GNUC__)
-	return __builtin_popcount(_board);
+	return __builtin_popcountll(_board);
 #else
 	uint64_t bb = _board;
 	int c;
