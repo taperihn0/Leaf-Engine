@@ -21,8 +21,11 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_SOURCE_DIR}/src/backend/*.cpp"
 )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
+endif ()
 
 option(COLLECT_SEARCH_STATS "Collect additional search info" OFF)
 option(BUILD_UTILS "Build utils sources" OFF)
@@ -63,24 +66,24 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og")
 	else ()
-		#
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
 	endif ()
 elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 	else ()
-		#
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
 	endif ()
 elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 	else ()
-		#
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
 	endif()
 endif ()
 
 if (MSVC)
-	# pass
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
 else ()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")

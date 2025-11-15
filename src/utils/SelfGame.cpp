@@ -22,6 +22,8 @@ Game::Result SelfGame::start(std::vector<PackedPosition>& positions, SearchLimit
     Game game(_openings.getPosition(), time_constraint, limits.wtime, limits.btime);
     Game::Result game_result;
 
+    game.getPosition().print();
+
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         bool side2move = pos.getTurn();

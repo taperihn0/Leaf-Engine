@@ -118,7 +118,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
 			if (bb.popCount() > 1) {
 				char id = str[1];
-				size_t idn = 0;
+				int idn = 0;
 
 				if ((idn = static_cast<int>(std::string_view("abcdefgh").find(id))) != std::string::npos) {
 					BitBoard file = BitBoard::file(idn);

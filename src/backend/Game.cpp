@@ -5,6 +5,7 @@ Game::Game(Position&& from,  bool time_constraint, time_ms_t time_white, time_ms
 : _current_pos(from)
 , _time_left_sided{ time_white, time_black }
 , _time_constraint(time_constraint)
+, _is_cached_any_response(false)
 {}
 
 void Game::applyMove(Move32b move, time_ms_t think_time) {
@@ -70,7 +71,7 @@ FullInfoRecord& Game::getHistoryRecord() {
 bool Game::isGameCycle()  {
     uint64_t hash_key = _current_pos.getZobristKey();
 
-    int halfmove_cnt = _pos_record.currentHalfCount();
+    int halfmove_cnt = static_cast<int>(_pos_record.currentHalfCount());
     int repetition_cnt = 0;
 
     for (int i = 1; i <= halfmove_cnt; i++) {

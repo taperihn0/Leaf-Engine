@@ -26,7 +26,7 @@
 // using __forceinline by default - that came out to be more efficient
 #define INLINE				__forceinline 
 #define _FORCEINLINE		__forceinline
-#define _LAMBDA_FORCEINLINE [[msvc::forceinline]] 
+#define _LAMBDA_FORCEINLINE [[msvc::forceinline]]
 #else
 #define INLINE				inline
 #define _FORCEINLINE		__attribute__((always_inline))
