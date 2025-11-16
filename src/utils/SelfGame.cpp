@@ -9,8 +9,8 @@ SelfGame::SelfGame(size_t tt_size)
 {}
 
 Game::Result SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits) {
-    for (Search& search : _search_by_side)
-        search.registerNewGame();
+    _search_by_side[WHITE].registerNewGame();
+    _search_by_side[BLACK].registerNewGame();
 
     Timer timer;
     const bool time_constraint = limits.wtime != 0 and limits.btime != 0;

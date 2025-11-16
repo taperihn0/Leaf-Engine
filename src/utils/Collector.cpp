@@ -15,7 +15,7 @@ void incGameCount(DataCollector::CommonThreadData* common) {
 void perThreadGameLoop(DataCollector::PerThreadData& thread) {
     ASSERT(thread.output_white_win.is_open(), "Output not opened.");
     ASSERT(thread.output_black_win.is_open(), "Output not opened.");
-    ASSERT(thread.output_draw     .is_open(), "Output not opened.");
+    ASSERT(thread.output_draw.is_open(),      "Output not opened.");
     ASSERT(thread.commons != nullptr,         "Thread commons not initialized");
 
     std::vector<PackedPosition> positions;
@@ -31,22 +31,38 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
 
     thread.games_ended = 0;
     thread.total_positions = 0;
+    thread.white_win_count = 0;
+    thread.black_win_count = 0;
+    thread.draw_count = 0;
 
     const ll nodes_per_search = thread.limits.nodes;
     const ll nodes_randomization_range = static_cast<ll>(nodes_per_search * DataCollector::NodesRandomFactor);
+    const ll nodes_min = nodes_per_search - nodes_randomization_range;
+    const ll nodes_max = nodes_per_search + nodes_randomization_range;
 
     SelfGame match(1_MB);
 
     for (size_t i = 0; thread.commons->games_ended < thread.commons->total_games; i++) {
 
         thread.commons->stdout_lock.lock();
+
+        print_thread_info(thread_id);
+        std::cout << "White wins, Black wins, Draws: "
+                  << thread.white_win_count << ' '
+                  << thread.black_win_count << ' '
+                  << thread.draw_count      << std::endl;
+
+        thread.commons->stdout_lock.unlock();
+
+        thread.commons->stdout_lock.lock();
         print_thread_info(thread_id);
         std::cout << "Starting game " << i << "..." << std::endl;
         thread.commons->stdout_lock.unlock();
 
-        // add noise to search node number
-        thread.limits.nodes = random<ll>(nodes_per_search - nodes_randomization_range,
-                                         nodes_per_search + nodes_randomization_range);
+        // add noise to search node number (if nodes threshold is used)
+        if (nodes_per_search > 0) {
+            thread.limits.nodes = random<ll>(nodes_min, nodes_max);
+        }
 
         Game::Result game_result = match.start(positions, thread.limits);
 
@@ -59,25 +75,33 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
         thread.commons->stdout_lock.unlock();
 
         for (size_t j = 0; j < game_positions_cnt; j++) {
+
             const PackedPosition& packed_position = positions[j];
 
-           if (game_result == Game::WHITE_WIN_BY_ADJUCATION
+            if     (game_result == Game::WHITE_WIN_BY_ADJUCATION
                  or game_result == Game::WHITE_WIN_BY_MATE
-                 or game_result == Game::WHITE_WIN_BY_TIMEOUT) {
+                 or game_result == Game::WHITE_WIN_BY_TIMEOUT) 
+            {
+                thread.white_win_count++;
                 packed_position.write(thread.output_white_win);
             }
             else if (game_result == Game::BLACK_WIN_BY_ADJUCATION
-                 or game_result == Game::BLACK_WIN_BY_MATE
-                 or game_result == Game::BLACK_WIN_BY_TIMEOUT) {
+                  or game_result == Game::BLACK_WIN_BY_MATE
+                  or game_result == Game::BLACK_WIN_BY_TIMEOUT) 
+            {
+                thread.black_win_count++;
                 packed_position.write(thread.output_black_win);
             }
             else if (game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
-                 or game_result == Game::DRAW_BY_REPETITIONS
-                 or game_result == Game::DRAW_BY_STEALMATE) {
+                  or game_result == Game::DRAW_BY_REPETITIONS
+                  or game_result == Game::DRAW_BY_STEALMATE) 
+            {
+                thread.draw_count++;
                 packed_position.write(thread.output_draw);
             }
-            else ASSERT(false, "No other game results");
+           else ASSERT(false, "No other game results");
         }
+
 
         positions.clear();
 
@@ -87,7 +111,8 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
 
     thread.commons->stdout_lock.lock();
     print_thread_info(thread_id);
-    std::cout << thread.games_ended << " games played on single thread - total of " << thread.total_positions 
+    std::cout << thread.games_ended << " games played on thread - total of " 
+              << thread.total_positions 
               << " positions collected." << std::endl;
     thread.commons->stdout_lock.unlock();
 }

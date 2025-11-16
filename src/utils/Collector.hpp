@@ -21,6 +21,10 @@ public:
         SearchLimits      limits;
 
         size_t            games_ended;
+        size_t            white_win_count;
+        size_t            black_win_count;
+        size_t            draw_count;
+
         size_t            total_positions;
 
         CommonThreadData* commons = nullptr;
@@ -36,6 +40,8 @@ public:
     };
 
     static constexpr float NodesRandomFactor = 0.15f;
+    //static constexpr float TimeRandomFactor  = 0.09f;
+
 private:
     static constexpr std::string_view _FileWhiteWin = "src/utils/selfplay/selfplay_white_win";
     static constexpr std::string_view _FileBlackWin = "src/utils/selfplay/selfplay_black_win";
