@@ -35,31 +35,60 @@ void parseSelfPlay(Utils::DataCollector& collector, std::istringstream& strm) {
 }
 
 void parsePackedFile(std::istringstream& strm) {
-    std::string file;
-    strm >> std::skipws >> file;
+    std::string filepath;
+    strm >> std::skipws >> filepath;
 
-    std::ifstream input(file);
+    std::ifstream input(filepath);
 
     if (!input) {
-        std::cout << "Failed to open file: " << file << std::endl;
+        std::cout << "Failed to open file: " << filepath << std::endl;
         return;
     }
 
-    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(input);
+    std::vector<Position> full_positions;
+    std::string line;
 
-    for (auto& packed : packed_positions) {
-        Position unpack = Utils::PackedPosition::unpacked(packed);
+    while (std::getline(input, line)) {
+        full_positions.push_back(Position(line));
+    }
 
-        Position::enumStatusFlag status;
+    std::fstream tmp_stream("src/assets/tmp/tmp.psf", std::ios::ios_base::binary
+                                                      | std::ios::ios_base::in
+                                                      | std::ios::ios_base::out
+                                                      | std::ios::ios_base::trunc);
 
-        unpack.print();
+    if (!tmp_stream) {
+        std::cout << "Failed to open file: src/assets/tmp/tmp.psf" << std::endl;
+        return;
+    }
 
-        if (!(status = unpack.isValid())) {
+    for (auto& full_pos : full_positions) {
+        Utils::PackedPosition packed = Utils::PackedPosition::packed(full_pos);
+        packed.write(tmp_stream);
+    }
+
+    tmp_stream.flush();
+    tmp_stream.seekp(0, std::ios::beg);
+
+    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
+
+    ASSERT(packed_positions.size() == full_positions.size(), 
+        "Position number does not match: "
+        + std::to_string(packed_positions.size()) + " != "
+        + std::to_string(full_positions.size()));
+
+    for (size_t i = 0; i < packed_positions.size(); i++) {
+        Position unpack = Utils::PackedPosition::unpacked(packed_positions[i]);
+
+        if (unpack != full_positions[i]) {
             unpack.print();
-            ASSERT(false, "Invalid packed position: code " + toStr(status));
+            full_positions[i].print();
+            std::cout << "Position number " << i << " does not match" << std::endl;
             return;
         }
     }
+
+    std::cout << "Successfully packed all positions" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -75,20 +104,6 @@ int main(int argc, char* argv[]) {
 	std::ios_base::sync_with_stdio(false);
 
 	std::cout << "Utility module for " << EngineName << '\n';
-    
-    Position st(std::string("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1"));
-    Utils::PackedPosition p = Utils::PackedPosition::packed(st);
-
-    std::ofstream tmp("src/utils/selfplay/tmp.epd", std::ios::ios_base::app | std::ios::ios_base::binary);
-
-    //if (tmp) {
-    //    p.write(tmp);
-    //    p.write(tmp);
-    //    tmp.close();
-    //}
-    //else {
-    //    return -1;
-    //}
 
     std::string command;
 
@@ -101,7 +116,7 @@ int main(int argc, char* argv[]) {
 
 		strm >> std::skipws >> token;
 
-        if (token == "test_packed_pos")        Utils::packedPositionTests();
+             if (token == "test_packed_pos")   Utils::packedPositionTests();
         else if (token == "test_ccr_one_hour") Utils::ccrOneHourTest(search);
         else if (token == "test_see")		   Utils::seeTests();
         else if (token == "test_all")		   Utils::runTests(search);
