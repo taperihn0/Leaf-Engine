@@ -12,8 +12,11 @@
 
 #include <numeric>
 
-struct SearchLimits {
-	bool isTimeLeft();
+class Search;
+
+class SearchLimits {
+public:
+    friend class Search;
 
 	time_ms_t depth		  = 0,
 			  wtime		  = 0,
@@ -21,10 +24,20 @@ struct SearchLimits {
 	time_ms_t winc		  = 0, 
 			  binc		  = 0,
 			  search_time = 0;
+    ull       nodes       = 0;
+    ull       qnodes      = 0;
 	Timer     timer;
-};
+private:
+    bool isTimeLeft();
 
-class Search;
+    // anyNodesLeft compares current any-node count (both search and quiescent nodes)
+    // and returns whether given number is below any-node threshold.
+    bool anyNodesLeft(ull nodes_so_far);
+
+    // anyQuiesceNodesLeft compares current quiescent nodes count
+    // and returns whether given number is below quiescent-node threshold.
+    bool anyQuiesceNodesLeft(ull qnodes_so_far);
+};
 
 struct SearchResults {
 	void registerBestMove(Move32b move);
@@ -40,14 +53,14 @@ struct SearchResults {
 	unsigned  depth				= 0,
 			  seldepth			= 0;
 	Score	  score_cp			= 0;
-	ull		  nodes_cnt			= 0;
+	ull		  nodes_cnt			= 0,
+              qnodes_cnt        = 0;
 	size_t	  tt_entries		= 0;
 	Move32b   best_move			= Move32b::Null;
 	time_ms_t duration			= 0;
 
 #if defined (_COLLECT_SEARCH_STATS)
-	ull		  qnodes_cnt		= 0,
-			  pvnodes_cnt		= 0,
+	ull       pvnodes_cnt		= 0,
 			  npvnodes_cnt		= 0;
 
 	ull		  tt_probe_cnt		= 0,

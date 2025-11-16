@@ -11,6 +11,14 @@ INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
 
+INLINE bool SearchLimits::anyNodesLeft(ull nodes_so_far) {
+    return !nodes or nodes_so_far < nodes;
+}
+
+INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
+    return !qnodes or qnodes_so_far < qnodes;
+}
+
 INLINE void SearchResults::registerBestMove(Move32b move) {
 	best_move = move;
 }
@@ -180,6 +188,8 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
 
+        // TODO: So far, I reject last move when search is finised.
+        // TODO: Sometimes it might be actually not really bad.
 		if (!search<InfoLevel>(pos, game, limits, search_results))
 			break;
 
@@ -202,8 +212,12 @@ bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& lim
 									   results.depth, 
 									   0);
 
-	if (results.depth > 1 and !limits.isTimeLeft())
-		return false;
+    if (results.depth > 1 and (!limits.isTimeLeft()
+        or !limits.anyNodesLeft(results.nodes_cnt)
+        or !limits.anyQuiesceNodesLeft(results.qnodes_cnt)))
+    {
+        return false;
+    }
 
 	results.duration = limits.timer.duration();
 
@@ -242,6 +256,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
+    else if (!Root and (!limits.anyNodesLeft(results.nodes_cnt) or
+                        !limits.anyQuiesceNodesLeft(results.qnodes_cnt))) 
+    {
+        return -Score::Undef;
+    }
 	else if (!depth) {
 		return quiesce<NodeType>(pos, limits, results, node,
 								 alpha,
@@ -269,6 +288,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	}
 	
 	results.nodes_cnt++;
+
 #if defined(_COLLECT_SEARCH_STATS)
 	results.pvnodes_cnt += IsPV;
 	results.npvnodes_cnt += !IsPV;
@@ -482,6 +502,8 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		pos.unmake(node->move, node->state);
 
 		if (limits.isTimeLeft() and 
+            limits.anyNodesLeft(results.nodes_cnt) and
+            limits.anyQuiesceNodesLeft(results.qnodes_cnt) and
 			node->move.isLegalMoved() and 
 			node->score > node->best_score) 
 		{
@@ -514,7 +536,10 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 				alpha = node->score;
 			}
 		}
-		else if (!limits.isTimeLeft()) {
+		else if (!limits.isTimeLeft() or
+                 !limits.anyNodesLeft(results.nodes_cnt) or
+                 !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
+        {
 			if (Root and node->best_move.isNull()) {
 				// TODO: move at root assigned here might be illegal.
 				node->best_move = node->move;
@@ -563,6 +588,11 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
+    else if (!limits.anyNodesLeft(results.nodes_cnt) or
+             !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
+    {
+        return -Score::Undef;
+    }
 	else if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
 		return _eval.staticEval(pos);
 	}
@@ -590,9 +620,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
-#if defined(_COLLECT_SEARCH_STATS)
 	results.qnodes_cnt++;
-#endif
 
 	assert(alpha < beta);
 
@@ -669,6 +697,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 		pos.unmake(node->move, node->state);
 
 		if (limits.isTimeLeft() and 
+            limits.anyNodesLeft(results.nodes_cnt) and
+            limits.anyQuiesceNodesLeft(results.qnodes_cnt) and
 			node->move.isLegalMoved() and 
 			node->score > alpha) 
 		{
@@ -689,7 +719,10 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 			
 			alpha = node->score;
 		}
-		else if (!limits.isTimeLeft()) {
+		else if (!limits.isTimeLeft() or
+                 !limits.anyNodesLeft(results.nodes_cnt) or
+                 !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
+        {
 			return -Score::Undef;
 		}
 	}

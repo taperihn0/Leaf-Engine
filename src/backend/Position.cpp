@@ -487,7 +487,7 @@ static constexpr std::array<int, 7> SeePieceValue = {
 
 template <bool ExactScore>
 int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType attacker) const {
-	static auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
+	auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
 		for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
 			BitBoard mask = _piece_bb[side][piece] & bb;
 			if (mask) return mask.oneBit();

@@ -6,8 +6,8 @@
 static constexpr int RandomSeed = 0xfff;
 
 INLINE uint64_t randomU64() {
-	return random<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff)
-		   & random<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff);
+	return srandom<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff)
+		   & srandom<uint64_t>(1, std::numeric_limits<uint64_t>::max(), 0xfff);
 }
 
 void ZobristHash::fillKeys() {

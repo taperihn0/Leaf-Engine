@@ -58,7 +58,7 @@ void parsePackedFile(std::istringstream& strm) {
                                                       | std::ios::ios_base::trunc);
 
     if (!tmp_stream) {
-        std::cout << "Failed to open file: src/assets/tmp/tmp.psf" << std::endl;
+        std::cout << "Failed to open file: src/assets/tmp/tmp.pck" << std::endl;
         return;
     }
 
@@ -73,9 +73,9 @@ void parsePackedFile(std::istringstream& strm) {
     std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
 
     ASSERT(packed_positions.size() == full_positions.size(), 
-        "Position number does not match: "
-        + std::to_string(packed_positions.size()) + " != "
-        + std::to_string(full_positions.size()));
+           "Position number does not match: "
+           + std::to_string(packed_positions.size()) + " != "
+           + std::to_string(full_positions.size()));
 
     for (size_t i = 0; i < packed_positions.size(); i++) {
         Position unpack = Utils::PackedPosition::unpacked(packed_positions[i]);
@@ -89,6 +89,35 @@ void parsePackedFile(std::istringstream& strm) {
     }
 
     std::cout << "Successfully packed all positions" << std::endl;
+}
+
+void parseShowPositions(std::istringstream& strm) {
+    std::string filepath;
+    strm >> std::skipws >> filepath;
+
+    std::ifstream input(filepath, std::ios::ios_base::binary);
+
+    if (!input) {
+        std::cout << "Failed to open file: " << filepath << std::endl;
+        return;
+    }
+
+    int begin, count;
+
+    strm >> std::skipws >> begin >> std::skipws >> count;
+
+    std::vector<Utils::PackedPosition> pack_positions = Utils::PackedPosition::fullRead(input);
+    size_t n = pack_positions.size();
+
+    if (begin < 0 or begin + count > n) {
+        std::cout << "Invalid access indexes" << std::endl;
+        return;
+    }
+
+    for (size_t i = begin; i < begin + count; i++) {
+        Position unpack = Utils::PackedPosition::unpacked(pack_positions[i]);
+        unpack.print();
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -122,6 +151,7 @@ int main(int argc, char* argv[]) {
         else if (token == "test_all")		   Utils::runTests(search);
         else if (token == "self_play")		   parseSelfPlay(collector, strm);
         else if (token == "test_packed_file")  parsePackedFile(strm);
+        else if (token == "check_positions")   parseShowPositions(strm);
 
 	} while (command != "quit");
 }

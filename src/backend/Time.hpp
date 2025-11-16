@@ -36,7 +36,7 @@ INLINE time_ms_t Timer::duration() {
 	return Clock::getMilliseconds(Clock::timePoint(), _start_tp);
 }
 
-struct SearchLimits;
+class SearchLimits;
 
 class TimeMan {
 public:

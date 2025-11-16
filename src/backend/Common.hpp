@@ -120,6 +120,10 @@ INLINE bool isSigned(const std::string& str) {
 	return !str.empty() and str[0] == '-';
 }
 
+INLINE bool isValidUnsigned(const std::string& str) {
+    return !isSigned(str) and isValidNumber(str);
+}
+
 // Target cacheline size is fixed
 #define CACHELINE_SIZE 64
 
@@ -175,11 +179,16 @@ INLINE void alignedFree(void* block) {
 static constexpr int DefaultIntSeed = (1 << 13) + 5;
 
 template <typename Integer = int>
-INLINE Integer random(Integer l, Integer r, int seed = DefaultIntSeed)
+INLINE Integer srandom(Integer l, Integer r, int seed = DefaultIntSeed)
 {
-    static std::random_device rd;
-    static std::mt19937 mt(seed);
+    std::mt19937 mt(seed);
     std::uniform_int_distribution<Integer> dist(l, r);
     return dist(mt);
+}
+
+template <typename Integer = int>
+INLINE Integer random(Integer l, Integer r)
+{
+    return srandom<Integer>(l, r, std::random_device{}());
 }
 

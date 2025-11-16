@@ -64,7 +64,7 @@ public:
 	void selectSort(size_t first_ind);
 
 	INLINE Move32b getRandomMove() {
-		size_t random_idx = random<size_t>(0, _idx - 1, _RandomMoveSeed);
+		size_t random_idx = srandom<size_t>(0, _idx - 1, _RandomMoveSeed);
 		return _moves[random_idx].move;
 	}
 

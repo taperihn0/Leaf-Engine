@@ -30,9 +30,12 @@ public:
         size_t     games_ended;
         size_t     total_games;
         size_t     total_positions;
+
         std::mutex common_lock;
+        std::mutex stdout_lock;
     };
 
+    static constexpr float NodesRandomFactor = 0.15f;
 private:
     static constexpr std::string_view _FileWhiteWin = "src/utils/selfplay/selfplay_white_win";
     static constexpr std::string_view _FileBlackWin = "src/utils/selfplay/selfplay_black_win";

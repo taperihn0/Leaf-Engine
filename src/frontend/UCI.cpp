@@ -4,34 +4,70 @@
 
 #include <sstream>
 
+#define TERMINATE_READ_IF_EMPTY(str, res) \
+    do { if ((str).empty()) return (res); } while(false);
+
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth - 1;
+    limits.nodes = std::numeric_limits<ull>::max();
 
-	if (token == "depth") {
-		strm >> std::skipws >> token;
+    while (strm.rdbuf()->in_avail() > 0) {
 
-		if (isValidNumber(token.substr(1)) and !isSigned(token)) {
-			limits.depth = std::stoi(token);
-		}
+        if (token == "depth") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
 
-		strm >> std::skipws >> token;
-	}
+        	if (isValidUnsigned(token))
+        		limits.depth = std::stoi(token);
+        }
+        else if (token == "wtime") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
 
-	if (token == "wtime") {
-		strm >> std::skipws >> token;
-		limits.wtime = std::stoi(token);
+            if (isValidUnsigned(token))
+                limits.wtime = std::stoi(token);
+        }
+        else if (token == "btime") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
 
-		strm >> std::skipws >> token >> std::skipws >> token;
-		limits.btime = std::stoi(token);
+            if (isValidUnsigned(token))
+                limits.btime = std::stoi(token);
+        }
+        else if (token == "winc") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
 
-		strm >> std::skipws >> token >> std::skipws >> token;
-		limits.winc = std::stoi(token);
+            if (isValidUnsigned(token))
+                limits.winc = std::stoi(token);
+        }
+        else if (token == "binc") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
 
-		strm >> std::skipws >> token >> std::skipws >> token;
-		limits.binc = std::stoi(token);
-	}
-	
+            if (isValidUnsigned(token))
+        	    limits.binc = std::stoi(token);
+        }
+        else if (token == "nodes") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
+            
+            if (isValidUnsigned(token))
+                limits.nodes = std::stoi(token);
+        }
+        // Custom option
+        else if (token == "qnodes") {
+            strm >> std::skipws >> token;
+            TERMINATE_READ_IF_EMPTY(token, limits);
+
+            if (isValidUnsigned(token))
+                limits.qnodes = std::stoi(token);
+        }
+
+        strm >> std::skipws >> token;
+    }
+
 	return limits;
 }
 
@@ -93,7 +129,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 
 		// get side to move, castling rights, en passant square
 		// and get halfmove counter as also fullmove counter
-		while (strm.rdbuf()->in_avail() != 0) {
+		while (strm.rdbuf()->in_avail() > 0) {
 			strm >> std::skipws >> token;
 			if (token == "moves")
 				break;
