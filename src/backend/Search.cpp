@@ -155,7 +155,7 @@ Search::~Search() {
 	alignedFree(_history_buff);
 }
 
-template <bool PrintFullInfo>
+template <Search::enumInfoLevel InfoLevel>
 Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < MaxDepth, "Invalid depth");
 
@@ -163,15 +163,15 @@ Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits
 	limits.search_time = TimeMan::searchTime(pos, limits);
 	_tt.newGeneration();
 
-	const Move32b bm = iterativeDeepening<PrintFullInfo>(pos, game, limits);
+	const Move32b bm = iterativeDeepening<InfoLevel>(pos, game, limits);
 	return bm;
 }
 
 Move32b Search::_bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits) {
-	return search.bestMove<false>(pos, game, limits);
+	return search.bestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
 }
 
-template <bool PrintFullInfo>
+template <Search::enumInfoLevel InfoLevel>
 Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits) {
 	SearchResults search_results;
 		
@@ -180,21 +180,22 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
 
-		if (!search<PrintFullInfo>(pos, game, limits, search_results))
+		if (!search<InfoLevel>(pos, game, limits, search_results))
 			break;
 
 		search_results.registerBestMove(root->best_move);
 	}
 
-	if constexpr (PrintFullInfo)
-		search_results.printBestMove();
-	else
-		search_results.printShort();
+    if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO)
+        search_results.printBestMove();
+
+    else if constexpr (InfoLevel == SEARCH_SHORT_INFO)
+        search_results.printShort();
 
 	return search_results.best_move;
 }
 
-template <bool PrintFullInfo>
+template <Search::enumInfoLevel InfoLevel>
 bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results) {
 	const Score score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
 									   -Score::Mate, +Score::Mate, 
@@ -206,7 +207,7 @@ bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& lim
 
 	results.duration = limits.timer.duration();
 
-	if constexpr (PrintFullInfo)
+	if constexpr (InfoLevel == SEARCH_FULL_INFO)
 		results.print(this, pos, _tt);
 
 	return true;
@@ -763,5 +764,7 @@ bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, 
 	return false;
 }
 
-template Move32b Search::bestMove<true>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::bestMove<false>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::bestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::bestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::bestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::bestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);

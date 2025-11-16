@@ -37,7 +37,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 
 UniversalChessInterface::UniversalChessInterface()
 	: _search(TranspositionTable(1_MB))
-	, _pos(Position::StartposFEN)
+	, _pos(std::string(Position::StartposFEN))
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW

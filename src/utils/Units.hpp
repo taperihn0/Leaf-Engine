@@ -216,6 +216,7 @@ static bool packedPositionTests() {
 			return false;
 		}
 
+        // checking read/write
 		tmp_stream.seekp(0, std::ios::beg);
 		packed.write(tmp_stream);
 		tmp_stream.flush();
@@ -223,7 +224,8 @@ static bool packedPositionTests() {
 		tmp_stream.seekg(0, std::ios_base::beg);
 		tmp_stream.clear();
 
-		PackedPosition wr_packed = PackedPosition::read(tmp_stream);
+        PackedPosition wr_packed;
+        PackedPosition::read(tmp_stream, wr_packed);
 
 		if (packed != wr_packed) {
 			pos.print();

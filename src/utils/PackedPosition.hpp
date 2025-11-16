@@ -22,7 +22,9 @@ public:
 
     void write(std::ostream& output) const;
 
-    static PackedPosition read(std::istream& input);
+    static bool read(std::istream& input, PackedPosition& packed);
+
+    static std::vector<PackedPosition> fullRead(std::istream& input);
 
     struct alignas(1) Nibble {
         uint8_t lo : 4;

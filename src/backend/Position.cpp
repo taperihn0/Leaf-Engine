@@ -24,8 +24,6 @@ Position::Position() {
 
 Position::Position(const std::string init_fen) { setByFEN(init_fen); }
 
-Position::Position(const std::string_view init_fen) { setByFEN(static_cast<std::string>(init_fen)); }
-
 void Position::setByFEN(const std::string fen) {
 	size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
 
@@ -65,6 +63,30 @@ void Position::setByFEN(const std::string fen) {
 
 void Position::setStartingPos() {
 	setByFEN(static_cast<std::string>(StartposFEN));
+}
+
+Position::enumStatusFlag Position::isValid() {
+    if (_zhash != ZobristHash::generateOnFly(*this))
+        return POSITION_HASH_INVALID;
+
+    else if (getBySide(WHITE) != getBySideOnFly(WHITE)
+          or getBySide(BLACK) != getBySideOnFly(BLACK))
+        return POSITION_OCC_INVALID;
+
+    else if ((getCastlingByColor(WHITE).isLongPossible()  and !getRooksBySide(WHITE).isOccupiedSq(Square::a1))
+          or (getCastlingByColor(WHITE).isShortPossible() and !getRooksBySide(WHITE).isOccupiedSq(Square::h1))
+          or (getCastlingByColor(BLACK).isLongPossible()  and !getRooksBySide(BLACK).isOccupiedSq(Square::a8))
+          or (getCastlingByColor(BLACK).isShortPossible() and !getRooksBySide(BLACK).isOccupiedSq(Square::h8)))
+        return POSITION_CASTLING_INVALID;
+
+    else if (_king_sq[WHITE] != getKingBySide(WHITE).bitScanForward()
+          or _king_sq[BLACK] != getKingBySide(BLACK).bitScanForward())
+        return POSITION_KING_INVALID;
+
+    else if (getOccupied().popCount() > 32)
+        return POSITION_PIECE_CNT_INVALID;
+
+    return POSITION_NO_ERROR;
 }
 
 void Position::print() const {

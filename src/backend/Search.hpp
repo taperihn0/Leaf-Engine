@@ -15,7 +15,7 @@
 struct SearchLimits {
 	bool isTimeLeft();
 
-	unsigned  depth		  = 0,
+	time_ms_t depth		  = 0,
 			  wtime		  = 0,
 			  btime		  = 0;
 	time_ms_t winc		  = 0, 
@@ -104,25 +104,32 @@ public:
 	friend struct SearchResults;
 
 	enum enumNode : int8_t {
-		PV_NODE = 1,
-		NON_PV_NODE = 2,
-		SEARCH_NODE = PV_NODE | NON_PV_NODE,
+		PV_NODE      = 1,
+		NON_PV_NODE  = 2,
+		SEARCH_NODE  = PV_NODE | NON_PV_NODE,
 		QUIESCE_NODE = ~SEARCH_NODE,
 	};
+
+    enum enumInfoLevel : int8_t {
+        SEARCH_FULL_INFO    = 0,
+        SEARCH_SHORT_INFO   = 1,
+        SEARCH_ONLY_BM_INFO = 2,
+        SEARCH_NO_INFO      = 3,
+    };
 
 	Search(TranspositionTable&& tt);
 	~Search();
 
-	template <bool PrintFullInfo = true>
+	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
 	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
 	static Move32b _bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits);
 
 	void registerNewGame();
 private:
-	template <bool PrintFullInfo>
+	template <enumInfoLevel InfoLevel>
 	Move32b iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits);
 
-	template <bool PrintFullInfo>
+	template <enumInfoLevel InfoLevel>
 	bool search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>

@@ -64,6 +64,7 @@ private:
 	bool _kingside, _queenside;
 };
 
+// forward declaration
 namespace Utils { class PackedPosition; }
 
 // internal board state, including piece distribution 
@@ -76,11 +77,22 @@ public:
 
 	Position();
 	Position(const std::string init_fen);
-	Position(const std::string_view init_fen);
 
 	// assuming given FEN is valid FEN position
 	void setByFEN(const std::string fen);
 	void setStartingPos();
+
+    enum enumStatusFlag {
+        POSITION_NO_ERROR          = 0,
+        POSITION_HASH_INVALID      = 1,
+        POSITION_OCC_INVALID       = 2,
+        POSITION_CASTLING_INVALID  = 3,
+        POSITION_KING_INVALID      = 4,
+        POSITION_PIECE_CNT_INVALID = 5,
+    };
+
+    // simplified check if a position is valid
+    enumStatusFlag isValid();
 
 	void print() const;
 
@@ -496,4 +508,27 @@ INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
 INLINE Piece Position::fullPieceOn(Square sq) const {
 	const Piece::enumType type = pieceOn(sq, WHITE);
 	return type != Piece::NONE ? Piece(WHITE, type) : Piece(BLACK, pieceOn(sq, BLACK));
+}
+
+INLINE bool operator!(Position::enumStatusFlag err_flag) {
+    return err_flag != Position::POSITION_NO_ERROR;
+}
+
+INLINE std::string toStr(Position::enumStatusFlag err_flag) {
+    switch (err_flag) {
+    case Position::POSITION_NO_ERROR:
+        return "no error";
+    case Position::POSITION_HASH_INVALID:
+        return "invalid cache";
+    case Position::POSITION_OCC_INVALID:
+        return "invalid occupancy";
+    case Position::POSITION_CASTLING_INVALID:
+        return "invalid castling";
+    case Position::POSITION_KING_INVALID:
+        return "invalid king";
+    case Position::POSITION_PIECE_CNT_INVALID:
+        return "invalid piece number";
+    }
+
+    return "";
 }

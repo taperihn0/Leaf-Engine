@@ -230,40 +230,59 @@ INLINE size_t bytesLeft(std::istream& input) {
     return end_bytes - curr_bytes;
 }
 
-PackedPosition PackedPosition::read(std::istream& input) {
-    PackedPosition packed;
-
+bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
     assert(input);
 
     size_t bytes_left = bytesLeft(input);
-    size_t to_read = std::min(_PackedSize, bytes_left);
 
-    byte* mem = reinterpret_cast<byte*>(alloca(to_read));
-    input.read(reinterpret_cast<char*>(mem), to_read);
+    if (!bytes_left)
+        return false;
 
-    packed._occupancy_mask = *reinterpret_cast<BitBoard*>(mem);
+    assert(bytes_left >= 8);
+    
+    uint64_t occupied;
+    input.read(reinterpret_cast<char*>(&occupied), 8);
+
+    packed._occupancy_mask = occupied;
 
     size_t piece_cnt = packed._occupancy_mask.popCount();
-    
     packed._piece_cnt = piece_cnt;
 
-    size_t i = 0;
-    size_t j = 8;
+    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
 
-    for (; i < piece_cnt; i += 2, j++) {
-        packed._details_mask.pieces[j - 8].lo = mem[j] & 0x0f;
+    assert(bytes_left - 8 >= piece_bytes);
 
-        int pieces_left = piece_cnt - i - 1;
+    byte* piece_mem = reinterpret_cast<byte*>(alloca(piece_bytes));
+    input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
 
-        if (pieces_left) {
-            packed._details_mask.pieces[j - 8].hi = (mem[j] & 0xf0) >> 4;
-        }
+    for (size_t i = 0; i < piece_bytes; i++) {
+        packed._details_mask.pieces[i].lo = piece_mem[i] & 0x0f;
+        packed._details_mask.pieces[i].hi = (piece_mem[i] & 0xf0) >> 4;
     }
 
-    packed._details_mask.halfmove_clock = mem[j];
-    packed._details_mask.fullmove_clock = *reinterpret_cast<uint16_t*>(mem + j + 1);
+    assert(bytes_left - 8 - piece_bytes >= 3);
 
-    return packed;
+    byte move_cnt_buff[3];
+    input.read(reinterpret_cast<char*>(move_cnt_buff), 3);
+
+    packed._details_mask.halfmove_clock = move_cnt_buff[0];
+    packed._details_mask.fullmove_clock = *reinterpret_cast<uint16_t*>(move_cnt_buff + 1);
+
+    return true;
+}
+
+std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
+    std::vector<PackedPosition> res;
+
+    ASSERT(input, "Invalid input");
+
+    PackedPosition pack;
+
+    while (read(input, pack)) {
+        res.push_back(pack);
+    }
+
+    return res;
 }
 
 BitBoard PackedPosition::getOccupancy() const {

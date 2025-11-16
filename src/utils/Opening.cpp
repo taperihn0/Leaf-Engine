@@ -5,17 +5,17 @@
 
 namespace Utils {
 
-OpeningGenerator::OpeningGenerator(std::string epd_openings)
-: _openings_file_path(epd_openings) {}
+std::vector<Position> OpeningGenerator::_positions;
+std::ifstream         OpeningGenerator::_openings_file;
 
 void OpeningGenerator::load() {
     if (!_positions.empty())
         return;
     
-    _openings_file.open(_openings_file_path);
+    std::ifstream openings_file(_OpeningFile);
 
-    if (!_openings_file) {
-        ASSERT(false, "Failed to open " + _openings_file_path);
+    if (!openings_file) {
+        ASSERT(false, "Failed to open " + _OpeningFile);
         return;
     }
 
@@ -23,7 +23,7 @@ void OpeningGenerator::load() {
     
     std::string line;
 
-    while (std::getline(_openings_file, line)) {
+    while (std::getline(openings_file, line)) {
         Position pos_from_fen(line);
         
         if (std::abs(Eval::staticEval(pos_from_fen).toInt()) <= _OpeningEvalThreshold
@@ -58,7 +58,7 @@ void OpeningGenerator::load() {
     std::mt19937 mersenne(1);
     std::shuffle(_positions.begin(), _positions.end(), mersenne);
     
-    _openings_file.close();
+    openings_file.close();
 
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
 }

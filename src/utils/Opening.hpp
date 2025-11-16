@@ -14,20 +14,19 @@ namespace Utils {
 */
 class OpeningGenerator {
 public:
-    OpeningGenerator(std::string epd_openings);
+    static void load();
 
-    void load();
-
-    Position getPosition();
+    static Position getPosition();
 private:
     static constexpr int _OpeningEvalThreshold = 300;
     static constexpr int _RandomPerPos   = 10;
     static constexpr int _MinRandomMoves = 2;
     static constexpr int _MaxRandomMoves = 10;
 
-    std::vector<Position> _positions;
-    std::string _openings_file_path;
-    std::ifstream _openings_file;
+    static inline const std::string _OpeningFile = "src/assets/openingsPositions/crafty_2500_new.epd";
+
+    static std::vector<Position> _positions;
+    static std::ifstream         _openings_file;
 };
 
 } // namespace Utils
