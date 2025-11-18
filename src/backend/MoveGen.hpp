@@ -24,8 +24,11 @@ public:
 	template <enumMode GenType>
 	static void generatePseudoLegalMoves(const Position& pos, MoveList& move_list);
 
+    template <enumMode GenType>
+    static void generateLegalMoves(Position& pos, MoveList& move_list);
+
 	template <enumMode GenType>
-	static Move32b generateRandomMove(const Position& pos);
+	static Move32b getRandomLegalMove(Position& pos);
 };
 
 using MoveGen = MoveGenerator;

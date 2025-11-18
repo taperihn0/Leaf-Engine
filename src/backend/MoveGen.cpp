@@ -247,19 +247,34 @@ void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveLi
 }
 
 template <MoveGen::enumMode GenType>
-Move32b MoveGen::generateRandomMove(const Position& pos) {
-	// TODO: Optimize that - generate just one move, not entire list.
-	MoveList ml;
-	generatePseudoLegalMoves<GenType>(pos, ml);
-	return ml.getRandomMove();
+void MoveGen::generateLegalMoves(Position& pos, MoveList& move_list) {
+    // TODO: Optimize that on the stage of adding a new moves to the list.
+    generatePseudoLegalMoves<GenType>(pos, move_list);
+
+    move_list.remove([&pos](MoveList::Entry en) {
+        return !en.move.isLegal(pos);
+    });
 }
 
-template void MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(const Position&, MoveList&);
-template void MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, MoveList&);
-template void MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(const Position&, MoveList&);
-template void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position&, MoveList&);
+template <MoveGen::enumMode GenType>
+Move32b MoveGen::getRandomLegalMove(Position& pos) {
+	// TODO: Optimize that - generate just one move, not entire list.
+    MoveList ml;
+    generateLegalMoves<GenType>(pos, ml);
+    return ml.getRandomMove();
+}
 
-template Move32b MoveGen::generateRandomMove<MoveGen::CAPTURES>(const Position&);
-template Move32b MoveGen::generateRandomMove<MoveGen::TACTICALS>(const Position&);
-template Move32b MoveGen::generateRandomMove<MoveGen::QUIETS>(const Position&);
-template Move32b MoveGen::generateRandomMove<MoveGen::ALL>(const Position&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES> (const Position&, MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>   (const Position&, MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>      (const Position&, MoveList&);
+
+template void    MoveGen::generateLegalMoves<MoveGen::CAPTURES> (Position&, MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS>(Position&, MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::QUIETS>   (Position&, MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::ALL>      (Position&, MoveList&);
+
+template Move32b MoveGen::getRandomLegalMove<MoveGen::CAPTURES> (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::TACTICALS>(Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::QUIETS>   (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::ALL>      (Position&);

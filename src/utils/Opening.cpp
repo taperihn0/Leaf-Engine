@@ -25,9 +25,8 @@ void OpeningGenerator::load() {
 
     while (std::getline(openings_file, line)) {
         Position pos_from_fen(line);
-        
-        if (std::abs(Eval::staticEval(pos_from_fen).toInt()) <= _OpeningEvalThreshold
-            and pos_from_fen.halfmoveClock() < 10) {
+
+        if (std::abs(Eval::staticEval(pos_from_fen).toInt()) <= _OpeningEvalThreshold) {
 
             _positions.push_back(std::move(pos_from_fen));
 
@@ -35,13 +34,13 @@ void OpeningGenerator::load() {
                 Position pos = pos_from_fen;
 
                 for (int j = 0; j < _MaxRandomMoves; j++) {
-                    Move32b random_move = MoveGen::generateRandomMove<MoveGen::ALL>(pos);
-                    Position::IrreversibleState state = pos.getIrreversibleState();
+                    Move32b random_move = MoveGen::getRandomLegalMove<MoveGen::ALL>(pos);
 
-                    if (!pos.make(random_move)) {
-                        pos.unmake(random_move, state);
-                        continue;
-                    }
+                    if (random_move.isNull())
+                        break;
+
+                    bool legal = pos.make(random_move);
+                    assert(legal);
 
                     if (j >= _MinRandomMoves)
                         _positions.push_back(pos);
@@ -63,8 +62,8 @@ void OpeningGenerator::load() {
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
 }
 
-Position OpeningGenerator::getPosition() {
-    ASSERT(!_positions.empty(), "Empty position buffer");
+const Position& OpeningGenerator::getPosition() {
+    assert(!_positions.empty());
     size_t random_index = random<size_t>(0, _positions.size() - 1);
     return _positions[random_index];
 }

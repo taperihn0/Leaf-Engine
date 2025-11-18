@@ -1,7 +1,7 @@
 #include "Game.hpp"
 #include "MoveGen.hpp"
 
-Game::Game(Position&& from,  bool time_constraint, time_ms_t time_white, time_ms_t time_black)
+Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, time_ms_t time_black)
 : _current_pos(from)
 , _time_left_sided{ time_white, time_black }
 , _time_constraint(time_constraint)
@@ -102,7 +102,10 @@ INLINE bool Game::isStaleMate() {
 INLINE bool Game::isAnyResponse() {
     MoveList ml;
     MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(_current_pos, ml);
-    return ml.any([&](Move32b m) { return m.isLegal(_current_pos); });
+
+    return ml.any([&](MoveList::Entry en) { 
+        return en.move.isLegal(_current_pos); 
+    });
 }
 
 std::string toStr(Game::Result game_result) {

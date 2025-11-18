@@ -77,7 +77,7 @@ public:
 		DRAW_BY_REPETITIONS
     };
 
-	Game(Position&& from, bool time_constraint, time_ms_t time_white = 0, time_ms_t time_black = 0);
+	Game(const Position& from, bool time_constraint, time_ms_t time_white = 0, time_ms_t time_black = 0);
 
 	void applyMove(Move32b move, time_ms_t think_time);
 

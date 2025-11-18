@@ -8,7 +8,7 @@ SelfGame::SelfGame(size_t tt_size)
                    Search(TranspositionTable(tt_size)) } 
 {}
 
-Game::Result SelfGame::start(std::vector<PackedPosition>& positions, SearchLimits limits) {
+Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, SearchLimits limits) {
     _search_by_side[WHITE].registerNewGame();
     _search_by_side[BLACK].registerNewGame();
 
@@ -24,7 +24,7 @@ Game::Result SelfGame::start(std::vector<PackedPosition>& positions, SearchLimit
         Search& curr_search = _search_by_side[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
 
-        positions.push_back(PackedPosition::packed(game.getPosition()));
+        packed_positions.emplace_back(game.getPosition());
 
         timer.go();
         Move32b move = curr_search.bestMove<Search::SEARCH_NO_INFO>(pos, record, limits);

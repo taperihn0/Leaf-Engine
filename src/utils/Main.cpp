@@ -52,7 +52,7 @@ void parsePackedFile(std::istringstream& strm) {
         full_positions.push_back(Position(line));
     }
 
-    std::fstream tmp_stream("src/assets/tmp/tmp.psf", std::ios::ios_base::binary
+    std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::ios_base::binary
                                                       | std::ios::ios_base::in
                                                       | std::ios::ios_base::out
                                                       | std::ios::ios_base::trunc);
@@ -124,7 +124,6 @@ int main(int argc, char* argv[]) {
 	ZobristHash::fillKeys();
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
 	SlidersMagics::initAttackTables<Piece::ROOK>();
-    Utils::OpeningGenerator::load();
 
 	Search search(TranspositionTable(1_MB));
 	Utils::DataCollector collector;
@@ -146,6 +145,7 @@ int main(int argc, char* argv[]) {
 		strm >> std::skipws >> token;
 
              if (token == "test_packed_pos")   Utils::packedPositionTests();
+        else if (token == "load_openings")     Utils::OpeningGenerator::load();
         else if (token == "test_ccr_one_hour") Utils::ccrOneHourTest(search);
         else if (token == "test_see")		   Utils::seeTests();
         else if (token == "test_all")		   Utils::runTests(search);

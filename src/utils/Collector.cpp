@@ -74,6 +74,25 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
         std::cout << toStr(game_result) << " - collected " << game_positions_cnt << " positions\n";
         thread.commons->stdout_lock.unlock();
 
+        if      (game_result == Game::WHITE_WIN_BY_ADJUCATION
+              or game_result == Game::WHITE_WIN_BY_MATE
+              or game_result == Game::WHITE_WIN_BY_TIMEOUT)
+        {
+            thread.white_win_count++;
+        }
+        else if (game_result == Game::BLACK_WIN_BY_ADJUCATION
+              or game_result == Game::BLACK_WIN_BY_MATE
+              or game_result == Game::BLACK_WIN_BY_TIMEOUT)
+        {
+            thread.black_win_count++;
+        }
+        else if (game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
+              or game_result == Game::DRAW_BY_REPETITIONS
+              or game_result == Game::DRAW_BY_STEALMATE)
+        {
+            thread.draw_count++;
+        }
+
         for (size_t j = 0; j < game_positions_cnt; j++) {
 
             const PackedPosition& packed_position = positions[j];
@@ -82,26 +101,22 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
                  or game_result == Game::WHITE_WIN_BY_MATE
                  or game_result == Game::WHITE_WIN_BY_TIMEOUT) 
             {
-                thread.white_win_count++;
                 packed_position.write(thread.output_white_win);
             }
             else if (game_result == Game::BLACK_WIN_BY_ADJUCATION
                   or game_result == Game::BLACK_WIN_BY_MATE
                   or game_result == Game::BLACK_WIN_BY_TIMEOUT) 
             {
-                thread.black_win_count++;
                 packed_position.write(thread.output_black_win);
             }
             else if (game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
                   or game_result == Game::DRAW_BY_REPETITIONS
                   or game_result == Game::DRAW_BY_STEALMATE) 
             {
-                thread.draw_count++;
                 packed_position.write(thread.output_draw);
             }
-           else ASSERT(false, "No other game results");
+            else ASSERT(false, "No other game results");
         }
-
 
         positions.clear();
 
@@ -111,7 +126,7 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
 
     thread.commons->stdout_lock.lock();
     print_thread_info(thread_id);
-    std::cout << thread.games_ended << " games played on thread - total of " 
+    std::cout << thread.games_ended << " games played on thread " << thread_id << " - total of " 
               << thread.total_positions 
               << " positions collected." << std::endl;
     thread.commons->stdout_lock.unlock();
@@ -135,10 +150,10 @@ void DataCollector::startTournament(size_t games_count, size_t thread_count, Sea
         data.output_white_win.open(path, std::ios::binary | std::ios::app);
 
         path = std::string(_FileBlackWin) + "_thread_" + std::to_string(i) + ".pck";
-        data.output_black_win.open(path);
+        data.output_black_win.open(path, std::ios::binary | std::ios::app);
 
         path = std::string(_FileDraw) + "_thread_" + std::to_string(i) + ".pck";
-        data.output_draw.open(path);
+        data.output_draw.open(path, std::ios::binary | std::ios::app);
 
         data.limits = limits;
         data.commons = &thread_common;

@@ -13,7 +13,7 @@ public:
 			return move == b.move;
 		}
 
-		Move32b move;
+		Move32b     move;
 		movescore_t score;
 	};
 
@@ -26,7 +26,9 @@ public:
 	}
 
 	INLINE void partialSort(size_t first, size_t mid, size_t end) {
-		std::partial_sort(_moves.data() + first, _moves.data() + mid, _moves.data() + end, 
+		std::partial_sort(_moves.data() + first, 
+                          _moves.data() + mid, 
+                          _moves.data() + end, 
 						  _greater_score);
 	}
 
@@ -50,8 +52,9 @@ public:
 	}
 
 	INLINE bool contains(Move32b m) const {
-		return std::find_if(_moves.data(), _moves.data() + _idx, 
-							[m](Entry e) { return e.move == m; }) != _moves.data() + _idx;
+		return std::find_if(_moves.data(), _moves.data() + _idx, [m](Entry e) { 
+            return e.move == m; 
+        }) != _moves.data() + _idx;
 	}
 
 	INLINE void clear() { _idx = 0; }
@@ -63,25 +66,41 @@ public:
 
 	void selectSort(size_t first_ind);
 
-	INLINE Move32b getRandomMove() {
-		size_t random_idx = srandom<size_t>(0, _idx - 1, _RandomMoveSeed);
+	INLINE Move32b getRandomMove() const {
+        if (!_idx) 
+            return Move32b::Null;
+
+		size_t random_idx = random<size_t>(0, _idx - 1);
 		return _moves[random_idx].move;
 	}
 
-	template <typename CallableBool>
-	INLINE bool any(CallableBool f) {
-		static_assert(std::is_invocable_v<CallableBool, Move32b>);
+	template <typename Entry_Callable_Bool>
+	INLINE bool any(Entry_Callable_Bool pred) const {
+		static_assert(std::is_invocable_v<Entry_Callable_Bool, Entry>);
 
 		for (size_t i = 0; i < _idx; i++) {
-			if (f(_moves[i].move)) return true;
+            if (pred(_moves[i]))
+                return true;
 		}
 
 		return false;
 	}
 
+    template <typename Entry_Callable_Bool>
+    INLINE MoveList& remove(Entry_Callable_Bool pred) {
+        static_assert(std::is_invocable_v<Entry_Callable_Bool, Entry>);
+
+        auto last = std::remove_if(_moves.begin(), 
+                                   std::next(_moves.begin(), _idx), 
+                                   pred);
+
+        _idx = std::distance(_moves.begin(), last);
+
+        return *this;
+    }
+
 private:
 	static constexpr size_t _MaxSize = MaxNodeMoves;
-	static constexpr int    _RandomMoveSeed = 1;
 
 	inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
 		return a.score > b.score;

@@ -9,6 +9,7 @@ namespace Utils {
 class PackedPosition {
 public:
     PackedPosition();
+    explicit PackedPosition(const Position& pos);
 
     bool operator==(const PackedPosition& p) const;
 

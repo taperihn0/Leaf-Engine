@@ -176,19 +176,10 @@ INLINE void alignedFree(void* block) {
 #endif
 }
 
-static constexpr int DefaultIntSeed = (1 << 13) + 5;
-
 template <typename Integer = int>
-INLINE Integer srandom(Integer l, Integer r, int seed = DefaultIntSeed)
-{
-    std::mt19937 mt(seed);
+INLINE Integer random(Integer l, Integer r) {
+    static std::mt19937 mt(std::random_device{}());
     std::uniform_int_distribution<Integer> dist(l, r);
     return dist(mt);
-}
-
-template <typename Integer = int>
-INLINE Integer random(Integer l, Integer r)
-{
-    return srandom<Integer>(l, r, std::random_device{}());
 }
 
