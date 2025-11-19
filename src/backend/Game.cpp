@@ -5,6 +5,7 @@ Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, ti
     : _current_pos(from)
     , _time_left_sided{ time_white, time_black }
     , _time_constraint(time_constraint)
+    , _cached{ isAnyResponse(), _current_pos.isInCheck(_current_pos.getTurn()) }
 {}
 
 void Game::applyMove(Move32b move, time_ms_t think_time) {
@@ -17,6 +18,9 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
 
     uint64_t key = _current_pos.getZobristKey();
     _pos_record.recordInfo(key, move);
+
+    _cached.any_response_cached = isAnyResponse();
+    _cached.check = _current_pos.isInCheck(_current_pos.getTurn());
 }
 
 #define WIN_BY_MATE(color)       static_cast<Game::Result>(Game::WHITE_WIN_BY_MATE + (color))
@@ -32,7 +36,7 @@ bool Game::isWin(Game::Result& full) {
     }
 
     full = WIN_BY_MATE(!side2move);
-    return _current_pos.isInCheck(_current_pos.getTurn()) and !isAnyResponse();
+    return _cached.check and !_cached.any_response_cached;
 }
 
 bool Game::isDraw(Game::Result& full) {
@@ -84,7 +88,7 @@ bool Game::isGameCycle()  {
 }
 
 INLINE bool Game::isStaleMate() {
-    return !_current_pos.isInCheck(_current_pos.getTurn()) and !isAnyResponse();
+    return !_cached.check and !_cached.any_response_cached;
 }
 
 INLINE bool Game::isAnyResponse() {
@@ -116,6 +120,8 @@ std::string toStr(Game::Result game_result) {
         return "draw by repetitions";
     case Game::DRAW_BY_STEALMATE:
         return "draw by stealmate";
+    case Game::DRAW_BY_ADJUCATION:
+        return "draw by adjucation";
     default:     
         ASSERT(false, "No other game results");
     }
@@ -138,5 +144,6 @@ bool isBlackWin(Game::Result game_result) {
 bool isDraw(Game::Result game_result) {
     return game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
         or game_result == Game::DRAW_BY_REPETITIONS
-        or game_result == Game::DRAW_BY_STEALMATE;
+        or game_result == Game::DRAW_BY_STEALMATE
+        or game_result == Game::DRAW_BY_ADJUCATION;
 }

@@ -74,7 +74,8 @@ public:
         BLACK_WIN_BY_TIMEOUT,
         DRAW_BY_HALF_MOVES_LIMIT,
         DRAW_BY_STEALMATE,
-		DRAW_BY_REPETITIONS
+		DRAW_BY_REPETITIONS,
+        DRAW_BY_ADJUCATION
     };
 
 	Game(const Position& from, bool time_constraint, time_ms_t time_white, time_ms_t time_black);
@@ -99,10 +100,17 @@ private:
 
 	bool isAnyResponse();
 
-	Position _current_pos;
+	Position       _current_pos;
 	FullInfoRecord _pos_record;
-	time_ms_t _time_left_sided[2];
-	bool _time_constraint;
+	time_ms_t      _time_left_sided[2];
+	bool           _time_constraint;
+
+    struct CachedState {
+        bool       any_response_cached;
+        bool       check;
+    };
+
+    CachedState    _cached;
 };
 
 std::string toStr(Game::Result game_result);

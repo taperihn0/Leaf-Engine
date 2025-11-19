@@ -18,11 +18,27 @@ Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, Sear
     Game game(OpeningGenerator::getPosition(), time_constraint, limits.wtime, limits.btime);
     Game::Result game_result;
 
+    unsigned int draw_full_moves = 0;
+
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         bool side2move = pos.getTurn();
         Search& curr_search = _search_by_side[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
+        const int eval = Eval::staticEval(pos).toInt();
+
+        if (std::abs(eval) < 90) 
+            draw_full_moves += side2move;
+        else
+            draw_full_moves = 0;
+
+        std::cout << draw_full_moves << '\n';
+
+        // Adjucate game as draw
+        if (draw_full_moves > 7) {
+            game_result = Game::DRAW_BY_ADJUCATION;
+            break;
+        }
 
         packed_positions.emplace_back(pos);
 
