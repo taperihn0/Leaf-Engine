@@ -176,10 +176,11 @@ INLINE void alignedFree(void* block) {
 #endif
 }
 
+static std::mt19937 GlobMersenne(std::random_device{}());
+
 template <typename Integer = int>
 INLINE Integer random(Integer l, Integer r) {
-    static std::mt19937 mt(std::random_device{}());
     std::uniform_int_distribution<Integer> dist(l, r);
-    return dist(mt);
+    return dist(GlobMersenne);
 }
 

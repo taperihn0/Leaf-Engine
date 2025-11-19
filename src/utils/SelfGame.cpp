@@ -3,9 +3,9 @@
 
 namespace Utils {
 
-SelfGame::SelfGame(size_t tt_size)
-: _search_by_side{ Search(TranspositionTable(tt_size)),
-                   Search(TranspositionTable(tt_size)) } 
+SelfGame::SelfGame(size_t tt_size_per_search)
+: _search_by_side{ Search(TranspositionTable(tt_size_per_search)),
+                   Search(TranspositionTable(tt_size_per_search)) } 
 {}
 
 Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, SearchLimits limits) {
@@ -24,7 +24,7 @@ Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, Sear
         Search& curr_search = _search_by_side[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
 
-        packed_positions.emplace_back(game.getPosition());
+        packed_positions.emplace_back(pos);
 
         timer.go();
         Move32b move = curr_search.bestMove<Search::SEARCH_NO_INFO>(pos, record, limits);

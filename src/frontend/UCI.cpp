@@ -10,7 +10,7 @@
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth - 1;
-    limits.nodes = std::numeric_limits<ull>::max();
+    limits.nodes = 0;
 
     while (strm.rdbuf()->in_avail() > 0) {
 

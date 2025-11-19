@@ -26,38 +26,35 @@ void OpeningGenerator::load() {
     while (std::getline(openings_file, line)) {
         Position pos_from_fen(line);
 
-        if (std::abs(Eval::staticEval(pos_from_fen).toInt()) <= _OpeningEvalThreshold) {
+        _positions.push_back(pos_from_fen);
 
-            _positions.push_back(std::move(pos_from_fen));
+        for (int i = 0; i < _RandomPerPos; i++) {
+            Position pos = pos_from_fen;
 
-            for (int i = 0; i < _RandomPerPos; i++) {
-                Position pos = pos_from_fen;
+            for (int j = 1; j <= _MaxRandomMoves; j++) {
+                Move32b random_move = MoveGen::getRandomLegalMove<MoveGen::ALL>(pos);
 
-                for (int j = 0; j < _MaxRandomMoves; j++) {
-                    Move32b random_move = MoveGen::getRandomLegalMove<MoveGen::ALL>(pos);
+                if (random_move.isNull())
+                    break;
 
-                    if (random_move.isNull())
-                        break;
+                bool legal = pos.make(random_move);
+                assert(legal);
 
-                    bool legal = pos.make(random_move);
-                    assert(legal);
-
-                    if (j >= _MinRandomMoves)
-                        _positions.push_back(pos);
-                }
-
-                _positions.push_back(std::move(pos));
+                if (j >= _MinRandomMoves)
+                    _positions.push_back(pos);
             }
         }
     }
 
     auto last = std::unique(_positions.begin(), _positions.end());
+
+    last = std::remove_if(_positions.begin(), last, [](Position& pos) {
+        return std::abs(Eval::staticEval(pos).toInt()) > _OpeningEvalThreshold;
+    });
+
     _positions.erase(last, _positions.end());
 
-    std::mt19937 mersenne(1);
-    std::shuffle(_positions.begin(), _positions.end(), mersenne);
-    
-    openings_file.close();
+    std::shuffle(_positions.begin(), _positions.end(), GlobMersenne);
 
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
 }

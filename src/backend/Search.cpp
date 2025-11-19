@@ -759,9 +759,7 @@ bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, 
 			if constexpr (!IsPV) 
 				return true;
 
-			rep_cnt++;
-
-			if (rep_cnt >= 2)
+			if (++rep_cnt >= 2)
 				return true;
 		}
 	}
@@ -787,9 +785,7 @@ bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, 
 			if constexpr (!IsPV)
 				return true;
 
-			rep_cnt++;
-
-			if (rep_cnt >= 2)
+			if (++rep_cnt >= 2)
 				return true;
 		}
 	}

@@ -74,48 +74,27 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
         std::cout << toStr(game_result) << " - collected " << game_positions_cnt << " positions\n";
         thread.commons->stdout_lock.unlock();
 
-        if      (game_result == Game::WHITE_WIN_BY_ADJUCATION
-              or game_result == Game::WHITE_WIN_BY_MATE
-              or game_result == Game::WHITE_WIN_BY_TIMEOUT)
-        {
+        if (isWhiteWin(game_result))
             thread.white_win_count++;
-        }
-        else if (game_result == Game::BLACK_WIN_BY_ADJUCATION
-              or game_result == Game::BLACK_WIN_BY_MATE
-              or game_result == Game::BLACK_WIN_BY_TIMEOUT)
-        {
+
+        else if (isBlackWin(game_result))
             thread.black_win_count++;
-        }
-        else if (game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
-              or game_result == Game::DRAW_BY_REPETITIONS
-              or game_result == Game::DRAW_BY_STEALMATE)
-        {
+
+        else if (isDraw(game_result))
             thread.draw_count++;
-        }
 
         for (size_t j = 0; j < game_positions_cnt; j++) {
 
             const PackedPosition& packed_position = positions[j];
 
-            if     (game_result == Game::WHITE_WIN_BY_ADJUCATION
-                 or game_result == Game::WHITE_WIN_BY_MATE
-                 or game_result == Game::WHITE_WIN_BY_TIMEOUT) 
-            {
+            if (isWhiteWin(game_result))
                 packed_position.write(thread.output_white_win);
-            }
-            else if (game_result == Game::BLACK_WIN_BY_ADJUCATION
-                  or game_result == Game::BLACK_WIN_BY_MATE
-                  or game_result == Game::BLACK_WIN_BY_TIMEOUT) 
-            {
+            
+            else if (isBlackWin(game_result))
                 packed_position.write(thread.output_black_win);
-            }
-            else if (game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
-                  or game_result == Game::DRAW_BY_REPETITIONS
-                  or game_result == Game::DRAW_BY_STEALMATE) 
-            {
+            
+            else if (isDraw(game_result)) 
                 packed_position.write(thread.output_draw);
-            }
-            else ASSERT(false, "No other game results");
         }
 
         positions.clear();

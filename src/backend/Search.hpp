@@ -117,10 +117,10 @@ public:
 	friend struct SearchResults;
 
 	enum enumNode : int8_t {
-		PV_NODE      = 1,
-		NON_PV_NODE  = 2,
-		SEARCH_NODE  = PV_NODE | NON_PV_NODE,
-		QUIESCE_NODE = ~SEARCH_NODE,
+		PV_NODE             = 1,
+		NON_PV_NODE         = 2,
+		SEARCH_NODE         = PV_NODE | NON_PV_NODE,
+		QUIESCE_NODE        = ~SEARCH_NODE,
 	};
 
     enum enumInfoLevel : int8_t {

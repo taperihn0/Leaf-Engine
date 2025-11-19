@@ -2,10 +2,9 @@
 #include "MoveGen.hpp"
 
 Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, time_ms_t time_black)
-: _current_pos(from)
-, _time_left_sided{ time_white, time_black }
-, _time_constraint(time_constraint)
-, _is_cached_any_response(false)
+    : _current_pos(from)
+    , _time_left_sided{ time_white, time_black }
+    , _time_constraint(time_constraint)
 {}
 
 void Game::applyMove(Move32b move, time_ms_t think_time) {
@@ -18,13 +17,11 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
 
     uint64_t key = _current_pos.getZobristKey();
     _pos_record.recordInfo(key, move);
-
-    _is_cached_any_response = false;
 }
 
-#define WIN_BY_MATE(color)       static_cast<Game::Result>(Game::WHITE_WIN_BY_MATE + color)
-#define WIN_BY_ADJUCATION(color) static_cast<Game::Result>(Game::WHITE_WIN_BY_ADJUCATION + color)
-#define WIN_BY_TIMEOUT(color)    static_cast<Game::Result>(Game::WHITE_WIN_BY_TIMEOUT + color)
+#define WIN_BY_MATE(color)       static_cast<Game::Result>(Game::WHITE_WIN_BY_MATE + (color))
+#define WIN_BY_ADJUCATION(color) static_cast<Game::Result>(Game::WHITE_WIN_BY_ADJUCATION + (color))
+#define WIN_BY_TIMEOUT(color)    static_cast<Game::Result>(Game::WHITE_WIN_BY_TIMEOUT + (color))
 
 bool Game::isWin(Game::Result& full) {
     bool side2move = _current_pos.getTurn();
@@ -32,16 +29,10 @@ bool Game::isWin(Game::Result& full) {
     if (_time_constraint and _time_left_sided[side2move] < 0) {
         full = WIN_BY_TIMEOUT(!side2move);
         return true;
-    } else if (_is_cached_any_response) {
-        full = WIN_BY_MATE(!side2move);
-        return _any_response_avaible;
     }
 
-    _any_response_avaible = isAnyResponse();
-    _is_cached_any_response = true;
-
     full = WIN_BY_MATE(!side2move);
-    return !_any_response_avaible;
+    return _current_pos.isInCheck(_current_pos.getTurn()) and !isAnyResponse();
 }
 
 bool Game::isDraw(Game::Result& full) {
@@ -83,9 +74,8 @@ bool Game::isGameCycle()  {
 			continue;
 		else if (move.isIrreversible())
 			return false;
-		else if (hash_key == _pos_record.getPrevKey(cnt))
-		{
-			if (++repetition_cnt >= 2)
+		else if (hash_key == _pos_record.getPrevKey(cnt)) {
+			if (++repetition_cnt >= 3)
 				return true;
 		}
 	}
@@ -94,9 +84,7 @@ bool Game::isGameCycle()  {
 }
 
 INLINE bool Game::isStaleMate() {
-    _any_response_avaible = isAnyResponse();
-    _is_cached_any_response = true;
-    return _current_pos.isInCheck(_current_pos.getTurn()) and !_any_response_avaible;
+    return !_current_pos.isInCheck(_current_pos.getTurn()) and !isAnyResponse();
 }
 
 INLINE bool Game::isAnyResponse() {
@@ -133,4 +121,22 @@ std::string toStr(Game::Result game_result) {
     }
 
     return "";
+}
+
+bool isWhiteWin(Game::Result game_result) {
+    return game_result == Game::WHITE_WIN_BY_ADJUCATION
+        or game_result == Game::WHITE_WIN_BY_MATE
+        or game_result == Game::WHITE_WIN_BY_TIMEOUT;
+}
+
+bool isBlackWin(Game::Result game_result) {
+    return game_result == Game::BLACK_WIN_BY_ADJUCATION
+        or game_result == Game::BLACK_WIN_BY_MATE
+        or game_result == Game::BLACK_WIN_BY_TIMEOUT;
+}
+
+bool isDraw(Game::Result game_result) {
+    return game_result == Game::DRAW_BY_HALF_MOVES_LIMIT
+        or game_result == Game::DRAW_BY_REPETITIONS
+        or game_result == Game::DRAW_BY_STEALMATE;
 }
