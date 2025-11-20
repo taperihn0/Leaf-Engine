@@ -32,8 +32,6 @@ Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, Sear
         else
             draw_full_moves = 0;
 
-        std::cout << draw_full_moves << '\n';
-
         // Adjucate game as draw
         if (draw_full_moves > 7) {
             game_result = Game::DRAW_BY_ADJUCATION;

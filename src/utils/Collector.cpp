@@ -105,7 +105,7 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
 
     thread.commons->stdout_lock.lock();
     print_thread_info(thread_id);
-    std::cout << thread.games_ended << " games played on thread " << thread_id << " - total of " 
+    std::cout << thread.games_ended << " games played on thread " << std::hex << thread_id << std::dec << " - total of " 
               << thread.total_positions 
               << " positions collected." << std::endl;
     thread.commons->stdout_lock.unlock();

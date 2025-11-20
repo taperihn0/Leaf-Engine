@@ -21,9 +21,9 @@ private:
     static inline const std::string _OpeningFile = "src/assets/openingsPositions/crafty_2500_new.epd";
 
     static constexpr int            _OpeningEvalThreshold = 400;
-    static constexpr int            _RandomPerPos   = 5;
+    static constexpr int            _RandomPerPos   = 25;
     static constexpr int            _MinRandomMoves = 2;
-    static constexpr int            _MaxRandomMoves = 5;
+    static constexpr int            _MaxRandomMoves = 14;
 
     static std::vector<Position>    _positions;
     static std::ifstream            _openings_file;

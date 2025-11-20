@@ -20,7 +20,7 @@ bool PackedPosition::operator==(const PackedPosition& p) const {
 
     size_t cmp_bytes = static_cast<size_t>((_piece_cnt + 1) / 2 - 1);
 
-    if (!static_cast<bool>(std::memcmp(&_details_mask.pieces, &p._details_mask.pieces, cmp_bytes)))
+    if (static_cast<bool>(std::memcmp(&_details_mask.pieces, &p._details_mask.pieces, cmp_bytes)))
         return false;
 
     // last nibble have to be compared separately
@@ -275,9 +275,6 @@ bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
 
     packed._details_mask.halfmove_clock = move_cnt_buff[0];
     packed._details_mask.fullmove_clock = *reinterpret_cast<uint16_t*>(move_cnt_buff + 1);
-
-    if (packed._details_mask.fullmove_clock == 9)
-        int a = 0;
 
     return true;
 }
