@@ -64,7 +64,7 @@ void parsePackedFile(std::istringstream& strm) {
 
     for (auto& full_pos : full_positions) {
         Utils::PackedPosition packed = Utils::PackedPosition::packed(full_pos);
-        packed.write(tmp_stream);
+        Utils::PackedPosition::write(tmp_stream, packed);
     }
 
     tmp_stream.flush();

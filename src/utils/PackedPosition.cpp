@@ -3,8 +3,85 @@
 namespace Utils
 {
 
-PackedPosition::PackedPosition() {
-    std::memset(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
+SfBinFormatPosition::SfBinFormatPosition() {
+    std::memset(reinterpret_cast<void*>(this), 0, sizeof(SfBinFormatPosition));
+}
+
+SfBinFormatPosition::SfBinFormatPosition(const Position& pos) {
+    *this = sfPacked(pos);
+}
+
+bool SfBinFormatPosition::operator==(const SfBinFormatPosition& p) const {
+    if (_occupancy_mask != p._occupancy_mask)
+        return false;
+
+    size_t cmp_bytes = static_cast<size_t>((_piece_cnt + 1) / 2);
+
+    return !static_cast<bool>(std::memcmp(&_pieces, &p._pieces, cmp_bytes));
+}
+
+SfBinFormatPosition SfBinFormatPosition::SffromPacked(const PackedPosition& pack) {
+    return static_cast<SfBinFormatPosition>(pack);
+}
+
+bool SfBinFormatPosition::write(std::ostream& output, const SfBinFormatPosition& sfbin_pos) {
+    byte mem[_SfBinBufferSize];
+    *reinterpret_cast<BitBoard*>(mem) = sfbin_pos._occupancy_mask;
+
+    size_t piece_bytes = static_cast<size_t>((sfbin_pos._piece_cnt + 1) / 2);
+    size_t j = 0;
+
+    for (; j < piece_bytes; j++) {
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&sfbin_pos._pieces[j]);
+    }
+
+    assert(output);
+    output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard));
+    return output.good();
+}
+
+bool SfBinFormatPosition::read(std::istream& input, SfBinFormatPosition& sfbin_pos) {
+    assert(input);
+
+    size_t bytes_left = streamBytesLeft(input);
+
+    if (!bytes_left)
+        return false;
+
+    assert(bytes_left >= sizeof(BitBoard));
+
+    uint64_t occupied;
+    input.read(reinterpret_cast<char*>(&occupied), sizeof(BitBoard));
+
+    sfbin_pos._occupancy_mask = occupied;
+
+    size_t piece_cnt = sfbin_pos._occupancy_mask.popCount();
+    sfbin_pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
+
+    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
+
+    assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
+
+    Nibble piece_mem[_MaxNibbles];
+
+    input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
+
+    for (size_t i = 0; i < piece_bytes; i++) {
+        sfbin_pos._pieces[i] = piece_mem[i];
+    }
+
+    return true;
+}
+
+SfBinFormatPosition SfBinFormatPosition::sfPacked(const Position& pos) {
+    return SffromPacked(PackedPosition::packed(pos));
+}
+
+PackedPosition::PackedPosition() 
+    : SfBinFormatPosition() {
+
+    _clock_data.fullmove = 0;
+    _clock_data.halfmove = 0;
 }
 
 PackedPosition::PackedPosition(const Position& pos) {
@@ -12,24 +89,9 @@ PackedPosition::PackedPosition(const Position& pos) {
 }
 
 bool PackedPosition::operator==(const PackedPosition& p) const {
-    if (_occupancy_mask != p._occupancy_mask)
-        return false;
-    else if (_details_mask.halfmove_clock != p._details_mask.halfmove_clock 
-          or _details_mask.fullmove_clock != p._details_mask.fullmove_clock)
-        return false;
-
-    size_t cmp_bytes = static_cast<size_t>((_piece_cnt + 1) / 2 - 1);
-
-    if (!static_cast<bool>(std::memcmp(&_details_mask.pieces, &p._details_mask.pieces, cmp_bytes)))
-        return false;
-
-    // last nibble have to be compared separately
-    if (_piece_cnt & 1) {
-        size_t last_nibble_ind = static_cast<size_t>((_piece_cnt + 1) / 2 - 1);
-        return _details_mask.pieces[last_nibble_ind].lo == p._details_mask.pieces[last_nibble_ind].lo;
-    }
-
-    return true;
+    return SfBinFormatPosition::operator==(p)
+       and p._clock_data.fullmove == p._clock_data.fullmove
+       and p._clock_data.halfmove == p._clock_data.halfmove;
 }
 
 PackedPosition PackedPosition::fromFEN(const std::string& fen) {
@@ -44,7 +106,7 @@ PackedPosition PackedPosition::packed(const Position& pos) {
 
     packed._piece_cnt = 0;
 
-    for (size_t i = 0; occupied and i < 16; i++) {
+    for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
         Nibble nibble;
         nibble.lo = 0;
         nibble.hi = 0;
@@ -67,11 +129,12 @@ PackedPosition PackedPosition::packed(const Position& pos) {
             packed._piece_cnt++;
         }
 
-        packed._details_mask.pieces[i] = nibble;
+        packed._pieces[i] = nibble;
     }
 
-    packed._details_mask.halfmove_clock = pos.halfmoveClock();
-    packed._details_mask.fullmove_clock = pos.fullmoveClock();
+    packed._clock_data.halfmove = pos.halfmoveClock();
+    packed._clock_data.fullmove = pos.fullmoveClock();
+
     return packed;
 }
 
@@ -162,7 +225,7 @@ void PackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied,
 			else if (file == Square::h)
 				pos._castling_rights[color].setKingSide(true);
 			else
-				ASSERT(false, "Invalid castling rights");
+				assert(false);
 
 			break;
 		}
@@ -176,10 +239,8 @@ void PackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied,
 }
 
 Position PackedPosition::unpacked(const PackedPosition& pack) {
-	BitBoard occupied = pack.getOccupancy();
-	PackedPosition::DetailData details = pack.getDetailData();
-
 	Position pos;
+	BitBoard occupied = pack.getOccupancy();
 
 	pos._ep_square = Square::None;
 	pos._turn = WHITE;
@@ -187,8 +248,8 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	pos._castling_rights[WHITE].clear();
 	pos._castling_rights[BLACK].clear();
 
-	for (size_t i = 0; i < 16 and occupied; i++) {
-		PackedPosition::Nibble nibble = details.pieces[i];
+	for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
+		PackedPosition::Nibble nibble = pack._pieces[i];
 
 		placeNextPieceFromNibble(pos, occupied, nibble.lo);
 
@@ -196,8 +257,8 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 			placeNextPieceFromNibble(pos, occupied, nibble.hi);
 	}
 
-	pos._halfmove_count = details.halfmove_clock;
-	pos._fullmove_count = details.fullmove_clock;
+	pos._halfmove_count = pack._clock_data.halfmove;
+    pos._fullmove_count = pack._clock_data.fullmove;
 
 	pos._occupied[WHITE] = pos.getBySideOnFly(WHITE);
 	pos._occupied[BLACK] = pos.getBySideOnFly(BLACK);
@@ -210,47 +271,37 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	return pos;
 }
 
-void PackedPosition::write(std::ostream& output) const {
-    byte mem[_PackedSize];
-    *reinterpret_cast<BitBoard*>(mem) = _occupancy_mask;
+bool PackedPosition::write(std::ostream& output, const PackedPosition& pack) {
+    byte mem[_PackedBufferSize];
+    *reinterpret_cast<BitBoard*>(mem) = pack._occupancy_mask;
     
+    size_t piece_bytes = static_cast<size_t>((pack._piece_cnt + 1) / 2);
     size_t j = 0;
-    int piece_left = _piece_cnt;
 
-    while (piece_left > 0) {
-        mem[j + 8] = *reinterpret_cast<const byte*>(&_details_mask.pieces[j]);
-
-        piece_left -= 2;
-        j++;
+    for (; j < piece_bytes; j++) {
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pack._pieces[j]);
     }
 
-    mem[j + 8] = _details_mask.halfmove_clock;
-    *reinterpret_cast<uint16_t*>(mem + j + 9) = _details_mask.fullmove_clock;
+    mem[j + sizeof(BitBoard)] = pack._clock_data.halfmove;
+    *reinterpret_cast<uint16_t*>(mem + j + sizeof(BitBoard) + 1) = pack._clock_data.fullmove;
 
     assert(output);
-    output.write(reinterpret_cast<const char*>(mem), j + 11);
-}
-
-INLINE size_t bytesLeft(std::istream& input) {
-    auto curr_bytes = input.tellg();
-    input.seekg(0, std::ios::end);
-    auto end_bytes = input.tellg();
-    input.seekg(curr_bytes);
-    return end_bytes - curr_bytes;
+    output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard) + 3);
+    return output.good();
 }
 
 bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
     assert(input);
 
-    size_t bytes_left = bytesLeft(input);
+    size_t bytes_left = streamBytesLeft(input);
 
     if (!bytes_left)
         return false;
 
-    assert(bytes_left >= 8);
+    assert(bytes_left >= sizeof(BitBoard));
     
     uint64_t occupied;
-    input.read(reinterpret_cast<char*>(&occupied), 8);
+    input.read(reinterpret_cast<char*>(&occupied), sizeof(BitBoard));
 
     packed._occupancy_mask = occupied;
 
@@ -259,25 +310,19 @@ bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
 
     size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
 
-    assert(bytes_left - 8 >= piece_bytes);
+    assert(bytes_left - sizeof(BitBoard) >= piece_bytes + _ClockBufferSize);
 
-    Nibble piece_mem[16];
-    input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
+    byte details_mem[_MaxNibbles + _ClockBufferSize];
+    input.read(reinterpret_cast<char*>(details_mem), piece_bytes + _ClockBufferSize);
 
-    for (size_t i = 0; i < piece_bytes; i++) {
-        packed._details_mask.pieces[i] = piece_mem[i];
+    size_t i = 0;
+
+    for (; i < piece_bytes; i++) {
+        packed._pieces[i] = static_cast<Nibble>(details_mem[i]);
     }
 
-    assert(bytes_left - 8 - piece_bytes >= 3);
-
-    byte move_cnt_buff[3];
-    input.read(reinterpret_cast<char*>(move_cnt_buff), 3);
-
-    packed._details_mask.halfmove_clock = move_cnt_buff[0];
-    packed._details_mask.fullmove_clock = *reinterpret_cast<uint16_t*>(move_cnt_buff + 1);
-
-    if (packed._details_mask.fullmove_clock == 9)
-        int a = 0;
+    packed._clock_data.halfmove = details_mem[i];
+    packed._clock_data.fullmove = *reinterpret_cast<uint16_t*>(details_mem + i + 1);
 
     return true;
 }
@@ -288,7 +333,8 @@ std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
     ASSERT(input, "Invalid input");
 
     PackedPosition pack;
-
+    
+    // TODO: Optimize that 
     while (read(input, pack)) {
         res.push_back(pack);
     }
@@ -298,10 +344,6 @@ std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
 
 BitBoard PackedPosition::getOccupancy() const {
     return _occupancy_mask;
-}
-
-PackedPosition::DetailData PackedPosition::getDetailData() const {
-    return _details_mask;
 }
 
 } // namespace Utils

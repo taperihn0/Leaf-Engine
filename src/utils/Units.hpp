@@ -1,22 +1,13 @@
 #pragma once
 
-#include "backend/Common.hpp"
-#include "backend/Position.hpp"
-#include "backend/Move.hpp"
-#include "backend/Time.hpp"
-#include "backend/Search.hpp"
-#include "backend/Game.hpp"
-#include "PackedPosition.hpp"
+#include "UtilsCommon.hpp"
 
-#include <iomanip>
-#include <fstream>
-
-#define _COLOR_RED		   "\033[0;31m"
+#define _COLOR_RED         "\033[0;31m"
 #define _COLOR_BRIGHT_RED  "\033[0;91m"
 #define _COLOR_BRIGHT_BLUE "\033[0;94m"
-#define _COLOR_GREY		   "\033[0;97m"
-#define _COLOR_GREEN	   "\033[0;32m"
-#define _COLOR_RESET	   "\033[0m"
+#define _COLOR_GREY        "\033[0;97m"
+#define _COLOR_GREEN       "\033[0;32m"
+#define _COLOR_RESET       "\033[0m"
 
 #define _TESTCASE(lcnt, cmp, expc, f, ...)																		 \
 {																												 \
@@ -54,7 +45,7 @@ bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_vie
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;
 	std::cout << "["
-		<< "TESTNUM: " << std::setw(3) << _test_counter
+		<< "TESTNUM: "    << std::setw(3) << _test_counter
 		<< ", TESTLINE: " << std::setw(3) << testline 
 		<< ", FILELINE: " << std::setw(3) << fileline 
 		<< "] $ "
@@ -203,8 +194,10 @@ static bool packedPositionTests() {
 		return false;
 	}
 
+    static constexpr size_t PositionLimit = 400000;
 	std::string line;
-	for (size_t i = 0; i < 400000 and std::getline(file, line); i++) {
+
+	for (size_t i = 0; i < PositionLimit and std::getline(file, line); i++) {
 		Position pos(line);
 		std::cout << i << ": " << line << '\n';
 
@@ -218,20 +211,38 @@ static bool packedPositionTests() {
 
         // checking read/write
 		tmp_stream.seekp(0, std::ios::beg);
-		packed.write(tmp_stream);
+		PackedPosition::write(tmp_stream, packed);
 		tmp_stream.flush();
 
 		tmp_stream.seekg(0, std::ios_base::beg);
 		tmp_stream.clear();
 
-        PackedPosition wr_packed;
-        PackedPosition::read(tmp_stream, wr_packed);
+        PackedPosition read_packed;
+        PackedPosition::read(tmp_stream, read_packed);
 
-		if (packed != wr_packed) {
+		if (packed != read_packed) {
             pos.print();
 			ASSERT(false, "Failed to read/write a packed position");
 			return false;
 		}
+
+        SfBinFormatPosition&& sfpack = SfBinFormatPosition::SffromPacked(packed);
+
+        tmp_stream.seekp(0, std::ios::beg);
+        SfBinFormatPosition::write(tmp_stream, sfpack);
+        tmp_stream.flush();
+
+        tmp_stream.seekg(0, std::ios_base::beg);
+        tmp_stream.clear();
+
+        PackedPosition read_sfpack;
+        SfBinFormatPosition::read(tmp_stream, read_sfpack);
+
+        if (sfpack != read_sfpack) {
+            pos.print();
+            ASSERT(false, "Failed to read/write a binpack- packed position");
+            return false;
+        }
 	}
 
 	std::cout << "All tests passed" << std::endl;

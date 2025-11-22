@@ -88,13 +88,13 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
             const PackedPosition& packed_position = positions[j];
 
             if (isWhiteWin(game_result))
-                packed_position.write(thread.output_white_win);
+                PackedPosition::write(thread.output_white_win, packed_position);
             
             else if (isBlackWin(game_result))
-                packed_position.write(thread.output_black_win);
+                PackedPosition::write(thread.output_black_win, packed_position);
             
             else if (isDraw(game_result)) 
-                packed_position.write(thread.output_draw);
+                PackedPosition::write(thread.output_draw, packed_position);
         }
 
         positions.clear();

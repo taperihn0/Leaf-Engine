@@ -11,13 +11,13 @@ using timepoint_t = std::chrono::system_clock::time_point;
 class Clock {
 public:
 	inline static timepoint_t timePoint()  
-	{ return _clock.now(); }
+	{ return _clock_data.now(); }
 
 	inline static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start) 
 	{ return std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count(); }
 private:
 	using _internal_clock_t = std::chrono::system_clock;
-	static _internal_clock_t _clock;
+	static _internal_clock_t _clock_data;
 };
 
 class Timer {

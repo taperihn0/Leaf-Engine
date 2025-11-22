@@ -197,6 +197,8 @@ private:
 	uint64_t _board;
 };
 
+static_assert(sizeof(BitBoard) == 8);
+
 // Rectangular lookup for in-between routines
 struct RectangularTable {
 	using tab64x64_t = std::array<std::array<BitBoard, 64>, 64>;
@@ -215,75 +217,75 @@ inline const RectangularTable rectangular;
 
 namespace {
 
-	// one step only and shifting routines *
+// one step only and shifting routines *
 
-	INLINE BitBoard nortOne(BitBoard bb) {
-		return bb << 8;
-	}
+INLINE BitBoard nortOne(BitBoard bb) {
+	return bb << 8;
+}
 
-	INLINE BitBoard soutOne(BitBoard bb) {
-		return bb >> 8;
-	}
+INLINE BitBoard soutOne(BitBoard bb) {
+	return bb >> 8;
+}
 
-	INLINE BitBoard westOne(BitBoard bb) {
-		return (bb >> 1) & BitBoard::Not_H_File;
-	}
+INLINE BitBoard westOne(BitBoard bb) {
+	return (bb >> 1) & BitBoard::Not_H_File;
+}
 
-	INLINE BitBoard eastOne(BitBoard bb) {
-		return (bb << 1) & BitBoard::Not_A_File;
-	}
+INLINE BitBoard eastOne(BitBoard bb) {
+	return (bb << 1) & BitBoard::Not_A_File;
+}
 
-	INLINE BitBoard noEaOne(BitBoard bb) {
-		return (bb << 9) & BitBoard::Not_A_File;
-	}
+INLINE BitBoard noEaOne(BitBoard bb) {
+	return (bb << 9) & BitBoard::Not_A_File;
+}
 
-	INLINE BitBoard soEaOne(BitBoard bb) {
-		return (bb >> 7) & BitBoard::Not_A_File;
-	}
+INLINE BitBoard soEaOne(BitBoard bb) {
+	return (bb >> 7) & BitBoard::Not_A_File;
+}
 
-	INLINE BitBoard soWeOne(BitBoard bb) {
-		return (bb >> 9) & BitBoard::Not_H_File;
-	}
+INLINE BitBoard soWeOne(BitBoard bb) {
+	return (bb >> 9) & BitBoard::Not_H_File;
+}
 
-	INLINE BitBoard noWeOne(BitBoard bb) {
-		return (bb << 7) & BitBoard::Not_H_File;
-	}
+INLINE BitBoard noWeOne(BitBoard bb) {
+	return (bb << 7) & BitBoard::Not_H_File;
+}
 
-	INLINE BitBoard noNoEa(BitBoard bb) {
-		return (bb << 17) & BitBoard::Not_A_File;
-	}
+INLINE BitBoard noNoEa(BitBoard bb) {
+	return (bb << 17) & BitBoard::Not_A_File;
+}
 
-	INLINE BitBoard noEaEa(BitBoard bb) {
-		return (bb << 10) & BitBoard::Not_AB_File;
-	}
+INLINE BitBoard noEaEa(BitBoard bb) {
+	return (bb << 10) & BitBoard::Not_AB_File;
+}
 
-	INLINE BitBoard soEaEa(BitBoard bb) {
-		return (bb >> 6) & BitBoard::Not_AB_File;
-	}
+INLINE BitBoard soEaEa(BitBoard bb) {
+	return (bb >> 6) & BitBoard::Not_AB_File;
+}
 
-	INLINE BitBoard soSoEa(BitBoard bb) {
-		return (bb >> 15) & BitBoard::Not_A_File;
-	}
+INLINE BitBoard soSoEa(BitBoard bb) {
+	return (bb >> 15) & BitBoard::Not_A_File;
+}
 
-	INLINE BitBoard soSoWe(BitBoard bb) {
-		return (bb >> 17) & BitBoard::Not_H_File;
-	}
+INLINE BitBoard soSoWe(BitBoard bb) {
+	return (bb >> 17) & BitBoard::Not_H_File;
+}
 
-	INLINE BitBoard soWeWe(BitBoard bb) {
-		return (bb >> 10) & BitBoard::Not_GH_File;
-	}
+INLINE BitBoard soWeWe(BitBoard bb) {
+	return (bb >> 10) & BitBoard::Not_GH_File;
+}
 
-	INLINE BitBoard noWeWe(BitBoard bb) {
-		return (bb << 6) & BitBoard::Not_GH_File;
-	}
+INLINE BitBoard noWeWe(BitBoard bb) {
+	return (bb << 6) & BitBoard::Not_GH_File;
+}
 
-	INLINE BitBoard noNoWe(BitBoard bb) {
-		return (bb << 15) & BitBoard::Not_H_File;
-	}
+INLINE BitBoard noNoWe(BitBoard bb) {
+	return (bb << 15) & BitBoard::Not_H_File;
+}
 
-	INLINE BitBoard inBetween(Square org, Square dst) {
-		assert(org.isValid() and org.isNotNull() and dst.isValid() and dst.isNotNull());
-		return rectangular.t64[org][dst];
-	}
+INLINE BitBoard inBetween(Square org, Square dst) {
+	assert(org.isValid() and org.isNotNull() and dst.isValid() and dst.isNotNull());
+	return rectangular.t64[org][dst];
+}
 
 } // namespace

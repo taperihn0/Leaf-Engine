@@ -1,7 +1,6 @@
 #pragma once
 
-#include "backend/Game.hpp"
-#include "backend/Search.hpp"
+#include "UtilsCommon.hpp"
 #include "Opening.hpp"
 #include "PackedPosition.hpp"
 
