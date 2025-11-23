@@ -6,7 +6,6 @@
 #include "backend/Time.hpp"
 #include "backend/Search.hpp"
 #include "backend/Game.hpp"
-#include "PackedPosition.hpp"
 
 #include <iomanip>
 #include <fstream>

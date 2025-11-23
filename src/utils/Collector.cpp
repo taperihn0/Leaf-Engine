@@ -1,4 +1,6 @@
 #include "Collector.hpp"
+#include "Filepath.hpp"
+#include "PackedPosition.hpp"
 
 #include <thread>
 #include <iomanip>
@@ -40,7 +42,8 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
     const ll nodes_min = nodes_per_search - nodes_randomization_range;
     const ll nodes_max = nodes_per_search + nodes_randomization_range;
 
-    SelfGame match(1_MB);
+    const size_t per_search_tt_size = 1_MB;
+    SelfGame match(per_search_tt_size);
 
     for (size_t i = 0; thread.commons->games_ended < thread.commons->total_games; i++) {
 
@@ -122,16 +125,16 @@ void DataCollector::startTournament(size_t games_count, size_t thread_count, Sea
 
     std::vector<std::thread>   threads;
 
-    for (size_t i = 0; i < thread_count; i++) {
+    for (int thread_num = 0; thread_num < thread_count; thread_num++) {
         PerThreadData data;
 
-        std::string path = std::string(_FileWhiteWin) + "_thread_" + std::to_string(i) + ".pck";
+        std::string path = Filepath::getWhiteWinOutputPath_asPCK(thread_num);
         data.output_white_win.open(path, std::ios::binary | std::ios::app);
 
-        path = std::string(_FileBlackWin) + "_thread_" + std::to_string(i) + ".pck";
+        path = Filepath::getBlackWinOutputPath_asPCK(thread_num);
         data.output_black_win.open(path, std::ios::binary | std::ios::app);
 
-        path = std::string(_FileDraw) + "_thread_" + std::to_string(i) + ".pck";
+        path = Filepath::getDrawOutputPath_asPCK(thread_num);
         data.output_draw.open(path, std::ios::binary | std::ios::app);
 
         data.limits = limits;

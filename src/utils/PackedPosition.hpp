@@ -8,7 +8,7 @@ namespace Utils {
 
 class PackedPosition;
 
-// Stockfish binpack format.
+// Stockfish position compression.
 class SfBinFormatPosition {
 public:
     SfBinFormatPosition(); 
@@ -17,6 +17,10 @@ public:
     bool operator==(const SfBinFormatPosition& p) const;
 
     INLINE bool operator!=(const SfBinFormatPosition& p) const { return !(*this == p); }
+
+    bool operator==(const PackedPosition& p) const;
+
+    INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
 
     enum SpecialMasks : uint8_t {
         NO_SPECIAL = 0,
@@ -50,27 +54,38 @@ public:
     static bool read(std::istream& input, SfBinFormatPosition& sfbin_pos);
 
     static SfBinFormatPosition sfPacked(const Position& pos);
+
+    static Position sfUnpacked(const SfBinFormatPosition& pos);
+
+    static std::vector<SfBinFormatPosition> fullRead(std::istream& input);
 protected:
     static constexpr int _MaxPiecesOnBoard = 32;
     static constexpr int _MaxNibbles       = _MaxPiecesOnBoard / 2;
     static constexpr int _SfBinBufferSize  = sizeof(BitBoard) + _MaxNibbles;
 
-    BitBoard  _occupancy_mask;
-    Nibble    _pieces[_MaxNibbles];
-    uint8_t   _piece_cnt;
+    BitBoard _occupancy_mask;
+    Nibble   _pieces[_MaxNibbles];
+    uint8_t  _piece_cnt;
 };
 
 // PackedPosition implements custom position compression.
 // It extends Stockfish binpack format by halfmove and fullmove count.
 class PackedPosition : public SfBinFormatPosition {
 public:
+    friend class SfBinFormatPosition;
+
     PackedPosition();
     explicit PackedPosition(const Position& pos);
+    explicit PackedPosition(const SfBinFormatPosition& sfp);
 
     bool operator==(const PackedPosition& p) const;
 
     INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
     
+    bool operator==(const SfBinFormatPosition& sfp) const;
+
+    INLINE bool operator!=(const SfBinFormatPosition& sfp) const { return !(*this == sfp); }
+
     static PackedPosition fromFEN(const std::string& fen);
 
     static PackedPosition packed(const Position& pos);
@@ -85,14 +100,18 @@ public:
 
     BitBoard getOccupancy() const;
 
-    static Piece pieceFromMask(uint8_t mask, SpecialMasks& flags, Square sq);
-private:
-    static constexpr int    _ClockBufferSize  = 3;
-    static constexpr size_t _PackedBufferSize = _SfBinBufferSize + _ClockBufferSize;
+    uint8_t getPieceCount() const;
 
+    static Piece pieceFromMask(uint8_t mask, SpecialMasks& flags, Square sq);
+
+    static PackedPosition fromSfPacked(const SfBinFormatPosition& sfp);
+private:
     static uint8_t maskFromPiece(Piece piece, Square sq, const Position& pos);
 
     static void placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part);
+
+    static constexpr int    _ClockBufferSize = 3;
+    static constexpr size_t _PackedBufferSize = _SfBinBufferSize + _ClockBufferSize;
 
     // apart from 16-byte pieces buffer,
     // we also store fullmove count and fullmove count

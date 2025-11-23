@@ -3,6 +3,25 @@
 namespace Utils
 {
 
+template <typename PositionFormat>
+std::vector<PositionFormat> fullReadOf(std::istream& input) {
+    static_assert(_IS_SAME_TYPE(PositionFormat, SfBinFormatPosition) or
+                  _IS_SAME_TYPE(PositionFormat, PackedPosition));
+
+    std::vector<PositionFormat> res;
+
+    ASSERT(input, "Invalid input stream");
+
+    PositionFormat pack;
+
+    // TODO: Optimize that 
+    while (PositionFormat::read(input, pack)) {
+        res.push_back(pack);
+    }
+
+    return res;
+}
+
 SfBinFormatPosition::SfBinFormatPosition() {
     std::memset(reinterpret_cast<void*>(this), 0, sizeof(SfBinFormatPosition));
 }
@@ -20,11 +39,26 @@ bool SfBinFormatPosition::operator==(const SfBinFormatPosition& p) const {
     return !static_cast<bool>(std::memcmp(&_pieces, &p._pieces, cmp_bytes));
 }
 
+bool SfBinFormatPosition::operator==(const PackedPosition& p) const {
+    return *this == SffromPacked(p);
+}
+
 SfBinFormatPosition SfBinFormatPosition::SffromPacked(const PackedPosition& pack) {
-    return static_cast<SfBinFormatPosition>(pack);
+    SfBinFormatPosition sfpack;
+
+    sfpack._occupancy_mask = pack._occupancy_mask;
+    sfpack._piece_cnt = pack._piece_cnt;
+
+    std::memcpy(reinterpret_cast<void*>(&sfpack._pieces), 
+                reinterpret_cast<const void*>(&pack._pieces), 
+                (sfpack._piece_cnt + 1) / 2);
+
+    return sfpack;
 }
 
 bool SfBinFormatPosition::write(std::ostream& output, const SfBinFormatPosition& sfbin_pos) {
+    assert(output);
+
     byte mem[_SfBinBufferSize];
     *reinterpret_cast<BitBoard*>(mem) = sfbin_pos._occupancy_mask;
 
@@ -35,7 +69,6 @@ bool SfBinFormatPosition::write(std::ostream& output, const SfBinFormatPosition&
         mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&sfbin_pos._pieces[j]);
     }
 
-    assert(output);
     output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard));
     return output.good();
 }
@@ -73,8 +106,16 @@ bool SfBinFormatPosition::read(std::istream& input, SfBinFormatPosition& sfbin_p
     return true;
 }
 
+std::vector<SfBinFormatPosition> SfBinFormatPosition::fullRead(std::istream& input) {
+    return fullReadOf<SfBinFormatPosition>(input);
+}
+
 SfBinFormatPosition SfBinFormatPosition::sfPacked(const Position& pos) {
     return SffromPacked(PackedPosition::packed(pos));
+}
+
+Position SfBinFormatPosition::sfUnpacked(const SfBinFormatPosition& sfp) {
+    return PackedPosition::unpacked(PackedPosition::fromSfPacked(sfp));
 }
 
 PackedPosition::PackedPosition() 
@@ -88,10 +129,21 @@ PackedPosition::PackedPosition(const Position& pos) {
     *this = packed(pos);
 }
 
+PackedPosition::PackedPosition(const SfBinFormatPosition& sfp) 
+    : SfBinFormatPosition(sfp) {
+
+    _clock_data.fullmove = 0;
+    _clock_data.halfmove = 0;
+}
+
 bool PackedPosition::operator==(const PackedPosition& p) const {
     return SfBinFormatPosition::operator==(p)
        and p._clock_data.fullmove == p._clock_data.fullmove
        and p._clock_data.halfmove == p._clock_data.halfmove;
+}
+
+bool PackedPosition::operator==(const SfBinFormatPosition& sfp) const {
+    return SfBinFormatPosition::SffromPacked(*this) == sfp;
 }
 
 PackedPosition PackedPosition::fromFEN(const std::string& fen) {
@@ -169,6 +221,10 @@ Piece PackedPosition::pieceFromMask(uint8_t mask, PackedPosition::SpecialMasks& 
     }
 
     return piece;
+}
+
+PackedPosition PackedPosition::fromSfPacked(const SfBinFormatPosition& sfp) {
+    return static_cast<PackedPosition>(sfp);
 }
 
 uint8_t PackedPosition::maskFromPiece(Piece piece, Square sq, const Position& pos) {
@@ -272,6 +328,8 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 }
 
 bool PackedPosition::write(std::ostream& output, const PackedPosition& pack) {
+    assert(output);
+
     byte mem[_PackedBufferSize];
     *reinterpret_cast<BitBoard*>(mem) = pack._occupancy_mask;
     
@@ -285,7 +343,6 @@ bool PackedPosition::write(std::ostream& output, const PackedPosition& pack) {
     mem[j + sizeof(BitBoard)] = pack._clock_data.halfmove;
     *reinterpret_cast<uint16_t*>(mem + j + sizeof(BitBoard) + 1) = pack._clock_data.fullmove;
 
-    assert(output);
     output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard) + 3);
     return output.good();
 }
@@ -324,26 +381,19 @@ bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
     packed._clock_data.halfmove = details_mem[i];
     packed._clock_data.fullmove = *reinterpret_cast<uint16_t*>(details_mem + i + 1);
 
-    return true;
+    return input.good();
 }
 
 std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
-    std::vector<PackedPosition> res;
-
-    ASSERT(input, "Invalid input");
-
-    PackedPosition pack;
-    
-    // TODO: Optimize that 
-    while (read(input, pack)) {
-        res.push_back(pack);
-    }
-
-    return res;
+    return fullReadOf<PackedPosition>(input);
 }
 
 BitBoard PackedPosition::getOccupancy() const {
     return _occupancy_mask;
+}
+
+uint8_t PackedPosition::getPieceCount() const {
+    return _piece_cnt;
 }
 
 } // namespace Utils

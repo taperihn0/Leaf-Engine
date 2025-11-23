@@ -1,0 +1,16 @@
+/target
+/nets
+/checkpoints
+/.cargo
+/data
+/.idea
+/.vscode
+/visualisation
+/data
+
+*.epd
+*.txt
+*.bin
+*.data
+*.binpack
+*.network
