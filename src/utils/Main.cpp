@@ -322,15 +322,15 @@ int main(int argc, char* argv[]) {
         * The performance of file operations are horrible.
         * The most important thing is they just works.
         */
-             if (token == "test_packed_pos")       Utils::packedPositionTests();
+             if (token == "test_pack")             Utils::packedPositionTests();
         else if (token == "load_openings")         Utils::OpeningGenerator::load();
         else if (token == "test_ccr_one_hour")     Utils::ccrOneHourTest(search);
         else if (token == "test_see")		       Utils::seeTests();
         else if (token == "test_all")		       Utils::runTests(search);
         else if (token == "self_play")		       parseSelfPlay(collector, strm);
-        else if (token == "test_packed_file")      parsePackedFile(strm);
-        else if (token == "test_sfpacked_file")    parseSfPackedFile(strm);
-        else if (token == "check_positions")       parseShowPositions(strm);
+        else if (token == "test_pack_on")          parsePackedFile(strm);
+        else if (token == "test_sfpack_on")        parseSfPackedFile(strm);
+        else if (token == "view_positions")        parseShowPositions(strm);
         else if (token == "merge_selfplay_files")  parseMerge(strm);
         else if (token == "packed_to_train_entry") parse2TrainEntry(strm);
 
