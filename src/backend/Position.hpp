@@ -65,13 +65,13 @@ private:
 };
 
 // forward declaration
-namespace Utils { class PackedPosition; }
+namespace Utils { class ExtPackedPosition; }
 
 // internal board state, including piece distribution 
 // and game flags like castling
 class Position {
 public:
-	friend class Utils::PackedPosition;
+	friend class Utils::ExtPackedPosition;
 
 	struct IrreversibleState;
 

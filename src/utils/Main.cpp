@@ -36,7 +36,7 @@ void parseSelfPlay(Utils::DataCollector& collector, std::istringstream& strm) {
 	collector.startTournament(games_count, thread_cnt, limits);
 }
 
-void parsePackedFile(std::istringstream& strm) {
+void parseExtPackedFile(std::istringstream& strm) {
     std::string filepath;
     strm >> std::skipws >> filepath;
 
@@ -65,14 +65,14 @@ void parsePackedFile(std::istringstream& strm) {
     }
 
     for (auto& full_pos : full_positions) {
-        Utils::PackedPosition packed = Utils::PackedPosition::packed(full_pos);
-        Utils::PackedPosition::write(tmp_stream, packed);
+        Utils::ExtPackedPosition packed = Utils::ExtPackedPosition::packed(full_pos);
+        Utils::ExtPackedPosition::write(tmp_stream, packed);
     }
 
     tmp_stream.flush();
     tmp_stream.seekg(0, std::ios::beg);
 
-    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
+    std::vector<Utils::ExtPackedPosition> packed_positions = Utils::ExtPackedPosition::fullRead(tmp_stream);
 
     ASSERT(packed_positions.size() == full_positions.size(), 
            "Position number does not match: "
@@ -80,9 +80,9 @@ void parsePackedFile(std::istringstream& strm) {
            + std::to_string(full_positions.size()));
 
     for (size_t i = 0; i < packed_positions.size(); i++) {
-        Position unpack = Utils::PackedPosition::unpacked(packed_positions[i]);
+        Position unpack = Utils::ExtPackedPosition::unpacked(packed_positions[i]);
 
-        if (Utils::PackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
+        if (Utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
             unpack.print();
             full_positions[i].print();
             std::cout << "Position number " << i << " does not match" << std::endl;
@@ -93,7 +93,7 @@ void parsePackedFile(std::istringstream& strm) {
     std::cout << "Successfully packed all positions" << std::endl;
 }
 
-void parseSfPackedFile(std::istringstream& strm) {
+void parsePackedFile(std::istringstream& strm) {
     std::string filepath;
     strm >> std::skipws >> filepath;
 
@@ -122,17 +122,17 @@ void parseSfPackedFile(std::istringstream& strm) {
     }
 
     for (auto& full_pos : full_positions) {
-        Utils::SfBinFormatPosition sfpack = Utils::SfBinFormatPosition::sfPacked(full_pos);
-        Utils::SfBinFormatPosition::write(tmp_stream, sfpack);
+        Utils::PackedPosition sfpack = Utils::PackedPosition::packed(full_pos);
+        Utils::PackedPosition::write(tmp_stream, sfpack);
     }
 
     tmp_stream.flush();
     tmp_stream.seekg(0, std::ios_base::beg);
 
-    std::vector<Utils::SfBinFormatPosition> sfpacked_positions = Utils::SfBinFormatPosition::fullRead(tmp_stream);
+    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
 
-    for (size_t i = 0; i < sfpacked_positions.size(); i++) {
-        if (sfpacked_positions[i] != Utils::SfBinFormatPosition(full_positions[i])) {
+    for (size_t i = 0; i < packed_positions.size(); i++) {
+        if (packed_positions[i] != Utils::PackedPosition(full_positions[i])) {
             full_positions[i].print();
             std::cout << "Position number " << i << " does not match (while sf-style packing)" << std::endl;
             return;
@@ -157,7 +157,7 @@ void parseShowPositions(std::istringstream& strm) {
 
     strm >> std::skipws >> begin >> std::skipws >> count;
 
-    std::vector<Utils::PackedPosition> pack_positions = Utils::PackedPosition::fullRead(input);
+    std::vector<Utils::ExtPackedPosition> pack_positions = Utils::ExtPackedPosition::fullRead(input);
     size_t n = pack_positions.size();
 
     if (begin < 0 or begin + count > n) {
@@ -166,7 +166,7 @@ void parseShowPositions(std::istringstream& strm) {
     }
 
     for (size_t i = begin; i < begin + count; i++) {
-        Position unpack = Utils::PackedPosition::unpacked(pack_positions[i]);
+        Position unpack = Utils::ExtPackedPosition::unpacked(pack_positions[i]);
         unpack.print();
     }
 }
@@ -329,7 +329,7 @@ int main(int argc, char* argv[]) {
         else if (token == "test_all")		       Utils::runTests(search);
         else if (token == "self_play")		       parseSelfPlay(collector, strm);
         else if (token == "test_pack_on")          parsePackedFile(strm);
-        else if (token == "test_sfpack_on")        parseSfPackedFile(strm);
+        else if (token == "test_extpack_on")       parseExtPackedFile(strm);
         else if (token == "view_positions")        parseShowPositions(strm);
         else if (token == "merge_selfplay_files")  parseMerge(strm);
         else if (token == "packed_to_train_entry") parse2TrainEntry(strm);

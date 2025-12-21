@@ -57,25 +57,19 @@ public:
     {
         ASSERT(pck_input and train_data_output, "Given files are not valid");
 
-        std::vector<PackedPosition> packs = PackedPosition::fullRead(pck_input);
-        std::ostringstream buff(std::ios::binary);
+        std::vector<ExtPackedPosition> packs = ExtPackedPosition::fullRead(pck_input);
 
-        for (PackedPosition& pack : packs) {
-            Position full_position = PackedPosition::unpacked(pack);
+        for (ExtPackedPosition& pack : packs) {
+            Position full_position = ExtPackedPosition::unpacked(pack);
             Score white_score = Eval::staticEval(full_position);
             TrainingDataEntry entry(pack, white_score, game_result);
-            TrainingDataEntry::write(buff, entry);
+            
+            if (!TrainingDataEntry::write(train_data_output, entry)) {
+                ASSERT(false, "Failed to write binary string buffer to given file");
+                return false;
+            }
         }
-
-        buff.flush();
-
-        const std::string& str = buff.str();
-
-        if (!train_data_output.write(str.data(), str.size())) {
-            ASSERT(false, "Failed to write binary string buffer to given file");
-            return false;
-        }
-
+        
         return train_data_output.good();
     }
 };

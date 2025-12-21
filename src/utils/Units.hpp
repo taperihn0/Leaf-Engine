@@ -201,9 +201,9 @@ static bool packedPositionTests() {
 		Position pos(line);
 		std::cout << i << ": " << line << '\n';
 
-		PackedPosition&& packed = PackedPosition::packed(pos);
+		ExtPackedPosition&& packed = ExtPackedPosition::packed(pos);
 
-		if (PackedPosition::unpacked(packed) != pos) {
+		if (ExtPackedPosition::unpacked(packed) != pos) {
 			pos.print();
 			ASSERT(false, "Failed to pack a position");
 			return false;
@@ -211,14 +211,14 @@ static bool packedPositionTests() {
 
         // checking read/write
 		tmp_stream.seekp(0, std::ios::beg);
-		PackedPosition::write(tmp_stream, packed);
+		ExtPackedPosition::write(tmp_stream, packed);
 		tmp_stream.flush();
 
 		tmp_stream.seekg(0, std::ios_base::beg);
 		tmp_stream.clear();
 
-        PackedPosition read_packed;
-        PackedPosition::read(tmp_stream, read_packed);
+        ExtPackedPosition read_packed;
+        ExtPackedPosition::read(tmp_stream, read_packed);
 
 		if (packed != read_packed) {
             pos.print();
@@ -226,17 +226,17 @@ static bool packedPositionTests() {
 			return false;
 		}
 
-        SfBinFormatPosition&& sfpack = SfBinFormatPosition::SffromPacked(packed);
+        PackedPosition&& sfpack = PackedPosition::fromExt(packed);
 
         tmp_stream.seekp(0, std::ios::beg);
-        SfBinFormatPosition::write(tmp_stream, sfpack);
+        PackedPosition::write(tmp_stream, sfpack);
         tmp_stream.flush();
 
         tmp_stream.seekg(0, std::ios_base::beg);
         tmp_stream.clear();
 
-        PackedPosition read_sfpack;
-        SfBinFormatPosition::read(tmp_stream, read_sfpack);
+        ExtPackedPosition read_sfpack;
+        PackedPosition::read(tmp_stream, read_sfpack);
 
         if (sfpack != read_sfpack) {
             pos.print();

@@ -20,7 +20,7 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
     ASSERT(thread.output_draw.is_open(),      "Output not opened.");
     ASSERT(thread.commons != nullptr,         "Thread commons not initialized");
 
-    std::vector<PackedPosition> positions;
+    std::vector<ExtPackedPosition> positions;
     positions.reserve(MaxGameMoves);
 
     using thread_id_t = std::thread::id;
@@ -88,16 +88,16 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
 
         for (size_t j = 0; j < game_positions_cnt; j++) {
 
-            const PackedPosition& packed_position = positions[j];
+            const ExtPackedPosition& packed_position = positions[j];
 
             if (isWhiteWin(game_result))
-                PackedPosition::write(thread.output_white_win, packed_position);
+                ExtPackedPosition::write(thread.output_white_win, packed_position);
             
             else if (isBlackWin(game_result))
-                PackedPosition::write(thread.output_black_win, packed_position);
+                ExtPackedPosition::write(thread.output_black_win, packed_position);
             
             else if (isDraw(game_result)) 
-                PackedPosition::write(thread.output_draw, packed_position);
+                ExtPackedPosition::write(thread.output_draw, packed_position);
         }
 
         positions.clear();

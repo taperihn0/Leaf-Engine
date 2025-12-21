@@ -9,29 +9,32 @@ public:
     TrainingDataEntry() = default;
 
     enum Result8b : uint8_t {
-        DRAW      = 0x0,
-        WHITE_WIN = 0x1,
-        BLACK_WIN = 0x2,
+        BLACK_WIN = 0,
+        DRAW      = 1,
+        WHITE_WIN = 2,
     };
 
     TrainingDataEntry(const PackedPosition& packed, Score white_score, Result8b result);
+    TrainingDataEntry(const ExtPackedPosition& packed, Score white_score, Result8b result);
 
     static bool write(std::ostream& output, const TrainingDataEntry& entry);
 
     static bool read(std::istream& input, TrainingDataEntry& entry);
 private:
-    PackedPosition _packed_pos;
-
 #pragma pack(push, 1)
-    struct GameDetails {
-        Result8b result;
+    struct PackedPosInfo {
         Score    white_score;
+        Result8b result;
+        Square   king_sq;
+        Square   opp_king_sq;
+        byte     extra[3];
     };
 #pragma pack(pop)
 
-    static_assert(sizeof(GameDetails) == 3);
+    static_assert(sizeof(PackedPosInfo) == 8);
 
-    GameDetails _game_details;
+    PackedPosition _packed_pos;
+    PackedPosInfo  _game_details;
 };
 
 } // namespace Utils

@@ -5,8 +5,8 @@ namespace Utils
 
 template <typename PositionFormat>
 std::vector<PositionFormat> fullReadOf(std::istream& input) {
-    static_assert(_IS_SAME_TYPE(PositionFormat, SfBinFormatPosition) or
-                  _IS_SAME_TYPE(PositionFormat, PackedPosition));
+    static_assert(_IS_SAME_TYPE(PositionFormat, PackedPosition) or
+                  _IS_SAME_TYPE(PositionFormat, ExtPackedPosition));
 
     std::vector<PositionFormat> res;
 
@@ -22,15 +22,15 @@ std::vector<PositionFormat> fullReadOf(std::istream& input) {
     return res;
 }
 
-SfBinFormatPosition::SfBinFormatPosition() {
-    std::memset(reinterpret_cast<void*>(this), 0, sizeof(SfBinFormatPosition));
+PackedPosition::PackedPosition() {
+    std::memset(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
 }
 
-SfBinFormatPosition::SfBinFormatPosition(const Position& pos) {
-    *this = sfPacked(pos);
+PackedPosition::PackedPosition(const Position& pos) {
+    *this = packed(pos);
 }
 
-bool SfBinFormatPosition::operator==(const SfBinFormatPosition& p) const {
+bool PackedPosition::operator==(const PackedPosition& p) const {
     if (_occupancy_mask != p._occupancy_mask)
         return false;
 
@@ -39,41 +39,55 @@ bool SfBinFormatPosition::operator==(const SfBinFormatPosition& p) const {
     return !static_cast<bool>(std::memcmp(&_pieces, &p._pieces, cmp_bytes));
 }
 
-bool SfBinFormatPosition::operator==(const PackedPosition& p) const {
-    return *this == SffromPacked(p);
+bool PackedPosition::operator==(const ExtPackedPosition& p) const {
+    return *this == fromExt(p);
 }
 
-SfBinFormatPosition SfBinFormatPosition::SffromPacked(const PackedPosition& pack) {
-    SfBinFormatPosition sfpack;
+PackedPosition PackedPosition::fromExt(const ExtPackedPosition& ext_pack) {
+    PackedPosition pack;
 
-    sfpack._occupancy_mask = pack._occupancy_mask;
-    sfpack._piece_cnt = pack._piece_cnt;
+    pack._occupancy_mask = ext_pack._occupancy_mask;
+    pack._piece_cnt = ext_pack._piece_cnt;
 
-    std::memcpy(reinterpret_cast<void*>(&sfpack._pieces), 
-                reinterpret_cast<const void*>(&pack._pieces), 
-                (sfpack._piece_cnt + 1) / 2);
+    std::memcpy(reinterpret_cast<void*>(&pack._pieces), 
+                reinterpret_cast<const void*>(&ext_pack._pieces), 
+                (pack._piece_cnt + 1) / 2);
 
-    return sfpack;
+    return pack;
 }
 
-bool SfBinFormatPosition::write(std::ostream& output, const SfBinFormatPosition& sfbin_pos) {
+bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
     assert(output);
 
-    byte mem[_SfBinBufferSize];
-    *reinterpret_cast<BitBoard*>(mem) = sfbin_pos._occupancy_mask;
+    byte mem[_PackedPosBufferSize];
+    *reinterpret_cast<BitBoard*>(mem) = pos._occupancy_mask;
 
-    size_t piece_bytes = static_cast<size_t>((sfbin_pos._piece_cnt + 1) / 2);
+    size_t piece_bytes = static_cast<size_t>((pos._piece_cnt + 1) / 2);
     size_t j = 0;
 
     for (; j < piece_bytes; j++) {
-        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&sfbin_pos._pieces[j]);
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pos._pieces[j]);
     }
 
     output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard));
     return output.good();
 }
 
-bool SfBinFormatPosition::read(std::istream& input, SfBinFormatPosition& sfbin_pos) {
+bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos) {
+    assert(output);
+
+    byte mem[_PackedPosBufferSize];
+    *reinterpret_cast<BitBoard*>(mem) = pos._occupancy_mask;
+
+    for (size_t j = 0; j < _MaxNibbles; j++) {
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pos._pieces[j]);
+    }
+
+    output.write(reinterpret_cast<const char*>(mem), _PackedPosBufferSize);
+    return output.good();
+}
+
+bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
     assert(input);
 
     size_t bytes_left = streamBytesLeft(input);
@@ -86,10 +100,10 @@ bool SfBinFormatPosition::read(std::istream& input, SfBinFormatPosition& sfbin_p
     uint64_t occupied;
     input.read(reinterpret_cast<char*>(&occupied), sizeof(BitBoard));
 
-    sfbin_pos._occupancy_mask = occupied;
+    pos._occupancy_mask = occupied;
 
-    size_t piece_cnt = sfbin_pos._occupancy_mask.popCount();
-    sfbin_pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
+    size_t piece_cnt = pos._occupancy_mask.popCount();
+    pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
     size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
 
@@ -100,58 +114,165 @@ bool SfBinFormatPosition::read(std::istream& input, SfBinFormatPosition& sfbin_p
     input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
 
     for (size_t i = 0; i < piece_bytes; i++) {
-        sfbin_pos._pieces[i] = piece_mem[i];
+        pos._pieces[i] = piece_mem[i];
     }
 
     return true;
 }
 
-std::vector<SfBinFormatPosition> SfBinFormatPosition::fullRead(std::istream& input) {
-    return fullReadOf<SfBinFormatPosition>(input);
+bool PackedPosition::readStatic(std::istream& input, PackedPosition& pos) {
+    assert(input);
+
+    size_t bytes_left = streamBytesLeft(input);
+
+    if (!bytes_left)
+        return false;
+
+    assert(bytes_left >= sizeof(BitBoard));
+
+    uint64_t occupied;
+    input.read(reinterpret_cast<char*>(&occupied), sizeof(BitBoard));
+
+    pos._occupancy_mask = occupied;
+
+    size_t piece_cnt = pos._occupancy_mask.popCount();
+    pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
+
+    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
+
+    assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
+
+    Nibble piece_mem[_MaxNibbles];
+
+    input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
+
+    for (size_t i = 0; i < piece_bytes; i++) {
+        pos._pieces[i] = piece_mem[i];
+    }
+
+    return true;
 }
 
-SfBinFormatPosition SfBinFormatPosition::sfPacked(const Position& pos) {
-    return SffromPacked(PackedPosition::packed(pos));
+std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
+    return fullReadOf<PackedPosition>(input);
 }
 
-Position SfBinFormatPosition::sfUnpacked(const SfBinFormatPosition& sfp) {
-    return PackedPosition::unpacked(PackedPosition::fromSfPacked(sfp));
+std::pair<Square, Square> PackedPosition::getKingsSquares() const {
+    BitBoard occ = _occupancy_mask;
+
+    Square ksq[2];
+    SpecialMasks flags;
+
+    enumColor side2move = WHITE; // may be BLACK, but we will see
+
+    for (size_t j = 0; occ > 0; j++) {
+        Square sq = static_cast<Square>(occ.dropForward());
+
+        uint8_t mask = j % 2 ? _pieces[j / 2].hi : _pieces[j / 2].lo;
+
+        Piece pc = pieceFromMask(mask, flags, sq);
+
+        if (pc.type() == Piece::KING)
+            ksq[pc.color()] = sq;
+
+        if (flags == BLACK_KING_TO_MOVE)
+            side2move = BLACK;
+    }
+
+    return std::make_pair(ksq[side2move], ksq[!side2move]);
 }
 
-PackedPosition::PackedPosition() 
-    : SfBinFormatPosition() {
+Square PackedPosition::getKingSquare() const {
+    return getKingsSquares().first;
+}
+
+Square PackedPosition::getOppKingSquare() const {
+    return getKingsSquares().second;
+}
+
+BitBoard PackedPosition::getOccupancy() const {
+    return _occupancy_mask;
+}
+
+uint8_t PackedPosition::getPieceCount() const {
+    return _piece_cnt;
+}
+
+#define ROOK_WITH_CASTLING(color) (WHITE_ROOK_WITH_CASTLING + color)
+
+Piece PackedPosition::pieceFromMask(uint8_t mask, PackedPosition::SpecialMasks& flags, Square sq) {
+    Piece piece;
+
+    switch (mask) {
+    case EN_PASSANT_PAWN:
+        flags = EN_PASSANT_PAWN;
+        piece.set(sq.getRank() == Square::r4 ? WHITE : BLACK, Piece::PAWN);
+        break;
+    case WHITE_ROOK_WITH_CASTLING:
+        flags = WHITE_ROOK_WITH_CASTLING;
+        piece.set(WHITE, Piece::ROOK);
+        break;
+    case BLACK_ROOK_WITH_CASTLING:
+        flags = BLACK_ROOK_WITH_CASTLING;
+        piece.set(BLACK, Piece::ROOK);
+        break;
+    case BLACK_KING_TO_MOVE:
+        flags = BLACK_KING_TO_MOVE;
+        piece.set(BLACK, Piece::KING);
+        break;
+    default: 
+        flags = NO_SPECIAL;
+        enumColor col = static_cast<enumColor>(mask / 6);
+        Piece::enumType type = static_cast<Piece::enumType>(mask % 6);
+        piece.set(col, type);
+        break;
+    }
+
+    return piece;
+}
+
+PackedPosition PackedPosition::packed(const Position& pos) {
+    return fromExt(ExtPackedPosition::packed(pos));
+}
+
+Position PackedPosition::unpacked(const PackedPosition& pos) {
+    return PackedPosition::unpacked(ExtPackedPosition::fromPacked(pos));
+}
+
+ExtPackedPosition::ExtPackedPosition() 
+    : PackedPosition() {
 
     _clock_data.fullmove = 0;
     _clock_data.halfmove = 0;
 }
 
-PackedPosition::PackedPosition(const Position& pos) {
+ExtPackedPosition::ExtPackedPosition(const Position& pos) {
     *this = packed(pos);
 }
 
-PackedPosition::PackedPosition(const SfBinFormatPosition& sfp) 
-    : SfBinFormatPosition(sfp) {
+ExtPackedPosition::ExtPackedPosition(const PackedPosition& pos) 
+    : PackedPosition(pos) {
 
     _clock_data.fullmove = 0;
     _clock_data.halfmove = 0;
 }
 
-bool PackedPosition::operator==(const PackedPosition& p) const {
-    return SfBinFormatPosition::operator==(p)
+bool ExtPackedPosition::operator==(const ExtPackedPosition& p) const {
+    return PackedPosition::operator==(p)
        and p._clock_data.fullmove == p._clock_data.fullmove
        and p._clock_data.halfmove == p._clock_data.halfmove;
 }
 
-bool PackedPosition::operator==(const SfBinFormatPosition& sfp) const {
-    return SfBinFormatPosition::SffromPacked(*this) == sfp;
+bool ExtPackedPosition::operator==(const PackedPosition& pos) const {
+    return PackedPosition::fromExt(*this) == pos;
 }
 
-PackedPosition PackedPosition::fromFEN(const std::string& fen) {
+ExtPackedPosition ExtPackedPosition::fromFEN(const std::string& fen) {
     return packed(Position(fen));
 }
 
-PackedPosition PackedPosition::packed(const Position& pos) {
-    PackedPosition packed;
+ExtPackedPosition ExtPackedPosition::packed(const Position& pos) {
+    ExtPackedPosition packed;
 
     BitBoard occupied = pos.getOccupied();
     packed._occupancy_mask = occupied;
@@ -190,44 +311,11 @@ PackedPosition PackedPosition::packed(const Position& pos) {
     return packed;
 }
 
-#define ROOK_WITH_CASTLING(color) (WHITE_ROOK_WITH_CASTLING + color)
-
-Piece PackedPosition::pieceFromMask(uint8_t mask, PackedPosition::SpecialMasks& flags, Square sq) {
-    Piece piece;
-
-    switch (mask) {
-    case EN_PASSANT_PAWN:
-        flags = EN_PASSANT_PAWN;
-        piece.set(sq.getRank() == Square::r4 ? WHITE : BLACK, Piece::PAWN);
-        break;
-    case WHITE_ROOK_WITH_CASTLING:
-        flags = WHITE_ROOK_WITH_CASTLING;
-        piece.set(WHITE, Piece::ROOK);
-        break;
-    case BLACK_ROOK_WITH_CASTLING:
-        flags = BLACK_ROOK_WITH_CASTLING;
-        piece.set(BLACK, Piece::ROOK);
-        break;
-    case BLACK_KING_TO_MOVE:
-        flags = BLACK_KING_TO_MOVE;
-        piece.set(BLACK, Piece::KING);
-        break;
-    default: 
-        flags = NO_SPECIAL;
-        enumColor col = static_cast<enumColor>(mask / 6);
-        Piece::enumType type = static_cast<Piece::enumType>(mask % 6);
-        piece.set(col, type);
-        break;
-    }
-
-    return piece;
+ExtPackedPosition ExtPackedPosition::fromPacked(const PackedPosition& pos) {
+    return static_cast<ExtPackedPosition>(pos);
 }
 
-PackedPosition PackedPosition::fromSfPacked(const SfBinFormatPosition& sfp) {
-    return static_cast<PackedPosition>(sfp);
-}
-
-uint8_t PackedPosition::maskFromPiece(Piece piece, Square sq, const Position& pos) {
+uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position& pos) {
     uint8_t mask = 0;
     
     enumColor color = piece.color();
@@ -257,23 +345,23 @@ uint8_t PackedPosition::maskFromPiece(Piece piece, Square sq, const Position& po
     return mask;
 }
 
-void PackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part) {
+void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part) {
 		Square square = occupied.dropForward();
 		
-		PackedPosition::SpecialMasks piece_flags;
-		Piece piece = PackedPosition::pieceFromMask(nibble_part, piece_flags, square);
+		ExtPackedPosition::SpecialMasks piece_flags;
+		Piece piece = ExtPackedPosition::pieceFromMask(nibble_part, piece_flags, square);
 
 		enumColor color = piece.color();
 		Piece::enumType piece_type = piece.type();
 
 		switch (piece_flags) {
-		case PackedPosition::EN_PASSANT_PAWN: {
+		case ExtPackedPosition::EN_PASSANT_PAWN: {
 			Square ep_sq = square + (color ? 8 : -8);
 			pos._ep_square = ep_sq;
 			break;
 		}
-		case PackedPosition::WHITE_ROOK_WITH_CASTLING:
-		case PackedPosition::BLACK_ROOK_WITH_CASTLING: {
+		case ExtPackedPosition::WHITE_ROOK_WITH_CASTLING:
+		case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
 			Square::enumFile file = square.getFile();
 
 			if (file == Square::a) 
@@ -285,16 +373,16 @@ void PackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied,
 
 			break;
 		}
-		case PackedPosition::BLACK_KING_TO_MOVE:
+		case ExtPackedPosition::BLACK_KING_TO_MOVE:
 			pos._turn = BLACK;
 			break;
-		case PackedPosition::NO_SPECIAL: break;
+		case ExtPackedPosition::NO_SPECIAL: break;
 	}
 
 	pos._piece_bb[color][piece_type].setBit(square);
 }
 
-Position PackedPosition::unpacked(const PackedPosition& pack) {
+Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
 	Position pos;
 	BitBoard occupied = pack.getOccupancy();
 
@@ -305,7 +393,7 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	pos._castling_rights[BLACK].clear();
 
 	for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
-		PackedPosition::Nibble nibble = pack._pieces[i];
+		ExtPackedPosition::Nibble nibble = pack._pieces[i];
 
 		placeNextPieceFromNibble(pos, occupied, nibble.lo);
 
@@ -327,7 +415,7 @@ Position PackedPosition::unpacked(const PackedPosition& pack) {
 	return pos;
 }
 
-bool PackedPosition::write(std::ostream& output, const PackedPosition& pack) {
+bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pack) {
     assert(output);
 
     byte mem[_PackedBufferSize];
@@ -347,7 +435,7 @@ bool PackedPosition::write(std::ostream& output, const PackedPosition& pack) {
     return output.good();
 }
 
-bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
+bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
     assert(input);
 
     size_t bytes_left = streamBytesLeft(input);
@@ -384,16 +472,8 @@ bool PackedPosition::read(std::istream& input, PackedPosition& packed) {
     return input.good();
 }
 
-std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
-    return fullReadOf<PackedPosition>(input);
-}
-
-BitBoard PackedPosition::getOccupancy() const {
-    return _occupancy_mask;
-}
-
-uint8_t PackedPosition::getPieceCount() const {
-    return _piece_cnt;
+std::vector<ExtPackedPosition> ExtPackedPosition::fullRead(std::istream& input) {
+    return fullReadOf<ExtPackedPosition>(input);
 }
 
 } // namespace Utils

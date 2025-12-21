@@ -8,7 +8,7 @@ SelfGame::SelfGame(size_t tt_size_per_search)
                    Search(TranspositionTable(tt_size_per_search)) } 
 {}
 
-Game::Result SelfGame::start(std::vector<PackedPosition>& packed_positions, SearchLimits limits) {
+Game::Result SelfGame::start(std::vector<ExtPackedPosition>& packed_positions, SearchLimits limits) {
     _search_by_side[WHITE].registerNewGame();
     _search_by_side[BLACK].registerNewGame();
 
