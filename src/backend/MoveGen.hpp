@@ -29,6 +29,8 @@ public:
 
 	template <enumMode GenType>
 	static Move32b getRandomLegalMove(Position& pos);
+
+	static bool isAnyCapture(Position& pos);
 };
 
 using MoveGen = MoveGenerator;

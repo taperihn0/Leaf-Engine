@@ -16,9 +16,7 @@ TrainingDataEntry::TrainingDataEntry(const ExtPackedPosition& packed, Score whit
 bool TrainingDataEntry::write(std::ostream& output, const TrainingDataEntry& entry) {
     assert(output);
 
-    std::ostringstream buff(std::ios::binary);
-
-    if (!PackedPosition::writeStatic(buff, entry._packed_pos)) {
+    if (!PackedPosition::writeStatic(output, entry._packed_pos)) {
         ASSERT(false, "Failed to write packed position of training entry to buffer");
         return false;
     }
@@ -34,10 +32,8 @@ bool TrainingDataEntry::write(std::ostream& output, const TrainingDataEntry& ent
 bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
     assert(input);
 
-    if (!PackedPosition::readStatic(input, entry._packed_pos)) {
-        ASSERT(false, "Failed to read packed position of training entry from file");
+    if (!PackedPosition::readStatic(input, entry._packed_pos))
         return false;
-    }
 
     if (!input.read(reinterpret_cast<char*>(&entry._game_details), sizeof(PackedPosInfo))) {
         ASSERT(false, "Failed to read training data game info from file");
@@ -45,6 +41,10 @@ bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
     }
 
     return input.good();
+}
+
+PackedPosition TrainingDataEntry::getPosition() const {
+    return _packed_pos;
 }
 
 } // Utils

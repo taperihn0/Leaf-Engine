@@ -20,6 +20,8 @@ public:
     static bool write(std::ostream& output, const TrainingDataEntry& entry);
 
     static bool read(std::istream& input, TrainingDataEntry& entry);
+
+    PackedPosition getPosition() const;
 private:
 #pragma pack(push, 1)
     struct PackedPosInfo {

@@ -30,7 +30,7 @@ const QB: i16 = 64;
 fn main() {
     let mut trainer = ValueTrainerBuilder::default()
         // makes `ntm_inputs` available below
-        .dual_perspective()
+        //.dual_perspective()
         // standard optimiser used in NNUE
         // the default AdamW params include clipping to range [-1.98, 1.98]
         .optimiser(optimiser::AdamW)
@@ -56,9 +56,10 @@ fn main() {
 
             // inference
             let stm_hidden = l0.forward(stm_inputs).screlu();
-            let ntm_hidden = l0.forward(ntm_inputs).screlu();
-            let hidden_layer = stm_hidden.concat(ntm_hidden);
-            l1.forward(hidden_layer)
+            //let ntm_hidden = l0.forward(ntm_inputs).screlu();
+            //let hidden_layer = stm_hidden.concat(ntm_hidden);
+            //l1.forward(hidden_layer)
+            l1.forward(stm_hidden)
         });
 
     let schedule = TrainingSchedule {
@@ -77,17 +78,11 @@ fn main() {
 
     let settings = LocalSettings { threads: 4, test_set: None, output_directory: "checkpoints", batch_queue_size: 64 };
 
-    // loading from a SF binpack
     let data_loader = {
-        let file_path = "C:/dev/Leaf-Engine/src/utils/selfplay/selfplay_train_data.tdf";
+        let file_path = "../utils/selfplay/train_data.tdf";
         let buffer_size_mb = 1024;
-        let threads = 2;
-        fn filter(entry: &TrainingDataEntry) -> bool {
-                !entry.pos.is_checked(entry.pos.side_to_move())
-                && entry.score.unsigned_abs() <= 10000
-        }
-
-        loader::SfBinpackLoader::new(file_path, buffer_size_mb, threads, filter)
+        let threads = 4;
+        loader::DirectSequentialDataLoader::new(file_path, buffer_size_mb, threads, filter)
     };
 
     trainer.run(&schedule, &settings, &data_loader);

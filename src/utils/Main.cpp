@@ -36,112 +36,6 @@ void parseSelfPlay(Utils::DataCollector& collector, std::istringstream& strm) {
 	collector.startTournament(games_count, thread_cnt, limits);
 }
 
-void parseExtPackedFile(std::istringstream& strm) {
-    std::string filepath;
-    strm >> std::skipws >> filepath;
-
-    std::ifstream input(filepath);
-
-    if (!input) {
-        std::cout << "Failed to open file: " << filepath << std::endl;
-        return;
-    }
-
-    std::vector<Position> full_positions;
-    std::string line;
-
-    while (std::getline(input, line)) {
-        full_positions.push_back(Position(line));
-    }
-
-    std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::ios_base::binary
-                                                    | std::ios::ios_base::in
-                                                    | std::ios::ios_base::out
-                                                    | std::ios::ios_base::trunc);
-                                                     
-    if (!tmp_stream) {
-        std::cout << "Failed to open file: src/assets/tmp/tmp.pck" << std::endl;
-        return;
-    }
-
-    for (auto& full_pos : full_positions) {
-        Utils::ExtPackedPosition packed = Utils::ExtPackedPosition::packed(full_pos);
-        Utils::ExtPackedPosition::write(tmp_stream, packed);
-    }
-
-    tmp_stream.flush();
-    tmp_stream.seekg(0, std::ios::beg);
-
-    std::vector<Utils::ExtPackedPosition> packed_positions = Utils::ExtPackedPosition::fullRead(tmp_stream);
-
-    ASSERT(packed_positions.size() == full_positions.size(), 
-           "Position number does not match: "
-           + std::to_string(packed_positions.size()) + " != "
-           + std::to_string(full_positions.size()));
-
-    for (size_t i = 0; i < packed_positions.size(); i++) {
-        Position unpack = Utils::ExtPackedPosition::unpacked(packed_positions[i]);
-
-        if (Utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
-            unpack.print();
-            full_positions[i].print();
-            std::cout << "Position number " << i << " does not match" << std::endl;
-            return;
-        }
-    }
-
-    std::cout << "Successfully packed all positions" << std::endl;
-}
-
-void parsePackedFile(std::istringstream& strm) {
-    std::string filepath;
-    strm >> std::skipws >> filepath;
-
-    std::ifstream input(filepath);
-
-    if (!input) {
-        std::cout << "Failed to open file: " << filepath << std::endl;
-        return;
-    }
-
-    std::vector<Position> full_positions;
-    std::string line;
-
-    while (std::getline(input, line)) {
-        full_positions.push_back(Position(line));
-    }
-
-    std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::ios_base::binary
-                                                    | std::ios::ios_base::in
-                                                    | std::ios::ios_base::out
-                                                    | std::ios::ios_base::trunc);
-
-    if (!tmp_stream) {
-        std::cout << "Failed to open file: src/assets/tmp/tmp.pck" << std::endl;
-        return;
-    }
-
-    for (auto& full_pos : full_positions) {
-        Utils::PackedPosition sfpack = Utils::PackedPosition::packed(full_pos);
-        Utils::PackedPosition::write(tmp_stream, sfpack);
-    }
-
-    tmp_stream.flush();
-    tmp_stream.seekg(0, std::ios_base::beg);
-
-    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
-
-    for (size_t i = 0; i < packed_positions.size(); i++) {
-        if (packed_positions[i] != Utils::PackedPosition(full_positions[i])) {
-            full_positions[i].print();
-            std::cout << "Position number " << i << " does not match (while sf-style packing)" << std::endl;
-            return;
-        }
-    }
-
-    std::cout << "Successfully packed all positions" << std::endl;
-}
-
 void parseShowPositions(std::istringstream& strm) {
     std::string filepath;
     strm >> std::skipws >> filepath;
@@ -169,6 +63,8 @@ void parseShowPositions(std::istringstream& strm) {
         Position unpack = Utils::ExtPackedPosition::unpacked(pack_positions[i]);
         unpack.print();
     }
+
+    std::cout.flush();
 }
 
 void parseMerge(std::istringstream& strm) {
@@ -294,6 +190,44 @@ void parse2TrainEntry(std::istringstream& strm) {
     }
 }
 
+void parseFilterTrainData(std::istringstream& strm) {
+    std::string from_path;
+    std::string to_path;
+
+    strm >> std::skipws >> from_path >> std::skipws >> to_path;
+
+    std::ifstream input(from_path, std::ios_base::binary);
+
+    if (!input) {
+        ASSERT(false, "Failed to open file: " + from_path);
+        return;
+    }
+
+    std::ofstream output(to_path, std::ios_base::binary);
+
+    if (!output) {
+        ASSERT(false, "Failed to open file: " + to_path);
+        return;
+    }
+
+    Utils::TrainingDataEntry entry;
+
+    auto pos_filter = [](const Utils::PackedPosition& pack) -> bool {
+        Position pos = Utils::PackedPosition::unpacked(pack);
+
+        return !pos.isInCheck(pos.getTurn()) and pos.isQuiet();
+    };
+
+    while (Utils::TrainingDataEntry::read(input, entry)) {
+        if (pos_filter(entry.getPosition())) {
+            if (!Utils::TrainingDataEntry::write(output, entry)) {
+                ASSERT(false, "Failed to write to file: " + to_path);
+                return;
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
 	ZobristHash::fillKeys();
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
@@ -323,16 +257,16 @@ int main(int argc, char* argv[]) {
         * The most important thing is they just works.
         */
              if (token == "test_pack")             Utils::packedPositionTests();
-        else if (token == "load_openings")         Utils::OpeningGenerator::load();
         else if (token == "test_ccr_one_hour")     Utils::ccrOneHourTest(search);
         else if (token == "test_see")		       Utils::seeTests();
-        else if (token == "test_all")		       Utils::runTests(search);
+        else if (token == "test_pack_on")          Utils::parsePackedFile(strm);
+        else if (token == "test_extpack_on")       Utils::parseExtPackedFile(strm);
         else if (token == "self_play")		       parseSelfPlay(collector, strm);
-        else if (token == "test_pack_on")          parsePackedFile(strm);
-        else if (token == "test_extpack_on")       parseExtPackedFile(strm);
+        else if (token == "load_openings")         Utils::OpeningGenerator::load();
         else if (token == "view_positions")        parseShowPositions(strm);
         else if (token == "merge_selfplay_files")  parseMerge(strm);
         else if (token == "packed_to_train_entry") parse2TrainEntry(strm);
+        else if (token == "filter_train_data")     parseFilterTrainData(strm);
 
 	} while (command != "quit");
 }

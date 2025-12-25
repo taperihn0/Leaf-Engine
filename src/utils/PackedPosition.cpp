@@ -138,19 +138,11 @@ bool PackedPosition::readStatic(std::istream& input, PackedPosition& pos) {
     size_t piece_cnt = pos._occupancy_mask.popCount();
     pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
-    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
+    assert(bytes_left - sizeof(BitBoard) >= _MaxNibbles);
 
-    assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
+    input.read(reinterpret_cast<char*>(&pos._pieces), _MaxNibbles);
 
-    Nibble piece_mem[_MaxNibbles];
-
-    input.read(reinterpret_cast<char*>(piece_mem), piece_bytes);
-
-    for (size_t i = 0; i < piece_bytes; i++) {
-        pos._pieces[i] = piece_mem[i];
-    }
-
-    return true;
+    return input.good();
 }
 
 std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
@@ -236,7 +228,7 @@ PackedPosition PackedPosition::packed(const Position& pos) {
 }
 
 Position PackedPosition::unpacked(const PackedPosition& pos) {
-    return PackedPosition::unpacked(ExtPackedPosition::fromPacked(pos));
+    return ExtPackedPosition::unpacked(ExtPackedPosition::fromPacked(pos));
 }
 
 ExtPackedPosition::ExtPackedPosition() 

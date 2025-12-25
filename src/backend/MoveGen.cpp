@@ -264,6 +264,15 @@ Move32b MoveGen::getRandomLegalMove(Position& pos) {
     return ml.getRandomMove();
 }
 
+bool MoveGen::isAnyCapture(Position& pos) {
+	// TODO: Optimization.
+	MoveList ml;
+	generateLegalMoves<MoveGen::CAPTURES>(pos, ml);
+	return ml.any([](MoveList::Entry en) {
+		return en.move.isCapture();
+	});
+}
+
 template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES> (const Position&, MoveList&);
 template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, MoveList&);
 template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>   (const Position&, MoveList&);

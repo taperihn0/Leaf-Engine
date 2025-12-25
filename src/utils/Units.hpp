@@ -39,8 +39,15 @@ template <typename T>
 using _cmp_func_t = bool(*)(const T&, const T&);
 
 template <typename Func, typename T, typename... Args>
-bool _testcase_assertion(Func f, T expected, _cmp_func_t<T> cmp, std::string_view cmpnamestr, 
-						 std::string_view fcallstr, int testline, int fileline, Args&&... args) {
+bool _testcase_assertion(Func f, 
+						 T expected, 
+						 _cmp_func_t<T> cmp, 
+						 std::string_view cmpnamestr, 
+						 std::string_view fcallstr, 
+						 int testline, 
+						 int fileline, 
+						 Args&&... args) {
+
 	T fres = f(std::forward<Args>(args)...);
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;
@@ -249,11 +256,111 @@ static bool packedPositionTests() {
 	return true;
 }
 
-static bool runTests(Search& search) {
-	seeTests();
-	packedPositionTests();
-	ccrOneHourTest(search);
-	return true;
+static void parseExtPackedFile(std::istringstream& strm) {
+    std::string filepath;
+    strm >> std::skipws >> filepath;
+
+    std::ifstream input(filepath);
+
+    if (!input) {
+        std::cout << "Failed to open file: " << filepath << std::endl;
+        return;
+    }
+
+    std::vector<Position> full_positions;
+    std::string line;
+
+    while (std::getline(input, line)) {
+        full_positions.push_back(Position(line));
+    }
+
+    std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::ios_base::binary
+                                                    | std::ios::ios_base::in
+                                                    | std::ios::ios_base::out
+                                                    | std::ios::ios_base::trunc);
+                                                     
+    if (!tmp_stream) {
+        std::cout << "Failed to open file: src/assets/tmp/tmp.pck" << std::endl;
+        return;
+    }
+
+    for (auto& full_pos : full_positions) {
+        Utils::ExtPackedPosition packed = Utils::ExtPackedPosition::packed(full_pos);
+        Utils::ExtPackedPosition::write(tmp_stream, packed);
+    }
+
+    tmp_stream.flush();
+    tmp_stream.seekg(0, std::ios::beg);
+
+    std::vector<Utils::ExtPackedPosition> packed_positions = Utils::ExtPackedPosition::fullRead(tmp_stream);
+
+    ASSERT(packed_positions.size() == full_positions.size(), 
+           "Position number does not match: "
+           + std::to_string(packed_positions.size()) + " != "
+           + std::to_string(full_positions.size()));
+
+    for (size_t i = 0; i < packed_positions.size(); i++) {
+        Position unpack = Utils::ExtPackedPosition::unpacked(packed_positions[i]);
+
+        if (Utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
+            unpack.print();
+            full_positions[i].print();
+            std::cout << "Position number " << i << " does not match" << std::endl;
+            return;
+        }
+    }
+
+    std::cout << "Successfully packed all positions" << std::endl;
 }
+
+static void parsePackedFile(std::istringstream& strm) {
+    std::string filepath;
+    strm >> std::skipws >> filepath;
+
+    std::ifstream input(filepath);
+
+    if (!input) {
+        std::cout << "Failed to open file: " << filepath << std::endl;
+        return;
+    }
+
+    std::vector<Position> full_positions;
+    std::string line;
+
+    while (std::getline(input, line)) {
+        full_positions.push_back(Position(line));
+    }
+
+    std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::ios_base::binary
+                                                    | std::ios::ios_base::in
+                                                    | std::ios::ios_base::out
+                                                    | std::ios::ios_base::trunc);
+
+    if (!tmp_stream) {
+        std::cout << "Failed to open file: src/assets/tmp/tmp.pck" << std::endl;
+        return;
+    }
+
+    for (auto& full_pos : full_positions) {
+        Utils::PackedPosition sfpack = Utils::PackedPosition::packed(full_pos);
+        Utils::PackedPosition::write(tmp_stream, sfpack);
+    }
+
+    tmp_stream.flush();
+    tmp_stream.seekg(0, std::ios_base::beg);
+
+    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
+
+    for (size_t i = 0; i < packed_positions.size(); i++) {
+        if (packed_positions[i] != Utils::PackedPosition(full_positions[i])) {
+            full_positions[i].print();
+            std::cout << "Position number " << i << " does not match (while sf-style packing)" << std::endl;
+            return;
+        }
+    }
+
+    std::cout << "Successfully packed all positions" << std::endl;
+}
+
 
 } // namespace Utils

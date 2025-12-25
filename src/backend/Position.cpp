@@ -65,7 +65,7 @@ void Position::setStartingPos() {
 	setByFEN(static_cast<std::string>(StartposFEN));
 }
 
-Position::enumStatusFlag Position::isValid() {
+Position::enumStatusFlag Position::isValid() const {
     if (_zhash != ZobristHash::generateOnFly(*this))
         return POSITION_HASH_INVALID;
 
@@ -87,6 +87,10 @@ Position::enumStatusFlag Position::isValid() {
         return POSITION_PIECE_CNT_INVALID;
 
     return POSITION_NO_ERROR;
+}
+
+bool Position::isQuiet() {
+	return !MoveGen::isAnyCapture(*this);
 }
 
 void Position::print() const {

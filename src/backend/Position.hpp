@@ -92,7 +92,9 @@ public:
     };
 
     // simplified check if a position is valid
-    enumStatusFlag isValid();
+    enumStatusFlag isValid() const;
+
+	bool isQuiet();
 
 	void print() const;
 
