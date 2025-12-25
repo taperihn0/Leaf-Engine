@@ -95,6 +95,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 }
 
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERTNOLOG(s) (void)((s))
 
 _NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
 	std::cout << text << '\n' << file << ", line " << line << '\n';
