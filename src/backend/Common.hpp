@@ -71,6 +71,15 @@ inline constexpr bool _isSameType() {
 	return std::is_same_v<T1, T2>;
 };
 
+template <typename T>
+constexpr bool is_integral = std::is_integral_v<T>;
+
+template <typename T>
+constexpr bool is_real = std::is_floating_point_v<T>;
+
+template <typename T>
+constexpr bool is_numeric = (is_real<T> or is_integral<T>);
+
 // keep this macro for compatibility with some blocks of code
 #define _IS_SAME_TYPE(t1, t2) _isSameType<t1, t2>()
 
@@ -97,9 +106,10 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
-_NORETURN inline bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
+static bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
 	std::cout << text << '\n' << file << ", line " << line << '\n';
 	exit(EXIT_FAILURE);
+	return false;
 }
 
 static constexpr int	  MaxNodeMoves = 128;

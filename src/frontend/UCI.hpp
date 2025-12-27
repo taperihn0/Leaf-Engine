@@ -18,13 +18,10 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
+	void parseNet(std::istringstream& strm);
 
 #if defined (DEBUG)
 	void parseSEE(std::istringstream& strm);
-#endif
-
-#if defined(_USE_NNUE_NET)
-	void parseNet(std::istringstream& strm);
 #endif
 
 	Search         _search;

@@ -67,8 +67,6 @@ std::array<int16_t, 64> Eval::_mg_king_tables = {
 	-15,  36,  12, -54,   8, -28,  24,  14,
 };
 
-std::array<int8_t, 2> Eval::_convert_factor = { 56, 0 };
-
 Score Eval::matEval(const Position& pos) {
 	const enumColor turn = pos.getTurn();
 	return 
@@ -85,7 +83,7 @@ INLINE Score Eval::pawnsStaticEval(const Position& pos, enumColor side) {
 
 	while (pawns) {
 		const Square sq = pawns.dropForward();
-		res += _mg_pawn_tables[sq ^ _convert_factor[side]];
+		res += _mg_pawn_tables[blackPerspectiveFlip(sq, side)];
 	}
 
 	return Score(res);
@@ -97,7 +95,7 @@ INLINE Score Eval::knightsStaticEval(const Position& pos, enumColor side) {
 
 	while (knights) {
 		const Square sq = knights.dropForward();
-		res += _mg_knight_tables[sq ^ _convert_factor[side]];
+		res += _mg_knight_tables[blackPerspectiveFlip(sq, side)];
 	}
 
 	return Score(res);
@@ -109,7 +107,7 @@ INLINE Score Eval::bishopsStaticEval(const Position& pos, enumColor side) {
 
 	while (bishops) {
 		const Square sq = bishops.dropForward();
-		res += _mg_bishop_tables[sq ^ _convert_factor[side]];
+		res += _mg_bishop_tables[blackPerspectiveFlip(sq, side)];
 	}
 
 	return Score(res);
@@ -121,7 +119,7 @@ INLINE Score Eval::rooksStaticEval(const Position& pos, enumColor side) {
 
 	while (rooks) {
 		const Square sq = rooks.dropForward();
-		res += _mg_rook_tables[sq ^ _convert_factor[side]];
+		res += _mg_rook_tables[blackPerspectiveFlip(sq, side)];
 	}
 
 	return Score(res);
@@ -133,7 +131,7 @@ INLINE Score Eval::queensStaticEval(const Position& pos, enumColor side) {
 
 	while (queens) {
 		const Square sq = queens.dropForward();
-		res += _mg_queen_tables[sq ^ _convert_factor[side]];
+		res += _mg_queen_tables[blackPerspectiveFlip(sq, side)];
 	}
 
 	return res;
@@ -141,7 +139,7 @@ INLINE Score Eval::queensStaticEval(const Position& pos, enumColor side) {
 
 INLINE Score Eval::kingsStaticEval(const Position& pos, enumColor side) {
 	const Square ksq = pos.getKingSquare(side);
-	return Score(_mg_king_tables[ksq ^ _convert_factor[side]]);
+	return Score(_mg_king_tables[blackPerspectiveFlip(ksq, side)]);
 }
 
 Score Eval::staticEval(const Position& pos) {

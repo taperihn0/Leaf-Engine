@@ -76,7 +76,7 @@ public:
 	struct IrreversibleState;
 
 	Position();
-	Position(const std::string init_fen);
+	explicit Position(const std::string init_fen);
 
 	// assuming given FEN is valid FEN position
 	void setByFEN(const std::string fen);
@@ -499,7 +499,7 @@ INLINE BitBoard Position::getCheckers(enumColor side) const {
 }
 
 INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
-	for (Piece::enumType piece_t : Piece::piece_list) {
+	for (Piece::enumType piece_t : Piece::PieceTypeList) {
 		if (_piece_bb[by_color][piece_t].isOccupiedSq(sq))
 			return piece_t;
 	}

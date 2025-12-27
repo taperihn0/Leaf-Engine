@@ -4,15 +4,19 @@
 
 namespace nn {
 
-static constexpr size_t MaxLayerCount = 4;
+static constexpr std::string_view NetworkPath = "src/assets/nets/net.bin";
 
-static constexpr size_t           TestNetworkInputSize = 768;
-static constexpr size_t           TestNetworkHiddenLayerSize = 64;
-static constexpr std::string_view TestNetworkPath = "src/assets/nets/net.bin";
+static constexpr size_t MaxLayerCount = 4;
+static constexpr size_t NetworkInputSize = 768;
+static constexpr size_t NetworkHiddenLayerSize = 64;
+
+static constexpr int16_t NetworkWeightQuant = 255;
+static constexpr int16_t NetworkBiasQuant = 64;
+static constexpr int16_t NetworkOutputScale = 400;
 
 class PackedNeuralNetwork {
 public:
-    PackedNeuralNetwork() = default;
+    PackedNeuralNetwork();
     ~PackedNeuralNetwork();
 
 #pragma pack(push, 1)
@@ -27,14 +31,19 @@ public:
 
     static_assert(sizeof(Header) == 20);
 
+    bool isValid() const;
+
     bool loadFromFile(std::string_view path);
     bool loadDefaultNet();
 
-    uint getAccumulatorSize();
-    uint getLayerSize(size_t layer_num);
+    uint getAccumulatorSize() const;
+    uint getLayerSize(size_t layer_num) const;
 
-    int16_t* getLayerWeights(size_t layer_num);
-    int16_t* getLayerBiases(size_t layer_num);
+    const int16_t* getLayerWeights(size_t layer_num) const;
+    const int16_t* getLayerBiases(size_t layer_num) const;
+
+    size_t getLayerWeightsCount(size_t layer_num) const;
+    size_t getLayerBiasesCount(size_t layer_num) const;
 private:
     bool initLayerWeightsBiases();
 

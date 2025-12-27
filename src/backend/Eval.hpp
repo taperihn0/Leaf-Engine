@@ -28,6 +28,4 @@ private:
 		_mg_rook_tables, 
 		_mg_queen_tables, 
 		_mg_king_tables;
-
-	static std::array<int8_t, 2> _convert_factor;
 };

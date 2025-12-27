@@ -156,7 +156,7 @@ bool Position::operator==(const Position& pos) const {
 		return false;
 
 	for (enumColor col : { WHITE, BLACK}) {
-		for (Piece::enumType piece : Piece::piece_list) {
+		for (Piece::enumType piece : Piece::PieceTypeList) {
 			if (get(piece, col) != pos.get(piece, col))
 				return false;
 		}

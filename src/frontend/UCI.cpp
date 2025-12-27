@@ -2,6 +2,8 @@
 #include "backend/Move.hpp"
 #include "backend/Search.hpp"
 #include "PackedNetwork.hpp"
+#include "Accumulator.hpp"
+#include "Network.hpp"
 
 #include <sstream>
 
@@ -101,13 +103,10 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "print")		_pos.print();
 		else if (token == "go")			parseGo(strm);
 		else if (token == "isready")	parseIsReady();
+		else if (token == "export_net") parseNet(strm);
 
 #if defined(DEBUG)
 		else if (token == "see")		parseSEE(strm);
-#endif
-
-#if defined(_USE_NNUE_NET)
-		else if (token == "export_net") parseNet(strm);
 #endif
 
 	} while (command != "quit");
@@ -199,12 +198,11 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 }
 #endif
 
-#if defined(_USE_NNUE_NET)
 void UniversalChessInterface::parseNet(std::istringstream& strm) {
 	std::string path;
 	strm >> std::skipws >> path;
 
-	// WORK IN PROGRESS
+	// WORK IN PROGRESS //
 	nn::PackedNeuralNetwork network;
 
 	network.loadFromFile("src/assets/nets/net.bin");
@@ -213,7 +211,7 @@ void UniversalChessInterface::parseNet(std::istringstream& strm) {
 		<< network.getLayerSize(1) << ' '
 		<< network.getLayerSize(2) << std::endl;
 
-	int16_t* b = network.getLayerBiases(0);
+	const int16_t* b = network.getLayerBiases(0);
 
 	for (int i = 0; i < 16; i++) {
 		std::cout << b[i] << std::endl;
@@ -223,6 +221,17 @@ void UniversalChessInterface::parseNet(std::istringstream& strm) {
 
 	std::cout << b[0] << std::endl;
 
+	Position pos("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	nn::Accumulator acc;
+
+	acc.refresh(network.getLayerBiases(0), network.getLayerWeights(0), pos);
+
+	std::cout << "EVAL" << std::endl;
+
+	Score eval = nn::NeuralNetwork::evaluate(network, pos);
+
+	std::cout << eval.toInt() << std::endl;
+
 	//ASSERT(false, "Unimplemented");
 }
-#endif

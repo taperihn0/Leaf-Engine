@@ -18,12 +18,12 @@ public:
 	};
 
 	Piece() = default;
-	inline Piece(enumType piece_t) { set(WHITE, piece_t); }
-	inline Piece(enumColor col_t, enumType piece_t) { set(col_t, piece_t); }
+	inline explicit Piece(enumType piece_type) 		   { set(WHITE, piece_type); }
+	inline Piece(enumColor col_t, enumType piece_type) { set(col_t, piece_type); }
 
 	static inline Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _WhitesStr.find_first_of(c)
-			: _BlacksStr.find_first_of(c);
+							     : _BlacksStr.find_first_of(c);
 		return Piece(col_t, enumType(id));
 	}
 
@@ -33,8 +33,17 @@ public:
 		return enumType(id);
 	}
 
-	inline void set(enumColor col_t, enumType piece_t) { 
-		_col = col_t, _type = piece_t;
+	inline void set(enumColor col_t, enumType piece_type) { 
+		_col = col_t;
+		_type = piece_type;
+	}
+
+	inline void setColor(enumColor col) {
+		_col = col;
+	}
+
+	inline void setType(enumType piece_type) {
+		_type = piece_type;
 	}
 
 	void print() const {
@@ -55,7 +64,7 @@ public:
 		return _col;
 	}
 
-	static constexpr std::array<enumType, 6> piece_list = { 
+	static constexpr std::array<enumType, 6> PieceTypeList = { 
 		Piece::PAWN, 
 		Piece::KNIGHT, 
 		Piece::BISHOP, 

@@ -49,8 +49,6 @@ if (INCLUDE_TESTS)
 	target_compile_definitions(Leaf PUBLIC _INCLUDE_TESTS)
 endif ()
 
-target_compile_definitions(Leaf PUBLIC _USE_NNUE_NET)
-
 target_compile_definitions(Leaf PUBLIC 
 	$<$<CONFIG:Debug>:DEBUG>
 	$<$<CONFIG:Release>:RELEASE>

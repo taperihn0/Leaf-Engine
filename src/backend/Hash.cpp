@@ -13,7 +13,7 @@ INLINE uint64_t randomU64() {
 void ZobristHash::fillKeys() {
 	for (int sq = 0; sq < 64; sq++) {
 		for (enumColor col : { WHITE, BLACK }) {
-			for (auto piece_t : Piece::piece_list) {
+			for (auto piece_t : Piece::PieceTypeList) {
 				piece_keys[col][piece_t][sq] = randomU64();
 			}
 		}

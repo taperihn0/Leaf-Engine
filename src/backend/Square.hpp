@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.hpp"
+#include "Color.hpp"
 
 enum class File : uint8_t {
 	A = 0, B, C, D, E, F, G, H
@@ -83,3 +84,17 @@ public:
 private:
 	uint_t _sq;
 };
+
+// flipping square horizontally - a1 becomes a8 and vice versa.
+static INLINE Square verticalFlip(Square sq) {
+	return sq ^ 56;
+}
+
+/* preserving black perspective for whites:
+*  when 'side' is BLACK, 'sq' is unchanged.
+*  when 'side' is WHITE, 'sq' is flipped vertically.
+*/
+static INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
+	static std::array<int8_t, 2> ConvertVal = { 56, 0 };
+	return sq ^ ConvertVal[side];
+}
