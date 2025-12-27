@@ -1,6 +1,7 @@
 #include "UCI.hpp"
 #include "backend/Move.hpp"
 #include "backend/Search.hpp"
+#include "PackedNetwork.hpp"
 
 #include <sstream>
 
@@ -83,11 +84,13 @@ void UniversalChessInterface::loop(int, const char*[]) {
 
 	std::cout << "Polish Chess Engine, " << EngineName << " by " << Author << '\n';
 
-	do {
-		if (!std::getline(std::cin, _command))
-			_command = "quit";
+	std::string command;
 
-		std::istringstream strm(_command);
+	do {
+		if (!std::getline(std::cin, command))
+			command = "quit";
+
+		std::istringstream strm(command);
 		std::string token;
 
 		strm >> std::skipws >> token;
@@ -98,11 +101,16 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "print")		_pos.print();
 		else if (token == "go")			parseGo(strm);
 		else if (token == "isready")	parseIsReady();
+
 #if defined(DEBUG)
 		else if (token == "see")		parseSEE(strm);
 #endif
 
-	} while (_command != "quit");
+#if defined(_USE_NNUE_NET)
+		else if (token == "export_net") parseNet(strm);
+#endif
+
+	} while (command != "quit");
 }
 
 void UniversalChessInterface::parseUCI() {
@@ -179,7 +187,7 @@ inline void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
 
-#if defined (DEBUG)
+#if defined(DEBUG)
 void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	std::string os, ds;
 	strm >> std::skipws >> os >> std::skipws >> ds;
@@ -188,5 +196,33 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	int score = _pos.StaticExchangeEval<false>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
 											  _pos.pieceOn(org, _pos.getTurn()));
 	std::cout << score << std::endl;
+}
+#endif
+
+#if defined(_USE_NNUE_NET)
+void UniversalChessInterface::parseNet(std::istringstream& strm) {
+	std::string path;
+	strm >> std::skipws >> path;
+
+	// WORK IN PROGRESS
+	nn::PackedNeuralNetwork network;
+
+	network.loadFromFile("src/assets/nets/net.bin");
+
+	std::cout << network.getLayerSize(0) << ' '
+		<< network.getLayerSize(1) << ' '
+		<< network.getLayerSize(2) << std::endl;
+
+	int16_t* b = network.getLayerBiases(0);
+
+	for (int i = 0; i < 16; i++) {
+		std::cout << b[i] << std::endl;
+	}
+
+	b = network.getLayerBiases(1);
+
+	std::cout << b[0] << std::endl;
+
+	//ASSERT(false, "Unimplemented");
 }
 #endif

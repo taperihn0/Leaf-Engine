@@ -18,7 +18,7 @@ public:
 
     static const Position& getPosition();
 private:
-    static inline const std::string _OpeningFile = "src/assets/openingsPositions/crafty_2500_new.epd";
+    static inline const std::string _OpeningFile = "src/assets/sets/crafty_2500_new.epd";
 
     static constexpr int            _OpeningEvalThreshold = 400;
     static constexpr int            _RandomPerPos   = 25;

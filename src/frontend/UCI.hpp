@@ -18,13 +18,16 @@ private:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
+
 #if defined (DEBUG)
 	void parseSEE(std::istringstream& strm);
 #endif
 
-	Search _search;
-	Position _pos;
-	FullInfoRecord _game;
+#if defined(_USE_NNUE_NET)
+	void parseNet(std::istringstream& strm);
+#endif
 
-	std::string _command;
+	Search         _search;
+	Position 	   _pos;
+	FullInfoRecord _game;
 };
