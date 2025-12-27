@@ -11,10 +11,8 @@ class alignas(CACHELINE_SIZE) Accumulator {
 public:
     Accumulator() = default;
 
-    static int activeFeatureIndex(enumColor perspective, 
-                                  Square sq, 
-                                  Piece piece);
-
+    template <enumColor Perspective>
+    static int activeFeatureIndex(Square sq, Piece::enumType piece_type, enumColor side);
     static int activeFeatureIndex(enumColor perspective, 
                                   Square sq, 
                                   Piece::enumType piece_type, 
@@ -29,6 +27,16 @@ public:
                  enumColor side, 
                  int* side_active_features,
                  size_t side_active_features_cnt);
+
+    void update(const int16_t* weights,
+                const Accumulator* prev_acc,
+                int* added_features,
+                size_t added_features_cnt,
+                int* removed_features,
+                size_t removed_features_cnt,
+                enumColor side);
+
+    void clear(enumColor side);
 
     const int16_t* getValues(enumColor side) const;
 private:
