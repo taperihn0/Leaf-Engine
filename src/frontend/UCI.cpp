@@ -7,13 +7,13 @@
 
 #include <sstream>
 
-#define TERMINATE_READ_IF_EMPTY(str, res) \
-    do { if ((str).empty()) return (res); } while(false);
-
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth - 1;
     limits.nodes = 0;
+
+#define TERMINATE_READ_IF_EMPTY(str, res) \
+    do { if ((str).empty()) return (res); } while(false);
 
     while (strm.rdbuf()->in_avail() > 0) {
 
@@ -71,6 +71,8 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
         strm >> std::skipws >> token;
     }
 
+#undef TERMINATE_READ_IF_EMPTY
+
 	return limits;
 }
 
@@ -107,7 +109,7 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "rewrite_header") parseRewriteNet(strm);
 
 #if defined(DEBUG)
-		else if (token == "see")		parseSEE(strm);
+		else if (token == "see")			parseSEE(strm);
 #endif
 
 	} while (command != "quit");

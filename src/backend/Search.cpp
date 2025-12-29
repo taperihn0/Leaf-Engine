@@ -194,6 +194,8 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
 	preroot->accum.refresh(nn::GlobPackedNetwork, pos);
+	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
+																	 : Move32b::Null;
 
 	NodeInfo* root = _tree_stack.getRootNode();
 
@@ -407,15 +409,10 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
-	NodeInfo* const prev_node = Root ? nullptr : node - 1;
+	NodeInfo* const prev_node = node - 1;
 	NodeInfo* const next_node = node + 1;
 
-	Move32b prev_move = prev_node ? prev_node->move : Move32b::Null;
-
-	if constexpr (Root) {
-		prev_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
-												: Move32b::Null;
-	}
+	Move32b prev_move = prev_node->move;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
