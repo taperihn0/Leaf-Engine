@@ -93,7 +93,6 @@ struct NodeInfo {
 	Score					    static_eval;
 	TTEntry::Bound				bound;
 	nn::Accumulator 			accum;
-	static nn::Accumulator*	    preroot_accum;
 };
 
 class TreeStack {
@@ -104,6 +103,7 @@ public:
 	void clearTreeStack(MoveOrderHistoryTables* history_buffer);
 
 	NodeInfo* getRootNode();
+	NodeInfo* getPreRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
 private:
 	static constexpr size_t _Count = MaxSelDepth;

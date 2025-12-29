@@ -24,6 +24,16 @@ PackedNeuralNetwork::~PackedNeuralNetwork() {
     }
 }
 
+PackedNeuralNetwork::PackedNeuralNetwork(PackedNeuralNetwork&& network) {
+    fromRVal(std::move(network));
+}
+
+PackedNeuralNetwork& PackedNeuralNetwork::operator=(PackedNeuralNetwork&& network) {
+    PackedNeuralNetwork::~PackedNeuralNetwork();
+    fromRVal(std::move(network));
+    return *this;
+}
+
 bool PackedNeuralNetwork::isValid() const {
     if (!_header.layer_count or _header.layer_size[2] != 1)
         return false;
@@ -142,6 +152,24 @@ bool PackedNeuralNetwork::initLayerWeightsBiases() {
     }
 
     return true;
+}
+
+void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
+    _file_buff = network._file_buff;
+    _file_size = network._file_size;
+    _fd = network._fd;
+    _header = network._header;
+
+    network._fd = -1;
+    network._file_buff = nullptr;
+    network._file_size = 0;
+
+    for (size_t i = 0; i < MaxLayerCount; i++) {
+        _layer_weights[i] = network._layer_weights[i];
+        _layer_biases[i] = network._layer_biases[i];
+        network._layer_weights[i] = nullptr;
+        network._layer_biases[i] = nullptr;
+    }
 }
 
 } // namespace nn

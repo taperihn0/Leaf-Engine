@@ -18,6 +18,12 @@ public:
     PackedNeuralNetwork();
     ~PackedNeuralNetwork();
 
+    PackedNeuralNetwork(const PackedNeuralNetwork&) = delete;
+    PackedNeuralNetwork(PackedNeuralNetwork&& network);
+
+    PackedNeuralNetwork& operator=(const PackedNeuralNetwork&) = delete;
+    PackedNeuralNetwork& operator=(PackedNeuralNetwork&& network);
+
 #pragma pack(push, 1)
     // Add activaction function info
     struct Header {
@@ -45,6 +51,7 @@ public:
     size_t getLayerBiasesCount(size_t layer_num) const;
 private:
     bool initLayerWeightsBiases();
+    void fromRVal(PackedNeuralNetwork&& network);
 
 #if defined(_MSC_VER)
 #error "Windows not supported" 

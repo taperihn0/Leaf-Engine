@@ -186,21 +186,26 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 	}
 #endif
 
-	int accum_added_feature[2][2];
-	int accum_removed_feature[2][2];
-	size_t accum_added_feature_cnt = 0;
-	size_t accum_removed_feature_cnt = 0;
+	// we've got double buffer for white- and black-perspective,
+	// and for each perspectives maximum features (both removed and added) is 2.
+	int added_feature[2][2];
+	int removed_feature[2][2];
+
+	size_t added_feature_cnt = 0;
+	size_t removed_feature_cnt = 0;
 
 	if (capture) {
 		if (move.isEnPassant()) {
 			assert(piece_t == Piece::PAWN);
-			_piece_bb[!_turn][Piece::PAWN].popBit(dst - dir);
-			_occupied[!_turn].popBit(dst - dir);
-			_zhash ^= ZobristHash::piece_keys[!_turn][Piece::PAWN][dst - dir];
 
-			accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - dir, Piece::PAWN, !_turn);
-			accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst - dir, Piece::PAWN, !_turn);
-			++accum_removed_feature_cnt;
+			const Square cap_sq = dst - dir;
+
+			_piece_bb[!_turn][Piece::PAWN].popBit(cap_sq);
+			_occupied[!_turn].popBit(cap_sq);
+			_zhash ^= ZobristHash::piece_keys[!_turn][Piece::PAWN][cap_sq];
+
+			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(cap_sq, Piece::PAWN, !_turn);
+			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(cap_sq, Piece::PAWN, !_turn);
 		}
 		else {
 			const Piece::enumType captured = pieceOn(dst, !_turn);
@@ -212,9 +217,8 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_occupied[!_turn].popBit(dst);
 			_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
 
-			accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, captured, !_turn);
-			accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst, captured, !_turn);
-			++accum_removed_feature_cnt;
+			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, captured, !_turn);
+			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, captured, !_turn);
 
 			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
 						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
@@ -241,13 +245,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
 		_zhash ^= ZobristHash::piece_keys[_turn][promo_piece_t][dst];
 
-		accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
-		accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
-		++accum_removed_feature_cnt;
+		removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
+		removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
 
-		accum_added_feature[WHITE][accum_added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, promo_piece_t, _turn);
-		accum_added_feature[BLACK][accum_added_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst, promo_piece_t, _turn);
-		++accum_added_feature_cnt;
+		added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, promo_piece_t, _turn);
+		added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, promo_piece_t, _turn);
 	}
 	else { // if not a promotion - just move a piece on its own bitboard 
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
@@ -256,13 +258,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
 
-		accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
-		accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
-		++accum_removed_feature_cnt;
+		removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
+		removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
 
-		accum_added_feature[WHITE][accum_added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, piece_t, _turn);
-		accum_added_feature[BLACK][accum_added_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst, piece_t, _turn);
-		++accum_added_feature_cnt;
+		added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, piece_t, _turn);
+		added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, piece_t, _turn);
 	}
 
 	if (piece_t == Piece::KING) {
@@ -273,13 +273,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 1];
 
-			accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
-			accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
-			++accum_removed_feature_cnt;
+			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
+			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
 
-			accum_added_feature[WHITE][accum_added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 1, Piece::ROOK, _turn);
-			accum_added_feature[BLACK][accum_added_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst - 1, Piece::ROOK, _turn);
-			++accum_added_feature_cnt;
+			added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 1, Piece::ROOK, _turn);
+			added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst - 1, Piece::ROOK, _turn);
 		}
 		else if (move.isLongCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
@@ -288,13 +286,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 2];
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
 
-			accum_removed_feature[WHITE][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 2, Piece::ROOK, _turn);
-			accum_removed_feature[BLACK][accum_removed_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst - 2, Piece::ROOK, _turn);
-			++accum_removed_feature_cnt;
+			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 2, Piece::ROOK, _turn);
+			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst - 2, Piece::ROOK, _turn);
 
-			accum_added_feature[WHITE][accum_added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
-			accum_added_feature[BLACK][accum_added_feature_cnt] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
-			++accum_added_feature_cnt;
+			added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
+			added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
 		}
 
 		_king_sq[_turn] = dst;
@@ -337,16 +333,16 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		if (accum != nullptr) {
 			assert(prev_accum != nullptr);
 
-			accum->update(nn::GlobPackedNetwork.getLayerWeights(0), 
+			accum->update(nn::GlobPackedNetwork, 
 						  prev_accum, 
-						  accum_added_feature[WHITE], accum_added_feature_cnt, 
-						  accum_removed_feature[WHITE], accum_removed_feature_cnt, 
+						  added_feature[WHITE], added_feature_cnt, 
+						  removed_feature[WHITE], removed_feature_cnt, 
 						  WHITE); 
 
-			accum->update(nn::GlobPackedNetwork.getLayerWeights(0), 
+			accum->update(nn::GlobPackedNetwork, 
 						  prev_accum, 
-						  accum_added_feature[BLACK], accum_added_feature_cnt, 
-						  accum_removed_feature[BLACK], accum_removed_feature_cnt, 
+						  added_feature[BLACK], added_feature_cnt, 
+						  removed_feature[BLACK], removed_feature_cnt, 
 						  BLACK); 
 		}
 	}

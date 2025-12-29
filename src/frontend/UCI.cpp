@@ -3,7 +3,7 @@
 #include "backend/Search.hpp"
 #include "PackedNetwork.hpp"
 #include "Accumulator.hpp"
-#include "Network.hpp"
+#include "NetworkEval.hpp"
 
 #include <sstream>
 

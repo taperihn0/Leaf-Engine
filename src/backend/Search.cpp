@@ -1,6 +1,6 @@
 #include "Search.hpp"
 #include "MoveGen.hpp"
-#include "Network.hpp"
+#include "NetworkEval.hpp"
 
 #include <sstream>
 #include <iomanip>
@@ -124,8 +124,6 @@ void Search::registerNewGame() {
 	_history_buff->clearQuietsHistory();
 }
 
-nn::Accumulator* NodeInfo::preroot_accum;
-
 TreeStack::TreeStack() {
 	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(_Count * sizeof(NodeInfo),  CACHELINE_SIZE));
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
@@ -145,10 +143,14 @@ TreeStack::~TreeStack() {
 
 INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
 	assert(ply < _Count);
-	return _stack + ply;
+	return _stack + ply + 1;
 }
 
 INLINE NodeInfo* TreeStack::getRootNode() {
+	return _stack + 1;
+}
+
+INLINE NodeInfo* TreeStack::getPreRootNode() {
 	return _stack;
 }
 
@@ -190,13 +192,10 @@ template <Search::enumInfoLevel InfoLevel>
 Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits) {
 	SearchResults search_results;
 	
-	NodeInfo* root = _tree_stack.getRootNode();
+	NodeInfo* preroot = _tree_stack.getPreRootNode();
+	preroot->accum.refresh(nn::GlobPackedNetwork, pos);
 
-	nn::Accumulator preroot_accum;
-	preroot_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0), 
-						  nn::GlobPackedNetwork.getLayerWeights(0),
-						  pos);
-	root->preroot_accum = &preroot_accum;
+	NodeInfo* root = _tree_stack.getRootNode();
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
@@ -216,7 +215,6 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
         search_results.printShort();
 	}
 
-	root->preroot_accum = nullptr;
 	return search_results.best_move;
 }
 
@@ -328,19 +326,9 @@ Score Search::negaMax(Position& pos,
 	node->move = Move32b::Null;
 	node->static_eval = Score::Undef;
 
-	const nn::Accumulator* prev_accum = Root ? node->preroot_accum : [](NodeInfo* node, NodeInfo* root) -> const nn::Accumulator* {
-		const NodeInfo* hist_node = node;
-
-		do {
-			--hist_node;
-
-			if (hist_node->move != Move32b::Null)
-				return &hist_node->accum;
-
-		} while (hist_node != root);
-
-		return NodeInfo::preroot_accum;
-	}(node, _tree_stack.getRootNode()); 
+	const NodeInfo* preroot = _tree_stack.getPreRootNode();
+	
+	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
@@ -356,7 +344,7 @@ Score Search::negaMax(Position& pos,
 #if defined(_VERIFY_NN)
 			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-			node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<NodeType>(pos, limits, results, node + 1,
@@ -411,7 +399,7 @@ Score Search::negaMax(Position& pos,
 #if defined(_VERIFY_NN)
 				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+				node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 			}
 
 			if (node->static_eval - RfpMultDelta * depth >= beta)
@@ -488,7 +476,7 @@ Score Search::negaMax(Position& pos,
 #if defined(_VERIFY_NN)
 				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+				node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 			}
 
 			if (node->static_eval + FutilityDelta * depth * depth < alpha) {
@@ -671,25 +659,15 @@ Score Search::quiesce(Position& pos,
         return -Score::Undef;
     }
 
-	const nn::Accumulator* prev_accum = [](NodeInfo* node, NodeInfo* root) -> const nn::Accumulator* {
-		const NodeInfo* hist_node = node;
+	const NodeInfo* preroot = _tree_stack.getPreRootNode();
 
-		do {
-			--hist_node;
-
-			if (hist_node->move != Move32b::Null)
-				return &hist_node->accum;
-
-		} while (hist_node != root);
-
-		return NodeInfo::preroot_accum;
-	}(node, _tree_stack.getRootNode()); 
+	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
 #if defined(_VERIFY_NN)
 		ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-		return nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+		return nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 	}
 
 	const uint64_t hash = pos.getZobristKey();
@@ -721,7 +699,7 @@ Score Search::quiesce(Position& pos,
 	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
 
-	const Score stand_pat = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+	const Score stand_pat = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha

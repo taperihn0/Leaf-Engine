@@ -2,6 +2,11 @@
 
 namespace nn {
 
+Accumulator::Accumulator(const PackedNeuralNetwork& network, 
+                         const Position& pos) {
+    refresh(network, pos);
+}
+
 bool Accumulator::operator==(const Accumulator& accum) const {
     return !std::memcmp(_values, accum._values, sizeof(_values));
 }
@@ -21,12 +26,21 @@ int Accumulator::featureIndex(Square sq, Piece::enumType piece_type, enumColor s
 }
 
 int Accumulator::featureIndex(enumColor perspective, 
-                                    Square sq, 
-                                    Piece::enumType piece_type, 
-                                    enumColor side) 
+                              Square sq, 
+                              Piece::enumType piece_type, 
+                              enumColor side) 
 {
     return perspective == BLACK ? featureIndex<BLACK>(sq, piece_type, side)
                                 : featureIndex<WHITE>(sq, piece_type, side);
+}
+
+
+void Accumulator::refresh(const PackedNeuralNetwork& network,
+                          const Position& pos) 
+{
+    refresh(network.getLayerBiases(0),
+            network.getLayerWeights(0),
+            pos);
 }
 
 void Accumulator::refresh(const int16_t* biases, 
@@ -84,6 +98,24 @@ void Accumulator::refresh(const int16_t* biases,
     }
 }
 
+void Accumulator::update(const PackedNeuralNetwork& network,
+                         const Accumulator* prev_acc,
+                         int* added_features,
+                         size_t added_features_cnt,
+                         int* removed_features,
+                         size_t removed_features_cnt,
+                         enumColor side)
+{
+    update(network.getLayerWeights(0),
+           prev_acc, 
+           added_features,
+           added_features_cnt,
+           removed_features,
+           removed_features_cnt,
+           side);
+}
+
+
 void Accumulator::update(const int16_t* weights,
                          const Accumulator* prev_acc,
                          int* added_features,
@@ -131,10 +163,7 @@ const int16_t* Accumulator::getValues(enumColor side) const {
 
 #if defined(_VERIFY_NN)
 bool Accumulator::verify(const Accumulator& accum, const Position& pos) {
-    Accumulator ref_accum;
-    ref_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0),
-                      nn::GlobPackedNetwork.getLayerWeights(0),
-                      pos);
+    Accumulator ref_accum(nn::GlobPackedNetwork, pos);
     return accum == ref_accum;
 }
 #endif

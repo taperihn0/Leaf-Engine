@@ -10,6 +10,12 @@ static constexpr size_t NetworkAccumulatorSize = NetworkHiddenLayerSize;
 class alignas(CACHELINE_SIZE) Accumulator {
 public:
     Accumulator() = default;
+    Accumulator(const Accumulator&) = delete;
+    // just refresh the accumulator with the given 'network' and 'pos'
+    Accumulator(const PackedNeuralNetwork& network, 
+                const Position& pos);
+
+    Accumulator& operator=(const Accumulator&) = delete;
 
     bool operator==(const Accumulator& accum) const ;
     INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
@@ -21,6 +27,9 @@ public:
                             Piece::enumType piece_type, 
                             enumColor side);
 
+    void refresh(const PackedNeuralNetwork& network,
+                 const Position& pos);
+
     void refresh(const int16_t* biases, 
                  const int16_t* weights, 
                  const Position& pos);
@@ -30,6 +39,14 @@ public:
                  enumColor side, 
                  int* side_active_features,
                  size_t side_active_features_cnt);
+
+    void update(const PackedNeuralNetwork& network,
+                const Accumulator* prev_accum,
+                int* added_features,
+                size_t added_features_cnt,
+                int* removed_features,
+                size_t removed_features_cnt,
+                enumColor side);
 
     void update(const int16_t* weights,
                 const Accumulator* prev_accum,

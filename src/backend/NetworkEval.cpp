@@ -1,7 +1,17 @@
-#include "Network.hpp"
+#include "NetworkEval.hpp"
+#include "Search.hpp"
 
 namespace nn
 {
+
+const Accumulator* NEval::getPrevAccum(const NodeInfo* node, const NodeInfo* preroot) {
+    for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
+        if (hist_node->move != Move32b::Null)
+            return &hist_node->accum;
+    }
+
+    return &preroot->accum;
+}
 
 INLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
     return std::clamp(value, mi, ma);
@@ -12,11 +22,11 @@ INLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
     return c * c;
 }
 
-Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, std::string fen) {
+Score NEval::evaluate(const PackedNeuralNetwork& network, std::string fen) {
     return evaluate(network, Position(fen));
 }
 
-Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
+Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
     ASSERTNOLOG(network.isValid());
 
     Accumulator accumulator;
@@ -25,7 +35,7 @@ Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Position
     return evaluate(network, accumulator, pos.getTurn());
 }
 
-Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
+Score NEval::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
     ASSERTNOLOG(network.isValid());
 
     const int16_t output = layerActivationOutput(acc.getValues(side2move), 
@@ -34,7 +44,7 @@ Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Accumula
     return static_cast<Score>(output);
 }
 
-int32_t NeuralNetwork::layerActivationOutput(const int16_t* s2m_accumulator, 
+int32_t NEval::layerActivationOutput(const int16_t* s2m_accumulator, 
                                              const int16_t* ns2m_accumulator,
                                              const PackedNeuralNetwork& network) 
 {
