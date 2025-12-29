@@ -660,7 +660,7 @@ Score Search::quiesce(Position& pos,
     }
 
 	const NodeInfo* preroot = _tree_stack.getPreRootNode();
-
+	
 	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
