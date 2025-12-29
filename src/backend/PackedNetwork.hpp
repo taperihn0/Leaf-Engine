@@ -49,6 +49,10 @@ public:
 
     size_t getLayerWeightsCount(size_t layer_num) const;
     size_t getLayerBiasesCount(size_t layer_num) const;
+
+    static bool rewriteWithHeader(std::string_view in_path,
+                                  std::string_view out_path,
+                                  const Header& header);
 private:
     bool initLayerWeightsBiases();
     void fromRVal(PackedNeuralNetwork&& network);

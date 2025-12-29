@@ -19,6 +19,7 @@ private:
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
 	void parseNet(std::istringstream& strm);
+	void parseRewriteNet(std::istringstream& strm);
 
 #if defined (DEBUG)
 	void parseSEE(std::istringstream& strm);

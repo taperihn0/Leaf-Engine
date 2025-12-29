@@ -97,13 +97,14 @@ void UniversalChessInterface::loop(int, const char*[]) {
 
 		strm >> std::skipws >> token;
 
-		if (token == "uci")				parseUCI();
-		else if (token == "ucinewgame") parseNewGame();
-		else if (token == "position")	parsePosition(strm);
-		else if (token == "print")		_pos.print();
-		else if (token == "go")			parseGo(strm);
-		else if (token == "isready")	parseIsReady();
-		else if (token == "export_net") parseNet(strm);
+		if (token == "uci")					parseUCI();
+		else if (token == "ucinewgame") 	parseNewGame();
+		else if (token == "position")		parsePosition(strm);
+		else if (token == "print")			_pos.print();
+		else if (token == "go")				parseGo(strm);
+		else if (token == "isready")		parseIsReady();
+		else if (token == "export_net") 	parseNet(strm);
+		else if (token == "rewrite_header") parseRewriteNet(strm);
 
 #if defined(DEBUG)
 		else if (token == "see")		parseSEE(strm);
@@ -206,4 +207,19 @@ void UniversalChessInterface::parseNet(std::istringstream& strm) {
 		nn::GlobPackedNetwork.loadDefaultNet();
 	else
 		nn::GlobPackedNetwork.loadFromFile(path);
+}
+
+void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
+	std::string in_path, out_path;
+	strm >> std::skipws >> in_path >> std::skipws >> out_path;
+
+	nn::PackedNeuralNetwork::Header header{};
+	// modify it manually
+	header.dual_hl = true;
+	header.layer_size[0] = nn::NetworkInputSize;
+	header.layer_size[1] = nn::NetworkHiddenLayerSize;
+	header.layer_size[2] = 1;
+	header.layer_count = 3;
+	
+	nn::PackedNeuralNetwork::rewriteWithHeader(in_path, out_path, header);
 }

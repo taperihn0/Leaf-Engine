@@ -129,6 +129,50 @@ size_t PackedNeuralNetwork::getLayerBiasesCount(size_t layer_num) const {
     return _header.layer_size[layer_num];
 }
 
+bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
+                                            std::string_view out_path,
+                                            const Header& header) 
+{
+    int in_fd = open(in_path.data(), O_RDONLY);
+    if (in_fd == -1)
+        return false;
+
+    struct stat st;
+    if (fstat(in_fd, &st) == -1) {
+        close(in_fd);
+        return false;
+    }
+
+    const size_t in_size = static_cast<size_t>(st.st_size);
+
+    std::vector<std::byte> buffer(in_size);
+    ssize_t read_bytes = read(in_fd, buffer.data(), in_size);
+    close(in_fd);
+
+    if (read_bytes != static_cast<ssize_t>(in_size))
+        return false;
+
+    int out_fd = open(out_path.data(),
+                      O_WRONLY | O_CREAT | O_TRUNC,
+                      0644);
+    if (out_fd == -1)
+        return false;
+
+    if (write(out_fd, &header, sizeof(Header)) != sizeof(Header)) {
+        close(out_fd);
+        return false;
+    }
+
+    if (write(out_fd, buffer.data(), buffer.size()) !=
+        static_cast<ssize_t>(buffer.size())) {
+        close(out_fd);
+        return false;
+    }
+
+    close(out_fd);
+    return true;
+}
+
 bool PackedNeuralNetwork::initLayerWeightsBiases() {
     int16_t* it = reinterpret_cast<int16_t*>(_file_buff) + sizeof(Header) / sizeof(int16_t);
     size_t byte_offset = sizeof(Header);
