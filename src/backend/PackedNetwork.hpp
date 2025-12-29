@@ -4,12 +4,11 @@
 
 namespace nn {
 
-static constexpr std::string_view NetworkPath = "src/assets/nets/net.bin";
+static constexpr std::string_view DefaultNetworkPath = "src/assets/nets/net.bin";
 
-static constexpr size_t MaxLayerCount = 4;
-static constexpr size_t NetworkInputSize = 768;
-static constexpr size_t NetworkHiddenLayerSize = 64;
-
+static constexpr size_t  MaxLayerCount = 4;
+static constexpr size_t  NetworkInputSize = 768;
+static constexpr size_t  NetworkHiddenLayerSize = 64;
 static constexpr int16_t NetworkWeightQuant = 255;
 static constexpr int16_t NetworkBiasQuant = 64;
 static constexpr int16_t NetworkOutputScale = 400;
@@ -59,5 +58,11 @@ private:
     int16_t* _layer_weights[MaxLayerCount];
     int16_t* _layer_biases[MaxLayerCount];
 };
+
+static inline PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
+    PackedNeuralNetwork network;
+    network.loadDefaultNet();
+    return network;
+}();
 
 } // namespace nn

@@ -1,5 +1,5 @@
 #include "Opening.hpp"
-#include "backend/Eval.hpp"
+#include "backend/StaticEval.hpp"
 #include "backend/MoveGen.hpp"
 #include "backend/Score.hpp"
 
@@ -49,7 +49,7 @@ void OpeningGenerator::load() {
     auto last = std::unique(_positions.begin(), _positions.end());
 
     last = std::remove_if(_positions.begin(), last, [](Position& pos) {
-        return std::abs(Eval::staticEval(pos).toInt()) > _OpeningEvalThreshold;
+        return std::abs(StaticEval::staticEval(pos).toInt()) > _OpeningEvalThreshold;
     });
 
     _positions.erase(last, _positions.end());

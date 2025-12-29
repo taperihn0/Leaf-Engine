@@ -2,8 +2,12 @@
 
 namespace nn {
 
+bool Accumulator::operator==(const Accumulator& accum) const {
+    return !std::memcmp(_values, accum._values, sizeof(_values));
+}
+
 template <enumColor Perspective>
-int Accumulator::activeFeatureIndex(Square sq, Piece::enumType piece_type, enumColor side) 
+int Accumulator::featureIndex(Square sq, Piece::enumType piece_type, enumColor side) 
 {
     if constexpr (Perspective == BLACK) {
         return static_cast<int>(!side) * 64 * 6 
@@ -16,19 +20,22 @@ int Accumulator::activeFeatureIndex(Square sq, Piece::enumType piece_type, enumC
         + static_cast<int>(sq);
 }
 
-int Accumulator::activeFeatureIndex(enumColor perspective, 
+int Accumulator::featureIndex(enumColor perspective, 
                                     Square sq, 
                                     Piece::enumType piece_type, 
                                     enumColor side) 
 {
-    return perspective == BLACK ? activeFeatureIndex<BLACK>(sq, piece_type, side)
-                                : activeFeatureIndex<WHITE>(sq, piece_type, side);
+    return perspective == BLACK ? featureIndex<BLACK>(sq, piece_type, side)
+                                : featureIndex<WHITE>(sq, piece_type, side);
 }
 
 void Accumulator::refresh(const int16_t* biases, 
                           const int16_t* weights, 
                           const Position& pos) 
 {   
+    assert(biases != nullptr);
+    assert(weights != nullptr);
+
     int side_active_features[2][32];
 
     size_t active_features_cnt = 0;
@@ -40,8 +47,8 @@ void Accumulator::refresh(const int16_t* biases,
             while (bb) {
                 Square sq = static_cast<Square>(bb.dropForward());
                 
-                side_active_features[WHITE][active_features_cnt] = activeFeatureIndex<WHITE>(sq, piece_type, side);
-                side_active_features[BLACK][active_features_cnt] = activeFeatureIndex<BLACK>(sq, piece_type, side);
+                side_active_features[WHITE][active_features_cnt] = featureIndex<WHITE>(sq, piece_type, side);
+                side_active_features[BLACK][active_features_cnt] = featureIndex<BLACK>(sq, piece_type, side);
 
                 ++active_features_cnt;
                 assert(active_features_cnt <= 32);
@@ -59,6 +66,10 @@ void Accumulator::refresh(const int16_t* biases,
                           int* side_active_features,
                           size_t side_active_features_cnt) 
 {
+    assert(biases != nullptr);
+    assert(weights != nullptr);
+    assert(side_active_features != nullptr);
+
     for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
         _values[side][i] = biases[i];
     }
@@ -81,10 +92,14 @@ void Accumulator::update(const int16_t* weights,
                          size_t removed_features_cnt,
                          enumColor side)
 {
-    if (this != prev_acc) {
-        for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
-            _values[side][i] = prev_acc->_values[side][i];
-        }
+    assert(weights != nullptr);
+    assert(prev_acc != nullptr);
+    assert(added_features != nullptr);
+    assert(removed_features != nullptr);
+    assert(this != prev_acc);
+
+    for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
+        _values[side][i] = prev_acc->_values[side][i];
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
@@ -114,7 +129,7 @@ const int16_t* Accumulator::getValues(enumColor side) const {
     return _values[side];
 }
 
-template int Accumulator::activeFeatureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
-template int Accumulator::activeFeatureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
+template int Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
+template int Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
 
 } // namespace nn

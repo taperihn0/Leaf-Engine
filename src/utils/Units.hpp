@@ -131,11 +131,11 @@ static bool seeTests() {
 }
 
 static bool ccrOneHourTest(Search& search) {
-	std::ifstream file("src/assetss/sets/ccronehour.epd");
+	std::ifstream file("src/assets/sets/ccronehour.epd");
 	ASSERT(file.is_open(), "Failed to open file src/assets/sets/ccronehour.epd");
 
 	// MODIFY TO CHANGE SEARCHING DEPTH
-	static constexpr int search_depth = 13;
+	static constexpr int search_depth = 14;
 	static_assert(1 <= search_depth and search_depth < MaxDepth);
 
 	// MODIFY TO CHANGE NUMBER OF POSITION

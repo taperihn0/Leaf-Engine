@@ -61,7 +61,7 @@ public:
 
         for (ExtPackedPosition& pack : packs) {
             Position full_position = ExtPackedPosition::unpacked(pack);
-            Score white_score = Eval::staticEval(full_position);
+            Score white_score = StaticEval::staticEval(full_position);
             TrainingDataEntry entry(pack, white_score, game_result);
             
             if (!TrainingDataEntry::write(train_data_output, entry)) {

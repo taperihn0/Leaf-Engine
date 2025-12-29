@@ -81,7 +81,7 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
 }   
 
 bool PackedNeuralNetwork::loadDefaultNet() {
-    return loadFromFile(NetworkPath);
+    return loadFromFile(DefaultNetworkPath);
 }
 
 uint PackedNeuralNetwork::getAccumulatorSize() const {

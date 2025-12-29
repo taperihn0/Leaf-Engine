@@ -22,9 +22,15 @@ Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Position
     Accumulator accumulator;
     accumulator.refresh(network.getLayerBiases(0), network.getLayerWeights(0), pos);
 
-    int16_t output = layerActivationOutput(accumulator.getValues(pos.getTurn()), 
-                                           accumulator.getValues(pos.getOppositeTurn()),
-                                           network);
+    return evaluate(network, accumulator, pos.getTurn());
+}
+
+Score NeuralNetwork::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
+    ASSERTNOLOG(network.isValid());
+
+    const int16_t output = layerActivationOutput(acc.getValues(side2move), 
+                                                 acc.getValues(!side2move),
+                                                 network);
     return static_cast<Score>(output);
 }
 
@@ -43,9 +49,10 @@ int32_t NeuralNetwork::layerActivationOutput(const int16_t* s2m_accumulator,
         output += screlu(ns2m_accumulator[i], 0, NetworkWeightQuant) 
                 * weights[NetworkAccumulatorSize + i];
     }
-    
+
     output = (output / NetworkWeightQuant + output_bias) 
               * NetworkOutputScale / (NetworkWeightQuant * NetworkBiasQuant);
+              
     return output;
 }
 

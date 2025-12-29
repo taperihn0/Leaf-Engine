@@ -64,7 +64,7 @@ target_include_directories(Leaf PUBLIC
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og -O0")
 	else ()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
 	endif ()

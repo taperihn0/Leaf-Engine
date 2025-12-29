@@ -112,10 +112,10 @@ static bool releaseFailedAssertion(std::string_view file, std::string_view text,
 	return false;
 }
 
-static constexpr int	  MaxNodeMoves = 128;
-static constexpr unsigned MaxDepth = 128,
-						  MaxSelDepth = 128,
-						  MaxGameMoves = 512;
+static constexpr int MaxNodeMoves = 128;
+static constexpr int MaxDepth = 128,
+					 MaxSelDepth = 128,
+					 MaxGameMoves = 512;
 
 template <typename T>
 T sq(T x) {

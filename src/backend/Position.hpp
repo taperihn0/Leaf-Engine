@@ -9,6 +9,7 @@
 
 class Position;
 struct NodeInfo;
+namespace nn { class Accumulator; }
 
 // wrapper around castling rights for single player
 class CastlingRights {
@@ -64,7 +65,6 @@ private:
 	bool _kingside, _queenside;
 };
 
-// forward declaration
 namespace Utils { class ExtPackedPosition; }
 
 // internal board state, including piece distribution 
@@ -248,6 +248,7 @@ public:
 
 	// returns whether move is legal or pseudo-legal
 	bool make(Move32b& move);
+	bool make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator* prev_accum);
 	void unmake(Move32b move, const IrreversibleState& prev_state);
 
 	void makeNull(IrreversibleState& state);

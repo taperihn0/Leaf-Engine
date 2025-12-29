@@ -4,19 +4,27 @@
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveOrder.hpp"
-#include "Eval.hpp"
+#include "StaticEval.hpp"
 #include "Game.hpp"
 #include "Time.hpp"
 #include "Score.hpp"
 #include "TranspositionTable.hpp"
+#include "Accumulator.hpp"
 
 #include <numeric>
 
 class Search;
 
-class SearchLimits {
-public:
-    friend class Search;
+struct SearchLimits {
+    bool isTimeLeft();
+
+    // anyNodesLeft compares current any-node count (both search and quiescent nodes)
+    // and returns whether given number is below any-node threshold.
+    bool anyNodesLeft(ull nodes_so_far);
+
+    // anyQuiesceNodesLeft compares current quiescent nodes count
+    // and returns whether given number is below quiescent-node threshold.
+    bool anyQuiesceNodesLeft(ull qnodes_so_far);
 
 	time_ms_t depth		  = 0,
 			  wtime		  = 0,
@@ -27,16 +35,6 @@ public:
     ull       nodes       = 0;
     ull       qnodes      = 0;
 	Timer     timer;
-private:
-    bool isTimeLeft();
-
-    // anyNodesLeft compares current any-node count (both search and quiescent nodes)
-    // and returns whether given number is below any-node threshold.
-    bool anyNodesLeft(ull nodes_so_far);
-
-    // anyQuiesceNodesLeft compares current quiescent nodes count
-    // and returns whether given number is below quiescent-node threshold.
-    bool anyQuiesceNodesLeft(ull qnodes_so_far);
 };
 
 struct SearchResults {
@@ -80,6 +78,7 @@ struct SearchResults {
 };
 
 struct NodeInfo {
+	// void clear(); (?)
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
 	Move32b						move;
@@ -93,6 +92,8 @@ struct NodeInfo {
 	uint8_t						move_index;
 	Score					    static_eval;
 	TTEntry::Bound				bound;
+	nn::Accumulator 			accum;
+	static nn::Accumulator*	    preroot_accum;
 };
 
 class TreeStack {
@@ -100,7 +101,7 @@ public:
 	TreeStack();
 	~TreeStack();
 
-	void initTreeStack(MoveOrderHistoryTables* history_buffer);
+	void clearTreeStack(MoveOrderHistoryTables* history_buffer);
 
 	NodeInfo* getRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
@@ -108,9 +109,6 @@ private:
 	static constexpr size_t _Count = MaxSelDepth;
 	NodeInfo* _stack;
 };
-
-class Eval;
-class TranspositionTable;
 
 class Search {
 public:
@@ -135,7 +133,10 @@ public:
 
 	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
 	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
-	static Move32b _bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits);
+	static Move32b _bestMove_unittest(Search& search, 
+									  Position& pos, 
+									  const FullInfoRecord& game, 
+									  SearchLimits limits);
 
 	void registerNewGame();
 private:
@@ -143,23 +144,34 @@ private:
 	Move32b iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits);
 
 	template <enumInfoLevel InfoLevel>
-	bool search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results);
+	bool search(Position& pos, 
+				const FullInfoRecord& game, 
+				SearchLimits& limits, SearchResults& results);
 
 	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
-	Score negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
-				  Score alpha, Score beta, int depth, int ply);
+	Score negaMax(Position& pos, 
+				  SearchLimits& limits, SearchResults& results, 
+				  const FullInfoRecord& game, 
+				  NodeInfo* node,
+				  Score alpha, Score beta, 
+				  int depth, int ply);
 
 	template <Search::enumNode NodeType>
-	Score quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
-				  Score alpha, Score beta, int depth, int ply);
+	Score quiesce(Position& pos, 
+				  SearchLimits& limits, SearchResults& results, 
+				  NodeInfo* node, 
+				  Score alpha, Score beta, 
+				  int depth, int ply);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 
 	template <bool IsPV>
-	bool isRepetitionCycle(const Position& pos, const FullInfoRecord& game, NodeInfo* node, int ply);
+	bool isRepetitionCycle(const Position& pos, 
+						   const FullInfoRecord& game, 
+						   NodeInfo* node, 
+						   int ply);
 
 	TreeStack _tree_stack;
-	Eval _eval;
 	TranspositionTable _tt;
 	
 	// Each Search instance should have own history buffer with tables 

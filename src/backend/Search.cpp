@@ -1,8 +1,6 @@
 #include "Search.hpp"
-#include "Eval.hpp"
 #include "MoveGen.hpp"
-#include "Time.hpp"
-#include "TranspositionTable.hpp"
+#include "Network.hpp"
 
 #include <sstream>
 #include <iomanip>
@@ -126,12 +124,16 @@ void Search::registerNewGame() {
 	_history_buff->clearQuietsHistory();
 }
 
+nn::Accumulator* NodeInfo::preroot_accum;
+
 TreeStack::TreeStack() {
 	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(_Count * sizeof(NodeInfo),  CACHELINE_SIZE));
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::initTreeStack(MoveOrderHistoryTables* history_buffer) {
+void TreeStack::clearTreeStack(MoveOrderHistoryTables* history_buffer) {
+	assert(history_buffer);
+
 	for (size_t i = 0; i < _Count; i++) {
 		_stack[i].move_picker.setHistoryBuffer(history_buffer);
 	}
@@ -151,12 +153,13 @@ INLINE NodeInfo* TreeStack::getRootNode() {
 }
 
 Search::Search(TranspositionTable&& tt) 
-: _tree_stack()
-, _tt(std::move(tt)) {
-	_history_buff = reinterpret_cast<MoveOrderHistoryTables*>(alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE));
+	: _tt(std::move(tt))
+	, _history_buff(reinterpret_cast<MoveOrderHistoryTables*>(
+		alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) {
+
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
-	_tree_stack.initTreeStack(_history_buff);
+	_tree_stack.clearTreeStack(_history_buff);
 }
 
 Search::~Search() {
@@ -175,15 +178,25 @@ Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits
 	return bm;
 }
 
-Move32b Search::_bestMove_unittest(Search& search, Position& pos, const FullInfoRecord& game, SearchLimits limits) {
+Move32b Search::_bestMove_unittest(Search& search, 
+								   Position& pos, 
+								   const FullInfoRecord& game, 
+								   SearchLimits limits) 
+{
 	return search.bestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
 }
 
 template <Search::enumInfoLevel InfoLevel>
 Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits) {
 	SearchResults search_results;
-		
+	
 	NodeInfo* root = _tree_stack.getRootNode();
+
+	nn::Accumulator preroot_accum;
+	preroot_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0), 
+						  nn::GlobPackedNetwork.getLayerWeights(0),
+						  pos);
+	root->preroot_accum = &preroot_accum;
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
@@ -196,21 +209,28 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		search_results.registerBestMove(root->best_move);
 	}
 
-    if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO)
+    if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO) {
         search_results.printBestMove();
-
-    else if constexpr (InfoLevel == SEARCH_SHORT_INFO)
+	}
+	else if constexpr (InfoLevel == SEARCH_SHORT_INFO) {
         search_results.printShort();
+	}
 
+	root->preroot_accum = nullptr;
 	return search_results.best_move;
 }
 
 template <Search::enumInfoLevel InfoLevel>
-bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& limits, SearchResults& results) {
+bool Search::search(Position& pos, 
+					const FullInfoRecord& game, 
+					SearchLimits& limits, SearchResults& results) 
+{
 	const Score score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
 									   -Score::Mate, +Score::Mate, 
 									   results.depth, 
 									   0);
+
+	_declUnused(score); // score unused so far
 
     if (results.depth > 1 and (!limits.isTimeLeft()
         or !limits.anyNodesLeft(results.nodes_cnt)
@@ -228,15 +248,21 @@ bool Search::search(Position& pos, const FullInfoRecord& game, SearchLimits& lim
 }
 
 template <bool Root, Search::enumNode NodeType, bool NullMove>
-Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
-					  Score alpha, Score beta, int depth, int ply) 
+Score Search::negaMax(Position& pos, 
+					  SearchLimits& limits, SearchResults& results, 
+					  const FullInfoRecord& game, 
+					  NodeInfo* node,
+					  Score alpha, Score beta, 
+					  int depth, int ply) 
 {
 	assert(0 <= depth and depth < MaxDepth - 1);
 	assert(alpha < beta);
 
+	if constexpr (Root) assert(!ply);
+	else 				assert(ply > 0);
+	
 	static constexpr OrderType OrderPolicy = STAGED;
 	static constexpr bool	   IsPV = NodeType == PV_NODE;
-
 	static constexpr int 	   RazorDepth = 2;
 	static constexpr Score 	   RazorBaseDelta = 150;
 	static constexpr Score 	   RazorMultDelta = 25;
@@ -302,6 +328,20 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->move = Move32b::Null;
 	node->static_eval = Score::Undef;
 
+	const nn::Accumulator* prev_accum = Root ? node->preroot_accum : [](NodeInfo* node, NodeInfo* root) -> const nn::Accumulator* {
+		const NodeInfo* hist_node = node;
+
+		do {
+			--hist_node;
+
+			if (hist_node->move != Move32b::Null)
+				return &hist_node->accum;
+
+		} while (hist_node != root);
+
+		return NodeInfo::preroot_accum;
+	}(node, _tree_stack.getRootNode()); 
+
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
 	*  it means there is high propability no move can increase the alpha bar.
@@ -312,13 +352,13 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 		if (!node->check and
 			depth <= RazorDepth)
 		{
-			node->static_eval = _eval.staticEval(pos);
+			node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<NodeType>(pos, limits, results, node + 1,
 													   alpha - 1, alpha,
 													   depth,
-													   ply);
+													   ply + 1);
 
 				if (qscore < alpha)
 					return qscore;
@@ -364,14 +404,22 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			tt_move.isQuiet())
 		{
 			if (!node->static_eval.isValid())
-				node->static_eval = _eval.staticEval(pos);
+				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->static_eval - RfpMultDelta * depth >= beta)
 				return node->static_eval - (depth << 6);
 		}
 	}
 
-	NodeInfo* next_node = node + 1;
+	NodeInfo* const prev_node = Root ? nullptr : node - 1;
+	NodeInfo* const next_node = node + 1;
+
+	Move32b prev_move = prev_node ? prev_node->move : Move32b::Null;
+
+	if constexpr (Root) {
+		prev_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
+												: Move32b::Null;
+	}
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -379,7 +427,11 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	*/
 	if constexpr (NullMove) {
 		if (!node->check and depth >= NullReduction + 1) {
+			assert(prev_move != Move32b::Null);
+			
 			pos.makeNull(node->state);
+			node->move = Move32b::Null;
+
 			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																		-beta, -beta + 1, 
 																		depth - NullReduction - 1, 
@@ -413,8 +465,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	node->state = pos.getIrreversibleState();
 	node->bound = TTEntry::LOWERBOUND;
 
-	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++)
-	{
+	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
 
 		/* Futility Pruning -
 		*  at shallow depths, skip moves that aren't like to rise alpha.
@@ -426,7 +477,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 			!node->move.isQueenPromotion())
 		{
 			if (!node->static_eval.isValid())
-				node->static_eval = _eval.staticEval(pos);
+				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->static_eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
@@ -443,7 +494,7 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 
 		bool do_full_search = true;
 
-		if (pos.make(node->move)) {
+		if (pos.make(node->move, &node->accum, prev_accum)) {
 			node->can_move = true;
 
 			const enumColor next_side = !side2move;
@@ -569,21 +620,35 @@ Score Search::negaMax(Position& pos, SearchLimits& limits, SearchResults& result
 	return node->best_score;
 }
 
-template Score Search::negaMax<true>(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
-									 Score alpha, Score beta, int depth, int ply);
-template Score Search::negaMax<false>(Position& pos, SearchLimits& limits, SearchResults& results, const FullInfoRecord& game, NodeInfo* node,
-									  Score alpha, Score beta, int depth, int ply);
+template Score Search::negaMax<true> (Position&, 
+									  SearchLimits&, SearchResults&, 
+									  const FullInfoRecord&, 
+									  NodeInfo*,
+									  Score, Score, 
+									  int, int);
+template Score Search::negaMax<false>(Position&,
+									  SearchLimits&, SearchResults&, 
+									  const FullInfoRecord&, 
+									  NodeInfo*,
+									  Score, Score, 
+									  int, int);
 
 template <Search::enumNode NodeType>
-Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& results, NodeInfo* node, 
-					  Score alpha, Score beta, int depth, int ply) 
+Score Search::quiesce(Position& pos, 
+					  SearchLimits& limits, SearchResults& results, 
+					  NodeInfo* node, 
+					  Score alpha, Score beta, 
+					  int depth, int ply) 
 {
+	assert(alpha < beta);
+
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
 	static constexpr bool	   IsPV = NodeType == PV_NODE;
 	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
-
 	static constexpr Score	   MaterialDelta = 900;
+	
+	const enumColor side2move = pos.getTurn();
 
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -593,8 +658,23 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
     {
         return -Score::Undef;
     }
-	else if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-		return _eval.staticEval(pos);
+
+	const nn::Accumulator* prev_accum = [](NodeInfo* node, NodeInfo* root) -> const nn::Accumulator* {
+		const NodeInfo* hist_node = node;
+
+		do {
+			--hist_node;
+
+			if (hist_node->move != Move32b::Null)
+				return &hist_node->accum;
+
+		} while (hist_node != root);
+
+		return NodeInfo::preroot_accum;
+	}(node, _tree_stack.getRootNode()); 
+
+	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
+		return nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 	}
 
 	const uint64_t hash = pos.getZobristKey();
@@ -622,10 +702,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
 	results.qnodes_cnt++;
 
-	assert(alpha < beta);
-
-	const enumColor side2move = pos.getTurn();
-	const Score stand_pat = _eval.staticEval(pos);
+	const Score stand_pat = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
@@ -665,8 +742,8 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
-	for (node->move_index = 0; node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++)
-	{
+	for (node->move_index = 0; node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
+		
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
 		*/
@@ -685,7 +762,7 @@ Score Search::quiesce(Position& pos, SearchLimits& limits, SearchResults& result
 				continue;
 		}
 
-		if (pos.make(node->move)) {
+		if (pos.make(node->move, &node->accum, prev_accum)) {
 			node->score = -quiesce<NodeType>(pos, limits, results, node + 1,
 											 -beta, -alpha,
 											 depth - 1,
@@ -738,7 +815,11 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 }
 
 template <bool IsPV>
-bool Search::isRepetitionCycle(const Position& pos, const FullInfoRecord& game, NodeInfo* node, int ply) {
+bool Search::isRepetitionCycle(const Position& pos, 
+							   const FullInfoRecord& game, 
+							   NodeInfo* node, 
+							   int ply) 
+{
 	const int my_ply = ply;
 	const uint64_t my_hashkey = pos.getZobristKey();
 

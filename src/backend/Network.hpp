@@ -11,6 +11,7 @@ public:
     // evaluates a position without accumulators.
     static Score evaluate(const PackedNeuralNetwork& network, std::string fen);
     static Score evaluate(const PackedNeuralNetwork& network, const Position& pos);
+    static Score evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move);
 private:
     static int32_t layerActivationOutput(const int16_t* s2m_accumulator, 
                                          const int16_t* ns2m_accumulator,

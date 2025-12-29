@@ -11,12 +11,15 @@ class alignas(CACHELINE_SIZE) Accumulator {
 public:
     Accumulator() = default;
 
+    bool operator==(const Accumulator& accum) const ;
+    INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
+
     template <enumColor Perspective>
-    static int activeFeatureIndex(Square sq, Piece::enumType piece_type, enumColor side);
-    static int activeFeatureIndex(enumColor perspective, 
-                                  Square sq, 
-                                  Piece::enumType piece_type, 
-                                  enumColor side);
+    static int featureIndex(Square sq, Piece::enumType piece_type, enumColor side);
+    static int featureIndex(enumColor perspective, 
+                            Square sq, 
+                            Piece::enumType piece_type, 
+                            enumColor side);
 
     void refresh(const int16_t* biases, 
                  const int16_t* weights, 
@@ -29,7 +32,7 @@ public:
                  size_t side_active_features_cnt);
 
     void update(const int16_t* weights,
-                const Accumulator* prev_acc,
+                const Accumulator* prev_accum,
                 int* added_features,
                 size_t added_features_cnt,
                 int* removed_features,
