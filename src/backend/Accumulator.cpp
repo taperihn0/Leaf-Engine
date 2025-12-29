@@ -129,6 +129,16 @@ const int16_t* Accumulator::getValues(enumColor side) const {
     return _values[side];
 }
 
+#if defined(_VERIFY_NN)
+bool Accumulator::verify(const Accumulator& accum, const Position& pos) {
+    Accumulator ref_accum;
+    ref_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0),
+                      nn::GlobPackedNetwork.getLayerWeights(0),
+                      pos);
+    return accum == ref_accum;
+}
+#endif
+
 template int Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
 template int Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
 

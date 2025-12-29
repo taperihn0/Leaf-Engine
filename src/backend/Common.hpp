@@ -22,6 +22,10 @@
 #define _CPP_STANDARD_17
 #endif
 
+#ifdef DEBUG
+#define _VERIFY_NN
+#endif
+
 #if defined(_MSC_VER)
 // using __forceinline by default - that came out to be more efficient
 #define INLINE				__forceinline 
@@ -187,7 +191,8 @@ INLINE void alignedFree(void* block) {
 #endif
 }
 
-static std::mt19937 GlobMersenne(std::random_device{}());
+static constexpr int Seed = 1;
+static std::mt19937 GlobMersenne(Seed);
 
 template <typename Integer = int>
 INLINE Integer random(Integer l, Integer r) {

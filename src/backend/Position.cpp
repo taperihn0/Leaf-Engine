@@ -180,13 +180,9 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
 
-#if defined(DEBUG)
-	if (prev_accum) {
-		nn::Accumulator ref_accum;
-		ref_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0),
-					      nn::GlobPackedNetwork.getLayerWeights(0),
-					      *this);
-		ASSERTNOLOG(ref_accum == *prev_accum);
+#if defined(_VERIFY_NN)
+	if (prev_accum != nullptr) {
+		ASSERT(nn::Accumulator::verify(*prev_accum, *this), "Invalid accumulator before make()");
 	}
 #endif
 
@@ -338,7 +334,7 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 
 		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 
-		if (accum) {
+		if (accum != nullptr) {
 			assert(prev_accum != nullptr);
 
 			accum->update(nn::GlobPackedNetwork.getLayerWeights(0), 
@@ -352,19 +348,17 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 						  accum_added_feature[BLACK], accum_added_feature_cnt, 
 						  accum_removed_feature[BLACK], accum_removed_feature_cnt, 
 						  BLACK); 
-
-#if defined(DEBUG)
-			nn::Accumulator ref_accum;
-			ref_accum.refresh(nn::GlobPackedNetwork.getLayerBiases(0),
-						      nn::GlobPackedNetwork.getLayerWeights(0),
-						      *this);
-			ASSERTNOLOG(ref_accum == *accum);
-#endif
 		}
 	}
 	
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
+
+#if defined(_VERIFY_NN)
+	if (legal and accum != nullptr) {
+		ASSERT(nn::Accumulator::verify(*accum, *this), "Invalid accumulator after make()");
+	}
+#endif
 
 	return legal;
 }

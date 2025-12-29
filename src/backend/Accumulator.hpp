@@ -42,6 +42,10 @@ public:
     void clear(enumColor side);
 
     const int16_t* getValues(enumColor side) const;
+
+#if defined(_VERIFY_NN)
+    static bool verify(const Accumulator& accum, const Position& pos);
+#endif
 private:
     int16_t _values[2][NetworkHiddenLayerSize];
 };

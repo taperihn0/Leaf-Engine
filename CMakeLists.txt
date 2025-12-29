@@ -62,6 +62,17 @@ target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src/util"
 )
 
+# Platform detection
+if (WIN32)
+	target_compile_definitions(Leaf PUBLIC PLATFORM_WINDOWS)
+elseif (APPLE)
+	target_compile_definitions(Leaf PUBLIC PLATFORM_MACOS)
+elseif (UNIX)
+	target_compile_definitions(Leaf PUBLIC PLATFORM_LINUX)
+else ()
+	message(FATAL_ERROR "Platform not recognised.")
+endif ()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og -O0")

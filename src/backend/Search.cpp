@@ -352,6 +352,10 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and
 			depth <= RazorDepth)
 		{
+
+#if defined(_VERIFY_NN)
+			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#endif
 			node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
@@ -403,8 +407,12 @@ Score Search::negaMax(Position& pos,
 			depth <= RfpDepth and
 			tt_move.isQuiet())
 		{
-			if (!node->static_eval.isValid())
+			if (!node->static_eval.isValid()) {
+#if defined(_VERIFY_NN)
+				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#endif
 				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			}
 
 			if (node->static_eval - RfpMultDelta * depth >= beta)
 				return node->static_eval - (depth << 6);
@@ -476,8 +484,12 @@ Score Search::negaMax(Position& pos,
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
-			if (!node->static_eval.isValid())
+			if (!node->static_eval.isValid()) {
+#if defined(_VERIFY_NN)
+				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#endif
 				node->static_eval = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			}
 
 			if (node->static_eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
@@ -674,6 +686,9 @@ Score Search::quiesce(Position& pos,
 	}(node, _tree_stack.getRootNode()); 
 
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
+#if defined(_VERIFY_NN)
+		ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#endif
 		return nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 	}
 
@@ -701,6 +716,10 @@ Score Search::quiesce(Position& pos,
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
 	results.qnodes_cnt++;
+
+#if defined(_VERIFY_NN)
+	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#endif
 
 	const Score stand_pat = nn::NeuralNetwork::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
