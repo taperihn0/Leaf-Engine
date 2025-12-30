@@ -30,29 +30,29 @@ public:
     void refresh(const PackedNeuralNetwork& network,
                  const Position& pos);
 
-    void refresh(const int16_t* biases, 
-                 const int16_t* weights, 
+    void refresh(const int16_t* _RESTRICT biases, 
+                 const int16_t* _RESTRICT weights, 
                  const Position& pos);
 
-    void refresh(const int16_t* biases, 
-                 const int16_t* weights, 
+    void refresh(const int16_t* _RESTRICT biases, 
+                 const int16_t* _RESTRICT weights, 
                  enumColor side, 
-                 const int* side_active_features,
+                 const int* _RESTRICT side_active_features,
                  size_t side_active_features_cnt);
 
     void update(const PackedNeuralNetwork& network,
-                const Accumulator* prev_accum,
-                const int* added_features,
+                const Accumulator* _RESTRICT prev_accum,
+                const int* _RESTRICT added_features,
                 size_t added_features_cnt,
-                const int* removed_features,
+                const int* _RESTRICT removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 
-    void update(const int16_t* weights,
-                const Accumulator* prev_accum,
-                const int* added_features,
+    void update(const int16_t* _RESTRICT weights,
+                const Accumulator* _RESTRICT prev_accum,
+                const int* _RESTRICT added_features,
                 size_t added_features_cnt,
-                const int* removed_features,
+                const int* _RESTRICT removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 

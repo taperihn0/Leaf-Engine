@@ -21,8 +21,9 @@ private:
 	void parseNet(std::istringstream& strm);
 	void parseRewriteNet(std::istringstream& strm);
 
-#if defined (DEBUG)
+#if defined(_UCI_DEBUG_UTILS)
 	void parseSEE(std::istringstream& strm);
+	void parseNNEval(std::istringstream& strm);
 #endif
 
 	Search         _search;

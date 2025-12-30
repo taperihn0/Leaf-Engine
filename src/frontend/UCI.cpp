@@ -108,8 +108,9 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "export_net") 	parseNet(strm);
 		else if (token == "rewrite_header") parseRewriteNet(strm);
 
-#if defined(DEBUG)
+#if defined(_UCI_DEBUG_UTILS)
 		else if (token == "see")			parseSEE(strm);
+		else if (token == "nneval")			parseNNEval(strm);
 #endif
 
 	} while (command != "quit");
@@ -189,7 +190,8 @@ inline void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
 
-#if defined(DEBUG)
+#if defined(_UCI_DEBUG_UTILS)
+
 void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 	std::string os, ds;
 	strm >> std::skipws >> os >> std::skipws >> ds;
@@ -199,16 +201,40 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
 											  _pos.pieceOn(org, _pos.getTurn()));
 	std::cout << score << std::endl;
 }
+
+void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
+	std::string fen;
+	std::getline(strm >> std::ws, fen);
+
+	Position pos;
+
+	if (fen == "startpos")
+		pos.setStartingPos();
+	else
+		pos.setByFEN(fen);
+
+	const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
+
+	std::cout << score.toInt() << std::endl;
+}
+
 #endif
 
 void UniversalChessInterface::parseNet(std::istringstream& strm) {
 	std::string path;
 	strm >> std::skipws >> path;
 
+	bool status;
+
 	if (path == "default")
-		nn::GlobPackedNetwork.loadDefaultNet();
+		status = nn::GlobPackedNetwork.loadDefaultNet();
 	else
-		nn::GlobPackedNetwork.loadFromFile(path);
+		status = nn::GlobPackedNetwork.loadFromFile(path);
+
+	if (status)
+		std::cout << "Net loaded successfully" << std::endl;
+	else
+		std::cout << "Failed to load given net" << std::endl;
 }
 
 void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
@@ -223,5 +249,10 @@ void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
 	header.layer_size[2] = 1;
 	header.layer_count = 3;
 	
-	nn::PackedNeuralNetwork::rewriteWithHeader(in_path, out_path, header);
+	bool status = nn::PackedNeuralNetwork::rewriteWithHeader(in_path, out_path, header);
+
+	if (status)
+		std::cout << "Rewrited succesfully." << std::endl;
+	else
+		std::cout << "Rewrite failed." << std::endl;
 }

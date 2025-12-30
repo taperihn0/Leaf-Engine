@@ -18,10 +18,7 @@ PackedNeuralNetwork::PackedNeuralNetwork()
 {}
 
 PackedNeuralNetwork::~PackedNeuralNetwork() {
-    if (_fd != -1 and _file_buff and _file_buff != MAP_FAILED) {
-        munmap(_file_buff, _file_size);
-        close(_fd);
-    }
+    release();
 }
 
 PackedNeuralNetwork::PackedNeuralNetwork(PackedNeuralNetwork&& network) {
@@ -29,7 +26,7 @@ PackedNeuralNetwork::PackedNeuralNetwork(PackedNeuralNetwork&& network) {
 }
 
 PackedNeuralNetwork& PackedNeuralNetwork::operator=(PackedNeuralNetwork&& network) {
-    PackedNeuralNetwork::~PackedNeuralNetwork();
+    release();
     fromRVal(std::move(network));
     return *this;
 }
@@ -53,6 +50,8 @@ bool PackedNeuralNetwork::isValid() const {
 }
 
 bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
+    release();
+
     _fd = open(path.data(), O_RDONLY);
 
     if (_fd == -1) {
@@ -213,6 +212,13 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
         _layer_biases[i] = network._layer_biases[i];
         network._layer_weights[i] = nullptr;
         network._layer_biases[i] = nullptr;
+    }
+}
+
+void PackedNeuralNetwork::release() {
+    if (_fd != -1 and _file_buff and _file_buff != MAP_FAILED) {
+        munmap(_file_buff, _file_size);
+        close(_fd);
     }
 }
 

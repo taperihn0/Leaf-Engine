@@ -31,7 +31,7 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
 
     Accumulator accumulator;
     accumulator.refresh(network.getLayerBiases(0), network.getLayerWeights(0), pos);
-
+    
     return evaluate(network, accumulator, pos.getTurn());
 }
 
@@ -45,8 +45,8 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc
 }
 
 int32_t NEval::layerActivationOutput(const int16_t* s2m_accumulator, 
-                                             const int16_t* ns2m_accumulator,
-                                             const PackedNeuralNetwork& network) 
+                                     const int16_t* ns2m_accumulator,
+                                     const PackedNeuralNetwork& network) 
 {
     const int16_t* weights = network.getLayerWeights(1);
     int32_t output_bias = *network.getLayerBiases(1);

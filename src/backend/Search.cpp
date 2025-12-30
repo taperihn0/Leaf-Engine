@@ -412,15 +412,13 @@ Score Search::negaMax(Position& pos,
 	NodeInfo* const prev_node = node - 1;
 	NodeInfo* const next_node = node + 1;
 
-	Move32b prev_move = prev_node->move;
-
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
 	*  So we can do beta cutoff.
 	*/
 	if constexpr (NullMove) {
 		if (!node->check and depth >= NullReduction + 1) {
-			assert(prev_move != Move32b::Null);
+			assert(prev_node->move != Move32b::Null);
 			
 			pos.makeNull(node->state);
 			node->move = Move32b::Null;

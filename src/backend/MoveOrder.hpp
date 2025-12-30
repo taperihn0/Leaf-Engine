@@ -2,6 +2,7 @@
 
 #include "MoveList.hpp"
 #include "MoveGen.hpp"
+#include "Memory.hpp"
 
 class TreeStack;
 class MoveOrder;
