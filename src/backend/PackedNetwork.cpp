@@ -9,8 +9,7 @@
 #include <unistd.h>
 #endif
 
-namespace nn
-{
+namespace nn {
 
 PackedNeuralNetwork::PackedNeuralNetwork()
     : _layer_weights{}

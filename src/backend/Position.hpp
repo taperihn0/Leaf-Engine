@@ -254,6 +254,8 @@ public:
 	void makeNull(IrreversibleState& state);
 	void unmakeNull(const IrreversibleState& prev_state);
 
+	uint64_t likelyZobristKeyAfterMove(Move32b& move) const;
+
 	INLINE uint64_t getZobristKey() const {
 		return _zhash;
 	}

@@ -12,8 +12,8 @@ static constexpr size_t BucketTargetSize = 32;
 
 struct TTEntry {
 	enum Bound : uint8_t {
-		NONE = 0,
-		EXACT = 1,
+		NONE 	   = 0,
+		EXACT  	   = 1,
 		LOWERBOUND = 2,
 		UPPERBOUND = 3,
 	};
@@ -60,6 +60,8 @@ public:
 			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
 
 	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth) const;
+
+	void prefetchBucket(uint64_t key64) const;
 
 #if defined(DEBUG)
 	void printDebug();

@@ -455,6 +455,26 @@ void Position::unmakeNull(const IrreversibleState& prev_state) {
 	_ep_square = prev_state.ep_sq;
 }
 
+uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
+	ASSERTNOLOG(!move.isNull());
+
+	const Square		  org = move.getOrigin(),
+						  dst = move.getTarget();
+	const Piece::enumType piece_t = move.getPiece();
+
+	uint64_t new_zhash = static_cast<uint64_t>(_zhash) ^ ZobristHash::black_key;
+
+	new_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
+	new_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
+
+	if (move.isCapture() and !move.isEnPassant()) {
+		const Piece::enumType captured = pieceOn(dst, !_turn);
+		new_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
+	}
+
+	return new_zhash;
+}
+
 template <bool Root>
 uint64_t Position::perft(unsigned depth) {
 	if (depth == 0)

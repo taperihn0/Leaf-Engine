@@ -131,6 +131,11 @@ bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, 
 	return false;
 }
 
+void TranspositionTable::prefetchBucket(uint64_t key64) const {
+	const uint64_t key = key64 & 0x3FFFFFFFF;
+	prefetch(reinterpret_cast<const void*>(_mem + (key & (_buckets_cnt - 1))));
+}
+
 #if defined(DEBUG)
 void TranspositionTable::printDebug() {
 	std::cout << "Hash size: " << _buckets_cnt * sizeof(TTBucket) / 1024 / 1024 << "MB\n";

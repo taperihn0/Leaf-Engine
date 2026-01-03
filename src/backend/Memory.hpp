@@ -2,6 +2,21 @@
 
 #include "Simd.hpp"
 
+// modify it as you wish
+#define _ENABLE_PREFETCH
+
+static _FORCEINLINE void prefetch(const void* addr) {
+#ifdef _ENABLE_PREFETCH
+#if defined(_MSC_VER) or defined(_INTEL_COMPILER)
+	_mm_prefetch(addr, _MM_HINT_T2);
+#else
+	__builtin_prefetch(addr, 1, 2);
+#endif
+#else
+	return;
+#endif
+}
+
 INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	byte* d = reinterpret_cast<byte*>(dst);
 

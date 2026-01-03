@@ -17,6 +17,8 @@
 	6. Recapture heuristic (in move order try to apply capture that captures last moved piece)
 	7. Experiment with verification search in Null Move32b Pruning
 	8. Restrict Late Move32b Reduction
+	9. Implement 'kiwipete' special position 
+	10. You've got special ZobristKey datatype instead of uint64_t.
 */
 
 int main(int argc, const char* argv[]) {

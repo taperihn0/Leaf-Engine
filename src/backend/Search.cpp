@@ -380,11 +380,13 @@ Score Search::negaMax(Position& pos,
 												   depth >> IidDivShift,
 												   ply);
 
-			_tt.probe(iid_entry, hash, alpha, beta, depth);
-
-			ttm32b = unpacked(pos, iid_entry.move);
-			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
-												  Move32b::Null;
+			const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
+			
+			if (iid_tt_hit) {
+				ttm32b = unpacked(pos, iid_entry.move);
+				tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
+													  Move32b::Null;
+			}
 		}
 	}
 
@@ -457,6 +459,9 @@ Score Search::negaMax(Position& pos,
 	node->bound = TTEntry::LOWERBOUND;
 
 	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
+
+		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
+		_tt.prefetchBucket(next_hash);
 
 		/* Futility Pruning -
 		*  at shallow depths, skip moves that aren't like to rise alpha.
@@ -601,7 +606,7 @@ Score Search::negaMax(Position& pos,
 		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
 	}
 
-	if (!node->best_score.isMateScore()) {
+	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
 		const Move16b bestmove16b = packed(node->best_move);
 		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, results);
 	}

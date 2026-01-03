@@ -1,8 +1,7 @@
 #include "NetworkEval.hpp"
 #include "Search.hpp"
 
-namespace nn
-{
+namespace nn {
 
 const Accumulator* NEval::getPrevAccum(const NodeInfo* node, const NodeInfo* preroot) {
     for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
