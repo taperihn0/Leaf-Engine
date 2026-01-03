@@ -96,7 +96,6 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 
     assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
     assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(registers) % AlignmentBound == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
         _max_register_aligned_store_i(values_base + i, _max_register_aligned_load_i(biases_base + i));

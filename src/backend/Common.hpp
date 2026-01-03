@@ -32,8 +32,8 @@
 #define _RESTRICT			__restrict
 #else
 #define INLINE				inline
-#define _FORCEINLINE		__attribute__((always_inline))
-#define _LAMBDA_FORCEINLINE __attribute__((always_inline))
+#define _FORCEINLINE		__attribute__((always_inline)) inline 
+#define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 
 #define _RESTRICT 			__restrict__
 #endif
 
