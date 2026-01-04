@@ -118,6 +118,20 @@ void SearchResults::printSearchStats() {
 }
 #endif
 
+void NodeInfo::clear() {
+	state 			 = {};
+	best_move = move = Move32b::Null;
+	score 			 = Score::Undef;
+	can_move 		 = false;
+	best_score 		 = Score::Undef;
+	check 			 = false;
+	ply 			 = 0;
+	moves_searched 	 = 0;
+	move_index 		 = 0;
+	static_eval 	 = Score::Undef;
+	bound 			 = TTEntry::NONE;
+}
+
 void Search::registerNewGame() {
 	_tt.clear();
 	_tt.clearHashfull();
@@ -129,10 +143,11 @@ TreeStack::TreeStack() {
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::clearTreeStack(MoveOrderHistoryTables* history_buffer) {
+void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 	assert(history_buffer);
 
 	for (size_t i = 0; i < _Count; i++) {
+		_stack[i].clear();
 		_stack[i].move_picker.setHistoryBuffer(history_buffer);
 	}
 }
@@ -157,11 +172,11 @@ INLINE NodeInfo* TreeStack::getPreRootNode() {
 Search::Search(TranspositionTable&& tt) 
 	: _tt(std::move(tt))
 	, _history_buff(reinterpret_cast<MoveOrderHistoryTables*>(
-		alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) {
-
+		alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) 
+{
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
-	_tree_stack.clearTreeStack(_history_buff);
+	_tree_stack.init(_history_buff);
 }
 
 Search::~Search() {

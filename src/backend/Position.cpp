@@ -23,9 +23,15 @@ Position::Position() {
 	_zhash = 0_ui64;
 }
 
-Position::Position(const std::string init_fen) { setByFEN(init_fen); }
+Position::Position(std::string init_fen) { 
+	setByFEN(init_fen); 
+}
 
-void Position::setByFEN(const std::string fen) {
+Position::Position(std::string_view init_fen) 
+	: Position(static_cast<std::string>(init_fen))
+{}
+
+void Position::setByFEN(std::string fen) {
 	size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
 
 	clearPieces();

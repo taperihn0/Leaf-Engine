@@ -78,7 +78,8 @@ struct SearchResults {
 };
 
 struct NodeInfo {
-	// void clear(); (?)
+	void clear();
+
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
 	Move32b						move;
@@ -100,7 +101,7 @@ public:
 	TreeStack();
 	~TreeStack();
 
-	void clearTreeStack(MoveOrderHistoryTables* history_buffer);
+	void init(MoveOrderHistoryTables* history_buffer);
 
 	NodeInfo* getRootNode();
 	NodeInfo* getPreRootNode();
@@ -171,13 +172,12 @@ private:
 						   NodeInfo* node, 
 						   int ply);
 
-	TreeStack _tree_stack;
-	TranspositionTable _tt;
-	
+	static constexpr uint64_t _CheckNodeCount = 4096;
+
+	TreeStack 		   		_tree_stack;
+	TranspositionTable 		_tt;
 	// Each Search instance should have own history buffer with tables 
 	// for very MoveOrder in TreeStack.
 	// Also, Search class in responsible for allocation and deallocation.
 	MoveOrderHistoryTables* _history_buff;
-
-	static constexpr uint64_t _CheckNodeCount = 4096;
 };

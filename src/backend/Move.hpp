@@ -41,12 +41,18 @@ public:
 
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
-	static MoveData makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t);
+	static MoveData makeSimple(Square origin, 
+							   Square target, 
+							   bool is_capture, 
+							   Piece::enumType piece_t);
 
 	// performer and captured piece in en passant move are de facto known - these are pawns.
 	static MoveData makeEnPassant(Square origin, Square target);
 
-	static MoveData makePromotion(Square origin, Square target, bool is_capture, Piece::enumType to_piece);
+	static MoveData makePromotion(Square origin, 
+								  Square target, 
+								  bool is_capture, 
+								  Piece::enumType to_piece);
 
 	template <Castle Type>
 	static MoveData makeCastling(Square origin, Square target);
@@ -180,8 +186,6 @@ public:
 
 	static constexpr T Null = 0;
 private:
-	static constexpr std::string_view _NullStr = "0000";
-
 	enum enumLayout : uint32_t {
 		ORIGIN		  = 0x3f,
 		TARGET		  = 0xfc0,
@@ -225,7 +229,11 @@ using Move32b = MoveData<uint32_t>;
 using Move16b = MoveData<uint16_t>;
 
 template <typename T>
-INLINE MoveData<T> MoveData<T>::makeSimple(Square origin, Square target, bool is_capture, Piece::enumType piece_t) {
+INLINE MoveData<T> MoveData<T>::makeSimple(Square origin, 
+										   Square target, 
+										   bool is_capture, 
+										   Piece::enumType piece_t) 
+{
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
 		  (static_cast<uint32_t>(piece_t) << 19)
@@ -246,7 +254,11 @@ INLINE MoveData<T> MoveData<T>::makeEnPassant(Square origin, Square target) {
 }
 
 template <typename T>
-INLINE MoveData<T> MoveData<T>::makePromotion(Square origin, Square target, bool is_capture, Piece::enumType promo_piece_t) {
+INLINE MoveData<T> MoveData<T>::makePromotion(Square origin, 
+											  Square target, 
+											  bool is_capture, 
+											  Piece::enumType promo_piece_t) 
+{
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
 		  (static_cast<uint32_t>(Piece::PAWN) << 19)

@@ -12,24 +12,24 @@ struct StaticAttackTables {
 		, for_kings{}
 	{ init(); }
 
-	inline BitBoard whitePawnAttacksOnFly(Square sq) {
+	BitBoard whitePawnAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return noEaOne(bit) | noWeOne(bit);
 	}
 
-	inline BitBoard blackPawnAttacksOnFly(Square sq) {
+	BitBoard blackPawnAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return soEaOne(bit) | soWeOne(bit);
 	}
 
-	inline BitBoard knightAttacksOnFly(Square sq) {
+	BitBoard knightAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return noNoEa(bit) | noEaEa(bit) | soEaEa(bit)
 			| soSoEa(bit) | soSoWe(bit) | soWeWe(bit)
 			| noWeWe(bit) | noNoWe(bit);
 	}
 
-	inline BitBoard kingAttacksOnFly(Square sq) {
+	BitBoard kingAttacksOnFly(Square sq) {
 		BitBoard bit(sq);
 		return nortOne(bit) | noEaOne(bit) | eastOne(bit)
 			| soEaOne(bit) | soutOne(bit) | soWeOne(bit)
@@ -50,7 +50,8 @@ struct StaticAttackTables {
 	}
 
 	std::array<std::array<BitBoard, 64>, 2> for_pawns;
-	std::array<BitBoard, 64> for_knights, for_kings;
+	std::array<BitBoard, 64> 				for_knights, 
+							 				for_kings;
 };
 
 inline const StaticAttackTables attack_tables;
@@ -90,8 +91,8 @@ BitBoard eastRay(Square sq) {
 
 BitBoard noEaRay(Square sq) {
 	static constexpr BitBoard excl_a = BitBoard::Not_A_File,
-								excl_ab = excl_a & (excl_a << 9),
-								excl_abcd = excl_ab & (excl_ab << 18);
+							  excl_ab = excl_a & (excl_a << 9),
+							  excl_abcd = excl_ab & (excl_ab << 18);
 
 	BitBoard bb(sq);
 	bb |= (bb << 9) & excl_a;
@@ -102,8 +103,8 @@ BitBoard noEaRay(Square sq) {
 
 BitBoard soEaRay(Square sq) {
 	static constexpr BitBoard excl_a = BitBoard::Not_A_File,
-								excl_ab = excl_a & (excl_a >> 7),
-								excl_abcd = excl_ab & (excl_ab >> 14);
+							  excl_ab = excl_a & (excl_a >> 7),
+							  excl_abcd = excl_ab & (excl_ab >> 14);
 
 	BitBoard bb(sq);
 	bb |= (bb >> 7) & excl_a;
@@ -114,8 +115,8 @@ BitBoard soEaRay(Square sq) {
 
 BitBoard soWeRay(Square sq) {
 	static constexpr BitBoard excl_h = BitBoard::Not_H_File,
-								excl_gh = excl_h & (excl_h >> 9),
-								excl_efgh = excl_gh & (excl_gh >> 18);
+							  excl_gh = excl_h & (excl_h >> 9),
+							  excl_efgh = excl_gh & (excl_gh >> 18);
 
 	BitBoard bb(sq);
 	bb |= (bb >> 9) & excl_h;
@@ -126,8 +127,8 @@ BitBoard soWeRay(Square sq) {
 
 BitBoard noWeRay(Square sq) {
 	static constexpr BitBoard excl_h = BitBoard::Not_H_File,
-								excl_gh = excl_h & (excl_h << 7),
-								excl_efgh = excl_gh & (excl_gh << 14);
+							  excl_gh = excl_h & (excl_h << 7),
+							  excl_efgh = excl_gh & (excl_gh << 14);
 
 	BitBoard bb(sq);
 	bb |= (bb << 7) & excl_h;

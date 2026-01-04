@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Position.hpp"
-
-class Score;
+#include "Score.hpp"
 
 class StaticEval {
 public:

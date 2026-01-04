@@ -78,7 +78,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 
 UniversalChessInterface::UniversalChessInterface()
 	: _search(TranspositionTable(1_MB))
-	, _pos(std::string(Position::StartposFEN))
+	, _pos(StartposFEN)
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW
@@ -153,6 +153,10 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 		_pos.setStartingPos();
 		_game.clear();
 	}
+	else if (token == "kiwipete") {
+		_pos.setByFEN(static_cast<std::string>(KiwipeteFEN));
+		_game.clear();
+	}
 	
 	if (token != "moves")
 		strm >> std::skipws >> token;
@@ -167,7 +171,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	}
 }
 
-inline void UniversalChessInterface::parseGo(std::istringstream& strm) {
+void UniversalChessInterface::parseGo(std::istringstream& strm) {
 	std::string token;
 	strm >> std::skipws >> token;
 
@@ -186,7 +190,7 @@ inline void UniversalChessInterface::parseGo(std::istringstream& strm) {
 	_search.bestMove(_pos, _game, limits);
 }
 
-inline void UniversalChessInterface::parseIsReady() {
+void UniversalChessInterface::parseIsReady() {
 	std::cout << "readyok\n";
 }
 

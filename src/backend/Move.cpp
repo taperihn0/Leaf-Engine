@@ -217,7 +217,7 @@ template <typename T>
 void MoveData<T>::print() const {
 #if defined(PURE_NOTATION_DISPLAY)
 	if (_rmove == Null) {
-		std::cout << _NullStr;
+		std::cout << "0000";
 	}
 	else {
 		getOrigin().print(), getTarget().print();

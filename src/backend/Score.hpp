@@ -62,7 +62,7 @@ public:
 		return -_raw;
 	}
 
-	INLINE int_t toInt() const {
+	INLINE explicit operator int() const {
 		return _raw;
 	}
 
@@ -85,7 +85,7 @@ private:
 	int_t				   _raw;
 };
 
-inline std::string Score::toStr() const {
+_INTERNAL std::string Score::toStr() const {
 	if (_raw > MateBound)
 		return "mate " + std::to_string((Score::Mate - _raw + 1) / 2);
 	else if (_raw < -MateBound)

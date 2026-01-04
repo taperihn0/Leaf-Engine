@@ -76,18 +76,18 @@ public:
 	// Returns true whether there is a win on the board.
 	// 'full' parameter contains detailed info.
 	// If there is no win, then full is undefined.
-	bool isWin(Result& full);
+	bool isWin(Result& full) const;
 
 	// Returns true whether there is a draw on the board.
 	// 'full' parameter contains detailed info.
-	bool isDraw(Result& full);
+	bool isDraw(Result& full) const;
 
 	Position& getPosition();
 
 	FullInfoRecord& getHistoryRecord();
 private:
-	bool isGameCycle();
-	bool isStaleMate();
+	bool isGameCycle() const;
+	bool isStaleMate() const;
 
 	bool isAnyResponse();
 

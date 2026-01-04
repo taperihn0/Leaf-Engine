@@ -16,6 +16,7 @@ struct TTEntry {
 		EXACT  	   = 1,
 		LOWERBOUND = 2,
 		UPPERBOUND = 3,
+		MAX_BOUND  = 3
 	};
 
 	INLINE bool isEmpty() const { 
@@ -41,11 +42,15 @@ struct TTEntry {
 	Score	 score;
 };
 
+static_assert(sizeof(TTEntry) == EntryTargetSize);
+
 struct alignas(BucketTargetSize) TTBucket {
 	static constexpr size_t InternalEntriesCnt = 3;
 	TTEntry entries[InternalEntriesCnt];
-	_UNUSED uint16_t __alignment;
+	_UNUSED int16_t __align;
 };
+
+static_assert(sizeof(TTBucket) == BucketTargetSize);
 
 class TranspositionTable {
 public:
@@ -53,13 +58,21 @@ public:
 	TranspositionTable(TranspositionTable&& tt);
 	~TranspositionTable();
 
+	TranspositionTable(const TranspositionTable&) = delete;
+	TranspositionTable& operator=(const TranspositionTable&) = delete;
+	TranspositionTable& operator=(TranspositionTable&&) = delete;
+
 	void resize(size_t size_mb);
 	void clear();
 
 	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results);
+			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, 
+			   SearchResults& results);
 
-	bool probe(TTEntry& out_entry, uint64_t key, Score alpha, Score beta, uint8_t node_depth) const;
+	bool probe(TTEntry& out_entry,
+			   uint64_t key, 
+			   Score alpha, Score beta, 
+			   uint8_t node_depth) const;
 
 	void prefetchBucket(uint64_t key64) const;
 
@@ -73,10 +86,6 @@ public:
 	void newGeneration();
 	void clearHashfull();
 private:
-	TranspositionTable(const TranspositionTable&) = delete;
-	TranspositionTable& operator=(const TranspositionTable&) = delete;
-	TranspositionTable& operator=(TranspositionTable&&) = delete;
-
 	TTBucket* _mem;
 	size_t    _buckets_cnt;
 	uint8_t   _generation;

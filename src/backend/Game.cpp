@@ -5,7 +5,8 @@ Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, ti
     : _current_pos(from)
     , _time_left_sided{ time_white, time_black }
     , _time_constraint(time_constraint)
-    , _cached{ isAnyResponse(), _current_pos.isInCheck(_current_pos.getTurn()) }
+    , _cached{ isAnyResponse()
+    , _current_pos.isInCheck(_current_pos.getTurn()) }
 {}
 
 void Game::applyMove(Move32b move, time_ms_t think_time) {
@@ -27,7 +28,7 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
 #define WIN_BY_ADJUCATION(color) static_cast<Game::Result>(Game::WHITE_WIN_BY_ADJUCATION + (color))
 #define WIN_BY_TIMEOUT(color)    static_cast<Game::Result>(Game::WHITE_WIN_BY_TIMEOUT + (color))
 
-bool Game::isWin(Game::Result& full) {
+bool Game::isWin(Game::Result& full) const {
     bool side2move = _current_pos.getTurn();
 
     if (_time_constraint and _time_left_sided[side2move] < 0) {
@@ -39,7 +40,7 @@ bool Game::isWin(Game::Result& full) {
     return _cached.check and !_cached.any_response_cached;
 }
 
-bool Game::isDraw(Game::Result& full) {
+bool Game::isDraw(Game::Result& full) const {
     if (_current_pos.halfmoveClock() >= 50) {
         full = DRAW_BY_HALF_MOVES_LIMIT;
         return true;
@@ -63,7 +64,7 @@ FullInfoRecord& Game::getHistoryRecord() {
     return _pos_record;
 }
 
-bool Game::isGameCycle()  {
+bool Game::isGameCycle() const {
     uint64_t hash_key = _current_pos.getZobristKey();
 
     int halfmove_cnt = static_cast<int>(_pos_record.currentHalfCount());
@@ -87,7 +88,7 @@ bool Game::isGameCycle()  {
     return false;
 }
 
-INLINE bool Game::isStaleMate() {
+INLINE bool Game::isStaleMate() const {
     return !_cached.check and !_cached.any_response_cached;
 }
 

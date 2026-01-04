@@ -30,11 +30,13 @@
 #define _FORCEINLINE		__forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]]
 #define _RESTRICT			__restrict
+#define _INTERNAL			inline
 #else
 #define INLINE				inline
 #define _FORCEINLINE		__attribute__((always_inline)) inline 
 #define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 
 #define _RESTRICT 			__restrict__
+#define _INTERNAL 			inline
 #endif
 
 #define _NORETURN [[noreturn]]

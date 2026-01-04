@@ -5,11 +5,11 @@
 class Position;
 
 class ZobristHash {
-public:
+public:	
 	constexpr ZobristHash() = default;
 	
-	constexpr ZobristHash(uint64_t key) 
-	: _key(key) {}
+	INLINE constexpr ZobristHash(uint64_t key) 
+		: _key(key) {}
 
 	INLINE constexpr operator uint64_t() const {
 		return _key;

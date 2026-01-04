@@ -13,6 +13,7 @@ INLINE constexpr enumColor operator!(enumColor opp) {
 class Turn {
 public:
 	Turn() = default;
+	
 	INLINE constexpr Turn(enumColor c)
 		: _col(c) {}
 

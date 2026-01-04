@@ -144,9 +144,8 @@ static constexpr std::array<int16_t, 5> PromotionScore = {
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
-	// that is unused for now I guess
 	const enumColor oppside = static_cast<enumColor>(pos.getOppositeTurn());
-	_declUnused(oppside);
+	_declUnused(oppside); // that is unused for now I guess
 
 	for (size_t i = first_ind; i < _move_list.count(); i++) {
 		MoveList::Entry* entry = _move_list.getEntry(i);

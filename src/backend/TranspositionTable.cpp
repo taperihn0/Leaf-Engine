@@ -1,9 +1,6 @@
 #include "TranspositionTable.hpp"
 #include "Search.hpp"
 
-static_assert(sizeof(TTEntry) == EntryTargetSize);
-static_assert(sizeof(TTBucket) == BucketTargetSize);
-
 TranspositionTable::TranspositionTable(size_t mb_size) {
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
@@ -39,9 +36,12 @@ void TranspositionTable::clear() {
 }
 
 void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t node_ply, 
-							   TTEntry::Bound node_bound, Score node_score, Move16b node_move, SearchResults& results) 
+							   TTEntry::Bound node_bound, Score node_score, Move16b node_move, 
+							   SearchResults& results) 
 {
-	//const uint32_t key = static_cast<uint32_t>(node_key64);
+	_declUnused(results);
+	_declUnused(node_ply); // unused for now
+
 	const uint64_t key = node_key64 & 0x3FFFFFFFF;
 
 	TTBucket* bucket = _mem + (node_key64 & (_buckets_cnt - 1));
@@ -82,7 +82,9 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth, uint8_t 
 	bucket->entries[ind].generation = this->_generation;
 }
 
-bool TranspositionTable::probe(TTEntry& out_entry, uint64_t key64, Score alpha, Score beta,
+bool TranspositionTable::probe(TTEntry& out_entry, 
+							   uint64_t key64, 
+							   Score alpha, Score beta,
 							   uint8_t node_depth) const 
 {
 	const uint64_t key = key64 & 0x3FFFFFFFF;

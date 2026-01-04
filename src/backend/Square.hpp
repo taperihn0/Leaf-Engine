@@ -41,7 +41,7 @@ public:
 		return _sq = sq;
 	}
 
-	INLINE constexpr operator int() const {
+	INLINE constexpr operator uint_t() const {
 		return _sq;
 	}
 

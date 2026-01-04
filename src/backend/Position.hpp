@@ -11,14 +11,17 @@ class Position;
 struct NodeInfo;
 namespace nn { class Accumulator; }
 
+static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+static constexpr std::string_view KiwipeteFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+
 // wrapper around castling rights for single player
 class CastlingRights {
 public:
 	CastlingRights() = default;
-	CastlingRights(bool kinit, bool qinit);
+	explicit CastlingRights(bool kinit, bool qinit);
 
-	bool operator==(const CastlingRights& rights);
-	bool operator!=(const CastlingRights& rights);
+	bool operator==(const CastlingRights& rights) const;
+	bool operator!=(const CastlingRights& rights) const;
 
 	void printByColor(enumColor col_type) const;
 
@@ -62,7 +65,8 @@ public:
 		_kingside = false, _queenside = false;
 	}
 private:
-	bool _kingside, _queenside;
+	bool _kingside, 
+		 _queenside;
 };
 
 namespace Utils { class ExtPackedPosition; }
@@ -72,14 +76,13 @@ namespace Utils { class ExtPackedPosition; }
 class Position {
 public:
 	friend class Utils::ExtPackedPosition;
-
 	struct IrreversibleState;
 
 	Position();
-	explicit Position(const std::string init_fen);
+	explicit Position(std::string init_fen);
+	explicit Position(std::string_view init_fen);
 
-	// assuming given FEN is valid FEN position
-	void setByFEN(const std::string fen);
+	void setByFEN(std::string fen);
 	void setStartingPos();
 
     enum enumStatusFlag {
@@ -269,43 +272,34 @@ public:
 	IrreversibleState getIrreversibleState() const;
 
 	struct IrreversibleState {
-		Square ep_sq;
-		uint8_t halfmove_count;
+		Square 						  ep_sq;
+		uint8_t 					  halfmove_count;
 		std::array<CastlingRights, 2> castling_rights;
 		// It is not really required to store previous hash key,
-		// since it can be computed. But keep it here for simplicity and efficiency.
-		uint64_t hash_key;
+		// since it can be recomputed. But keep it here for simplicity and efficiency.
+		uint64_t 					  hash_key;
 	};
-
-	static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
 
 	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
-	std::array<BitBoard, 2> _occupied;
-	Turn _turn;
-
-	std::array<CastlingRights, 2> _castling_rights;
-	Square _ep_square;
-	
-	uint8_t _halfmove_count;
-	uint16_t _fullmove_count;
-
-	std::array<Square, 2> _king_sq;
-
-	ZobristHash _zhash;
+	std::array<BitBoard, 2> 			   _occupied;
+	std::array<CastlingRights, 2> 		   _castling_rights;
+	std::array<Square, 2> 				   _king_sq;
+	Turn 								   _turn;
+	Square 	    						   _ep_square;
+	ZobristHash 						   _zhash;
+	uint8_t     						   _halfmove_count;
+	uint16_t    						   _fullmove_count;
 };
 
-template <bool ExactScore>
-int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
-
-INLINE bool CastlingRights::operator==(const CastlingRights& rights) {
+INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
 	return _queenside == rights._queenside
 		   and _kingside == rights._kingside;
 }
 
-INLINE bool CastlingRights::operator!=(const CastlingRights& rights) {
+INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
 	return !(*this == rights);
 }
 
@@ -537,3 +531,6 @@ INLINE std::string toStr(Position::enumStatusFlag err_flag) {
 
     return "";
 }
+
+template <bool ExactScore>
+int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);

@@ -25,7 +25,7 @@ Game::Result SelfGame::start(std::vector<ExtPackedPosition>& packed_positions, S
         bool side2move = pos.getTurn();
         Search& curr_search = _search_by_side[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
-        const int eval = StaticEval::staticEval(pos).toInt();
+        const int eval = static_cast<int>(StaticEval::staticEval(pos));
 
         if (std::abs(eval) < 90) 
             draw_full_moves += side2move;

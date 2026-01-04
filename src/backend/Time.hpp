@@ -10,11 +10,8 @@ using timepoint_t = std::chrono::system_clock::time_point;
 
 class Clock {
 public:
-	inline static timepoint_t timePoint()  
-	{ return _clock_data.now(); }
-
-	inline static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start) 
-	{ return std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count(); }
+	static timepoint_t timePoint();
+	static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
 private:
 	using _internal_clock_t = std::chrono::system_clock;
 	static _internal_clock_t _clock_data;
@@ -23,18 +20,10 @@ private:
 class Timer {
 public:
 	void go();
-	time_ms_t duration();
+	time_ms_t duration() const;
 private:
 	timepoint_t _start_tp;
 };
-
-INLINE void Timer::go() {
-	_start_tp = Clock::timePoint();
-}
-
-INLINE time_ms_t Timer::duration() {
-	return Clock::getMilliseconds(Clock::timePoint(), _start_tp);
-}
 
 class SearchLimits;
 

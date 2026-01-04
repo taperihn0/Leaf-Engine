@@ -18,31 +18,31 @@ public:
 	};
 
 	Piece() = default;
-	inline explicit Piece(enumType piece_type) 		   { set(WHITE, piece_type); }
-	inline Piece(enumColor col_t, enumType piece_type) { set(col_t, piece_type); }
+	explicit Piece(enumType piece_type) 		{ set(WHITE, piece_type); }
+	explicit Piece(enumColor col_t, enumType piece_type) { set(col_t, piece_type); }
 
-	static inline Piece fromChar(enumColor col_t, char c) {
+	static Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _WhitesStr.find_first_of(c)
 							     : _BlacksStr.find_first_of(c);
 		return Piece(col_t, enumType(id));
 	}
 
-	static inline enumType typeFromChar(char c) {
+	static enumType typeFromChar(char c) {
 		c = tolower(c);
 		auto id = _BlacksStr.find_first_of(c);
 		return enumType(id);
 	}
 
-	inline void set(enumColor col_t, enumType piece_type) { 
+	void set(enumColor col_t, enumType piece_type) { 
 		_col = col_t;
 		_type = piece_type;
 	}
 
-	inline void setColor(enumColor col) {
+	void setColor(enumColor col) {
 		_col = col;
 	}
 
-	inline void setType(enumType piece_type) {
+	void setType(enumType piece_type) {
 		_type = piece_type;
 	}
 
@@ -52,15 +52,15 @@ public:
 		else std::cout << _BlacksStr[_type];
 	}
 
-	inline Piece::uint_t value() const {
+	INLINE Piece::uint_t value() const {
 		return static_cast<Piece::uint_t>(_type);
 	}
 
-	inline enumType type() const {
+	INLINE enumType type() const {
 		return _type;
 	}
 
-	inline enumColor color() const {
+	INLINE enumColor color() const {
 		return _col;
 	}
 

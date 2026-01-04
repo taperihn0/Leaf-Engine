@@ -49,7 +49,7 @@ void OpeningGenerator::load() {
     auto last = std::unique(_positions.begin(), _positions.end());
 
     last = std::remove_if(_positions.begin(), last, [](Position& pos) {
-        return std::abs(StaticEval::staticEval(pos).toInt()) > _OpeningEvalThreshold;
+        return std::abs(static_cast<int>(StaticEval::staticEval(pos))) > _OpeningEvalThreshold;
     });
 
     _positions.erase(last, _positions.end());

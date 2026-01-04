@@ -9,8 +9,8 @@
 #ifndef LEAF_FORCE_PURE
 
 #if defined(LEAF_SIMD_AVX512)  \
-    || defined(LEAF_SIMD_AVX2) \
-    || defined(LEAF_SIMD_AVX) 
+    or defined(LEAF_SIMD_AVX2) \
+    or defined(LEAF_SIMD_AVX) 
 #include <immintrin.h>   // AVX, AVX2, AVX-512, BMI, FMA, etc.
 
 #elif defined(LEAF_SIMD_SSE4_2)
@@ -40,10 +40,10 @@
 #define _NN_USE_AVX2
 
 #elif  defined(LEAF_SIMD_SSE4_2) \
-    || defined(LEAF_SIMD_SSE4_1) \
-    || defined(LEAF_SIMD_SSSE3)  \
-    || defined(LEAF_SIMD_SSE3)   \
-    || defined(LEAF_SIMD_SSE2) 
+    or defined(LEAF_SIMD_SSE4_1) \
+    or defined(LEAF_SIMD_SSSE3)  \
+    or defined(LEAF_SIMD_SSE3)   \
+    or defined(LEAF_SIMD_SSE2) 
 #define _NN_USE_SSE2
 
 #elif defined(LEAF_SIMD_SEE)
