@@ -486,7 +486,7 @@ Score Search::negaMax(Position& pos,
 					node->best_score = node->score;
 					node->best_move = node->move;
 				}
-
+				
 				node->move_picker.skipQuiets();
 				continue;
 			}

@@ -1,10 +1,22 @@
+### featuer: (768->128)x2->1 NNUE with SIMD vectorization, fixed little bugs in search
+Score of leaf-avx2-1 vs leaf-nn64: 1624 - 45 - 331  [0.895] 2000 <br>
+...      leaf-avx2-1 playing White: 831 - 24 - 145  [0.903] 1000 <br>
+...      leaf-avx2-1 playing Black: 793 - 21 - 186  [0.886] 1000 <br>
+...      White vs Black: 852 - 817 - 331  [0.509] 2000 <br>
+Elo difference: 371.8 +/- 18.6, LOS: 100.0 %, DrawRatio: 16.6 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+
+### feature: (768->64)x2->1 NNUE 
+[~200 ELO] <br>
+
 ### commit _: IID
-Score of leaf-iid-dev vs leaf-rfp: 686 - 643 - 1679  [0.507] 3008
-...      leaf-iid-dev playing White: 384 - 276 - 844  [0.536] 1504
-...      leaf-iid-dev playing Black: 302 - 367 - 835  [0.478] 1504
-...      White vs Black: 751 - 578 - 1679  [0.529] 3008
-Elo difference: 5.0 +/- 8.2, LOS: 88.1 %, DrawRatio: 55.8 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+Score of leaf-iid-dev vs leaf-rfp: 686 - 643 - 1679  [0.507] 3008 <br>
+...      leaf-iid-dev playing White: 384 - 276 - 844  [0.536] 1504 <br>
+...      leaf-iid-dev playing Black: 302 - 367 - 835  [0.478] 1504 <br>
+...      White vs Black: 751 - 578 - 1679  [0.529] 3008 <br>
+Elo difference: 5.0 +/- 8.2, LOS: 88.1 %, DrawRatio: 55.8 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### commit _: reverse fut-pruning return value
 Score of rfp-dev vs rfp: 736 - 660 - 1829  [0.512] 3225 <br>

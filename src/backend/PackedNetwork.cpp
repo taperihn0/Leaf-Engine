@@ -11,6 +11,12 @@
 
 namespace nn {
 
+PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
+    PackedNeuralNetwork network;
+    network.loadDefaultNet();
+    return network;
+}();
+
 PackedNeuralNetwork::PackedNeuralNetwork()
     : _layer_weights{}
     , _layer_biases{}
@@ -54,14 +60,14 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
     _fd = open(path.data(), O_RDONLY);
 
     if (_fd == -1) {
-        ASSERT(false, "Couldn't open() a file: " + static_cast<std::string>(path));
+        std::cout << ("Couldn't open() a file: " + static_cast<std::string>(path)) << std::endl;
         return false;
     }
 
     struct stat st;
     if (fstat(_fd, &st) == -1) {
         close(_fd);
-        ASSERT(false, "Couldn't fstat() a file: " + static_cast<std::string>(path));
+        std::cout << ("Couldn't fstat() a file: " + static_cast<std::string>(path)) << std::endl;
         return false;
     }
 
@@ -70,14 +76,14 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
 
     if (_file_buff == MAP_FAILED) {
         close(_fd);
-        ASSERT(false, "Couldn't mmap() a file: " + static_cast<std::string>(path));
+        std::cout << ("Couldn't mmap() a file: " + static_cast<std::string>(path)) << std::endl;
         return false;
     }
 
     _header = *reinterpret_cast<Header*>(_file_buff);
 
     if (_header.layer_count != 3) {
-        ASSERT(false, "Layer number must be 3");
+        std::cout << ("Layer number must be 3") << std::endl;
         return false;
     }
 

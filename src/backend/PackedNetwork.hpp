@@ -73,10 +73,6 @@ private:
     int16_t* _layer_biases[MaxLayerCount];
 };
 
-static inline PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
-    PackedNeuralNetwork network;
-    network.loadDefaultNet();
-    return network;
-}();
+extern PackedNeuralNetwork GlobPackedNetwork;
 
 } // namespace nn
