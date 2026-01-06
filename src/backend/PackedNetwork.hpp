@@ -9,9 +9,12 @@ static constexpr std::string_view DefaultNetworkPath = "src/assets/nets/publius_
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
 static constexpr size_t  NetworkHiddenLayerSize = 128;
+static constexpr size_t  NetworkOutputSize = 1;
+static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
 static constexpr int16_t NetworkBiasQuant = 64;
 static constexpr int16_t NetworkOutputScale = 400;
+static constexpr bool    NetworkDualHiddenLayer = true;
 
 class PackedNeuralNetwork {
 public:

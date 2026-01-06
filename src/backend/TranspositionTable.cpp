@@ -4,7 +4,7 @@
 TranspositionTable::TranspositionTable(size_t mb_size) {
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
-	_buckets_cnt = 1_MB / sizeof(TTBucket);
+	_buckets_cnt = mb_size / sizeof(TTBucket);
 	clear();
 }
 

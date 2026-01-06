@@ -5,6 +5,8 @@
 #include <sstream>
 #include <iomanip>
 
+#define _TT_PROBE_QSEARCH
+
 INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
@@ -128,13 +130,25 @@ void NodeInfo::clear() {
 	ply 			 = 0;
 	moves_searched 	 = 0;
 	move_index 		 = 0;
-	static_eval 	 = Score::Undef;
+	eval 	 = Score::Undef;
 	bound 			 = TTEntry::NONE;
 }
 
-void Search::registerNewGame() {
+void Search::clearHashTT() {
 	_tt.clear();
 	_tt.clearHashfull();
+}
+
+void Search::resizeHashTT(size_t tt_size_mb) {
+	if (tt_size_mb > 0 and tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) {
+		_tt.resize(tt_size_mb);
+		_tt.clear();
+		_tt.clearHashfull();
+	}
+}
+
+void Search::registerNewGame() {
+	clearHashTT();
 	_history_buff->clearQuietsHistory();
 }
 
@@ -302,13 +316,6 @@ Score Search::negaMax(Position& pos,
     {
         return -Score::Undef;
     }
-	else if (!depth) {
-		return quiesce<NodeType>(pos, limits, results, node,
-								 alpha,
-								 beta,
-								 depth,
-								 ply);
-	}
 
 	const uint64_t hash = pos.getZobristKey();
 
@@ -327,6 +334,13 @@ Score Search::negaMax(Position& pos,
 #endif
 		return tt_entry.score;
 	}
+
+	if (!depth) {
+		return quiesce<NodeType>(pos, limits, results, node,
+								 alpha, beta,
+								 depth,
+								 ply);
+	}
 	
 	results.nodes_cnt++;
 
@@ -341,7 +355,7 @@ Score Search::negaMax(Position& pos,
 		node->check = pos.isInCheck(side2move);
 
 	node->move = Move32b::Null;
-	node->static_eval = Score::Undef;
+	node->eval = Score::Undef;
 
 	const NodeInfo* preroot = _tree_stack.getPreRootNode();
 	
@@ -361,13 +375,13 @@ Score Search::negaMax(Position& pos,
 #if defined(_VERIFY_NN)
 			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-			node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
-			if (node->static_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce<NodeType>(pos, limits, results, node + 1,
-													   alpha - 1, alpha,
-													   depth,
-													   ply + 1);
+			if (node->eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+				const Score qscore = quiesce<NON_PV_NODE>(pos, limits, results, node + 1,
+													      alpha - 1, alpha,
+													      depth - 1,
+													      ply + 1);
 
 				if (qscore < alpha)
 					return qscore;
@@ -378,8 +392,6 @@ Score Search::negaMax(Position& pos,
 	Move32b ttm32b = unpacked(pos, tt_entry.move);
 	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : 
 												  Move32b::Null;
-
-	TTEntry iid_entry;
 	
 	/* Internal Iterative Deepening -
 	*  done only in PV Nodes. When no hash move is found for said node, 
@@ -390,18 +402,17 @@ Score Search::negaMax(Position& pos,
 	if constexpr (IsPV) {
 		if (depth >= IidDepth and tt_move.isNull()) {
 			_UNUSED const Score iid_score =
-				negaMax<false, NodeType, NullMove>(pos, limits, results, game, node,
-												   alpha, beta,
-												   depth >> IidDivShift,
-												   ply);
+				negaMax<false, NodeType, false>(pos, limits, results, game, node,
+												alpha, beta,
+												depth >> IidDivShift,
+												ply);
 
-			const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
+			TTEntry iid_entry;
+			_UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
 			
-			if (iid_tt_hit) {
-				ttm32b = unpacked(pos, iid_entry.move);
-				tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
-													  Move32b::Null;
-			}
+			ttm32b = unpacked(pos, iid_entry.move);
+			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
+												: Move32b::Null;
 		}
 	}
 
@@ -414,15 +425,15 @@ Score Search::negaMax(Position& pos,
 			depth <= RfpDepth and
 			tt_move.isQuiet())
 		{
-			if (!node->static_eval.isValid()) {
+			if (!node->eval.isValid()) {
 #if defined(_VERIFY_NN)
 				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-				node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 			}
 
-			if (node->static_eval - RfpMultDelta * depth >= beta)
-				return node->static_eval - (depth << 6);
+			if (node->eval - RfpMultDelta * depth >= beta)
+				return node->eval - (depth << 6);
 		}
 	}
 
@@ -487,14 +498,14 @@ Score Search::negaMax(Position& pos,
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
-			if (!node->static_eval.isValid()) {
+			if (!node->eval.isValid()) {
 #if defined(_VERIFY_NN)
 				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-				node->static_eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 			}
 
-			if (node->static_eval + FutilityDelta * depth * depth < alpha) {
+			if (node->eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
@@ -685,26 +696,30 @@ Score Search::quiesce(Position& pos,
 		return nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 	}
 
-	const uint64_t hash = pos.getZobristKey();
-	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
-
 #if defined(_COLLECT_SEARCH_STATS)
 	results.tt_probe_cnt++;
 	results.qtt_probe_cnt++;
 #endif
 
+#if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
+	tt_entry.move = Move16b::Null;
+
+	const uint64_t hash = pos.getZobristKey();
+	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
+
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
 	const bool exact_hit = (!IsPV and tt_hit) or 
-						   ( IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
+						   (IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
-	if (exact_hit and depth <= 0) {
+	if (exact_hit and depth < 0) {
 #if defined(_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
 		results.qtt_cut_cnt++;
 #endif
 		return tt_entry.score;
 	}
+#endif
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
@@ -734,11 +749,13 @@ Score Search::quiesce(Position& pos,
 	}
 
 	node->move_picker.clear<QuiescentOrderPolicy>();
-	
-	const Move16b ttm16b = tt_entry.move;
+
 	Move32b tt_move = Move32b::Null;
 
-	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and
+#if defined(_TT_PROBE_QSEARCH)
+	const Move16b ttm16b = tt_entry.move;
+
+	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and 
 		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion()))
 	{
 		const Move32b ttm32b = unpacked(pos, tt_entry.move);
@@ -750,12 +767,18 @@ Score Search::quiesce(Position& pos,
 		results.qttmove_probe_cnt++;
 #endif
 	}
+#endif
 
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
 	for (node->move_index = 0; node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
 		
+#if defined(_TT_PROBE_QSEARCH)
+		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
+		_tt.prefetchBucket(next_hash);
+#endif
+
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
 		*/

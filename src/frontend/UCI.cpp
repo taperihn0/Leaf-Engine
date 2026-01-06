@@ -79,6 +79,9 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 UniversalChessInterface::UniversalChessInterface()
 	: _search(TranspositionTable(1_MB))
 	, _pos(StartposFEN)
+	, _options{ 
+		OptionHash(SpinType(1, 1, 512)), 
+		OptionClearHash() }
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW
@@ -107,6 +110,8 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "isready")		parseIsReady();
 		else if (token == "export_net") 	parseNet(strm);
 		else if (token == "rewrite_header") parseRewriteNet(strm);
+		else if (token == "options")		parseShowOptions();
+		else if (token == "setoption")		parseSetOptions(strm);
 
 #if defined(_UCI_DEBUG_UTILS)
 		else if (token == "see")			parseSEE(strm);
@@ -219,7 +224,7 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
 
 	const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
 
-	std::cout << score.toInt() << std::endl;
+	std::cout << static_cast<int>(score) << std::endl;
 }
 
 #endif
@@ -247,11 +252,11 @@ void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
 
 	nn::PackedNeuralNetwork::Header header{};
 	// modify it manually
-	header.dual_hl = true;
+	header.dual_hl = nn::NetworkDualHiddenLayer;
 	header.layer_size[0] = nn::NetworkInputSize;
 	header.layer_size[1] = nn::NetworkHiddenLayerSize;
-	header.layer_size[2] = 1;
-	header.layer_count = 3;
+	header.layer_size[2] = nn::NetworkOutputScale;
+	header.layer_count = nn::NetworkLayerCount;
 	
 	bool status = nn::PackedNeuralNetwork::rewriteWithHeader(in_path, out_path, header);
 
@@ -259,4 +264,30 @@ void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
 		std::cout << "Rewrited succesfully." << std::endl;
 	else
 		std::cout << "Rewrite failed." << std::endl;
+}
+
+void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
+	std::string token;
+	strm >> std::skipws >> token >> std::skipws >> token;
+
+	if (token == "Clear") {
+		strm >> std::skipws >> token;
+
+		if (token == "Hash") {
+			_search.clearHashTT();
+		}
+	}
+	else if (token == "Hash") {
+		strm >> std::skipws >> token;
+
+		const SpinType::int_t val = std::stoi(token);
+
+		_options.hash.set(val);
+		_search.resizeHashTT(_options.hash.getCurrentValue() * 1_MB);
+	}
+}
+
+void UniversalChessInterface::parseShowOptions() {
+	_options.hash.print();
+	_options.clear_hash.print();
 }

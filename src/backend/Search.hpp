@@ -91,7 +91,7 @@ struct NodeInfo {
 	unsigned					ply;
 	uint8_t						moves_searched;
 	uint8_t						move_index;
-	Score					    static_eval;
+	Score					    eval;
 	TTEntry::Bound				bound;
 	nn::Accumulator 			accum;
 };
@@ -138,7 +138,9 @@ public:
 									  Position& pos, 
 									  const FullInfoRecord& game, 
 									  SearchLimits limits);
-
+	
+	void clearHashTT();
+	void resizeHashTT(size_t tt_size_mb);
 	void registerNewGame();
 private:
 	template <enumInfoLevel InfoLevel>
