@@ -74,6 +74,9 @@ struct SearchResults {
 			  qbeta_cut_cnt		= 0;
 
 	ull		  move_cut_cnt[MaxNodeMoves] = {};
+
+	ull 	  nmeval_cnt 		= 0;
+	ull 	  qeval_cnt 		= 0;
 #endif
 };
 
@@ -91,7 +94,6 @@ struct NodeInfo {
 	unsigned					ply;
 	uint8_t						moves_searched;
 	uint8_t						move_index;
-	Score					    eval;
 	TTEntry::Bound				bound;
 	nn::Accumulator 			accum;
 };
@@ -118,8 +120,9 @@ public:
 	enum enumNode : int8_t {
 		PV_NODE             = 1,
 		NON_PV_NODE         = 2,
-		SEARCH_NODE         = PV_NODE | NON_PV_NODE,
-		QUIESCE_NODE        = ~SEARCH_NODE,
+		QUIESCE_NODE        = 4,
+		QUIESCE_PV_NODE     = QUIESCE_NODE | PV_NODE,
+		QUIESCE_NON_PV_NODE = QUIESCE_NODE | NON_PV_NODE,
 	};
 
     enum enumInfoLevel : int8_t {
@@ -151,7 +154,7 @@ private:
 				const FullInfoRecord& game, 
 				SearchLimits& limits, SearchResults& results);
 
-	template <bool Root, enumNode NodeType = PV_NODE, bool NullMove = !Root>
+	template <bool Root, enumNode NmNodeType = PV_NODE, bool NullMove = !Root>
 	Score negaMax(Position& pos, 
 				  SearchLimits& limits, SearchResults& results, 
 				  const FullInfoRecord& game, 
@@ -159,7 +162,7 @@ private:
 				  Score alpha, Score beta, 
 				  int depth, int ply);
 
-	template <Search::enumNode NodeType>
+	template <Search::enumNode QNodeType>
 	Score quiesce(Position& pos, 
 				  SearchLimits& limits, SearchResults& results, 
 				  NodeInfo* node, 
@@ -167,6 +170,12 @@ private:
 				  int depth, int ply);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
+	
+	template <enumNode NodeType>
+	Score evaluate(const Position& pos,
+				   const nn::Accumulator* prev_accum, 
+				   enumColor side2move, 
+				   SearchResults& results);
 
 	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, 
@@ -183,3 +192,7 @@ private:
 	// Also, Search class in responsible for allocation and deallocation.
 	MoveOrderHistoryTables* _history_buff;
 };
+
+INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {
+	return static_cast<Search::enumNode>(static_cast<int>(node0) | static_cast<int>(node1));
+}

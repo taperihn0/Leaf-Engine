@@ -26,9 +26,9 @@ TranspositionTable::~TranspositionTable() {
 void TranspositionTable::resize(size_t size_mb) {
 	ASSERT(isPow2(size_mb), "Transposition table must be size of 2 power");
 	alignedFree(_mem);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(size_mb * 1024 * 1024, sizeof(TTBucket)));
+	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(size_mb, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
-	_buckets_cnt = size_mb * 1024 * 1024 / sizeof(TTBucket);
+	_buckets_cnt = size_mb / sizeof(TTBucket);
 	_buckets_pow_2 = get2pow(_buckets_cnt);
 	_generation = 0;
 	_hits = 0;
@@ -86,6 +86,7 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 	bucket->entries[ind].writeHash(keyhi);
 	assert(bucket->entries[ind].getHash() == keyhi);
 
+	bucket->entries[ind].eval = node_eval;
 	bucket->entries[ind].score = node_score;
 	bucket->entries[ind].depth = node_depth;
 	bucket->entries[ind].bound = node_bound;

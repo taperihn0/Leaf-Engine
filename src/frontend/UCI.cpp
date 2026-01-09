@@ -280,10 +280,14 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 	else if (token == "Hash") {
 		strm >> std::skipws >> token;
 
-		const SpinType::int_t val = std::stoi(token);
+		if (token == "value") {
+			strm >> std::skipws >> token;
+			
+			const SpinType::int_t val = std::stoi(token);
 
-		_options.hash.set(val);
-		_search.resizeHashTT(_options.hash.getCurrentValue() * 1_MB);
+			_options.hash.set(val);
+			_search.resizeHashTT(_options.hash.getCurrentValue() * 1_MB);
+		}
 	}
 }
 

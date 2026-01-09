@@ -78,6 +78,21 @@ INLINE void SearchResults::printShort() {
 
 #if defined(_COLLECT_SEARCH_STATS)
 void SearchResults::printSearchStats() {
+
+#define _ASSERT_NONZERO(x) 			    \
+	do { x = x ? x : 1; } while (false) \
+
+	ull nmnodes = nodes_cnt - qnodes_cnt;
+
+	_ASSERT_NONZERO(nodes_cnt);
+	_ASSERT_NONZERO(qnodes_cnt);
+	_ASSERT_NONZERO(tt_probe_cnt);
+	_ASSERT_NONZERO(qtt_probe_cnt);
+	_ASSERT_NONZERO(beta_cut_cnt);
+	_ASSERT_NONZERO(qtt_probe_cnt);
+	_ASSERT_NONZERO(qbeta_cut_cnt);
+	_ASSERT_NONZERO(nmnodes);
+
 	const float qnodes_rate      = static_cast<float>(qnodes_cnt) / nodes_cnt * 100;
 	const float pvnodes_rate     = static_cast<float>(pvnodes_cnt) / nodes_cnt * 100;
 	const float npvnodes_rate    = static_cast<float>(npvnodes_cnt) / nodes_cnt * 100;
@@ -90,19 +105,24 @@ void SearchResults::printSearchStats() {
 	const float qttmove_rate     = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
 	const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qbeta_cut_cnt * 100;
 
+	const float nmeval_rate  	 = static_cast<float>(nmeval_cnt) / nmnodes * 100;
+	const float qeval_rate 		 = static_cast<float>(qeval_cnt) / qnodes_cnt * 100;
+
 	std::cout << "\n--SEARCH STATISTICS--";
 
 	std::cout
-		<< "\nQUIESCENT NODES:         " << qnodes_cnt        << ", " << qnodes_rate << '%'
-		<< "\nPV NODES:                " << pvnodes_cnt       << ", " << pvnodes_rate << '%'
-		<< "\nNON PV NODES:            " << npvnodes_cnt      << ", " << npvnodes_rate << '%'
-		<< "\nTT PROBES:               " << tt_probe_cnt
-		<< "\nTT PROBES IN QSEARCH:    " << qtt_probe_cnt     << ", " << qprobes_rate << '%'
-		<< "\nTT CUTS:                 " << tt_cut_cnt        << ", " << cuts_rate << '%'
-		<< "\nTT CUTS IN QSEARCH:      " << qtt_cut_cnt       << ", " << qcuts_rate << '%'
-		<< "\nTTMOVE CUT:              " << ttmove_cut_cnt    << ", " << ttmove_cut_rate << '%'
-		<< "\nTTMOVE PROBE IN QSEARCH: " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
-		<< "\nTTMOVE CUT IN QSEARCH:   " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
+		<< "\nQUIESCENT NODES:             " << qnodes_cnt        << ", " << qnodes_rate << '%'
+		<< "\nPV NODES:                    " << pvnodes_cnt       << ", " << pvnodes_rate << '%'
+		<< "\nNON PV NODES:                " << npvnodes_cnt      << ", " << npvnodes_rate << '%'
+		<< "\nTT PROBES:                   " << tt_probe_cnt
+		<< "\nTT PROBES IN QSEARCH:        " << qtt_probe_cnt     << ", " << qprobes_rate << '%'
+		<< "\nTT CUTS:                     " << tt_cut_cnt        << ", " << cuts_rate << '%'
+		<< "\nTT CUTS IN QSEARCH:          " << qtt_cut_cnt       << ", " << qcuts_rate << '%'
+		<< "\nHASH-MOVE CUT:               " << ttmove_cut_cnt    << ", " << ttmove_cut_rate << '%'
+		<< "\nHASH-MOVE PROBE IN QSEARCH:  " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
+		<< "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
+		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt 		  << ", " << nmeval_rate << '%'
+		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt 		  << ", " << qeval_rate << '%'
 		<< '\n';
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
@@ -117,6 +137,9 @@ void SearchResults::printSearchStats() {
 	}
 
 	std::cout << "\n---------------------\n";
+
+#undef _ASSERT_NONZERO
+
 }
 #endif
 
@@ -130,7 +153,6 @@ void NodeInfo::clear() {
 	ply 			 = 0;
 	moves_searched 	 = 0;
 	move_index 		 = 0;
-	eval 	 = Score::Undef;
 	bound 			 = TTEntry::NONE;
 }
 
@@ -276,7 +298,7 @@ bool Search::search(Position& pos,
 	return true;
 }
 
-template <bool Root, Search::enumNode NodeType, bool NullMove>
+template <bool Root, Search::enumNode NmNodeType, bool NullMove>
 Score Search::negaMax(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
 					  const FullInfoRecord& game, 
@@ -290,20 +312,20 @@ Score Search::negaMax(Position& pos,
 	if constexpr (Root) assert(!ply);
 	else 				assert(ply > 0);
 	
-	static constexpr OrderType OrderPolicy = STAGED;
-	static constexpr bool	   IsPV = NodeType == PV_NODE;
-	static constexpr int 	   RazorDepth = 2;
+	static constexpr OrderType OrderPolicy 	  = STAGED;
+	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
+	static constexpr int 	   RazorDepth  	  = 2;
 	static constexpr Score 	   RazorBaseDelta = 150;
 	static constexpr Score 	   RazorMultDelta = 25;
-	static constexpr int	   IidDepth = 3;
-	static constexpr int	   IidDivShift = 1;
-	static constexpr int	   RfpDepth = 6;
-	static constexpr Score	   RfpMultDelta = 150;
-	static constexpr int	   NullReduction = 2;
-	static constexpr int	   FutilityDepth = 4;
-	static constexpr Score	   FutilityDelta = 32;
-	static constexpr int	   LmrDepth = 2;
-	static constexpr int	   LmrMoveCount = 2;
+	static constexpr int	   IidDepth 	  = 3;
+	static constexpr int	   IidDivShift 	  = 1;
+	static constexpr int	   RfpDepth       = 6;
+	static constexpr Score	   RfpMultDelta   = 150;
+	static constexpr int	   NullReduction  = 2;
+	static constexpr int	   FutilityDepth  = 4;
+	static constexpr Score	   FutilityDelta  = 32;
+	static constexpr int	   LmrDepth 	  = 2;
+	static constexpr int	   LmrMoveCount   = 2;
 
 	if (!Root and (pos.halfmoveClock() >= 100 or isRepetitionCycle<IsPV>(pos, game, node - 1, ply))) {
 		return Score::Draw;
@@ -312,8 +334,7 @@ Score Search::negaMax(Position& pos,
 		return -Score::Undef;
 	}
     else if (!Root and (!limits.anyNodesLeft(results.nodes_cnt) or
-                        !limits.anyQuiesceNodesLeft(results.qnodes_cnt))) 
-    {
+                        !limits.anyQuiesceNodesLeft(results.qnodes_cnt))) {
         return -Score::Undef;
     }
 
@@ -340,10 +361,10 @@ Score Search::negaMax(Position& pos,
 	}
 
 	if (!depth) {
-		return quiesce<NodeType>(pos, limits, results, node,
-								 alpha, beta,
-								 depth,
-								 ply);
+		return quiesce<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
+								 				  alpha, beta,
+								 				  depth,
+								 				  ply);
 	}
 	
 	results.nodes_cnt++;
@@ -359,11 +380,14 @@ Score Search::negaMax(Position& pos,
 		node->check = pos.isInCheck(side2move);
 
 	node->move = Move32b::Null;
-	node->eval = Score::Undef;
+	Score eval = tt_entry.eval;
 
 	const NodeInfo* preroot = _tree_stack.getPreRootNode();
-	
-	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
+	// prev_node is unused for release builds
+	_UNUSED const NodeInfo* const prev_node = node - 1;
+	NodeInfo* const next_node = node + 1;
+
+	const nn::Accumulator* const prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
@@ -375,16 +399,15 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and
 			depth <= RazorDepth)
 		{
-#if defined(_VERIFY_NN)
-			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
-#endif
-			node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			if (!eval.isValid()) {
+				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
+			}
 
-			if (node->eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce<NON_PV_NODE>(pos, limits, results, node + 1,
-													      alpha - 1, alpha,
-													      depth - 1,
-													      ply + 1);
+			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, next_node,
+													      		  	 	 alpha - 1, alpha,
+													      		  	 	 depth - 1,
+													      		  	 	 ply + 1);
 
 				if (qscore < alpha)
 					return qscore;
@@ -405,10 +428,10 @@ Score Search::negaMax(Position& pos,
 	if constexpr (IsPV) {
 		if (depth >= IidDepth and tt_move.isNull()) {
 			_UNUSED const Score iid_score =
-				negaMax<false, NodeType, false>(pos, limits, results, game, node,
-												alpha, beta,
-												depth >> IidDivShift,
-												ply);
+				negaMax<false, NmNodeType, false>(pos, limits, results, game, node,
+												  alpha, beta,
+												  depth >> IidDivShift,
+												  ply);
 
 			TTEntry iid_entry;
 			iid_entry.eval = Score::Undef;
@@ -420,6 +443,10 @@ Score Search::negaMax(Position& pos,
 			ttm32b = unpacked(pos, iid_entry.move);
 			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
 												: Move32b::Null;
+
+			if (!tt_move.isNull() and iid_entry.eval.isValid()) {
+				eval = iid_entry.eval;
+			}
 		}
 	}
 
@@ -432,26 +459,20 @@ Score Search::negaMax(Position& pos,
 			depth <= RfpDepth and
 			tt_move.isQuiet())
 		{
-			if (!node->eval.isValid()) {
-#if defined(_VERIFY_NN)
-				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
-#endif
-				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			if (!eval.isValid()) {
+				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
 			}
 
-			if (node->eval - RfpMultDelta * depth >= beta)
-				return node->eval - (depth << 6);
+			if (eval - RfpMultDelta * depth >= beta)
+				return eval - (depth << 6);
 		}
 	}
-
-	NodeInfo* const prev_node = node - 1;
-	NodeInfo* const next_node = node + 1;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
 	*  So we can do beta cutoff.
 	*/
-	if constexpr (NullMove) {
+	if constexpr (!Root and NullMove) {
 		if (!node->check and depth >= NullReduction + 1) {
 			assert(prev_node->move != Move32b::Null);
 			
@@ -472,7 +493,7 @@ Score Search::negaMax(Position& pos,
 																			beta - 1, beta, 
 																			depth - NullReduction - 1, 
 																			ply);
-
+				
 				if (verify >= beta)
 					return verify;
 			}
@@ -481,15 +502,17 @@ Score Search::negaMax(Position& pos,
 
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
-	
-	node->can_move = false;
-	node->score = 0;
-	node->ply = ply;
-	node->best_move = Move32b::Null;
-	node->best_score = -Score::Infinity;
+	node->can_move 	 	 = false;
+	node->score 	 	 = 0;
+	node->ply   	 	 = ply;
+	node->best_move  	 = Move32b::Null;
+	node->best_score 	 = -Score::Infinity;
 	node->moves_searched = 0;
-	node->state = pos.getIrreversibleState();
-	node->bound = TTEntry::LOWERBOUND;
+	node->state 		 = pos.getIrreversibleState();
+	node->bound 		 = TTEntry::LOWERBOUND;
+
+	//check
+	//accum
 
 	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
 
@@ -505,14 +528,11 @@ Score Search::negaMax(Position& pos,
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
-			if (!node->eval.isValid()) {
-#if defined(_VERIFY_NN)
-				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
-#endif
-				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			if (!eval.isValid()) {
+				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
 			}
 
-			if (node->eval + FutilityDelta * depth * depth < alpha) {
+			if (eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
@@ -574,7 +594,7 @@ Score Search::negaMax(Position& pos,
 			} 
 
 			if (do_full_search) {
-				node->score = -negaMax<false, NodeType, true>(pos, limits, results, game, next_node,
+				node->score = -negaMax<false, NmNodeType, true>(pos, limits, results, game, next_node,
 															  -beta, -alpha, 
 															  depth - 1 + extend, 
 															  ply + 1);
@@ -641,7 +661,7 @@ Score Search::negaMax(Position& pos,
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
 		const Move16b bestmove16b = packed(node->best_move);
-		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, node->eval, results);
+		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, eval, results);
 	}
 
 	next_node->move_picker.setKillerMove(Move32b::Null);
@@ -666,7 +686,7 @@ template Score Search::negaMax<false>(Position&,
 									  Score, Score, 
 									  int, int);
 
-template <Search::enumNode NodeType>
+template <Search::enumNode QNodeType>
 Score Search::quiesce(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
 					  NodeInfo* node, 
@@ -676,7 +696,7 @@ Score Search::quiesce(Position& pos,
 	assert(alpha < beta);
 
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
-	static constexpr bool	   IsPV = NodeType == PV_NODE;
+	static constexpr bool	   IsPV = QNodeType & PV_NODE; 
 	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
 	static constexpr Score	   MaterialDelta = 900;
@@ -687,8 +707,7 @@ Score Search::quiesce(Position& pos,
 		return -Score::Undef;
 	}
     else if (!limits.anyNodesLeft(results.nodes_cnt) or
-             !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
-    {
+             !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) {
         return -Score::Undef;
     }
 
@@ -697,10 +716,7 @@ Score Search::quiesce(Position& pos,
 	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-#if defined(_VERIFY_NN)
-		ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
-#endif
-		return nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+		return evaluate<QNodeType>(pos, prev_accum, side2move, results);
 	}
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -734,14 +750,12 @@ Score Search::quiesce(Position& pos,
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
 	results.qnodes_cnt++;
 
-	//node->eval = tt_entry.eval;
-
-#if defined(_VERIFY_NN)
-	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#if defined(_TT_PROBE_QSEARCH)
+	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, prev_accum, side2move, results)
+													         : tt_entry.eval;
+#else
+	const Score stand_pat = evaluate(pos, prev_accum, side2move, results);
 #endif
-
-	const Score stand_pat = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);//node->eval.isValid() ? node->eval 
-							//					 : nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
@@ -810,10 +824,10 @@ Score Search::quiesce(Position& pos,
 		}
 
 		if (pos.make(node->move, &node->accum, prev_accum)) {
-			node->score = -quiesce<NodeType>(pos, limits, results, node + 1,
-											 -beta, -alpha,
-											 depth - 1,
-											 ply + 1);
+			node->score = -quiesce<QNodeType>(pos, limits, results, node + 1,
+											  -beta, -alpha,
+											  depth - 1,
+											  ply + 1);
 
 			node->moves_searched++;
 		}
@@ -859,6 +873,29 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	_declUnused(pos);
 	NodeInfo* next_node = node + 1;
 	return next_node->check;
+}
+
+template <Search::enumNode NodeType>
+_FORCEINLINE Score Search::evaluate(const Position& pos,
+									const nn::Accumulator* prev_accum, 
+									enumColor side2move, 
+									SearchResults& results) 
+{
+#if defined(_VERIFY_NN)
+	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+#else
+	_declUnused(pos);
+#endif
+
+#if defined(_COLLECT_SEARCH_STATS)
+	if constexpr (NodeType & QUIESCE_NODE)
+		results.qeval_cnt++;
+		
+	else
+		results.nmeval_cnt++;
+#endif
+
+	return nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 }
 
 template <bool IsPV>
