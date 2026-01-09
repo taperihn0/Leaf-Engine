@@ -12,7 +12,7 @@ struct OptionType {
 };
 
 struct SpinType : public OptionType {
-    using int_t = int;
+    using int_t = ll;
 
     SpinType(int_t def, int_t ma, int_t mi);
     void setCurrent(int_t val);

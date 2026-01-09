@@ -9,6 +9,7 @@ struct SearchResults;
 
 static constexpr size_t EntryTargetSize  = 10;
 static constexpr size_t BucketTargetSize = 32;
+static constexpr size_t EntryKeySize     = 18;
 
 struct TTEntry {
 	enum Bound : uint8_t {
@@ -23,23 +24,25 @@ struct TTEntry {
 		return depth == 0 and bound == NONE; 
 	}
 
-	INLINE void writeHash(uint64_t key) {
-		*reinterpret_cast<uint32_t*>(this) = static_cast<uint32_t>(key);
-		key34 = (key & 0x300000000) >> 32;
+	INLINE void writeHash(uint32_t keyhi) {
+		key16 = static_cast<uint16_t>(keyhi);
+		key18 = (keyhi & 0x30000) >> 16;
 	}
 
-	INLINE uint64_t getHash() const {
-		return *reinterpret_cast<const uint64_t*>(this) & 0x3FFFFFFFF;
+	INLINE uint32_t getHash() const {
+		uint32_t h;
+		std::memcpy(&h, this, sizeof(uint32_t));
+		return h & 0x3FFFF;
 	}
 
 	uint16_t key16;
-	uint16_t key32;
-	uint8_t	 key34 : 2;
-	uint8_t  depth : 6;
-	Bound	 bound : 2;
+	uint16_t key18 : 2;
 	uint8_t  generation : 6;
+	Bound	 bound : 2;
+	int8_t   depth : 6;
 	Move16b  move;
 	Score	 score;
+	Score    eval;
 };
 
 static_assert(sizeof(TTEntry) == EntryTargetSize);
@@ -65,8 +68,9 @@ public:
 	void resize(size_t size_mb);
 	void clear();
 
-	void write(uint64_t node_key, uint8_t node_depth, uint8_t node_ply, 
-			   TTEntry::Bound node_bound, Score node_score, Move16b node_move, 
+	void write(uint64_t node_key, uint8_t node_depth, 
+			   uint8_t node_ply, TTEntry::Bound node_bound, 
+			   Score node_score, Move16b node_move, Score node_eval,
 			   SearchResults& results);
 
 	bool probe(TTEntry& out_entry,
@@ -88,6 +92,7 @@ public:
 private:
 	TTBucket* _mem;
 	size_t    _buckets_cnt;
+	uint8_t   _buckets_pow_2;
 	uint8_t   _generation;
 	ull       _hits;
 };

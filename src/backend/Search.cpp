@@ -324,9 +324,13 @@ Score Search::negaMax(Position& pos,
 #endif
 
 	TTEntry tt_entry;
+	tt_entry.eval = Score::Undef;
+	tt_entry.move = Move16b::Null;
+	tt_entry.score = Score::Undef;
+
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
 	const bool exact_hit = (!IsPV and tt_hit) or
-						   ( IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
+						   (IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
 	if (!Root and exact_hit) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -371,11 +375,12 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and
 			depth <= RazorDepth)
 		{
-
+			if (!node->eval.isValid()) {
 #if defined(_VERIFY_NN)
-			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-			node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+			}
 
 			if (node->eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<NON_PV_NODE>(pos, limits, results, node + 1,
@@ -408,6 +413,10 @@ Score Search::negaMax(Position& pos,
 												ply);
 
 			TTEntry iid_entry;
+			iid_entry.eval = Score::Undef;
+			iid_entry.move = Move16b::Null;
+			iid_entry.score = Score::Undef;
+
 			_UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
 			
 			ttm32b = unpacked(pos, iid_entry.move);
@@ -634,7 +643,7 @@ Score Search::negaMax(Position& pos,
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
 		const Move16b bestmove16b = packed(node->best_move);
-		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, results);
+		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, node->eval, results);
 	}
 
 	next_node->move_picker.setKillerMove(Move32b::Null);
@@ -703,7 +712,9 @@ Score Search::quiesce(Position& pos,
 
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
+	tt_entry.eval = Score::Undef;
 	tt_entry.move = Move16b::Null;
+	tt_entry.score = Score::Undef;
 
 	const uint64_t hash = pos.getZobristKey();
 	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
@@ -725,11 +736,14 @@ Score Search::quiesce(Position& pos,
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
 	results.qnodes_cnt++;
 
+	//node->eval = tt_entry.eval;
+
 #if defined(_VERIFY_NN)
 	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
 
-	const Score stand_pat = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+	const Score stand_pat = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);//node->eval.isValid() ? node->eval 
+							//					 : nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha

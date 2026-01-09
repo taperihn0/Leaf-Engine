@@ -129,6 +129,26 @@ T sq(T x) {
 	return x * x;
 }
 
+template <typename T>
+INLINE constexpr bool isPow2(T x) {
+	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
+	return (x & (x - 1)) == 0;
+}
+
+template <typename T>
+INLINE constexpr uint8_t get2pow(T x) {
+	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
+	assert(x != 0);
+
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
+	unsigned long s;
+	_BitScanForward64(&s, x);
+	return static_cast<int>(s);
+#else
+	return __builtin_ctzll(x);
+#endif
+}
+
 INLINE bool isValidNumber(const std::string& str) {
 	return str.find_first_not_of("1234567890", 0) == std::string::npos;
 }
