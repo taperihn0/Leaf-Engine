@@ -375,12 +375,10 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and
 			depth <= RazorDepth)
 		{
-			if (!node->eval.isValid()) {
 #if defined(_VERIFY_NN)
-				ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
+			ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
 #endif
-				node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
-			}
+			node->eval = nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
 
 			if (node->eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<NON_PV_NODE>(pos, limits, results, node + 1,
