@@ -244,7 +244,8 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	SearchResults search_results;
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
-	preroot->accum.refresh(nn::GlobPackedNetwork, pos);
+	preroot->accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
+	preroot->accum_cache.setClean();
 	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
 																	 : Move32b::Null;
 
@@ -514,7 +515,10 @@ Score Search::negaMax(Position& pos,
 	//check
 	//accum
 
-	for (node->move_index = 0; node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
+	for (node->move_index = 0; 
+		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); 
+		 node->move_index++) 
+	{
 
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
 		_tt.prefetchBucket(next_hash);
@@ -798,7 +802,10 @@ Score Search::quiesce(Position& pos,
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
-	for (node->move_index = 0; node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); node->move_index++) {
+	for (node->move_index = 0; 
+		node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); 
+		node->move_index++) 
+	{
 		
 #if defined(_TT_PROBE_QSEARCH)
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
@@ -873,6 +880,80 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	_declUnused(pos);
 	NodeInfo* next_node = node + 1;
 	return next_node->check;
+}
+
+INLINE const nn::AccumulatorCache* Search::getCleanAccumulator(const NodeInfo* node, 
+															   const NodeInfo* preroot)
+{
+    for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
+        if (!hist_node->accum_cache.isDirty())
+			return &hist_node->accum_cache;
+    }
+
+    return &preroot->accum_cache;
+}
+
+INLINE void Search::updateDirtyAccumulators(const nn::AccumulatorCache* clean_accum,
+							   				nn::AccumulatorCache* last_non_upd_accum) 
+{
+	for (nn::AccumulatorCache* accum_cache = const_cast<nn::AccumulatorCache*>(clean_accum) + 1; 
+		 accum_cache != last_non_upd_accum; 
+		 accum_cache++) 
+	{
+		int added_features[2][2];
+		int removed_features[2][2];
+
+		size_t added_features_cnt = 0;
+		size_t removed_features_cnt = 0;
+
+		for (size_t i = 0; i < accum_cache->added_features_cnt; i++) {
+			{
+				nn::AccumulatorCache::FeatureData wh_feature_data = accum_cache->added_features[WHITE][i];
+				added_features[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(wh_feature_data.sq, 
+																				wh_feature_data.piece_type,
+																				wh_feature_data.side);
+			}
+			{
+				nn::AccumulatorCache::FeatureData bl_feature_data = accum_cache->added_features[BLACK][i];
+				added_features[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(bl_feature_data.sq, 
+																				bl_feature_data.piece_type,
+																				bl_feature_data.side);
+			}
+		}
+
+		for (size_t i = 0; i < accum_cache->removed_features_cnt; i++) {
+			{
+				nn::AccumulatorCache::FeatureData wh_feature_data = accum_cache->removed_features[WHITE][i];
+				removed_features[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(wh_feature_data.sq, 
+																				  wh_feature_data.piece_type,
+																				  wh_feature_data.side);
+			}
+			{
+				nn::AccumulatorCache::FeatureData bl_feature_data = accum_cache->removed_features[BLACK][i];
+				removed_features[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(bl_feature_data.sq, 
+																				  bl_feature_data.piece_type,
+																				  bl_feature_data.side);
+			}
+		}
+
+		const nn::AccumulatorCache* prev_accum_cache = accum_cache - 1;
+
+		accum_cache->accum.update(nn::GlobPackedNetwork, 
+								  &prev_accum_cache->accum, 
+								  added_features[WHITE], 
+								  added_features_cnt, 
+								  removed_features[WHITE], 
+								  removed_features_cnt, 
+								  WHITE);
+		accum_cache->accum.update(nn::GlobPackedNetwork, 
+								  &prev_accum_cache->accum, 
+								  added_features[BLACK], 
+								  added_features_cnt, 
+								  removed_features[BLACK], 
+								  removed_features_cnt, 
+								  BLACK);
+		accum_cache->setClean();
+	}
 }
 
 template <Search::enumNode NodeType>

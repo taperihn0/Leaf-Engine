@@ -67,4 +67,22 @@ private:
     int16_t _values[2][NetworkHiddenLayerSize];
 };
 
+struct AccumulatorCache {
+    bool isDirty() const;
+    void setClean();
+
+    struct FeatureData {
+        enumColor       perspective;
+        Square          sq;
+        Piece::enumType piece_type = Piece::enumType::NONE;
+        enumColor       side;
+    };
+
+    Accumulator accum;
+    FeatureData added_features[2][2];
+    FeatureData removed_features[2][2];
+    size_t      added_features_cnt = 0;
+    size_t      removed_features_cnt = 0;
+};
+
 } // namespace nn

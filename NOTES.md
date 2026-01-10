@@ -1,4 +1,15 @@
-### featuer: (768->128)x2->1 NNUE with SIMD vectorization, fixed little bugs in search
+### feature: introduced high hash key and eval in TT
+*SIDE NOTE: TESTING PERFORMED ON VERY SHORT TIME CONTROLS AND 1MB TT. Also, it is worth mensioning the eval function was (768->128)x2->1 NNUE. It is expected to have more gain when introducing bigger nets.*
+
+Score of leaf-tte vs leaf-avx2: 510 - 471 - 1019  [0.510] 2000 <br>
+...      leaf-tte playing White: 308 - 187 - 505  [0.560] 1000 <br>
+...      leaf-tte playing Black: 202 - 284 - 514  [0.459] 1000 <br>
+...      White vs Black: 592 - 389 - 1019  [0.551] 2000 <br>
+Elo difference: 6.8 +/- 10.7, LOS: 89.3 %, DrawRatio: 50.9 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+
+### feature: (768->128)x2->1 NNUE with SIMD vectorization, fixed little bugs in search
 Score of leaf-avx2-1 vs leaf-nn64: 1624 - 45 - 331  [0.895] 2000 <br>
 ...      leaf-avx2-1 playing White: 831 - 24 - 145  [0.903] 1000 <br>
 ...      leaf-avx2-1 playing Black: 793 - 21 - 186  [0.886] 1000 <br>

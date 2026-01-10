@@ -239,6 +239,17 @@ bool Accumulator::verify(const Accumulator& accum, const Position& pos) {
 }
 #endif
 
+bool AccumulatorCache::isDirty() const {
+    return added_features_cnt > 0 or removed_features_cnt > 0;
+}
+
+void AccumulatorCache::setClean() {
+    added_features[BLACK][0].piece_type = Piece::enumType::NONE;
+    added_features_cnt = 0;
+    removed_features[WHITE][0].piece_type = Piece::enumType::NONE;
+    removed_features_cnt = 0;
+}
+
 template int Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
 template int Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
 

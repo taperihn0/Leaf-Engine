@@ -95,7 +95,7 @@ struct NodeInfo {
 	uint8_t						moves_searched;
 	uint8_t						move_index;
 	TTEntry::Bound				bound;
-	nn::Accumulator 			accum;
+	nn::AccumulatorCache 		accum_cache;
 };
 
 class TreeStack {
@@ -171,6 +171,11 @@ private:
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 	
+	const nn::AccumulatorCache* getCleanAccumulator(const NodeInfo* node, const NodeInfo* preroot);
+
+	void updateDirtyAccumulators(const nn::AccumulatorCache* clean_accum,
+								 nn::AccumulatorCache* last_accum);
+
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,
 				   const nn::Accumulator* prev_accum, 
