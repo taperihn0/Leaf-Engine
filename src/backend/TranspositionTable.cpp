@@ -72,7 +72,12 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 		}
 	}
 
-	if (bucket->entries[ind].getHash() == keyhi and
+	const uint32_t entry_keyhi = bucket->entries[ind].getHash();
+
+	if (entry_keyhi != keyhi or node_eval.isValid())
+		bucket->entries[ind].eval = node_eval;
+
+	if (entry_keyhi == keyhi and
 		bucket->entries[ind].depth > (node_depth * 3) >> 1 and
 		node_bound != TTEntry::EXACT) 
 		return;
@@ -80,13 +85,12 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 	if (bucket->entries[ind].isEmpty())
 		_hits++;
 
-	if (bucket->entries[ind].getHash() != keyhi or !node_move.isNull())
+	if (entry_keyhi != keyhi or !node_move.isNull())
 		bucket->entries[ind].move = node_move;
 
 	bucket->entries[ind].writeHash(keyhi);
 	assert(bucket->entries[ind].getHash() == keyhi);
 
-	bucket->entries[ind].eval = node_eval;
 	bucket->entries[ind].score = node_score;
 	bucket->entries[ind].depth = node_depth;
 	bucket->entries[ind].bound = node_bound;

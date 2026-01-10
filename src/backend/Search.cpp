@@ -409,9 +409,10 @@ Score Search::negaMax(Position& pos,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
 													      		  	 	 ply + 1);
-
-				if (qscore < alpha)
+				
+				if (qscore < alpha) {
 					return qscore;
+				}
 			}
 		}
 	}
@@ -464,8 +465,10 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
 			}
 
-			if (eval - RfpMultDelta * depth >= beta)
-				return eval - (depth << 6);
+			if (eval - RfpMultDelta * depth >= beta) {
+				const Score reduced_eval = eval - (depth << 6);
+				return reduced_eval;
+			}
 		}
 	}
 
@@ -495,12 +498,18 @@ Score Search::negaMax(Position& pos,
 																			depth - NullReduction - 1, 
 																			ply);
 				
-				if (verify >= beta)
+				if (verify >= beta) {
+					_tt.write(hash, 
+							  depth - NullReduction, ply, 
+							  TTEntry::UPPERBOUND, 
+							  verify, Move16b::Null, eval, 
+							  results);
 					return verify;
+				}
 			}
 		}
 	}
-
+		
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
 	node->can_move 	 	 = false;
