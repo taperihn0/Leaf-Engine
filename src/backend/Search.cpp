@@ -150,10 +150,10 @@ void NodeInfo::clear() {
 	can_move 		 = false;
 	best_score 		 = Score::Undef;
 	check 			 = false;
-	ply 			 = 0;
 	moves_searched 	 = 0;
 	move_index 		 = 0;
 	bound 			 = TTEntry::NONE;
+	accum_cache.clearBuffers();
 }
 
 void Search::clearHashTT() {
@@ -245,7 +245,7 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
 	preroot->accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
-	preroot->accum_cache.setClean();
+	preroot->accum_cache.markClean();
 	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
 																	 : Move32b::Null;
 
@@ -383,12 +383,9 @@ Score Search::negaMax(Position& pos,
 	node->move = Move32b::Null;
 	Score eval = tt_entry.eval;
 
-	const NodeInfo* preroot = _tree_stack.getPreRootNode();
-	// prev_node is unused for release builds
-	_UNUSED const NodeInfo* const prev_node = node - 1;
+	NodeInfo* const preroot = _tree_stack.getPreRootNode();
+	NodeInfo* const prev_node = node - 1;
 	NodeInfo* const next_node = node + 1;
-
-	const nn::Accumulator* const prev_accum = nn::NEval::getPrevAccum(node, preroot); 
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
@@ -401,11 +398,11 @@ Score Search::negaMax(Position& pos,
 			depth <= RazorDepth)
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
+				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
 			}
 
 			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, next_node,
+				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
 													      		  	 	 ply + 1);
@@ -462,7 +459,7 @@ Score Search::negaMax(Position& pos,
 			tt_move.isQuiet())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
+				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
 			}
 
 			if (eval - RfpMultDelta * depth >= beta) {
@@ -480,7 +477,7 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and depth >= NullReduction + 1) {
 			assert(prev_node->move != Move32b::Null);
 			
-			pos.makeNull(node->state);
+			pos.makeNull(node->state, &node->accum_cache);
 			node->move = Move32b::Null;
 
 			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
@@ -504,6 +501,7 @@ Score Search::negaMax(Position& pos,
 							  TTEntry::UPPERBOUND, 
 							  verify, Move16b::Null, eval, 
 							  results);
+
 					return verify;
 				}
 			}
@@ -514,15 +512,11 @@ Score Search::negaMax(Position& pos,
 	node->move_picker.setHashMove(tt_move);
 	node->can_move 	 	 = false;
 	node->score 	 	 = 0;
-	node->ply   	 	 = ply;
 	node->best_move  	 = Move32b::Null;
 	node->best_score 	 = -Score::Infinity;
 	node->moves_searched = 0;
 	node->state 		 = pos.getIrreversibleState();
 	node->bound 		 = TTEntry::LOWERBOUND;
-
-	//check
-	//accum
 
 	for (node->move_index = 0; 
 		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); 
@@ -542,7 +536,7 @@ Score Search::negaMax(Position& pos,
 			!node->move.isQueenPromotion())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, prev_accum, side2move, results);
+				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
 			}
 
 			if (eval + FutilityDelta * depth * depth < alpha) {
@@ -560,7 +554,7 @@ Score Search::negaMax(Position& pos,
 
 		bool do_full_search = true;
 
-		if (pos.make(node->move, &node->accum, prev_accum)) {
+		if (pos.make(node->move, &node->accum_cache)) {
 			node->can_move = true;
 
 			const enumColor next_side = !side2move;
@@ -608,9 +602,9 @@ Score Search::negaMax(Position& pos,
 
 			if (do_full_search) {
 				node->score = -negaMax<false, NmNodeType, true>(pos, limits, results, game, next_node,
-															  -beta, -alpha, 
-															  depth - 1 + extend, 
-															  ply + 1);
+															    -beta, -alpha, 
+															    depth - 1 + extend, 
+															    ply + 1);
 			}
 
 			node->moves_searched++;
@@ -674,7 +668,11 @@ Score Search::negaMax(Position& pos,
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
 		const Move16b bestmove16b = packed(node->best_move);
-		_tt.write(hash, depth, ply, node->bound, node->best_score, bestmove16b, eval, results);
+		_tt.write(hash, 
+				  depth, ply, 
+				  node->bound, 
+				  node->best_score, bestmove16b, eval, 
+				  results);
 	}
 
 	next_node->move_picker.setKillerMove(Move32b::Null);
@@ -724,12 +722,10 @@ Score Search::quiesce(Position& pos,
         return -Score::Undef;
     }
 
-	const NodeInfo* preroot = _tree_stack.getPreRootNode();
+	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	
-	const nn::Accumulator* prev_accum = nn::NEval::getPrevAccum(node, preroot); 
-
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-		return evaluate<QNodeType>(pos, prev_accum, side2move, results);
+		return evaluate<QNodeType>(pos, node, preroot, side2move, results);
 	}
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -764,7 +760,7 @@ Score Search::quiesce(Position& pos,
 	results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, prev_accum, side2move, results)
+	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, node, preroot, side2move, results)
 													         : tt_entry.eval;
 #else
 	const Score stand_pat = evaluate(pos, prev_accum, side2move, results);
@@ -839,7 +835,7 @@ Score Search::quiesce(Position& pos,
 				continue;
 		}
 
-		if (pos.make(node->move, &node->accum, prev_accum)) {
+		if (pos.make(node->move, &node->accum_cache)) {
 			node->score = -quiesce<QNodeType>(pos, limits, results, node + 1,
 											  -beta, -alpha,
 											  depth - 1,
@@ -891,101 +887,125 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	return next_node->check;
 }
 
-INLINE const nn::AccumulatorCache* Search::getCleanAccumulator(const NodeInfo* node, 
-															   const NodeInfo* preroot)
+INLINE const NodeInfo* Search::getCleanAccumulatorNode(const NodeInfo* const node, 
+												       const NodeInfo* const preroot)
 {
     for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
         if (!hist_node->accum_cache.isDirty())
-			return &hist_node->accum_cache;
+			return hist_node;
     }
 
-    return &preroot->accum_cache;
+    return preroot;
 }
 
-INLINE void Search::updateDirtyAccumulators(const nn::AccumulatorCache* clean_accum,
-							   				nn::AccumulatorCache* last_non_upd_accum) 
+INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_node,
+							   				NodeInfo* const node) 
 {
-	for (nn::AccumulatorCache* accum_cache = const_cast<nn::AccumulatorCache*>(clean_accum) + 1; 
-		 accum_cache != last_non_upd_accum; 
-		 accum_cache++) 
-	{
-		int added_features[2][2];
-		int removed_features[2][2];
+	NodeInfo* hist_node = const_cast<NodeInfo*>(clean_accum_node + 1);
+	const NodeInfo* prev_hist_node = clean_accum_node;
 
-		size_t added_features_cnt = 0;
-		size_t removed_features_cnt = 0;
+	for (; hist_node != node; hist_node++) {
 
-		for (size_t i = 0; i < accum_cache->added_features_cnt; i++) {
+		//if (hist_node->move.isNull()) 
+		//	continue;
+
+		int added_features_index[2][2];
+		int removed_features_index[2][2];
+
+		nn::AccumulatorCache& accum_cache = hist_node->accum_cache;
+
+		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
 			{
-				nn::AccumulatorCache::FeatureData wh_feature_data = accum_cache->added_features[WHITE][i];
-				added_features[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(wh_feature_data.sq, 
-																				wh_feature_data.piece_type,
-																				wh_feature_data.side);
+				nn::FeatureData wh_feature_data = accum_cache.added_features[WHITE][i];
+				added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																			wh_feature_data.sq, 
+																			wh_feature_data.piece_type,
+																			wh_feature_data.side);
 			}
 			{
-				nn::AccumulatorCache::FeatureData bl_feature_data = accum_cache->added_features[BLACK][i];
-				added_features[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(bl_feature_data.sq, 
-																				bl_feature_data.piece_type,
-																				bl_feature_data.side);
-			}
-		}
-
-		for (size_t i = 0; i < accum_cache->removed_features_cnt; i++) {
-			{
-				nn::AccumulatorCache::FeatureData wh_feature_data = accum_cache->removed_features[WHITE][i];
-				removed_features[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(wh_feature_data.sq, 
-																				  wh_feature_data.piece_type,
-																				  wh_feature_data.side);
-			}
-			{
-				nn::AccumulatorCache::FeatureData bl_feature_data = accum_cache->removed_features[BLACK][i];
-				removed_features[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(bl_feature_data.sq, 
-																				  bl_feature_data.piece_type,
-																				  bl_feature_data.side);
+				nn::FeatureData bl_feature_data = accum_cache.added_features[BLACK][i];
+				added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																			bl_feature_data.sq, 
+																			bl_feature_data.piece_type,
+																			bl_feature_data.side);
 			}
 		}
 
-		const nn::AccumulatorCache* prev_accum_cache = accum_cache - 1;
+		for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
+			{
+				nn::FeatureData wh_feature_data = accum_cache.removed_features[WHITE][i];
+				removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																			wh_feature_data.sq, 
+																			wh_feature_data.piece_type,
+																			wh_feature_data.side);
+			}
+			{
+				nn::FeatureData bl_feature_data = accum_cache.removed_features[BLACK][i];
+				removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																			bl_feature_data.sq, 
+																			bl_feature_data.piece_type,
+																			bl_feature_data.side);
+			}
+		}
 
-		accum_cache->accum.update(nn::GlobPackedNetwork, 
-								  &prev_accum_cache->accum, 
-								  added_features[WHITE], 
-								  added_features_cnt, 
-								  removed_features[WHITE], 
-								  removed_features_cnt, 
-								  WHITE);
-		accum_cache->accum.update(nn::GlobPackedNetwork, 
-								  &prev_accum_cache->accum, 
-								  added_features[BLACK], 
-								  added_features_cnt, 
-								  removed_features[BLACK], 
-								  removed_features_cnt, 
-								  BLACK);
-		accum_cache->setClean();
+		const nn::AccumulatorCache& prev_accum_cache = prev_hist_node->accum_cache;
+		assert(prev_accum_cache.isClean());
+
+		accum_cache.accum.update(nn::GlobPackedNetwork, 
+								 &prev_accum_cache.accum, 
+								 added_features_index[WHITE], 
+								 accum_cache.added_features_cnt, 
+								 removed_features_index[WHITE], 
+								 accum_cache.removed_features_cnt, 
+								 WHITE);
+		accum_cache.accum.update(nn::GlobPackedNetwork, 
+								 &prev_accum_cache.accum, 
+								 added_features_index[BLACK], 
+								 accum_cache.added_features_cnt, 
+								 removed_features_index[BLACK], 
+								 accum_cache.removed_features_cnt, 
+								 BLACK);
+		accum_cache.markClean();
+
+		prev_hist_node = hist_node;
 	}
 }
 
 template <Search::enumNode NodeType>
 _FORCEINLINE Score Search::evaluate(const Position& pos,
-									const nn::Accumulator* prev_accum, 
+									NodeInfo* node,
+									const NodeInfo* preroot,
 									enumColor side2move, 
-									SearchResults& results) 
+									SearchResults& results)
 {
-#if defined(_VERIFY_NN)
-	ASSERT(nn::Accumulator::verify(*prev_accum, pos), "Accumulator verification failed");
-#else
-	_declUnused(pos);
-#endif
-
 #if defined(_COLLECT_SEARCH_STATS)
 	if constexpr (NodeType & QUIESCE_NODE)
 		results.qeval_cnt++;
 		
 	else
 		results.nmeval_cnt++;
+#else
+	_declUnused(results);
 #endif
 
-	return nn::NEval::evaluate(nn::GlobPackedNetwork, *prev_accum, side2move);
+	const nn::AccumulatorCache* prev_accum_cache = &(node - 1)->accum_cache;
+
+	if (prev_accum_cache->isDirty()) {
+		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(node, preroot);
+		updateDirtyAccumulators(clean_accum_node, node);
+	}
+
+	assert(prev_accum_cache->isClean());
+
+	const nn::Accumulator& prev_accum = prev_accum_cache->accum;
+
+#if defined(_VERIFY_NN)
+	ASSERT(nn::Accumulator::verify(prev_accum, pos), "Accumulator verification failed");
+#else
+	_declUnused(pos);
+#endif
+
+	return nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
 }
 
 template <bool IsPV>

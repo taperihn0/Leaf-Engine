@@ -10,8 +10,6 @@ namespace nn {
 
 class NEval {
 public:
-    static const Accumulator* getPrevAccum(const NodeInfo* node, const NodeInfo* root);
-
     // evaluates a position without accumulators.
     static Score evaluate(const PackedNeuralNetwork& network, std::string fen);
     static Score evaluate(const PackedNeuralNetwork& network, const Position& pos);

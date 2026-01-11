@@ -173,10 +173,11 @@ bool Position::operator==(const Position& pos) const {
 }
 
 bool Position::make(Move32b& move) {
-	return make(move, nullptr, nullptr);
+	static nn::AccumulatorCache tmp_accum_cache;
+	return make(move, &tmp_accum_cache);
 }
 
-bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator* prev_accum) {
+bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 	const Square		  org = move.getOrigin(),
 						  dst = move.getTarget();
 	const bool			  capture = move.isCapture(),
@@ -186,19 +187,15 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 	const bool			  pawn_push = piece_t == Piece::PAWN and !capture,
 						  double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
 
-#if defined(_VERIFY_NN)
-	if (prev_accum != nullptr) {
-		ASSERT(nn::Accumulator::verify(*prev_accum, *this), "Invalid accumulator before make()");
-	}
-#endif
-
 	// we've got double buffer for white- and black-perspective,
 	// and for each perspectives maximum features (both removed and added) is 2.
-	int added_feature[2][2];
-	int removed_feature[2][2];
 
-	size_t added_feature_cnt = 0;
-	size_t removed_feature_cnt = 0;
+	accum_cache->clearBuffers();
+
+	size_t& added_feature_cnt = accum_cache->added_features_cnt;
+	size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
+
+	assert(added_feature_cnt == 0 and removed_feature_cnt == 0);
 
 	if (capture) {
 		if (move.isEnPassant()) {
@@ -210,8 +207,8 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_occupied[!_turn].popBit(cap_sq);
 			_zhash ^= ZobristHash::piece_keys[!_turn][Piece::PAWN][cap_sq];
 
-			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(cap_sq, Piece::PAWN, !_turn);
-			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(cap_sq, Piece::PAWN, !_turn);
+			accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, cap_sq, Piece::PAWN, !_turn);
+			accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, cap_sq, Piece::PAWN, !_turn);
 		}
 		else {
 			const Piece::enumType captured = pieceOn(dst, !_turn);
@@ -223,8 +220,8 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_occupied[!_turn].popBit(dst);
 			_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
 
-			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, captured, !_turn);
-			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, captured, !_turn);
+			accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, dst, captured, !_turn);
+			accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, dst, captured, !_turn);
 
 			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
 						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
@@ -251,11 +248,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
 		_zhash ^= ZobristHash::piece_keys[_turn][promo_piece_t][dst];
 
-		removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
-		removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
+		accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, org, piece_t, _turn);
+		accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, org, piece_t, _turn);
 
-		added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, promo_piece_t, _turn);
-		added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, promo_piece_t, _turn);
+		accum_cache->added_features[WHITE][added_feature_cnt] = nn::FeatureData(WHITE, dst, promo_piece_t, _turn);
+		accum_cache->added_features[BLACK][added_feature_cnt++] = nn::FeatureData(BLACK, dst, promo_piece_t, _turn);
 	}
 	else { // if not a promotion - just move a piece on its own bitboard 
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
@@ -264,11 +261,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
 		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
 
-		removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(org, piece_t, _turn);
-		removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(org, piece_t, _turn);
+		accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, org, piece_t, _turn);
+		accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, org, piece_t, _turn);
 
-		added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst, piece_t, _turn);
-		added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst, piece_t, _turn);
+		accum_cache->added_features[WHITE][added_feature_cnt] = nn::FeatureData(WHITE, dst, piece_t, _turn);
+		accum_cache->added_features[BLACK][added_feature_cnt++] = nn::FeatureData(BLACK, dst, piece_t, _turn);
 	}
 
 	if (piece_t == Piece::KING) {
@@ -279,11 +276,11 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 1];
 
-			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
-			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
-
-			added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 1, Piece::ROOK, _turn);
-			added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst - 1, Piece::ROOK, _turn);
+			accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, dst + 1, Piece::ROOK, _turn);
+			accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, dst + 1, Piece::ROOK, _turn);
+			
+			accum_cache->added_features[WHITE][added_feature_cnt] = nn::FeatureData(WHITE, dst - 1, Piece::ROOK, _turn);
+			accum_cache->added_features[BLACK][added_feature_cnt++] = nn::FeatureData(BLACK, dst - 1, Piece::ROOK, _turn);
 		}
 		else if (move.isLongCastle()) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
@@ -292,15 +289,17 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 2];
 			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
 
-			removed_feature[WHITE][removed_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst - 2, Piece::ROOK, _turn);
-			removed_feature[BLACK][removed_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst - 2, Piece::ROOK, _turn);
+			accum_cache->removed_features[WHITE][removed_feature_cnt] = nn::FeatureData(WHITE, dst - 2, Piece::ROOK, _turn);
+			accum_cache->removed_features[BLACK][removed_feature_cnt++] = nn::FeatureData(BLACK, dst - 2, Piece::ROOK, _turn);
 
-			added_feature[WHITE][added_feature_cnt] = nn::Accumulator::featureIndex<WHITE>(dst + 1, Piece::ROOK, _turn);
-			added_feature[BLACK][added_feature_cnt++] = nn::Accumulator::featureIndex<BLACK>(dst + 1, Piece::ROOK, _turn);
+			accum_cache->added_features[WHITE][added_feature_cnt] = nn::FeatureData(WHITE, dst + 1, Piece::ROOK, _turn);
+			accum_cache->added_features[BLACK][added_feature_cnt++] = nn::FeatureData(BLACK, dst + 1, Piece::ROOK, _turn);
 		}
 
 		_king_sq[_turn] = dst;
 	}
+
+	accum_cache->markDirty();
 
 	const bool legal = !isInCheck(_turn);
 	move.setLegalMoved(legal);
@@ -335,32 +334,10 @@ bool Position::make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator
 		_zhash ^= ZobristHash::black_key;
 
 		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
-
-		if (accum != nullptr) {
-			assert(prev_accum != nullptr);
-
-			accum->update(nn::GlobPackedNetwork, 
-						  prev_accum, 
-						  added_feature[WHITE], added_feature_cnt, 
-						  removed_feature[WHITE], removed_feature_cnt, 
-						  WHITE); 
-
-			accum->update(nn::GlobPackedNetwork, 
-						  prev_accum, 
-						  added_feature[BLACK], added_feature_cnt, 
-						  removed_feature[BLACK], removed_feature_cnt, 
-						  BLACK); 
-		}
 	}
 	
 	_fullmove_count += static_cast<int>(_turn);
 	_turn = !_turn;
-
-#if defined(_VERIFY_NN)
-	if (legal and accum != nullptr) {
-		ASSERT(nn::Accumulator::verify(*accum, *this), "Invalid accumulator after make()");
-	}
-#endif
 
 	return legal;
 }
@@ -433,7 +410,9 @@ void Position::unmake(Move32b move, const IrreversibleState& prev_state) {
 	_zhash = prev_state.hash_key;
 }
 
-void Position::makeNull(IrreversibleState& state) {
+void Position::makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_cache) {
+	accum_cache->clearBuffers();
+
 	_halfmove_count++;
 	_fullmove_count += static_cast<uint16_t>(_turn);
 
@@ -448,6 +427,8 @@ void Position::makeNull(IrreversibleState& state) {
 		_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 
 	_ep_square = Square::None;
+
+	accum_cache->markDirty();
 }
 
 void Position::unmakeNull(const IrreversibleState& prev_state) {

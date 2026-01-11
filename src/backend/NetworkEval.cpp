@@ -3,16 +3,6 @@
 
 namespace nn {
 
-// TODO: MOVE IT TO SEARCH CLASS
-const Accumulator* NEval::getPrevAccum(const NodeInfo* node, const NodeInfo* preroot) {
-    for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
-        if (hist_node->move != Move32b::Null)
-            return &hist_node->accum;
-    }
-
-    return &preroot->accum;
-}
-
 INLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
     return std::clamp(value, mi, ma);
 }

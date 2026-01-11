@@ -1,3 +1,11 @@
+### feature: little changes in rewriting tt
+Score of leaf-tte-1 vs leaf-tte: 981 - 950 - 2069  [0.504] 4000  <br>
+...      leaf-tte-1 playing White: 533 - 422 - 1045  [0.528] 2000  <br>
+...      leaf-tte-1 playing Black: 448 - 528 - 1024  [0.480] 2000  <br>
+...      White vs Black: 1061 - 870 - 2069  [0.524] 4000 <br>
+Elo difference: 2.7 +/- 7.5, LOS: 76.0 %, DrawRatio: 51.7 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: introduced high hash key and eval in TT
 *SIDE NOTE: TESTING PERFORMED ON VERY SHORT TIME CONTROLS AND 1MB TT. Also, it is worth mensioning the eval function was (768->128)x2->1 NNUE. It is expected to have more gain when introducing bigger nets.*
 

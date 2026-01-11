@@ -67,22 +67,36 @@ private:
     int16_t _values[2][NetworkHiddenLayerSize];
 };
 
+struct FeatureData {
+    FeatureData() = default;
+    INLINE FeatureData(enumColor persp, Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
+        : perspective(persp)
+        , sq(pc_sq)
+        , piece_type(pc_type)
+        , side(pc_color)
+    {
+        assert(sq.isValid());
+    }
+
+    enumColor       perspective;
+    Square          sq;
+    Piece::enumType piece_type = Piece::enumType::NONE;
+    enumColor       side;
+};
+
 struct AccumulatorCache {
     bool isDirty() const;
-    void setClean();
-
-    struct FeatureData {
-        enumColor       perspective;
-        Square          sq;
-        Piece::enumType piece_type = Piece::enumType::NONE;
-        enumColor       side;
-    };
+    bool isClean() const;
+    void markClean();
+    void markDirty();
+    void clearBuffers();
 
     Accumulator accum;
     FeatureData added_features[2][2];
     FeatureData removed_features[2][2];
-    size_t      added_features_cnt = 0;
+    size_t      added_features_cnt   = 0;
     size_t      removed_features_cnt = 0;
+    bool        dirty                = false;
 };
 
 } // namespace nn

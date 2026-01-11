@@ -9,7 +9,7 @@
 
 class Position;
 struct NodeInfo;
-namespace nn { class Accumulator; }
+namespace nn { struct AccumulatorCache; }
 
 static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static constexpr std::string_view KiwipeteFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -251,10 +251,10 @@ public:
 
 	// returns whether move is legal or pseudo-legal
 	bool make(Move32b& move);
-	bool make(Move32b& move, nn::Accumulator* accum, const nn::Accumulator* prev_accum);
+	bool make(Move32b& move, nn::AccumulatorCache* accum_cache);
 	void unmake(Move32b move, const IrreversibleState& prev_state);
 
-	void makeNull(IrreversibleState& state);
+	void makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_cache);
 	void unmakeNull(const IrreversibleState& prev_state);
 
 	uint64_t likelyZobristKeyAfterMove(Move32b& move) const;
