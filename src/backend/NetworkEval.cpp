@@ -48,9 +48,9 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 #if defined(_NN_USE_SCRELU_SIMD)
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
-    static constexpr int ChunkCount = NetworkAccumulatorSize / RegisterWidth;
+    static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
-    static_assert(NetworkAccumulatorSize % ChunkCount == 0);
+    static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
     _max_platf_register_i_t sum_vec = _max_register_zero_i;
     const _max_platf_register_i_t qa_vec = _max_register_fill_i16(NetworkWeightQuant);
@@ -69,16 +69,16 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     static constexpr int Int16Max = std::numeric_limits<int16_t>::max();
     static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
 
-    for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         ASSERTNOLOG(weights[i] >= -MaxWeight and weights[i] <= MaxWeight);
-        ASSERTNOLOG(weights[NetworkAccumulatorSize + i] >= -MaxWeight 
-                    and weights[NetworkAccumulatorSize + i] <= MaxWeight);
+        ASSERTNOLOG(weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight 
+                    and weights[NetworkAccumulatorSizePerSide + i] <= MaxWeight);
 
         const int32_t mul0 = static_cast<int32_t>(weights[i]) 
                              * static_cast<int32_t>(NetworkWeightQuant);
         ASSERTNOLOG(mul0 >= -Int16Max and mul0 <= Int16Max);
 
-        const int32_t mul1 = static_cast<int32_t>(weights[NetworkAccumulatorSize + i]) 
+        const int32_t mul1 = static_cast<int32_t>(weights[NetworkAccumulatorSizePerSide + i]) 
                              * static_cast<int32_t>(NetworkWeightQuant);
         ASSERTNOLOG(mul1 >= -Int16Max and mul1 <= Int16Max);
     }

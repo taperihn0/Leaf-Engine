@@ -5,7 +5,7 @@
 
 namespace nn {
 
-static constexpr size_t NetworkAccumulatorSize = NetworkHiddenLayerSize;
+static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
 class alignas(CACHELINE_SIZE) Accumulator {
 public:
@@ -69,16 +69,12 @@ private:
 
 struct FeatureData {
     FeatureData() = default;
-    INLINE FeatureData(enumColor persp, Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
-        : perspective(persp)
-        , sq(pc_sq)
+    INLINE FeatureData(Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
+        : sq(pc_sq)
         , piece_type(pc_type)
         , side(pc_color)
-    {
-        assert(sq.isValid());
-    }
+    {}
 
-    enumColor       perspective;
     Square          sq;
     Piece::enumType piece_type = Piece::enumType::NONE;
     enumColor       side;
@@ -92,8 +88,8 @@ struct AccumulatorCache {
     void clearBuffers();
 
     Accumulator accum;
-    FeatureData added_features[2][2];
-    FeatureData removed_features[2][2];
+    FeatureData added_features[2];
+    FeatureData removed_features[2];
     size_t      added_features_cnt   = 0;
     size_t      removed_features_cnt = 0;
     bool        dirty                = false;

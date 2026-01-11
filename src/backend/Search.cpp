@@ -906,8 +906,8 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 
 	for (; hist_node != node; hist_node++) {
 
-		//if (hist_node->move.isNull()) 
-		//	continue;
+		if (hist_node->move.isNull()) 
+			continue;
 
 		int added_features_index[2][2];
 		int removed_features_index[2][2];
@@ -915,37 +915,31 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 		nn::AccumulatorCache& accum_cache = hist_node->accum_cache;
 
 		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
-			{
-				nn::FeatureData wh_feature_data = accum_cache.added_features[WHITE][i];
-				added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-																			wh_feature_data.sq, 
-																			wh_feature_data.piece_type,
-																			wh_feature_data.side);
-			}
-			{
-				nn::FeatureData bl_feature_data = accum_cache.added_features[BLACK][i];
-				added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-																			bl_feature_data.sq, 
-																			bl_feature_data.piece_type,
-																			bl_feature_data.side);
-			}
+			nn::FeatureData feature_data = accum_cache.added_features[i];
+
+			added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																		feature_data.sq, 
+																		feature_data.piece_type,
+																		feature_data.side);
+
+			added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																		feature_data.sq, 
+																		feature_data.piece_type,
+																		feature_data.side);
 		}
 
 		for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
-			{
-				nn::FeatureData wh_feature_data = accum_cache.removed_features[WHITE][i];
-				removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-																			wh_feature_data.sq, 
-																			wh_feature_data.piece_type,
-																			wh_feature_data.side);
-			}
-			{
-				nn::FeatureData bl_feature_data = accum_cache.removed_features[BLACK][i];
-				removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-																			bl_feature_data.sq, 
-																			bl_feature_data.piece_type,
-																			bl_feature_data.side);
-			}
+			nn::FeatureData feature_data = accum_cache.removed_features[i];
+
+			removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																	feature_data.sq, 
+																	feature_data.piece_type,
+																	feature_data.side);
+
+			removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																	feature_data.sq, 
+																	feature_data.piece_type,
+																	feature_data.side);
 		}
 
 		const nn::AccumulatorCache& prev_accum_cache = prev_hist_node->accum_cache;
@@ -956,7 +950,7 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 								 added_features_index[WHITE], 
 								 accum_cache.added_features_cnt, 
 								 removed_features_index[WHITE], 
-								 accum_cache.removed_features_cnt, 
+								 accum_cache.removed_features_cnt,
 								 WHITE);
 		accum_cache.accum.update(nn::GlobPackedNetwork, 
 								 &prev_accum_cache.accum, 
@@ -988,10 +982,19 @@ _FORCEINLINE Score Search::evaluate(const Position& pos,
 	_declUnused(results);
 #endif
 
-	const nn::AccumulatorCache* prev_accum_cache = &(node - 1)->accum_cache;
+	const NodeInfo* prev_accum_node = preroot;
+
+	for (NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
+		if (!hist_node->move.isNull()) {
+			prev_accum_node = hist_node;
+			break;
+		}
+	}
+
+	const nn::AccumulatorCache* prev_accum_cache = &prev_accum_node->accum_cache;
 
 	if (prev_accum_cache->isDirty()) {
-		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(node, preroot);
+		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(prev_accum_node, preroot);
 		updateDirtyAccumulators(clean_accum_node, node);
 	}
 

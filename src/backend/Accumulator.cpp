@@ -86,9 +86,9 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 #if defined(LEAF_SIMD_AVX512) || defined(LEAF_SIMD_AVX2) || defined(LEAF_SIMD_SSE2)
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
-    static constexpr int ChunkCount = NetworkAccumulatorSize / RegisterWidth;
+    static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
-    static_assert(NetworkAccumulatorSize % ChunkCount == 0);
+    static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
     _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side];
     const _max_platf_register_i_t* const _RESTRICT biases_base = (_max_platf_register_i_t*)biases;
@@ -112,15 +112,15 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     
 #else
 
-    for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = biases[i];
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
         const int index = side_active_features[i];
-        const int base_offset = index * NetworkAccumulatorSize;
+        const int base_offset = index * NetworkAccumulatorSizePerSide;
 
-        for (size_t j = 0; j < NetworkAccumulatorSize; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
         }
     }
@@ -163,9 +163,9 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 #if defined(LEAF_SIMD_AVX512) || defined(LEAF_SIMD_AVX2) || defined(LEAF_SIMD_SSE2)
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
-    static constexpr int ChunkCount = NetworkAccumulatorSize / RegisterWidth;
+    static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
-    static_assert(NetworkAccumulatorSize % ChunkCount == 0);
+    static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
     _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side];
     const _max_platf_register_i_t* const _RESTRICT prev_values_base = (_max_platf_register_i_t*)prev_acc->_values[side];
@@ -199,24 +199,24 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 
 #else
 
-    for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = prev_acc->_values[side][i];
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
         const int index = removed_features[i];
-        const int base_offset = index * NetworkAccumulatorSize;
+        const int base_offset = index * NetworkAccumulatorSizePerSide;
         
-        for (size_t j = 0; j < NetworkAccumulatorSize; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] -= weights[base_offset + j];
         }
     }
 
     for (size_t i = 0; i < added_features_cnt; i++) {
         const int index = added_features[i];
-        const int base_offset = index * NetworkAccumulatorSize;
+        const int base_offset = index * NetworkAccumulatorSizePerSide;
 
-        for (size_t j = 0; j < NetworkAccumulatorSize; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
         }
     }
@@ -225,7 +225,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 }
 
 void Accumulator::clear(enumColor side) {
-    alignedMemset(_values[side], 0, NetworkAccumulatorSize);
+    alignedMemset(_values[side], 0, NetworkAccumulatorSizePerSide);
 }
 
 const int16_t* Accumulator::getValues(enumColor side) const {
