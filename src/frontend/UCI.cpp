@@ -168,7 +168,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
-			Move32b move = Move32b::fromStr<Move32b::Notation::PURE>(_pos, token);
+			Move32b move = Move32b::fromStr<Move32b::Notation::REGULAR>(_pos, token);
 
 			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move);

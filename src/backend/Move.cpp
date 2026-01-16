@@ -34,7 +34,7 @@ Move32b createMove(const Position& pos, Square origin, Square target, Piece::enu
 
 template <>
 template <>
-Move32b Move32b::fromStr<Move32b::Notation::PURE>(const Position& pos, const std::string& str) {
+Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const std::string& str) {
 	ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
 
 	Square				  origin = Square::fromChar(str[0], str[1]),
@@ -121,7 +121,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 				size_t idn = 0;
 
 				if ((idn = static_cast<int>(std::string_view("abcdefgh").find(id))) != std::string::npos) {
-					BitBoard file = BitBoard::file(idn);
+					BitBoard file = BitBoard::file(static_cast<int>(idn));
 					bb &= file;
 					
 					if (bb.popCount() > 1) {
@@ -145,7 +145,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 	std::string puremove = origin.toStr() + target.toStr();
 	if (promotion) puremove.append(1, chpromo);
 
-	return fromStr<Move32b::Notation::PURE>(pos, puremove);
+	return fromStr<Move32b::Notation::REGULAR>(pos, puremove);
 }
 
 template <typename T>

@@ -13,6 +13,17 @@
 #include <random>
 #include <algorithm>
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+#if defined(_MSC_VER)
+#undef min
+#undef max
+#endif
+
 #if __cplusplus >= 202002L
 #define _CPP_STANDARD_20
 #elif __cplusplus >= 201702L
@@ -70,6 +81,7 @@ static constexpr std::string_view Author     = "Szymon Belz";
 #pragma warning(disable: 28020)
 #endif
 
+using uint = unsigned int;
 using byte = unsigned char;
 using ll   = long long;
 using ull  = unsigned long long;

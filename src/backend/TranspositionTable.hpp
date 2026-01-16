@@ -36,13 +36,13 @@ struct TTEntry {
 	}
 
 	uint16_t key16;
-	uint16_t key18 : 2;
+	uint8_t  key18 : 2;
 	uint8_t  generation : 6;
 	Bound	 bound : 2;
 	int8_t   depth : 6;
-	Move16b  move;
 	Score	 score;
-	Score    eval;
+	Move16b  move;
+    Score    eval;
 };
 
 static_assert(sizeof(TTEntry) == EntryTargetSize);

@@ -181,7 +181,7 @@ public:
 	};
 
 	enum class Notation {
-		PURE, ALGEBRAIC
+		REGULAR, ALGEBRAIC
 	};
 
 	static constexpr T Null = 0;

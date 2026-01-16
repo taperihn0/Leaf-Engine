@@ -25,7 +25,7 @@ private:
 	timepoint_t _start_tp;
 };
 
-class SearchLimits;
+struct SearchLimits;
 
 class TimeMan {
 public:

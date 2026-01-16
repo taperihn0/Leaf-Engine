@@ -4,7 +4,7 @@
 
 namespace nn {
 
-static constexpr std::string_view DefaultNetworkPath = "src/assets/nets/publius_net128_0_h.bin";
+static constexpr std::string_view DefaultNetworkPath = "C:\\dev\\Leaf-Engine\\src\\assets\\nets\\publius_net128_0_h.bin";
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
@@ -22,7 +22,7 @@ public:
     ~PackedNeuralNetwork();
 
     PackedNeuralNetwork(const PackedNeuralNetwork&) = delete;
-    PackedNeuralNetwork(PackedNeuralNetwork&& network);
+    PackedNeuralNetwork(PackedNeuralNetwork&& network) noexcept;
 
     PackedNeuralNetwork& operator=(const PackedNeuralNetwork&) = delete;
     PackedNeuralNetwork& operator=(PackedNeuralNetwork&& network);
@@ -64,12 +64,15 @@ private:
     void release();
 
 #if defined(_MSC_VER)
-#error "Windows not supported" 
+    HANDLE  _fh;
+    HANDLE  _maph;
+    size_t  _file_size;
 #else
-    void*   _file_buff;
     size_t  _file_size;
     int     _fd = -1;
 #endif
+
+    void*    _file_buff;
 
     Header   _header;
     int16_t* _layer_weights[MaxLayerCount];
