@@ -183,8 +183,12 @@ void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 	assert(history_buffer);
 
 	for (size_t i = 0; i < _Count; i++) {
-		_stack[i].clear();
-		_stack[i].move_picker.setHistoryBuffer(history_buffer);
+        NodeInfo* const node = &_stack[i];
+
+		node->clear();
+		node->move_picker.setHistoryBuffer(history_buffer);
+        node->prev_accum_node = i - 1 >= 0     ? node - 1 : nullptr;
+        node->next_accum_node = i + 1 < _Count ? node + 1 : nullptr;
 	}
 }
 
@@ -250,6 +254,8 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 																	 : Move32b::Null;
 
 	NodeInfo* root = _tree_stack.getRootNode();
+    root->prev_accum_node = preroot;
+    preroot->next_accum_node = root;
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
@@ -313,6 +319,8 @@ Score Search::negaMax(Position& pos,
 	if constexpr (Root) assert(!ply);
 	else 				assert(ply > 0);
 	
+    assert(node->prev_accum_node->next_accum_node == node);
+
 	static constexpr OrderType OrderPolicy 	  = STAGED;
 	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
 	static constexpr int 	   RazorDepth  	  = 2;
@@ -478,13 +486,19 @@ Score Search::negaMax(Position& pos,
 			assert(prev_node->move != Move32b::Null);
 			
 			pos.makeNull(node->state, &node->accum_cache);
+
 			node->move = Move32b::Null;
+            node->prev_accum_node->next_accum_node = next_node;
+            next_node->prev_accum_node = node->prev_accum_node;
 
 			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																		-beta, -beta + 1, 
 																		depth - NullReduction - 1, 
 																		ply + 1);
 			pos.unmakeNull(node->state);
+
+            node->prev_accum_node->next_accum_node = node;
+            next_node->prev_accum_node = node;
 
 			/* Unless Null Move Pruning is not handled properly in the endgame, 
 			*  verification search is just needed to prevent Zugzwang.
@@ -733,6 +747,7 @@ Score Search::quiesce(Position& pos,
 	results.qtt_probe_cnt++;
 #endif
 
+
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
@@ -890,9 +905,12 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 INLINE const NodeInfo* Search::getCleanAccumulatorNode(const NodeInfo* const node, 
 												       const NodeInfo* const preroot)
 {
-    for (const NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
-        if (!hist_node->accum_cache.isDirty())
-			return hist_node;
+    for (const NodeInfo* prev_node = node->prev_accum_node; 
+         prev_node != preroot; 
+         prev_node = prev_node->prev_accum_node) {
+
+        if (!prev_node->accum_cache.isDirty())
+            return prev_node;
     }
 
     return preroot;
@@ -901,18 +919,14 @@ INLINE const NodeInfo* Search::getCleanAccumulatorNode(const NodeInfo* const nod
 INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_node,
 							   				NodeInfo* const node) 
 {
-	NodeInfo* hist_node = const_cast<NodeInfo*>(clean_accum_node + 1);
-	const NodeInfo* prev_hist_node = clean_accum_node;
-
-	for (; hist_node != node; hist_node++) {
-
-		if (hist_node->move.isNull()) 
-			continue;
+	for (NodeInfo* prev_node = const_cast<NodeInfo*>(clean_accum_node->next_accum_node);
+         prev_node != node; 
+         prev_node++) {
 
 		int added_features_index[2][2];
 		int removed_features_index[2][2];
 
-		nn::AccumulatorCache& accum_cache = hist_node->accum_cache;
+		nn::AccumulatorCache& accum_cache = prev_node->accum_cache;
 
 		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
 			nn::FeatureData feature_data = accum_cache.added_features[i];
@@ -942,7 +956,7 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 																	feature_data.side);
 		}
 
-		const nn::AccumulatorCache& prev_accum_cache = prev_hist_node->accum_cache;
+		const nn::AccumulatorCache& prev_accum_cache = prev_node->prev_accum_node->accum_cache;
 		assert(prev_accum_cache.isClean());
 
 		accum_cache.accum.update(nn::GlobPackedNetwork, 
@@ -960,8 +974,6 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 								 accum_cache.removed_features_cnt, 
 								 BLACK);
 		accum_cache.markClean();
-
-		prev_hist_node = hist_node;
 	}
 }
 
@@ -982,19 +994,10 @@ _FORCEINLINE Score Search::evaluate(const Position& pos,
 	_declUnused(results);
 #endif
 
-	const NodeInfo* prev_accum_node = preroot;
-
-	for (NodeInfo* hist_node = node - 1; hist_node != preroot; hist_node--) {
-		if (!hist_node->move.isNull()) {
-			prev_accum_node = hist_node;
-			break;
-		}
-	}
-
-	const nn::AccumulatorCache* prev_accum_cache = &prev_accum_node->accum_cache;
+    const nn::AccumulatorCache* prev_accum_cache = &node->prev_accum_node->accum_cache;
 
 	if (prev_accum_cache->isDirty()) {
-		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(prev_accum_node, preroot);
+		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(node, preroot);
 		updateDirtyAccumulators(clean_accum_node, node);
 	}
 

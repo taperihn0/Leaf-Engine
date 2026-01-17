@@ -95,6 +95,8 @@ struct NodeInfo {
 	uint8_t						move_index;
 	TTEntry::Bound				bound;
 	nn::AccumulatorCache		accum_cache;
+    NodeInfo*                   prev_accum_node;
+    NodeInfo*                   next_accum_node;
 };
 
 class TreeStack {
