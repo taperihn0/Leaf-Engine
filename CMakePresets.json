@@ -19,11 +19,11 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "COLLECT_SEARCH_STATS": "OFF",
-                "INCLUDE_TESTS": "OFF",
-                "ENABLE_SIMD_AVX2": "ON"
-            }
+               "CMAKE_BUILD_TYPE": "Release",
+               "COLLECT_SEARCH_STATS": "OFF",
+               "INCLUDE_TESTS": "OFF",
+               "ENABLE_SIMD_AVX2": "ON"
+         }
         },
         {
             "name": "relwithdebinfo",
@@ -31,11 +31,11 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/RelWithDebInfo",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "COLLECT_SEARCH_STATS": "ON",
-                "INCLUDE_TESTS": "ON",
-                "ENABLE_SIMD_AVX2": "ON"
-            }
+               "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+               "COLLECT_SEARCH_STATS": "ON",
+               "INCLUDE_TESTS": "ON",
+               "ENABLE_SIMD_AVX2": "ON"
+         }
         },
         {
             "name": "debugutils",
@@ -43,11 +43,11 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Utils/Release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "COLLECT_SEARCH_STATS": "OFF",
-                "BUILD_UTILS": "ON",
-                "ENABLE_SIMD_AVX2": "ON"
-            }
+               "CMAKE_BUILD_TYPE": "Debug",
+               "COLLECT_SEARCH_STATS": "OFF",
+               "BUILD_UTILS": "ON",
+               "ENABLE_SIMD_AVX2": "ON"
+         }
         },
         {
             "name": "releaseutils",
@@ -55,11 +55,12 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Utils/Release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "COLLECT_SEARCH_STATS": "OFF",
-                "BUILD_UTILS": "ON",
-                "ENABLE_SIMD_AVX2": "ON"
-            }
+               "CMAKE_BUILD_TYPE": "Release",
+               "COLLECT_SEARCH_STATS": "OFF",
+               "BUILD_UTILS": "ON",
+               "ENABLE_SIMD_AVX2": "ON",
+               "RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
+         }
         }
     ]
 }

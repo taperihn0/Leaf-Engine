@@ -7,6 +7,10 @@ add_executable(LeafUtils ${UTILS_SOURCES})
 target_link_libraries(LeafUtils PRIVATE Leaf)
 
 set_target_properties(LeafUtils PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
+set_target_properties(LeafUtils PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY 
 	"${CMAKE_SOURCE_DIR}/bin/Utils/${CMAKE_BUILD_TYPE}"
 	LIBRARY_OUTPUT_DIRECTORY

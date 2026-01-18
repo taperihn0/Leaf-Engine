@@ -153,7 +153,10 @@ void NodeInfo::clear() {
 	moves_searched 	 = 0;
 	move_index 		 = 0;
 	bound 			 = TTEntry::NONE;
-	accum_cache.clearBuffers();
+
+	cluster.accum_cache.clearBuffers();
+    cluster.next_cluster = nullptr;
+    cluster.prev_cluster = nullptr;
 }
 
 void Search::clearHashTT() {
@@ -187,8 +190,8 @@ void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 
 		node->clear();
 		node->move_picker.setHistoryBuffer(history_buffer);
-        node->prev_accum_node = i - 1 >= 0     ? node - 1 : nullptr;
-        node->next_accum_node = i + 1 < _Count ? node + 1 : nullptr;
+        node->cluster.prev_cluster = i - 1 >= 0     ? &(node - 1)->cluster : nullptr;
+        node->cluster.next_cluster = i + 1 < _Count ? &(node + 1)->cluster : nullptr;
 	}
 }
 
@@ -248,14 +251,14 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	SearchResults search_results;
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
-	preroot->accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
-	preroot->accum_cache.markClean();
+	preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
+	preroot->cluster.accum_cache.markClean();
 	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
 																	 : Move32b::Null;
 
 	NodeInfo* root = _tree_stack.getRootNode();
-    root->prev_accum_node = preroot;
-    preroot->next_accum_node = root;
+    root->cluster.prev_cluster = &preroot->cluster;
+    preroot->cluster.next_cluster = &root->cluster;
 
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
@@ -318,8 +321,6 @@ Score Search::negaMax(Position& pos,
 
 	if constexpr (Root) assert(!ply);
 	else 				assert(ply > 0);
-	
-    assert(node->prev_accum_node->next_accum_node == node);
 
 	static constexpr OrderType OrderPolicy 	  = STAGED;
 	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
@@ -397,7 +398,7 @@ Score Search::negaMax(Position& pos,
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
-	*  it means there is high propability no move can increase the alpha bar.
+	*  it means there is high probability no move can increase the alpha bar.
 	*  To ensure our intuition, we dive into quiescence search to verify the position.
 	*  If we fail low, we've got a cutoff.
 	*/
@@ -477,6 +478,8 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
+    nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
 	*  So we can do beta cutoff.
@@ -485,20 +488,24 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and depth >= NullReduction + 1) {
 			assert(prev_node->move != Move32b::Null);
 			
-			pos.makeNull(node->state, &node->accum_cache);
+			pos.makeNull(node->state, accum_cache);
+
+            AccumulatorCluster* curr_cluster = &node->cluster;
+            AccumulatorCluster* next_cluster = curr_cluster->next_cluster;
+            AccumulatorCluster* prev_cluster = curr_cluster->prev_cluster;
+
+            assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
 
 			node->move = Move32b::Null;
-            node->prev_accum_node->next_accum_node = next_node;
-            next_node->prev_accum_node = node->prev_accum_node;
+            next_cluster->prev_cluster = prev_cluster;
+
 
 			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																		-beta, -beta + 1, 
 																		depth - NullReduction - 1, 
 																		ply + 1);
 			pos.unmakeNull(node->state);
-
-            node->prev_accum_node->next_accum_node = node;
-            next_node->prev_accum_node = node;
+            next_cluster->prev_cluster = curr_cluster;
 
 			/* Unless Null Move Pruning is not handled properly in the endgame, 
 			*  verification search is just needed to prevent Zugzwang.
@@ -568,7 +575,7 @@ Score Search::negaMax(Position& pos,
 
 		bool do_full_search = true;
 
-		if (pos.make(node->move, &node->accum_cache)) {
+		if (pos.make(node->move, accum_cache)) {
 			node->can_move = true;
 
 			const enumColor next_side = !side2move;
@@ -819,6 +826,8 @@ Score Search::quiesce(Position& pos,
 	}
 #endif
 
+    nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
@@ -850,7 +859,7 @@ Score Search::quiesce(Position& pos,
 				continue;
 		}
 
-		if (pos.make(node->move, &node->accum_cache)) {
+		if (pos.make(node->move, accum_cache)) {
 			node->score = -quiesce<QNodeType>(pos, limits, results, node + 1,
 											  -beta, -alpha,
 											  depth - 1,
@@ -902,31 +911,31 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	return next_node->check;
 }
 
-INLINE const NodeInfo* Search::getCleanAccumulatorNode(const NodeInfo* const node, 
-												       const NodeInfo* const preroot)
+INLINE const AccumulatorCluster* Search::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster, 
+												                    const NodeInfo* const preroot)
 {
-    for (const NodeInfo* prev_node = node->prev_accum_node; 
-         prev_node != preroot; 
-         prev_node = prev_node->prev_accum_node) {
+    for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
+         prev_accum_cluster != &preroot->cluster;
+         prev_accum_cluster = prev_accum_cluster->prev_cluster) {
 
-        if (!prev_node->accum_cache.isDirty())
-            return prev_node;
+        if (!prev_accum_cluster->accum_cache.isDirty())
+            return prev_accum_cluster;
     }
 
-    return preroot;
+    return &preroot->cluster;
 }
 
-INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_node,
-							   				NodeInfo* const node) 
+INLINE void Search::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
+							   				AccumulatorCluster* const accum_cluster)
 {
-	for (NodeInfo* prev_node = const_cast<NodeInfo*>(clean_accum_node->next_accum_node);
-         prev_node != node; 
-         prev_node++) {
+	for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
+         prev_cluster != accum_cluster;
+         prev_cluster = prev_cluster->next_cluster) {
 
 		int added_features_index[2][2];
 		int removed_features_index[2][2];
 
-		nn::AccumulatorCache& accum_cache = prev_node->accum_cache;
+		nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
 		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
 			nn::FeatureData feature_data = accum_cache.added_features[i];
@@ -956,16 +965,16 @@ INLINE void Search::updateDirtyAccumulators(const NodeInfo* const clean_accum_no
 																	feature_data.side);
 		}
 
-		const nn::AccumulatorCache& prev_accum_cache = prev_node->prev_accum_node->accum_cache;
+		const nn::AccumulatorCache& prev_accum_cache = prev_cluster->prev_cluster->accum_cache;
 		assert(prev_accum_cache.isClean());
 
-		accum_cache.accum.update(nn::GlobPackedNetwork, 
+		accum_cache.accum.update(nn::GlobPackedNetwork,
 								 &prev_accum_cache.accum, 
-								 added_features_index[WHITE], 
+								 added_features_index[WHITE],
 								 accum_cache.added_features_cnt, 
-								 removed_features_index[WHITE], 
+								 removed_features_index[WHITE],
 								 accum_cache.removed_features_cnt,
-								 WHITE);
+                                 WHITE);
 		accum_cache.accum.update(nn::GlobPackedNetwork, 
 								 &prev_accum_cache.accum, 
 								 added_features_index[BLACK], 
@@ -994,16 +1003,17 @@ _FORCEINLINE Score Search::evaluate(const Position& pos,
 	_declUnused(results);
 #endif
 
-    const nn::AccumulatorCache* prev_accum_cache = &node->prev_accum_node->accum_cache;
+    AccumulatorCluster* curr_accum_cluster = &node->cluster;
+    const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
 
-	if (prev_accum_cache->isDirty()) {
-		const NodeInfo* clean_accum_node = getCleanAccumulatorNode(node, preroot);
-		updateDirtyAccumulators(clean_accum_node, node);
+	if (prev_accum_cluster->accum_cache.isDirty()) {
+		const AccumulatorCluster* clean_accum_cluster = getCleanAccumulatorCluster(curr_accum_cluster, preroot);
+		updateDirtyAccumulators(clean_accum_cluster, curr_accum_cluster);
 	}
 
-	assert(prev_accum_cache->isClean());
+	assert(prev_accum_cluster->accum_cache.isClean());
 
-	const nn::Accumulator& prev_accum = prev_accum_cache->accum;
+    const nn::Accumulator& prev_accum = prev_accum_cluster->accum_cache.accum;
 
 #if defined(_VERIFY_NN)
 	ASSERT(nn::Accumulator::verify(prev_accum, pos), "Accumulator verification failed");

@@ -35,7 +35,6 @@ int Accumulator::featureIndex(enumColor perspective,
                                 : featureIndex<WHITE>(sq, piece_type, side);
 }
 
-
 void Accumulator::refresh(const PackedNeuralNetwork& network,
                           const Position& pos) 
 {

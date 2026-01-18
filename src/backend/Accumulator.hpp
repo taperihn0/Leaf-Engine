@@ -21,7 +21,9 @@ public:
     INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
-    static int featureIndex(Square sq, Piece::enumType piece_type, enumColor side);
+    static int featureIndex(Square sq, 
+                            Piece::enumType piece_type, 
+                            enumColor side);
     static int featureIndex(enumColor perspective, 
                             Square sq, 
                             Piece::enumType piece_type, 
@@ -63,6 +65,7 @@ public:
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
 #endif
+
 private:
     int16_t _values[2][NetworkHiddenLayerSize];
 };

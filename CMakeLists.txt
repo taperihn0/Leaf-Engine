@@ -55,6 +55,10 @@ target_compile_definitions(Leaf PUBLIC
 	$<$<CONFIG:RelWithDebInfo>:RELEASE>
 )
 
+set_target_properties(Leaf PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/src/backend"

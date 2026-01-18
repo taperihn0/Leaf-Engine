@@ -80,6 +80,12 @@ struct SearchResults {
 #endif
 };
 
+struct AccumulatorCluster {
+    nn::AccumulatorCache accum_cache;
+    AccumulatorCluster*  prev_cluster;
+    AccumulatorCluster*  next_cluster;
+};
+
 struct NodeInfo {
 	void clear();
 
@@ -94,9 +100,7 @@ struct NodeInfo {
 	uint8_t						moves_searched;
 	uint8_t						move_index;
 	TTEntry::Bound				bound;
-	nn::AccumulatorCache		accum_cache;
-    NodeInfo*                   prev_accum_node;
-    NodeInfo*                   next_accum_node;
+    AccumulatorCluster          cluster;
 };
 
 class TreeStack {
@@ -172,11 +176,11 @@ private:
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 	
-	const NodeInfo* getCleanAccumulatorNode(const NodeInfo* const node, 
-											const NodeInfo* const preroot);
+	const AccumulatorCluster* getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
+											             const NodeInfo* const preroot);
 
-	void updateDirtyAccumulators(const NodeInfo* const clean_accum_node,
-							   	 NodeInfo* const node);
+	void updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
+                                 AccumulatorCluster* const accum_cluster);
 
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,
