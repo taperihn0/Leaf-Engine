@@ -166,9 +166,10 @@ bool Move32b::isPseudoLegal(const Position& pos) const {
 						  d = pos.pieceOn(dst, pos.getOppositeTurn());
 
 	if (p == Piece::KING) {
-		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())) & BitBoard(dst))
+		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())).isOccupiedSq(dst))
 			return false;
-		else if (isShortCastle()) {
+
+		if (isShortCastle()) {
 			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
 
 			return   own_castling_state.isShortPossible()
@@ -193,7 +194,7 @@ bool Move32b::isPseudoLegal(const Position& pos) const {
 	return	 p == pos.pieceOn(org, pos.getTurn())
 		and (!isCapture() or d != Piece::NONE)
 		and (!isQuiet() or (d == Piece::NONE and pos.pieceOn(dst, pos.getTurn()) == Piece::NONE))
-		and (p == Piece::KNIGHT or !(inBetween(org, dst) & pos.getOccupied() & ~BitBoard(org) & ~BitBoard(dst)));
+		and (p == Piece::KNIGHT or !(onlyBetween(org, dst) & pos.getOccupied()));
 }
 
 template <>
@@ -276,7 +277,7 @@ Move32b unpacked(const Position& pos, Move16b move) {
 		return Move32b::Null;
 	else if 
 		(isSlider(piece) and
-		(inBetween(origin, target) & ~BitBoard(origin) & ~BitBoard(target) & pos.getOccupied()))
+		(onlyBetween(origin, target) & pos.getOccupied()))
 		return Move32b::Null;
 
 	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);

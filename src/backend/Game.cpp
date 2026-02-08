@@ -41,7 +41,7 @@ bool Game::isWin(Game::Result& full) const {
 }
 
 bool Game::isDraw(Game::Result& full) const {
-    if (_current_pos.halfmoveClock() >= 50) {
+    if (_current_pos.getHalfmoveClock() >= 50) {
         full = DRAW_BY_HALF_MOVES_LIMIT;
         return true;
     }

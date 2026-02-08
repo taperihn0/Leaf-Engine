@@ -283,9 +283,15 @@ INLINE BitBoard noNoWe(BitBoard bb) {
 	return (bb << 15) & BitBoard::Not_H_File;
 }
 
-INLINE BitBoard inBetween(Square org, Square dst) {
-	assert(org.isValid() and org.isNotNull() and dst.isValid() and dst.isNotNull());
+_FORCEINLINE BitBoard inBetween(Square org, Square dst) {
+	assert(org.isValid() and dst.isValid());
 	return rectangular.t64[org][dst];
+}
+
+// InBetween but without 'org' and 'dst' squares.
+_FORCEINLINE BitBoard onlyBetween(Square org, Square dst) {
+	assert(org.isValid() and dst.isValid());
+	return rectangular.t64[org][dst] & ~(BitBoard(org) | BitBoard(dst));
 }
 
 } // namespace

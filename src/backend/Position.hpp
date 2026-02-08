@@ -217,11 +217,11 @@ public:
 		return _castling_rights[_turn];
 	}
 
-	INLINE uint8_t halfmoveClock() const {
+	INLINE uint8_t getHalfmoveClock() const {
 		return _halfmove_count;
 	}
 
-	INLINE uint16_t fullmoveClock() const {
+	INLINE uint16_t getFullmoveClock() const {
 		return _fullmove_count;
 	}
 

@@ -1,5 +1,6 @@
 #include "SelfGame.hpp"
 #include "backend/Time.hpp"
+#include "StaticEval.hpp"
 
 namespace Utils {
 

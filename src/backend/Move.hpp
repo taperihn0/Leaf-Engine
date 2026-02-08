@@ -9,7 +9,8 @@ class Position;
 template <typename T>
 class MoveData {
 public:
-	static_assert(_IS_SAME_TYPE(T, uint16_t) or _IS_SAME_TYPE(T, uint32_t));
+	static_assert(_IS_SAME_TYPE(T, uint16_t) or 
+				  _IS_SAME_TYPE(T, uint32_t));
 
 	enum class Castle;
 	enum class Notation;
@@ -125,6 +126,19 @@ public:
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 19);
 	}
 
+	INLINE bool isKnight() const {
+		if constexpr (_IS_SAME_TYPE(T, uint32_t))
+			return getPiece() == Piece::KNIGHT;
+		
+		// In 16 bit encoding we don't have explicit piece information, 
+		// but we can still check if we've got a knight move
+
+		const Square org = getOrigin();
+		const Square dst = getTarget();
+
+		return knightAttacks(org).isOccupiedSq(dst);
+	}
+
 	Piece::enumType getCaptured(const Position& pos) const;
 
 	// use this field only after making a move -
@@ -203,7 +217,7 @@ private:
 };
 
 /*
-*	Use standart 32 - bit wide move encoding.
+*	Use standard 32 - bit wide move encoding.
 *	Raw number data consists of:
 *	 <------------------------------------------------------------------------------------------------>
 *	 |								26 bits	layout													  |
@@ -273,11 +287,28 @@ template <typename MoveData<T>::Castle Type>
 INLINE MoveData<T> MoveData<T>::makeCastling(Square origin, Square target) {
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	static constexpr uint32_t Field = Type == Castle::SHORT ? SHORT_CASTLE : LONG_CASTLE;
+
 	return MoveData(
 		  (static_cast<uint32_t>(Piece::KING) << 19)
 		| Field
 		| (static_cast<uint32_t>(target) << 6)
 		|  static_cast<uint32_t>(origin));
+}
+
+INLINE Move16b makePackedSimple(Square origin, 
+								Square target) {
+	return Move16b(
+		  (static_cast<uint16_t>(target) << 6)
+		|  static_cast<uint16_t>(origin));
+}
+
+INLINE Move16b makePackedPromo(Square origin, 
+							   Square target, 
+							   Piece::enumType promo_piece) {
+	return Move16b(
+		  (static_cast<uint16_t>(promo_piece) << 12)
+		| (static_cast<uint16_t>(target) << 6)
+		|  static_cast<uint16_t>(origin));
 }
 
 INLINE Move16b packed(Move32b move) {

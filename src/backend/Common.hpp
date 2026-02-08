@@ -138,7 +138,7 @@ static constexpr int MaxDepth = 128,
 					 MaxGameMoves = 512;
 
 template <typename T>
-T sq(T x) {
+constexpr T sq(T x) {
 	static_assert(std::is_integral_v<T>);
 	return x * x;
 }

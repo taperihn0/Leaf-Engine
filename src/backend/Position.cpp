@@ -151,8 +151,8 @@ bool Position::operator==(const Position& pos) const {
 	else if (getEnPassantSq() != pos.getEnPassantSq())
 		return false;
 
-	else if (halfmoveClock() != pos.halfmoveClock()
-	      or fullmoveClock() != pos.fullmoveClock())
+	else if (getHalfmoveClock() != pos.getHalfmoveClock()
+	      or getFullmoveClock() != pos.getFullmoveClock())
 		return false;
 	
 	else if (getKingSquare(WHITE) != pos.getKingSquare(WHITE)

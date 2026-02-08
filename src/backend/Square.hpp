@@ -62,7 +62,7 @@ public:
 	}
 
 	static Square fromChar(char file, char rank) {
-		return Square((file - 'a') + (rank - '1') * 8);
+		return (file - 'a') + (rank - '1') * 8;
 	}
 
 	INLINE std::string toStr() const {

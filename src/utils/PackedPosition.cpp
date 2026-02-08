@@ -297,8 +297,8 @@ ExtPackedPosition ExtPackedPosition::packed(const Position& pos) {
         packed._pieces[i] = nibble;
     }
 
-    packed._clock_data.halfmove = pos.halfmoveClock();
-    packed._clock_data.fullmove = pos.fullmoveClock();
+    packed._clock_data.halfmove = pos.getHalfmoveClock();
+    packed._clock_data.fullmove = pos.getFullmoveClock();
 
     return packed;
 }

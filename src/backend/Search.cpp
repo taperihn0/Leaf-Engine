@@ -1,9 +1,9 @@
 #include "Search.hpp"
-#include "MoveGen.hpp"
 #include "NetworkEval.hpp"
 
-#include <sstream>
+#ifdef _COLLECT_SEARCH_STATS
 #include <iomanip>
+#endif
 
 #define _TT_PROBE_QSEARCH
 
@@ -212,6 +212,81 @@ INLINE NodeInfo* TreeStack::getPreRootNode() {
 	return _stack;
 }
 
+INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
+	const NodeInfo* const preroot)
+{
+	for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
+		prev_accum_cluster != &preroot->cluster;
+		prev_accum_cluster = prev_accum_cluster->prev_cluster) {
+
+		if (!prev_accum_cluster->accum_cache.isDirty())
+			return prev_accum_cluster;
+	}
+
+	return &preroot->cluster;
+}
+
+INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
+	AccumulatorCluster* const accum_cluster)
+{
+	for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
+		prev_cluster != accum_cluster;
+		prev_cluster = prev_cluster->next_cluster) {
+
+		int added_features_index[2][2];
+		int removed_features_index[2][2];
+
+		nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
+
+		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
+			nn::FeatureData feature_data = accum_cache.added_features[i];
+
+			added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																	feature_data.sq,
+																	feature_data.piece_type,
+																	feature_data.side);
+
+			added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																	feature_data.sq,
+																	feature_data.piece_type,
+																	feature_data.side);
+		}
+
+		for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
+			nn::FeatureData feature_data = accum_cache.removed_features[i];
+
+			removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
+																	feature_data.sq,
+																	feature_data.piece_type,
+																	feature_data.side);
+
+			removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
+																	feature_data.sq,
+																	feature_data.piece_type,
+																	feature_data.side);
+		}
+
+		const nn::AccumulatorCache& prev_accum_cache = prev_cluster->prev_cluster->accum_cache;
+		assert(prev_accum_cache.isClean());
+
+		accum_cache.accum.update(nn::GlobPackedNetwork,
+								  &prev_accum_cache.accum,
+								  added_features_index[WHITE],
+								  accum_cache.added_features_cnt,
+								  removed_features_index[WHITE],
+								  accum_cache.removed_features_cnt,
+								  WHITE);
+		accum_cache.accum.update(nn::GlobPackedNetwork,
+								  &prev_accum_cache.accum,
+								  added_features_index[BLACK],
+								  accum_cache.added_features_cnt,
+								  removed_features_index[BLACK],
+								  accum_cache.removed_features_cnt,
+								  BLACK);
+		accum_cache.markClean();
+	}
+}
+
 Search::Search(TranspositionTable&& tt) 
 	: _tt(std::move(tt))
 	, _history_buff(reinterpret_cast<MoveOrderHistoryTables*>(
@@ -219,7 +294,9 @@ Search::Search(TranspositionTable&& tt)
 {
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
+
 	_tree_stack.init(_history_buff);
+	_cuckoo_tables.init();
 }
 
 Search::~Search() {
@@ -337,13 +414,26 @@ Score Search::negaMax(Position& pos,
 	static constexpr int	   LmrDepth 	  = 2;
 	static constexpr int	   LmrMoveCount   = 2;
 
-	if (!Root and (pos.halfmoveClock() >= 100 or isRepetitionCycle<IsPV>(pos, game, node - 1, ply))) {
-		return Score::Draw;
+	if constexpr (!Root) {
+
+		if (pos.getHalfmoveClock() >= 100)
+			return Score::Draw;
+
+		/* Repetition rule -
+		*  however, we could already check if there is any repetition out there in cuckoo tables.
+		*  If my parent searched for a repetition and failed, we probably don't have any repetition.
+		*/
+		if (IsPV or beta <= Score::Draw) {
+			if (isRepetitionCycle<IsPV>(pos, game, node, ply))
+				return Score::Draw;
+		}
 	}
+	
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
-    else if (!Root and (!limits.anyNodesLeft(results.nodes_cnt) or
+    
+	else if (!Root and (!limits.anyNodesLeft(results.nodes_cnt) or
                         !limits.anyQuiesceNodesLeft(results.qnodes_cnt))) {
         return -Score::Undef;
     }
@@ -368,6 +458,18 @@ Score Search::negaMax(Position& pos,
 		results.tt_cut_cnt++;
 #endif
 		return tt_entry.score;
+	}
+
+	node->side2move = pos.getTurn();
+
+	if constexpr (!IsPV) {
+		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
+			alpha = Score::Draw;
+
+			if (alpha >= beta) {
+				return beta;
+			}
+		}
 	}
 
 	if (!depth) {
@@ -407,7 +509,7 @@ Score Search::negaMax(Position& pos,
 			depth <= RazorDepth)
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
 			}
 
 			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
@@ -468,7 +570,7 @@ Score Search::negaMax(Position& pos,
 			tt_move.isQuiet())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
 			}
 
 			if (eval - RfpMultDelta * depth >= beta) {
@@ -557,7 +659,7 @@ Score Search::negaMax(Position& pos,
 			!node->move.isQueenPromotion())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
 			}
 
 			if (eval + FutilityDelta * depth * depth < alpha) {
@@ -746,7 +848,7 @@ Score Search::quiesce(Position& pos,
 	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-		return evaluate<QNodeType>(pos, node, preroot, side2move, results);
+		return evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results);
 	}
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -754,6 +856,7 @@ Score Search::quiesce(Position& pos,
 	results.qtt_probe_cnt++;
 #endif
 
+	node->side2move = pos.getTurn();
 
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
@@ -782,10 +885,10 @@ Score Search::quiesce(Position& pos,
 	results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, node, preroot, side2move, results)
-													         : tt_entry.eval;
+	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results)
+													            : tt_entry.eval;
 #else
-	const Score stand_pat = evaluate(pos, prev_accum, side2move, results);
+	const Score stand_pat = evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results);
 #endif
 
 	/* Delta Pruning -
@@ -911,87 +1014,13 @@ INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	return next_node->check;
 }
 
-INLINE const AccumulatorCluster* Search::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster, 
-												                    const NodeInfo* const preroot)
-{
-    for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
-         prev_accum_cluster != &preroot->cluster;
-         prev_accum_cluster = prev_accum_cluster->prev_cluster) {
-
-        if (!prev_accum_cluster->accum_cache.isDirty())
-            return prev_accum_cluster;
-    }
-
-    return &preroot->cluster;
-}
-
-INLINE void Search::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
-							   				AccumulatorCluster* const accum_cluster)
-{
-	for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
-         prev_cluster != accum_cluster;
-         prev_cluster = prev_cluster->next_cluster) {
-
-		int added_features_index[2][2];
-		int removed_features_index[2][2];
-
-		nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
-
-		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
-			nn::FeatureData feature_data = accum_cache.added_features[i];
-
-			added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-																		feature_data.sq, 
-																		feature_data.piece_type,
-																		feature_data.side);
-
-			added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-																		feature_data.sq, 
-																		feature_data.piece_type,
-																		feature_data.side);
-		}
-
-		for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
-			nn::FeatureData feature_data = accum_cache.removed_features[i];
-
-			removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-																	feature_data.sq, 
-																	feature_data.piece_type,
-																	feature_data.side);
-
-			removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-																	feature_data.sq, 
-																	feature_data.piece_type,
-																	feature_data.side);
-		}
-
-		const nn::AccumulatorCache& prev_accum_cache = prev_cluster->prev_cluster->accum_cache;
-		assert(prev_accum_cache.isClean());
-
-		accum_cache.accum.update(nn::GlobPackedNetwork,
-								 &prev_accum_cache.accum, 
-								 added_features_index[WHITE],
-								 accum_cache.added_features_cnt, 
-								 removed_features_index[WHITE],
-								 accum_cache.removed_features_cnt,
-                                 WHITE);
-		accum_cache.accum.update(nn::GlobPackedNetwork, 
-								 &prev_accum_cache.accum, 
-								 added_features_index[BLACK], 
-								 accum_cache.added_features_cnt, 
-								 removed_features_index[BLACK], 
-								 accum_cache.removed_features_cnt, 
-								 BLACK);
-		accum_cache.markClean();
-	}
-}
-
 template <Search::enumNode NodeType>
-_FORCEINLINE Score Search::evaluate(const Position& pos,
-									NodeInfo* node,
-									const NodeInfo* preroot,
-									enumColor side2move, 
-									SearchResults& results)
+INLINE Score Search::evaluate(const Position& pos,
+							  TreeStack& _tree_stack,
+							  NodeInfo* node,
+							  const NodeInfo* preroot,
+							  enumColor side2move, 
+							  SearchResults& results)
 {
 #if defined(_COLLECT_SEARCH_STATS)
 	if constexpr (NodeType & QUIESCE_NODE)
@@ -1007,8 +1036,8 @@ _FORCEINLINE Score Search::evaluate(const Position& pos,
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
 
 	if (prev_accum_cluster->accum_cache.isDirty()) {
-		const AccumulatorCluster* clean_accum_cluster = getCleanAccumulatorCluster(curr_accum_cluster, preroot);
-		updateDirtyAccumulators(clean_accum_cluster, curr_accum_cluster);
+		const AccumulatorCluster* clean_accum_cluster = _tree_stack.getCleanAccumulatorCluster(curr_accum_cluster, preroot);
+		_tree_stack.updateDirtyAccumulators(clean_accum_cluster, curr_accum_cluster);
 	}
 
 	assert(prev_accum_cluster->accum_cache.isClean());
@@ -1030,22 +1059,18 @@ bool Search::isRepetitionCycle(const Position& pos,
 							   NodeInfo* node, 
 							   int ply) 
 {
-	const int my_ply = ply;
-	const uint64_t my_hashkey = pos.getZobristKey();
-
+	const uint64_t curr_hashkey = pos.getZobristKey();
+	const NodeInfo* prev_node = node - 1;
 	int rep_cnt = 0;
 
-	static constexpr int SearchRepDepth = 37;
-	static_assert(SearchRepDepth % 2);
+	for (int p = ply - 1; p >= 0; p--, prev_node--) {
+		const Move32b move = prev_node->move;
 
-	for (ply = ply - 1; ply >= 0; ply--, node--) {
-		const Move32b move = node->move;
-
-		if (((my_ply - ply) & 1) == 1)
-			continue;
-		else if (move.isIrreversible())
+		if (move.isNull() or move.isIrreversible())
 			return false;
-		else if (my_hashkey == node->state.hash_key) 
+		
+		if (((ply - p) & 1) == 0 and
+			curr_hashkey == prev_node->state.hash_key)
 		{
 			if constexpr (!IsPV) 
 				return true;
@@ -1055,23 +1080,25 @@ bool Search::isRepetitionCycle(const Position& pos,
 		}
 	}
 
-	const int my_cnt = static_cast<int>(game.currentHalfCount());
+	static constexpr int SearchRepDepth = 37;
+	static_assert(SearchRepDepth % 2);
+
+	const int curr_cnt = static_cast<int>(game.currentHalfCount());
 
 	// iterate through only a subset of all game moves
 	for (int i = 1; i <= SearchRepDepth; i++) {
-		const int cnt = my_cnt - i;
+		const int cnt = curr_cnt - i;
 
 		if (cnt < 0) 
 			return false;
 
 		const Move32b move = game.getPrevMove(cnt);
 
-		// TODO: move.isIrreversible() first?
-		if ((i & 1) == 0)
-			continue;
-		else if (move.isIrreversible())
+		if (move.isNull() or move.isIrreversible())
 			return false;
-		else if (my_hashkey == game.getPrevKey(cnt))
+		
+		if ((i & 1) == 1 and 
+			curr_hashkey == game.getPrevKey(cnt))
 		{
 			if constexpr (!IsPV)
 				return true;
@@ -1079,6 +1106,66 @@ bool Search::isRepetitionCycle(const Position& pos,
 			if (++rep_cnt >= 2)
 				return true;
 		}
+	}
+
+	return false;
+}
+
+bool Search::canRepetitionDraw(const Position& pos,
+							   NodeInfo* node,
+							   int ply)
+{
+	if (ply < 2)
+		return false;
+	
+	const uint64_t curr_hash = pos.getZobristKey();
+	const NodeInfo* prev_node = node - 1;
+
+	for (int p = ply - 1; p >= 2;) {
+		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+			break;
+
+		prev_node--;
+
+		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+			break;
+
+		prev_node--;
+
+		p -= 2;
+
+		assert(prev_node->side2move != node->side2move);
+		assert(prev_node->state.hash_key);
+
+		const uint64_t move_hash = curr_hash ^ prev_node->state.hash_key;
+
+		const size_t cuckoo_index1 = CuckooTables::cuckooIndex1(move_hash);
+		const size_t cuckoo_index2 = CuckooTables::cuckooIndex2(move_hash);
+
+		size_t cuckoo_index = 0;
+
+		if (_cuckoo_tables.getMoveHash(cuckoo_index1) == move_hash)
+			cuckoo_index = cuckoo_index1;
+
+		else if (_cuckoo_tables.getMoveHash(cuckoo_index2) == move_hash)
+			cuckoo_index = cuckoo_index2;
+
+		else 
+			continue;
+
+		const Move16b move16b = _cuckoo_tables.getMove16b(cuckoo_index);
+		const Square org = move16b.getOrigin();
+		const Square dst = move16b.getTarget();
+
+		// simplified verification for obtained cuckoo move
+
+		if (!pos.getOwnPieces().isOccupiedSq(org))
+			continue;
+
+		assert(unpacked(pos, move16b).isKnight() == move16b.isKnight());
+
+		if (move16b.isKnight() or !(onlyBetween(org, dst) & pos.getOccupied()))
+			return true;
 	}
 
 	return false;

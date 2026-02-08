@@ -1,66 +1,88 @@
 {
-    "version": 3,
-    "configurePresets": [
-        {
-            "name": "debug",
-            "displayName": "Debug",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "COLLECT_SEARCH_STATS": "ON",
-                "INCLUDE_TESTS": "ON",
-                "ENABLE_SIMD_AVX2": "ON"
-            }
-        },
-        {
-            "name": "release",
-            "displayName": "Release",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Release",
-            "cacheVariables": {
-               "CMAKE_BUILD_TYPE": "Release",
-               "COLLECT_SEARCH_STATS": "OFF",
-               "INCLUDE_TESTS": "OFF",
-               "ENABLE_SIMD_AVX2": "ON"
-         }
-        },
-        {
-            "name": "relwithdebinfo",
-            "displayName": "RelWithDebInfo",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/RelWithDebInfo",
-            "cacheVariables": {
-               "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-               "COLLECT_SEARCH_STATS": "ON",
-               "INCLUDE_TESTS": "ON",
-               "ENABLE_SIMD_AVX2": "ON"
-         }
-        },
-        {
-            "name": "debugutils",
-            "displayName": "DebugUtils",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Utils/Release",
-            "cacheVariables": {
-               "CMAKE_BUILD_TYPE": "Debug",
-               "COLLECT_SEARCH_STATS": "OFF",
-               "BUILD_UTILS": "ON",
-               "ENABLE_SIMD_AVX2": "ON"
-         }
-        },
-        {
-            "name": "releaseutils",
-            "displayName": "ReleaseUtils",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Utils/Release",
-            "cacheVariables": {
-               "CMAKE_BUILD_TYPE": "Release",
-               "COLLECT_SEARCH_STATS": "OFF",
-               "BUILD_UTILS": "ON",
-               "ENABLE_SIMD_AVX2": "ON",
-               "RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
-         }
-        }
-    ]
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "debug",
+			"displayName": "Debug",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"COLLECT_SEARCH_STATS": "ON",
+				"INCLUDE_TESTS": "ON",
+				"ENABLE_SIMD_AVX2": "ON"
+			}
+		},
+		{
+			"name": "release",
+			"displayName": "Release",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"INCLUDE_TESTS": "OFF",
+				"ENABLE_SIMD_AVX2": "ON"
+			}
+		},
+		{
+			"name": "relwithdebinfo",
+			"displayName": "RelWithDebInfo",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/RelWithDebInfo",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"COLLECT_SEARCH_STATS": "ON",
+				"INCLUDE_TESTS": "ON",
+				"ENABLE_SIMD_AVX2": "ON"
+			}
+		},
+		{
+			"name": "debugutils",
+			"displayName": "DebugUtils",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Utils/Debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"BUILD_UTILS": "ON",
+				"ENABLE_SIMD_AVX2": "ON"
+			}
+		},
+		{
+			"name": "releaseutils",
+			"displayName": "ReleaseUtils",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Utils/Release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"BUILD_UTILS": "ON",
+				"ENABLE_SIMD_AVX2": "ON",
+				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "debug",
+			"configurePreset": "debug",
+			"targets": [ "Leaf" ]
+		},
+		{
+			"name": "release",
+			"configurePreset": "release",
+			"targets": [ "Leaf" ]
+		},
+		{
+			"name": "debugutils",
+			"configurePreset": "debugutils",
+			"targets": [ "LeafUtils" ]
+		},
+		{
+			"name": "releaseutils",
+			"configurePreset": "releaseutils",
+			"targets": [ "LeafUtils" ]
+		}
+	]
 }

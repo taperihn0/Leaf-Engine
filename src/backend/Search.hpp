@@ -4,16 +4,12 @@
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveOrder.hpp"
-#include "StaticEval.hpp"
 #include "Game.hpp"
 #include "Time.hpp"
 #include "Score.hpp"
 #include "TranspositionTable.hpp"
 #include "Accumulator.hpp"
-
-#include <numeric>
-
-class Search;
+#include "Cuckoo.hpp"
 
 struct SearchLimits {
     bool isTimeLeft();
@@ -36,6 +32,8 @@ struct SearchLimits {
     ull       qnodes      = 0;
 	Timer     timer;
 };
+
+class Search;
 
 struct SearchResults {
 	void registerBestMove(Move32b move);
@@ -89,6 +87,7 @@ struct AccumulatorCluster {
 struct NodeInfo {
 	void clear();
 
+	bool						side2move;
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
 	Move32b						move;
@@ -113,6 +112,12 @@ public:
 	NodeInfo* getRootNode();
 	NodeInfo* getPreRootNode();
 	const NodeInfo* getNode(unsigned ply) const;
+
+	const AccumulatorCluster* getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
+														 const NodeInfo* const preroot);
+
+	void updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
+								 AccumulatorCluster* const accum_cluster);
 private:
 	static constexpr size_t _Count = MaxSelDepth;
 	NodeInfo* _stack;
@@ -175,15 +180,10 @@ private:
 				  int depth, int ply);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
-	
-	const AccumulatorCluster* getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
-											             const NodeInfo* const preroot);
-
-	void updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
-                                 AccumulatorCluster* const accum_cluster);
 
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,
+				   TreeStack& tree_stack,
 				   NodeInfo* node,
 				   const NodeInfo* preroot, 
 				   enumColor side2move, 
@@ -195,9 +195,14 @@ private:
 						   NodeInfo* node, 
 						   int ply);
 
+	bool canRepetitionDraw(const Position& pos, 
+						   NodeInfo* node, 
+						   int ply);
+
 	static constexpr uint64_t _CheckNodeCount = 4096;
 
 	TreeStack 		   		_tree_stack;
+	CuckooTables			_cuckoo_tables;
 	TranspositionTable 		_tt;
 	// Each Search instance should have own history buffer with tables 
 	// for very MoveOrder in TreeStack.
