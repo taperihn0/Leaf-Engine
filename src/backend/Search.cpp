@@ -144,6 +144,9 @@ void SearchResults::printSearchStats() {
 #endif
 
 void NodeInfo::clear() {
+	parent_alpha     = Score::Undef;
+	parent_beta	     = Score::Undef;
+	side2move		 = false;
 	state 			 = {};
 	best_move = move = Move32b::Null;
 	score 			 = Score::Undef;
@@ -415,15 +418,23 @@ Score Search::negaMax(Position& pos,
 	static constexpr int	   LmrMoveCount   = 2;
 
 	if constexpr (!Root) {
-
 		if (pos.getHalfmoveClock() >= 100)
 			return Score::Draw;
+
+	}
+
+	NodeInfo* const preroot = _tree_stack.getPreRootNode();
+	NodeInfo* const prev_node = node - 1;
+	NodeInfo* const next_node = node + 1;
+
+	if constexpr (!Root) {
 
 		/* Repetition rule -
 		*  however, we could already check if there is any repetition out there in cuckoo tables.
 		*  If my parent searched for a repetition and failed, we probably don't have any repetition.
 		*/
-		if (IsPV or beta <= Score::Draw) {
+		if (IsPV or prev_node->parent_alpha > Score::Draw) {
+
 			if (isRepetitionCycle<IsPV>(pos, game, node, ply))
 				return Score::Draw;
 		}
@@ -472,6 +483,9 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
+	node->parent_alpha = alpha;
+	node->parent_beta  = beta;
+
 	if (!depth) {
 		return quiesce<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
 								 				  alpha, beta,
@@ -493,10 +507,6 @@ Score Search::negaMax(Position& pos,
 
 	node->move = Move32b::Null;
 	Score eval = tt_entry.eval;
-
-	NodeInfo* const preroot = _tree_stack.getPreRootNode();
-	NodeInfo* const prev_node = node - 1;
-	NodeInfo* const next_node = node + 1;
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low

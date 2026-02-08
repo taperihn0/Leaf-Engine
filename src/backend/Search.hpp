@@ -87,6 +87,8 @@ struct AccumulatorCluster {
 struct NodeInfo {
 	void clear();
 
+	Score						parent_alpha;
+	Score						parent_beta;
 	bool						side2move;
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
@@ -106,6 +108,11 @@ class TreeStack {
 public:
 	TreeStack();
 	~TreeStack();
+
+	TreeStack(TreeStack&&)			   = delete;
+	TreeStack(TreeStack&)			   = delete;
+	TreeStack operator=(TreeStack&)    = delete;
+	TreeStack operator=(TreeStack&& t) = delete;
 
 	void init(MoveOrderHistoryTables* history_buffer);
 
@@ -142,8 +149,14 @@ public:
         SEARCH_NO_INFO      = 3,
     };
 
+	Search() = default;
 	Search(TranspositionTable&& tt);
 	~Search();
+
+	Search(Search&&)			 = delete;
+	Search(Search&)				 = delete;
+	Search operator=(Search&)    = delete;
+	Search operator=(Search&& t) = delete;
 
 	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
 	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
