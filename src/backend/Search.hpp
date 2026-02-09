@@ -75,6 +75,11 @@ struct SearchResults {
 
 	ull 	  nmeval_cnt 		= 0;
 	ull 	  qeval_cnt 		= 0;
+
+	ull 	  rep_call_cnt		= 0;
+	ull 	  rep_cnt			= 0;
+
+	ull 	  cuckoo_rep_cnt    = 0;
 #endif
 };
 
@@ -89,7 +94,7 @@ struct NodeInfo {
 
 	Score						parent_alpha;
 	Score						parent_beta;
-	bool						side2move;
+	enumColor					side2move;
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
 	Move32b						move;
@@ -205,12 +210,15 @@ private:
 	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, 
 						   const FullInfoRecord& game, 
-						   NodeInfo* node, 
-						   int ply);
+						   const NodeInfo* node, 
+						   int ply,
+						   SearchResults& results);
 
 	bool canRepetitionDraw(const Position& pos, 
-						   NodeInfo* node, 
+						   const NodeInfo* node, 
 						   int ply);
+
+	bool isInsufficientMaterial(const Position& pos);
 
 	static constexpr uint64_t _CheckNodeCount = 4096;
 

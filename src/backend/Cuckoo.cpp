@@ -5,11 +5,8 @@
 #include "Hash.hpp"
 
 CuckooTables::CuckooTables() {
-	_cuckoo_move_hash_buff = reinterpret_cast<uint64_t*>(alignedMalloc(8 * _CuckooTableSize, 8));
-	_cuckoo_move16_buff    = reinterpret_cast<Move16b*>(alignedMalloc(2 * _CuckooTableSize, 2));
-
-	alignedMemset(_cuckoo_move_hash_buff, 0, 8 * _CuckooTableSize);
-	alignedMemset(_cuckoo_move16_buff, 0, 2 * _CuckooTableSize);
+	_cuckoo_entry_buff = reinterpret_cast<_CuckooEntry*>(alignedMalloc(sizeof(_CuckooEntry) * _CuckooTableSize, sizeof(_CuckooEntry)));
+	alignedMemset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
 }
 
 void CuckooTables::init() {
@@ -35,6 +32,9 @@ void CuckooTables::init() {
 					case Piece::KING:
 						attacks = kingAttacks(from);
 						break;
+					case Piece::PAWN:
+					case Piece::QUEEN:
+						break;
 					}
 
 					if (attacks.isOccupiedSq(to)) {
@@ -47,8 +47,8 @@ void CuckooTables::init() {
 						size_t idx = cuckooIndex1(move_hash);
 
 						for (uint kick = 0; kick < _KickThreshold; kick++) {
-							std::swap(_cuckoo_move_hash_buff[idx], move_hash);
-							std::swap(_cuckoo_move16_buff[idx], move16b);
+							std::swap(_cuckoo_entry_buff[idx].move_hash, move_hash);
+							std::swap(_cuckoo_entry_buff[idx].move16, move16b);
 
 							ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()), 
 								   "Invalid entry in cuckoo tables");
@@ -72,15 +72,14 @@ void CuckooTables::validate() {
 	size_t count = 0;
 
 	for (size_t i = 0; i < _CuckooTableSize; i++) {
-		const uint64_t move_hash = _cuckoo_move_hash_buff[i];
-		const Move16b move16b = _cuckoo_move16_buff[i];
+		const uint64_t move_hash = _cuckoo_entry_buff[i].move_hash;
+		const Move16b move16b = _cuckoo_entry_buff[i].move16;
 
 		ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()),
 			   "Invalid entry in cuckoo tables");
 
-		if (move_hash and !move16b.isNull()) {
+		if (move_hash and !move16b.isNull())
 			count++;
-		}
 	}
 
 #ifdef _DEBUG

@@ -181,18 +181,28 @@ public:
 		return BitBoard(A_File << file);
 	}
 
+	INLINE constexpr bool isEmpty() const {
+		return _board == 0_ui64;
+	}
+
+	INLINE constexpr bool isSingleBit() const {
+		return !isEmpty() and isPow2(_board);
+	}
+
 	// crucial uint64_t constants
-	static constexpr uint64_t Universe    = 0xffffffffffffffff_ui64,
-							  A_File	  = 0x0101010101010101_ui64,
-							  B_File	  = 0x0202020202020202_ui64,
-							  G_File	  = 0x4040404040404040_ui64,
-							  H_File	  = 0x8080808080808080_ui64,
-							  Not_A_File  = ~A_File,
-						      Not_B_File  = ~B_File,
-						      Not_G_File  = ~G_File,
-						      Not_H_File  = ~H_File,
-						      Not_AB_File = Not_A_File & Not_B_File,
-						      Not_GH_File = Not_G_File & Not_H_File;
+	static constexpr uint64_t Universe      = 0xffffffffffffffff_ui64,
+							  A_File	    = 0x0101010101010101_ui64,
+							  B_File	    = 0x0202020202020202_ui64,
+							  G_File	    = 0x4040404040404040_ui64,
+							  H_File	    = 0x8080808080808080_ui64,
+							  White_Squares = 0x55aa55aa55aa55aa_ui64,
+							  Black_Squares = ~White_Squares,
+							  Not_A_File    = ~A_File,
+						      Not_B_File    = ~B_File,
+						      Not_G_File    = ~G_File,
+						      Not_H_File    = ~H_File,
+						      Not_AB_File   = Not_A_File & Not_B_File,
+						      Not_GH_File   = Not_G_File & Not_H_File;
 private:
 	uint64_t _board;
 };

@@ -123,6 +123,9 @@ void SearchResults::printSearchStats() {
 		<< "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
 		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt 		  << ", " << nmeval_rate << '%'
 		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt 		  << ", " << qeval_rate << '%'
+		<< "\nREPETITION CALLS:            " << rep_call_cnt
+		<< "\nREPETITION CYCLES:           " << rep_cnt
+		<< "\nCUCKOO CYCLES:               " << cuckoo_rep_cnt
 		<< '\n';
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
@@ -146,7 +149,7 @@ void SearchResults::printSearchStats() {
 void NodeInfo::clear() {
 	parent_alpha     = Score::Undef;
 	parent_beta	     = Score::Undef;
-	side2move		 = false;
+	side2move		 = WHITE;
 	state 			 = {};
 	best_move = move = Move32b::Null;
 	score 			 = Score::Undef;
@@ -343,7 +346,7 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 	for (unsigned d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
 
-        // TODO: So far, I reject last move when search is finised.
+        // TODO: So far, I reject last move when search is finished.
         // TODO: Sometimes it might be actually not really bad.
 		if (!search<InfoLevel>(pos, game, limits, search_results))
 			break;
@@ -418,14 +421,12 @@ Score Search::negaMax(Position& pos,
 	static constexpr int	   LmrMoveCount   = 2;
 
 	if constexpr (!Root) {
-		if (pos.getHalfmoveClock() >= 100)
-			return Score::Draw;
 
+		if (pos.getHalfmoveClock() >= 100 or isInsufficientMaterial(pos))
+			return Score::Draw;
 	}
 
-	NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	NodeInfo* const prev_node = node - 1;
-	NodeInfo* const next_node = node + 1;
 
 	if constexpr (!Root) {
 
@@ -433,10 +434,16 @@ Score Search::negaMax(Position& pos,
 		*  however, we could already check if there is any repetition out there in cuckoo tables.
 		*  If my parent searched for a repetition and failed, we probably don't have any repetition.
 		*/
-		if (IsPV or prev_node->parent_alpha > Score::Draw) {
+		if (IsPV or prev_node->parent_alpha >= Score::Draw) {
 
-			if (isRepetitionCycle<IsPV>(pos, game, node, ply))
+			if (isRepetitionCycle<IsPV>(pos, game, node, ply, results)) {
+
+#if defined(_COLLECT_SEARCH_STATS)
+				results.rep_cnt++;
+#endif
+
 				return Score::Draw;
+			}
 		}
 	}
 	
@@ -471,10 +478,13 @@ Score Search::negaMax(Position& pos,
 		return tt_entry.score;
 	}
 
-	node->side2move = pos.getTurn();
-
 	if constexpr (!IsPV) {
 		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
+
+#if defined(_COLLECT_SEARCH_STATS)
+			results.cuckoo_rep_cnt++;
+#endif
+
 			alpha = Score::Draw;
 
 			if (alpha >= beta) {
@@ -483,15 +493,15 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
-	node->parent_alpha = alpha;
-	node->parent_beta  = beta;
-
 	if (!depth) {
 		return quiesce<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
 								 				  alpha, beta,
 								 				  depth,
 								 				  ply);
 	}
+
+	node->parent_alpha = alpha;
+	node->parent_beta = beta;
 	
 	results.nodes_cnt++;
 
@@ -500,10 +510,13 @@ Score Search::negaMax(Position& pos,
 	results.npvnodes_cnt += !IsPV;
 #endif
 
-	const enumColor side2move = pos.getTurn();
+	node->side2move = pos.getTurn();
 
 	if constexpr (Root)
-		node->check = pos.isInCheck(side2move);
+		node->check = pos.isInCheck(node->side2move);
+
+	NodeInfo* const preroot = _tree_stack.getPreRootNode();
+	NodeInfo* const next_node = node + 1;
 
 	node->move = Move32b::Null;
 	Score eval = tt_entry.eval;
@@ -519,7 +532,7 @@ Score Search::negaMax(Position& pos,
 			depth <= RazorDepth)
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
 			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
@@ -580,7 +593,7 @@ Score Search::negaMax(Position& pos,
 			tt_move.isQuiet())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
 			if (eval - RfpMultDelta * depth >= beta) {
@@ -669,7 +682,7 @@ Score Search::negaMax(Position& pos,
 			!node->move.isQueenPromotion())
 		{
 			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, side2move, results);
+				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
 			if (eval + FutilityDelta * depth * depth < alpha) {
@@ -690,7 +703,7 @@ Score Search::negaMax(Position& pos,
 		if (pos.make(node->move, accum_cache)) {
 			node->can_move = true;
 
-			const enumColor next_side = !side2move;
+			const enumColor next_side = !node->side2move;
 
 			next_node->check = pos.isInCheck(next_side);
 			const int extend = calculateExtension(pos, node);
@@ -762,7 +775,7 @@ Score Search::negaMax(Position& pos,
 						!node->move.isQueenPromotion()) 
 					{
 						node->move_picker.setKillerMove(node->move);
-						node->move_picker.updateQuietsHistory(node->best_move, side2move, depth);
+						node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth);
 					}
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -845,12 +858,16 @@ Score Search::quiesce(Position& pos,
 	static constexpr bool	   SeeNonExactScore = false;
 	static constexpr Score	   MaterialDelta = 900;
 	
-	const enumColor side2move = pos.getTurn();
+	node->side2move = pos.getTurn();
+
+	if (isInsufficientMaterial(pos))
+		return Score::Draw;
 
 	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
-    else if (!limits.anyNodesLeft(results.nodes_cnt) or
+    
+	if (!limits.anyNodesLeft(results.nodes_cnt) or
              !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) {
         return -Score::Undef;
     }
@@ -858,15 +875,13 @@ Score Search::quiesce(Position& pos,
 	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-		return evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results);
+		return evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 	}
 
 #if defined(_COLLECT_SEARCH_STATS)
 	results.tt_probe_cnt++;
 	results.qtt_probe_cnt++;
 #endif
-
-	node->side2move = pos.getTurn();
 
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
@@ -895,10 +910,10 @@ Score Search::quiesce(Position& pos,
 	results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results)
+	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results)
 													            : tt_entry.eval;
 #else
-	const Score stand_pat = evaluate<QNodeType>(pos, _tree_stack, node, preroot, side2move, results);
+	const Score stand_pat = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif
 
 	/* Delta Pruning -
@@ -1064,11 +1079,18 @@ INLINE Score Search::evaluate(const Position& pos,
 }
 
 template <bool IsPV>
-bool Search::isRepetitionCycle(const Position& pos, 
-							   const FullInfoRecord& game, 
-							   NodeInfo* node, 
-							   int ply) 
+bool Search::isRepetitionCycle(const Position& pos,
+							   const FullInfoRecord& game,
+							   const NodeInfo* node,
+							   int ply,
+							   SearchResults& results)
 {
+#if defined(_COLLECT_SEARCH_STATS)
+	results.rep_call_cnt++;
+#else
+	_declUnused(results);
+#endif
+
 	const uint64_t curr_hashkey = pos.getZobristKey();
 	const NodeInfo* prev_node = node - 1;
 	int rep_cnt = 0;
@@ -1076,13 +1098,13 @@ bool Search::isRepetitionCycle(const Position& pos,
 	for (int p = ply - 1; p >= 0; p--, prev_node--) {
 		const Move32b move = prev_node->move;
 
-		if (move.isNull() or move.isIrreversible())
+		if (move.isIrreversible())
 			return false;
-		
+
 		if (((ply - p) & 1) == 0 and
 			curr_hashkey == prev_node->state.hash_key)
 		{
-			if constexpr (!IsPV) 
+			if constexpr (!IsPV)
 				return true;
 
 			if (++rep_cnt >= 2)
@@ -1099,15 +1121,15 @@ bool Search::isRepetitionCycle(const Position& pos,
 	for (int i = 1; i <= SearchRepDepth; i++) {
 		const int cnt = curr_cnt - i;
 
-		if (cnt < 0) 
+		if (cnt < 0)
 			return false;
 
 		const Move32b move = game.getPrevMove(cnt);
 
-		if (move.isNull() or move.isIrreversible())
+		if (move.isIrreversible())
 			return false;
-		
-		if ((i & 1) == 1 and 
+
+		if ((i & 1) == 1 and
 			curr_hashkey == game.getPrevKey(cnt))
 		{
 			if constexpr (!IsPV)
@@ -1122,16 +1144,13 @@ bool Search::isRepetitionCycle(const Position& pos,
 }
 
 bool Search::canRepetitionDraw(const Position& pos,
-							   NodeInfo* node,
+							   const NodeInfo* node,
 							   int ply)
 {
-	if (ply < 2)
-		return false;
-	
 	const uint64_t curr_hash = pos.getZobristKey();
 	const NodeInfo* prev_node = node - 1;
 
-	for (int p = ply - 1; p >= 2;) {
+	for (int p = ply - 1; p >= 2; p -= 2) {
 		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			break;
 
@@ -1141,8 +1160,6 @@ bool Search::canRepetitionDraw(const Position& pos,
 			break;
 
 		prev_node--;
-
-		p -= 2;
 
 		assert(prev_node->side2move != node->side2move);
 		assert(prev_node->state.hash_key);
@@ -1169,13 +1186,51 @@ bool Search::canRepetitionDraw(const Position& pos,
 
 		// simplified verification for obtained cuckoo move
 
-		if (!pos.getOwnPieces().isOccupiedSq(org))
+		if (pos.getOccupied().isEmptySq(org) and
+			pos.getOccupied().isEmptySq(dst))
 			continue;
 
 		assert(unpacked(pos, move16b).isKnight() == move16b.isKnight());
 
-		if (move16b.isKnight() or !(onlyBetween(org, dst) & pos.getOccupied()))
+		if (!(onlyBetween(org, dst) & pos.getOccupied()) or move16b.isKnight())
 			return true;
+	}
+
+	return false;
+}
+
+bool Search::isInsufficientMaterial(const Position& pos) {
+
+	if (pos.getPawns() or pos.getQueens())
+		return false;
+
+	const int piece_cnt = pos.getOccupied().popCount();
+
+	// King versus King
+	if (piece_cnt == 2)
+		return true;
+
+	// King + Bishop versus King
+	if (piece_cnt == 3 and
+		pos.getBishops() /* .popCount() == 1 */)
+		return true;
+
+	// King + Knight versus King
+	if (piece_cnt == 3 and
+		pos.getKnights() /*.popCount() == 1 */)
+		return true;
+
+	// King + Bishop versus King + Bishop with same-color Bishops
+	if (piece_cnt == 4 and
+		pos.getBishopsBySide(WHITE).isSingleBit() and
+		pos.getBishopsBySide(BLACK).isSingleBit()) {
+
+		// check colors matching
+
+		const BitBoard bishops = pos.getBishops();
+		const BitBoard white_square_bishops = bishops & BitBoard::White_Squares;
+
+		return white_square_bishops == bishops or white_square_bishops.isEmpty();
 	}
 
 	return false;

@@ -102,6 +102,10 @@ public:
 		return getPromoPiece() == Piece::QUEEN;
 	}
 
+	INLINE bool isRookPromotion() const {
+		return getPromoPiece() == Piece::ROOK;
+	}
+
 	INLINE bool isUnderPromotion() const {
 		return isPromotion() and !isQueenPromotion();
 	}

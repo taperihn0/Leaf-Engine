@@ -12,17 +12,17 @@ public:
 	}
 
 	static _FORCEINLINE size_t cuckooIndex2(uint64_t hash) {
-		return (hash >> 14) & (_CuckooTableSize - 1);
+		return (hash >> 16) & (_CuckooTableSize - 1);
 	}
 
 	_FORCEINLINE uint64_t getMoveHash(size_t idx) const {
 		assert(idx < _CuckooTableSize);
-		return _cuckoo_move_hash_buff[idx];
+		return _cuckoo_entry_buff[idx].move_hash;
 	}
 
 	_FORCEINLINE Move16b getMove16b(size_t idx) const {
 		assert(idx < _CuckooTableSize);
-		return _cuckoo_move16_buff[idx];
+		return _cuckoo_entry_buff[idx].move16;
 	}
 
 	static _FORCEINLINE size_t getSize() {
@@ -32,14 +32,18 @@ public:
 private:
 	void validate();
 
-	static constexpr size_t _CuckooTableSize = 8192;
+	static constexpr size_t _CuckooTableSize = 4096;
 	static_assert(isPow2(_CuckooTableSize));
 
 	static constexpr uint	_KickThreshold = 216;
 	static constexpr size_t _AccurateCount = 2212;
 
-	uint64_t* _cuckoo_move_hash_buff;
-	Move16b*  _cuckoo_move16_buff;
+	struct _CuckooEntry {
+		uint64_t move_hash;
+		Move16b  move16;
+	};
+
+	_CuckooEntry* _cuckoo_entry_buff;
 };
 
 
