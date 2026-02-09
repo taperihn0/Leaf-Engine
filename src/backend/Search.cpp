@@ -189,7 +189,7 @@ TreeStack::TreeStack() {
 }
 
 void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
-	assert(history_buffer);
+	ASSERTNOLOG(history_buffer);
 
 	for (int i = 0; i < _Count; i++) {
         NodeInfo* const node = &_stack[i];
@@ -219,7 +219,7 @@ INLINE NodeInfo* TreeStack::getPreRootNode() {
 }
 
 INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
-	const NodeInfo* const preroot)
+																	   const NodeInfo* const preroot)
 {
 	for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
 		prev_accum_cluster != &preroot->cluster;
@@ -233,7 +233,7 @@ INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const Acc
 }
 
 INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
-	AccumulatorCluster* const accum_cluster)
+											   AccumulatorCluster* const accum_cluster)
 {
 	for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
 		prev_cluster != accum_cluster;
@@ -296,7 +296,7 @@ INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const c
 Search::Search(TranspositionTable&& tt) 
 	: _tt(std::move(tt))
 	, _history_buff(reinterpret_cast<MoveOrderHistoryTables*>(
-		alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) 
+				    alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) 
 {
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
@@ -428,6 +428,8 @@ Score Search::negaMax(Position& pos,
 
 	NodeInfo* const prev_node = node - 1;
 
+	node->side2move = pos.getTurn();
+
 	if constexpr (!Root) {
 
 		/* Repetition rule -
@@ -509,8 +511,6 @@ Score Search::negaMax(Position& pos,
 	results.pvnodes_cnt += IsPV;
 	results.npvnodes_cnt += !IsPV;
 #endif
-
-	node->side2move = pos.getTurn();
 
 	if constexpr (Root)
 		node->check = pos.isInCheck(node->side2move);
@@ -1092,18 +1092,25 @@ bool Search::isRepetitionCycle(const Position& pos,
 #endif
 
 	const uint64_t curr_hashkey = pos.getZobristKey();
-	const NodeInfo* prev_node = node - 1;
+	const NodeInfo* prev_node = node;
+
 	int rep_cnt = 0;
 
-	for (int p = ply - 1; p >= 0; p--, prev_node--) {
-		const Move32b move = prev_node->move;
+	for (int p = ply - 1; 
+		 p >= 0 and p >= ply - pos.getHalfmoveClock(); 
+		 p -= 2) 
+	{
+		prev_node--;
 
-		if (move.isIrreversible())
+		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			return false;
 
-		if (((ply - p) & 1) == 0 and
-			curr_hashkey == prev_node->state.hash_key)
-		{
+		prev_node--;
+
+		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+			return false;
+
+		if (curr_hashkey == prev_node->state.hash_key) {
 			if constexpr (!IsPV)
 				return true;
 
@@ -1111,6 +1118,9 @@ bool Search::isRepetitionCycle(const Position& pos,
 				return true;
 		}
 	}
+
+	if (ply >= pos.getHalfmoveClock())
+		return false;
 
 	static constexpr int SearchRepDepth = 37;
 	static_assert(SearchRepDepth % 2);
@@ -1139,7 +1149,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 				return true;
 		}
 	}
-
+	
 	return false;
 }
 
@@ -1147,19 +1157,28 @@ bool Search::canRepetitionDraw(const Position& pos,
 							   const NodeInfo* node,
 							   int ply)
 {
+	if (pos.getHalfmoveClock() < 4)
+		return false;
+
 	const uint64_t curr_hash = pos.getZobristKey();
 	const NodeInfo* prev_node = node - 1;
 
-	for (int p = ply - 1; p >= 2; p -= 2) {
+	if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+		return false;
+
+	for (int p = ply - 1; 
+		 p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 
+		 p -= 2) 
+	{
+		prev_node--;
+		
 		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			break;
-
+		
 		prev_node--;
 
 		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			break;
-
-		prev_node--;
 
 		assert(prev_node->side2move != node->side2move);
 		assert(prev_node->state.hash_key);
