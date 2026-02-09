@@ -32,8 +32,7 @@ void CuckooTables::init() {
 					case Piece::KING:
 						attacks = kingAttacks(from);
 						break;
-					case Piece::PAWN:
-					case Piece::QUEEN:
+					default:
 						break;
 					}
 

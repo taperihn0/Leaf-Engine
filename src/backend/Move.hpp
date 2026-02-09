@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Piece.hpp"
 #include "Square.hpp"
+#include "Attacks.hpp"
 
 class Position;
 

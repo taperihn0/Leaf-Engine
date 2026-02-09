@@ -191,7 +191,7 @@ TreeStack::TreeStack() {
 void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 	assert(history_buffer);
 
-	for (size_t i = 0; i < _Count; i++) {
+	for (int i = 0; i < _Count; i++) {
         NodeInfo* const node = &_stack[i];
 
 		node->clear();
