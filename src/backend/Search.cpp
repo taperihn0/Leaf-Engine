@@ -448,6 +448,21 @@ Score Search::negaMax(Position& pos,
 			}
 		}
 	}
+
+	if constexpr (!IsPV) {
+		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
+
+#if defined(_COLLECT_SEARCH_STATS)
+			results.cuckoo_rep_cnt++;
+#endif
+
+			alpha = Score::Draw;
+
+			if (alpha >= beta) {
+				return beta;
+			}
+		}
+	}
 	
 	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -478,21 +493,6 @@ Score Search::negaMax(Position& pos,
 		results.tt_cut_cnt++;
 #endif
 		return tt_entry.score;
-	}
-
-	if constexpr (!IsPV) {
-		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
-
-#if defined(_COLLECT_SEARCH_STATS)
-			results.cuckoo_rep_cnt++;
-#endif
-
-			alpha = Score::Draw;
-
-			if (alpha >= beta) {
-				return beta;
-			}
-		}
 	}
 
 	if (!depth) {
@@ -1111,6 +1111,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 			return false;
 
 		if (curr_hashkey == prev_node->state.hash_key) {
+
 			if constexpr (!IsPV)
 				return true;
 
@@ -1122,26 +1123,22 @@ bool Search::isRepetitionCycle(const Position& pos,
 	if (ply >= pos.getHalfmoveClock())
 		return false;
 
-	static constexpr int SearchRepDepth = 37;
-	static_assert(SearchRepDepth % 2);
-
-	const int curr_cnt = static_cast<int>(game.currentHalfCount());
+	const int game_rep_depth = 50 - ply;
+	const int curr_halfclock = static_cast<int>(game.currentHalfCount());
 
 	// iterate through only a subset of all game moves
-	for (int i = 1; i <= SearchRepDepth; i++) {
-		const int cnt = curr_cnt - i;
-
-		if (cnt < 0)
-			return false;
-
-		const Move32b move = game.getPrevMove(cnt);
+	for (int halfclock = curr_halfclock - 1;
+		 halfclock >= 0 and curr_halfclock - halfclock <= game_rep_depth;
+		 halfclock--) 
+	{
+		const Move32b move = game.getPrevMove(halfclock);
 
 		if (move.isIrreversible())
 			return false;
 
-		if ((i & 1) == 1 and
-			curr_hashkey == game.getPrevKey(cnt))
-		{
+		if (((curr_halfclock - halfclock) & 1) and 
+			curr_hashkey == game.getPrevKey(halfclock)) {
+
 			if constexpr (!IsPV)
 				return true;
 
@@ -1153,11 +1150,16 @@ bool Search::isRepetitionCycle(const Position& pos,
 	return false;
 }
 
+/*
+* Upcoming repetition detection based on a paper:
+* http://web.archive.org/web/20201107002606/https://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
+*/
+
 bool Search::canRepetitionDraw(const Position& pos,
 							   const NodeInfo* node,
 							   int ply)
 {
-	if (pos.getHalfmoveClock() < 4)
+	if (pos.getHalfmoveClock() < 3)
 		return false;
 
 	const uint64_t curr_hash = pos.getZobristKey();
@@ -1165,6 +1167,8 @@ bool Search::canRepetitionDraw(const Position& pos,
 
 	if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 		return false;
+
+	size_t idx = static_cast<size_t>(-1);
 
 	for (int p = ply - 1; 
 		 p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 
@@ -1183,36 +1187,30 @@ bool Search::canRepetitionDraw(const Position& pos,
 		assert(prev_node->side2move != node->side2move);
 		assert(prev_node->state.hash_key);
 
-		const uint64_t move_hash = curr_hash ^ prev_node->state.hash_key;
+		const uint32_t move_hash = static_cast<uint32_t>(prev_node->state.hash_key ^ curr_hash);
 
-		const size_t cuckoo_index1 = CuckooTables::cuckooIndex1(move_hash);
-		const size_t cuckoo_index2 = CuckooTables::cuckooIndex2(move_hash);
+		if ((idx = CuckooTables::cuckooIndex1(move_hash), 
+				_cuckoo_tables.getMoveHash(idx) == move_hash) or
+			(idx = CuckooTables::cuckooIndex2(move_hash), 
+				_cuckoo_tables.getMoveHash(idx) == move_hash)) {
 
-		size_t cuckoo_index = 0;
+			// simplified verification for obtained cuckoo move
 
-		if (_cuckoo_tables.getMoveHash(cuckoo_index1) == move_hash)
-			cuckoo_index = cuckoo_index1;
+			const Move16b move16b = _cuckoo_tables.getMove16b(idx);
 
-		else if (_cuckoo_tables.getMoveHash(cuckoo_index2) == move_hash)
-			cuckoo_index = cuckoo_index2;
+			const Square org = move16b.getOrigin();
+			const Square dst = move16b.getTarget();
 
-		else 
-			continue;
+			const BitBoard occupied = pos.getOccupied();
+			
+			if (!(occupied & (BitBoard(org) | BitBoard(dst))))
+				continue;
 
-		const Move16b move16b = _cuckoo_tables.getMove16b(cuckoo_index);
-		const Square org = move16b.getOrigin();
-		const Square dst = move16b.getTarget();
+			assert(unpacked(pos, move16b).isKnight() == move16b.isKnight());
 
-		// simplified verification for obtained cuckoo move
-
-		if (pos.getOccupied().isEmptySq(org) and
-			pos.getOccupied().isEmptySq(dst))
-			continue;
-
-		assert(unpacked(pos, move16b).isKnight() == move16b.isKnight());
-
-		if (!(onlyBetween(org, dst) & pos.getOccupied()) or move16b.isKnight())
-			return true;
+			if (!(onlyBetween(org, dst) & occupied) or move16b.isKnight())
+				return true;
+		}
 	}
 
 	return false;

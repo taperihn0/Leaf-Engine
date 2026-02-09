@@ -37,9 +37,9 @@ void CuckooTables::init() {
 					}
 
 					if (attacks.isOccupiedSq(to)) {
-						uint64_t move_hash = ZobristHash::piece_keys[side][piece][from] ^ 
-											  ZobristHash::piece_keys[side][piece][to] ^ 
-											  ZobristHash::black_key;
+						uint32_t move_hash = static_cast<uint32_t>(ZobristHash::piece_keys[side][piece][from] ^ 
+																	ZobristHash::piece_keys[side][piece][to] ^ 
+																	ZobristHash::black_key);
 
 						Move16b move16b = makePackedSimple(from, to);
 
@@ -71,7 +71,7 @@ void CuckooTables::validate() {
 	size_t count = 0;
 
 	for (size_t i = 0; i < _CuckooTableSize; i++) {
-		const uint64_t move_hash = _cuckoo_entry_buff[i].move_hash;
+		const uint32_t move_hash = _cuckoo_entry_buff[i].move_hash;
 		const Move16b move16b = _cuckoo_entry_buff[i].move16;
 
 		ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()),

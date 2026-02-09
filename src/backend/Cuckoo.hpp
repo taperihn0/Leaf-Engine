@@ -15,7 +15,7 @@ public:
 		return (hash >> 16) & (_CuckooTableSize - 1);
 	}
 
-	_FORCEINLINE uint64_t getMoveHash(size_t idx) const {
+	_FORCEINLINE uint32_t getMoveHash(size_t idx) const {
 		assert(idx < _CuckooTableSize);
 		return _cuckoo_entry_buff[idx].move_hash;
 	}
@@ -39,7 +39,7 @@ private:
 	static constexpr size_t _AccurateCount = 2212;
 
 	struct _CuckooEntry {
-		uint64_t move_hash;
+		uint32_t move_hash;
 		Move16b  move16;
 	};
 
