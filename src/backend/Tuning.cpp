@@ -17,7 +17,11 @@ void TunableParametersMap::createMapping() {
     _addr["LmrMoveCount"]     = &LmrMoveCount;
     _addr["RazorMultDelta"]   = &RazorMultDelta;
     _addr["RfpMultDelta"]     = &RfpMultDelta;
+    _addr["FutilityMoveCount"]= &FutilityMoveCount; 
     _addr["FutilityDelta"]    = &FutilityDelta;
+    _addr["RazorBaseDelta"]   = &RazorBaseDelta;
+    _addr["QMaterialDelta"]   = &QMaterialDelta;
+    _addr["QProbeDepth"]      = &QProbeDepth;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {

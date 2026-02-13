@@ -408,7 +408,6 @@ Score Search::negaMax(Position& pos,
 
 	static constexpr OrderType OrderPolicy 	  = STAGED;
 	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
-	static constexpr Score 	   RazorBaseDelta = 150;
 
 	if constexpr (!Root) {
 
@@ -525,7 +524,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval + RazorBaseDelta + (Score)RazorMultDelta * depth < alpha) {
+			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
@@ -586,7 +585,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval - (Score)RfpMultDelta * depth >= beta) {
+			if (eval - RfpMultDelta * depth >= beta) {
 				const Score reduced_eval = eval - (depth << 6);
 				return reduced_eval;
 			}
@@ -667,7 +666,7 @@ Score Search::negaMax(Position& pos,
 		*/
 		if (!node->check and
 			depth <= FutilityDepth and
-			node->moves_searched > 0 and
+			node->moves_searched >= FutilityMoveCount and
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
@@ -675,7 +674,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval + (Score)FutilityDelta * depth * depth < alpha) {
+			if (eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
@@ -846,7 +845,6 @@ Score Search::quiesce(Position& pos,
 	static constexpr bool	   IsPV = QNodeType & PV_NODE; 
 	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
-	static constexpr Score	   MaterialDelta = 900;
 	
 	node->side2move = pos.getTurn();
 
@@ -858,7 +856,7 @@ Score Search::quiesce(Position& pos,
 	}
     
 	if (!limits.anyNodesLeft(results.nodes_cnt) or
-             !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) {
+        !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) {
         return -Score::Undef;
     }
 
@@ -886,7 +884,7 @@ Score Search::quiesce(Position& pos,
 	const bool exact_hit = (!IsPV and tt_hit) or 
 						   (IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
-	if (exact_hit and depth < 0) {
+	if (exact_hit and depth <= QProbeDepth) {
 #if defined(_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
 		results.qtt_cut_cnt++;
@@ -901,7 +899,7 @@ Score Search::quiesce(Position& pos,
 
 #if defined(_TT_PROBE_QSEARCH)
 	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results)
-													            : tt_entry.eval;
+													         : tt_entry.eval;
 #else
 	const Score stand_pat = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif
@@ -910,7 +908,7 @@ Score Search::quiesce(Position& pos,
 	*  when no move has any chance to raise alpha
 	*  then prune all of the branches.
 	*/
-	if (stand_pat + MaterialDelta < alpha)
+	if (stand_pat + QMaterialDelta < alpha)
 		return alpha;
 	
 	/* Standing Pat Cutoff -

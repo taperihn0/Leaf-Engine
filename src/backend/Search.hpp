@@ -135,18 +135,22 @@ private:
 	NodeInfo* _stack;
 };
 
-inline _P_CONSTEXPR int CheckNodeCount = 4096;
-inline _P_CONSTEXPR int	IidDepth 	   = 3;
-inline _P_CONSTEXPR int	IidDepthDiv    = 8;
-inline _P_CONSTEXPR int	RfpDepth       = 6;
-inline _P_CONSTEXPR int RazorDepth     = 2;
-inline _P_CONSTEXPR int	FutilityDepth  = 4;
-inline _P_CONSTEXPR int	LmrDepth 	   = 2;
-inline _P_CONSTEXPR int	NullReduction  = 2;
-inline _P_CONSTEXPR int	LmrMoveCount   = 2;
-inline _P_CONSTEXPR int RazorMultDelta = 25;
-inline _P_CONSTEXPR int RfpMultDelta   = 150;
-inline _P_CONSTEXPR int FutilityDelta  = 32;
+inline _P_CONSTEXPR int CheckNodeCount    = 4096;
+inline _P_CONSTEXPR int	IidDepth 	      = 3;
+inline _P_CONSTEXPR int	IidDepthDiv       = 8;
+inline _P_CONSTEXPR int	RfpDepth          = 6;
+inline _P_CONSTEXPR int RazorDepth        = 2;
+inline _P_CONSTEXPR int	FutilityDepth     = 4;
+inline _P_CONSTEXPR int	LmrDepth 	      = 2;
+inline _P_CONSTEXPR int	NullReduction     = 2;
+inline _P_CONSTEXPR int	LmrMoveCount      = 2;
+inline _P_CONSTEXPR int RazorMultDelta    = 25;
+inline _P_CONSTEXPR int RfpMultDelta      = 150;
+inline _P_CONSTEXPR int FutilityDelta     = 32;
+inline _P_CONSTEXPR int FutilityMoveCount = 1;
+inline _P_CONSTEXPR int RazorBaseDelta    = 150;
+inline _P_CONSTEXPR int QMaterialDelta    = 900;
+inline _P_CONSTEXPR int QProbeDepth		  = -1;
 
 class Search {
 public:
