@@ -12,12 +12,12 @@ namespace Utils {
 #include <ext/stdio_filebuf.h>
 
 struct EngineProcess {
-    pid_t pid;
+    using filebuf = __gnu_cxx::stdio_filebuf<char>;
+    pid_t                         pid;
     std::unique_ptr<std::ostream> in;
     std::unique_ptr<std::istream> out;
-    using filebuf = __gnu_cxx::stdio_filebuf<char>;
-    std::unique_ptr<filebuf> in_buf;
-    std::unique_ptr<filebuf> out_buf;
+    std::unique_ptr<filebuf>      in_buf;
+    std::unique_ptr<filebuf>      out_buf;
 };
 
 EngineProcess spawnProcess();

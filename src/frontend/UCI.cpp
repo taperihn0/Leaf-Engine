@@ -82,7 +82,8 @@ UniversalChessInterface::UniversalChessInterface()
 	, _pos(StartposFEN)
 	, _options{ 
 		OptionHash(SpinType<ll>(1, 1, 512)), 
-		OptionClearHash()}
+		OptionClearHash(),
+		{} }
 {
 	initTunableOptions();
 }
@@ -90,7 +91,7 @@ UniversalChessInterface::UniversalChessInterface()
 // ARGUMENTS AREN'T USED FOR NOW
 void UniversalChessInterface::loop(int, const char*[]) {
 	// C-style streams aren't used there
-	//std::ios_base::sync_with_stdio(false);
+	std::ios_base::sync_with_stdio(false);
 
 #if defined(_ENABLE_TUNING)
 	GlobParamMapping.createMapping();

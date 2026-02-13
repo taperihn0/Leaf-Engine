@@ -32,12 +32,9 @@ private:
 #endif
 
 	struct Options {
-		OptionHash 		hash;
-		OptionClearHash clear_hash;
-
-#if defined(_ENABLE_TUNING)
+		OptionHash 					    hash;
+		OptionClearHash 			    clear_hash;
 		std::vector<OptionTunableParam> tunable_params;
-#endif
 	};
 
 	Search         _search;

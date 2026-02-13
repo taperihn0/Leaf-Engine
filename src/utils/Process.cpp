@@ -1,5 +1,5 @@
 #include "Process.hpp"
-#include "frontend/UCI.hpp"
+#include "frontend/Setup.hpp"
 
 namespace Utils {
 
@@ -14,7 +14,6 @@ EngineProcess spawnProcess() {
     const pid_t pid = fork();
 
     if (pid == 0) {
-        
         dup2(in_pipe[0], STDIN_FILENO);
         dup2(out_pipe[1], STDOUT_FILENO);
         
@@ -23,8 +22,7 @@ EngineProcess spawnProcess() {
         
         const char* argv[] = { "LeafClone", nullptr };
 
-        UniversalChessInterface uci;
-        uci.loop(1, argv);
+        startLoop(1, argv);
 
         _exit(0);
     }

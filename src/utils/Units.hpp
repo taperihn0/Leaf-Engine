@@ -130,7 +130,7 @@ static bool seeTests() {
 	return true;
 }
 
-static bool ccrOneHourTest(Search& search) {
+static bool ccrOneHourTest() {
 	std::ifstream file("src/assets/sets/ccronehour.epd");
 	ASSERT(file.is_open(), "Failed to open file src/assets/sets/ccronehour.epd");
 
@@ -151,6 +151,8 @@ static bool ccrOneHourTest(Search& search) {
 	limits.depth = search_depth;
 
 	std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
+
+	Search search(TranspositionTable(1_MB));
 
 	Timer timer;
 	timer.go();

@@ -4,11 +4,13 @@
 #include "backend/MoveGen.hpp"
 #include "backend/Hash.hpp"
 
-_INTERNAL void startEngine(int argc, const char* argv[]) {
+_INTERNAL void setupInternals() {
     ZobristHash::fillKeys();
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
 	SlidersMagics::initAttackTables<Piece::ROOK>();
+}
 
-	UniversalChessInterface uci_obj;
-	uci_obj.loop(argc, argv);
+_INTERNAL void startLoop(int argc, const char* argv[]) {
+	UniversalChessInterface uci;
+	uci.loop(argc, argv);
 }

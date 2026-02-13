@@ -1,4 +1,4 @@
-#include "EntryPoint.h"
+#include "Setup.hpp"
 
 /*
 	NOTES:
@@ -18,5 +18,7 @@
 */
 
 int main(int argc, const char* argv[]) {
-	startEngine(argc, argv);
+	setupInternals();
+	startLoop(argc, argv);
+	return 0;
 }

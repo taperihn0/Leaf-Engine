@@ -7,6 +7,7 @@
 #include "Filepath.hpp"
 #include "PostProcess.hpp"
 #include "SPSA.h"
+#include "frontend/Setup.hpp"
 
 #include <sstream>
 
@@ -235,15 +236,12 @@ void parseSPSA(std::istringstream& strm) {
 }
 
 int main(int argc, char* argv[]) {
-	ZobristHash::fillKeys();
-	SlidersMagics::initAttackTables<Piece::BISHOP>();
-	SlidersMagics::initAttackTables<Piece::ROOK>();
+	setupInternals();
 
-	Search search(TranspositionTable(1_MB));
 	Utils::DataCollector collector;
 
 	// C-style streams aren't used there
-	//std::ios_base::sync_with_stdio(false);
+	std::ios_base::sync_with_stdio(false);
 
 	std::cout << "Utility module for " << EngineName << '\n';
 
@@ -263,7 +261,7 @@ int main(int argc, char* argv[]) {
         * The most important thing is they just works.
         */
              if (token == "test_pack")             Utils::packedPositionTests();
-        else if (token == "test_ccr_one_hour")     Utils::ccrOneHourTest(search);
+        else if (token == "test_ccr_one_hour")     Utils::ccrOneHourTest();
         else if (token == "test_see")		       Utils::seeTests();
         else if (token == "test_pack_on")          Utils::parsePackedFile(strm);
         else if (token == "test_extpack_on")       Utils::parseExtPackedFile(strm);
