@@ -5,6 +5,8 @@
 class CuckooTables {
 public:
 	CuckooTables();
+	~CuckooTables();
+
 	void init();
 
 	static _FORCEINLINE size_t cuckooIndex1(uint64_t hash) {

@@ -9,6 +9,10 @@ CuckooTables::CuckooTables() {
 	alignedMemset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
 }
 
+CuckooTables::~CuckooTables() {
+	alignedFree(_cuckoo_entry_buff);
+}
+
 void CuckooTables::init() {
 	for (auto side : { WHITE, BLACK }) {
 		for (auto piece : Piece::PieceTypeList) {

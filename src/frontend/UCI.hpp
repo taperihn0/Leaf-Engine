@@ -14,6 +14,8 @@ public:
 
 	void loop(int argc, const char* argv[]);
 private:
+	void initTunableOptions();
+
 	void parseUCI();
 	void parseNewGame();
 	void parsePosition(std::istringstream& strm);
@@ -32,6 +34,10 @@ private:
 	struct Options {
 		OptionHash 		hash;
 		OptionClearHash clear_hash;
+
+#if defined(_ENABLE_TUNING)
+		std::vector<OptionTunableParam> tunable_params;
+#endif
 	};
 
 	Search         _search;

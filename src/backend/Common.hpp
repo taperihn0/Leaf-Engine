@@ -50,8 +50,14 @@
 #define _INTERNAL 			inline
 #endif
 
-#define _NORETURN [[noreturn]]
-#define _UNUSED   [[maybe_unused]]
+#define _NORETURN    [[noreturn]]
+#define _UNUSED      [[maybe_unused]]
+
+#if defined(BUILD_UTILS)
+#define _ENABLE_TUNING
+#endif
+
+#define _ENABLE_TUNING // !!!
 
 #if defined(_CPP_STANDARD_20)
 #define _LIKELY   [[likely]]
@@ -59,6 +65,12 @@
 #else
 #define _LIKELY
 #define _UNLIKELY
+#endif
+
+#if defined(_ENABLE_TUNING)
+#define _P_CONSTEXPR
+#else
+#define _P_CONSTEXPR constexpr
 #endif
 
 template <typename T>

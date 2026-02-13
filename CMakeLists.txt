@@ -34,6 +34,7 @@ message("Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
 
 if (BUILD_UTILS)
 	add_library(Leaf STATIC ${SOURCES})
+	target_compile_definitions(Leaf PUBLIC BUILD_UTILS)
 	add_subdirectory(src/utils)
 	message("Building Leaf utils")
 else ()

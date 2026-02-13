@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Simd.hpp"
+#include <memory>
 
 // modify it as you wish
 #define _ENABLE_PREFETCH

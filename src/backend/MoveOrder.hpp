@@ -34,10 +34,12 @@ enum OrderType {
 
 /*
 *	MoveOrder<STAGED>:
-*	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>
+*	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
 *	MoveOrder<QUIESCE>:
 *	 - Generates only captures in quiescent node.
 */
+
+inline _P_CONSTEXPR int MaxQuietsHistory = 4096;
 
 class MoveOrder {
 public:
@@ -96,9 +98,6 @@ private:
 
 	Move32b _hash_move	   = Move32b::Null;
 	Move32b _killer_move   = Move32b::Null;
-	
-	static constexpr int16_t _MaxQuietsPower = 12;
-	static constexpr int16_t _MaxQuietsHistory = 4096;
 
 	MoveList _move_list;
 };

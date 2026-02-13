@@ -97,11 +97,11 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	const Piece::uint_t piece = value(move.getPiece());
 	const Square dst = move.getTarget();
 
-	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), _MaxQuietsHistory);
+	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
 
-	_tables->_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_tables->_quiets_history[side][piece][dst] * bonus) >> _MaxQuietsPower);
+	_tables->_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_tables->_quiets_history[side][piece][dst] * bonus) / MaxQuietsHistory);
 
-	assert(abs(_tables->_quiets_history[side][piece][dst]) <= _MaxQuietsHistory);
+	assert(abs(_tables->_quiets_history[side][piece][dst]) <= MaxQuietsHistory);
 }
 
 template <OrderType Type>
@@ -188,7 +188,7 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 		const Piece::uint_t piece = value(move->getPiece());
 		const Square dst = move->getTarget();
 
-		*score = _tables->_quiets_history[side][piece][dst] + _MaxQuietsHistory;
+		*score = _tables->_quiets_history[side][piece][dst] + MaxQuietsHistory;
 	}
 }
 

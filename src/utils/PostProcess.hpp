@@ -3,6 +3,7 @@
 #include "UtilsCommon.hpp"
 #include "Entry.hpp"
 #include "StaticEval.hpp"
+#include "Memory.hpp"
 
 namespace Utils {
 

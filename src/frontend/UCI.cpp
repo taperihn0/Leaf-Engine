@@ -4,6 +4,7 @@
 #include "PackedNetwork.hpp"
 #include "Accumulator.hpp"
 #include "NetworkEval.hpp"
+#include "Tuning.hpp"
 
 #include <sstream>
 
@@ -80,14 +81,19 @@ UniversalChessInterface::UniversalChessInterface()
 	: _search(TranspositionTable(1_MB))
 	, _pos(StartposFEN)
 	, _options{ 
-		OptionHash(SpinType(1, 1, 512)), 
-		OptionClearHash() }
-{}
+		OptionHash(SpinType<ll>(1, 1, 512)), 
+		OptionClearHash(),
+		{} }
+{
+	initTunableOptions();
+}
 
 // ARGUMENTS AREN'T USED FOR NOW
 void UniversalChessInterface::loop(int, const char*[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
+
+	GlobParamMapping.createMapping();
 
 	std::cout << "Polish Chess Engine, " << EngineName << " by " << Author << '\n';
 
@@ -119,6 +125,26 @@ void UniversalChessInterface::loop(int, const char*[]) {
 #endif
 
 	} while (command != "quit");
+}
+
+void UniversalChessInterface::initTunableOptions() {
+	_options.tunable_params.insert(_options.tunable_params.end(),
+		{
+		OptionTunableParam(SpinType<double>(MaxQuietsHistory, 64., 16384.), "MaxQuietsHistory"),
+		OptionTunableParam(SpinType<double>(CheckNodeCount  , 64., 32768.), "CheckNodeCount"),
+		OptionTunableParam(SpinType<double>(IidDepth 	    ,  1., 10.),    "IidDepth"),
+		OptionTunableParam(SpinType<double>(IidDepthDiv     ,  5., 16.),    "IidDepthDiv"),
+		OptionTunableParam(SpinType<double>(RfpDepth        ,  1., 10.),    "RfpDepth"),
+		OptionTunableParam(SpinType<double>(RazorDepth      ,  1., 10.),    "RazorDepth"),
+		OptionTunableParam(SpinType<double>(FutilityDepth   ,  1., 10.),    "FutilityDepth"),
+		OptionTunableParam(SpinType<double>(LmrDepth 	    ,  1., 10.),    "LmrDepth"),
+		OptionTunableParam(SpinType<double>(NullReduction   ,  1., 10.),    "NullReduction"),
+		OptionTunableParam(SpinType<double>(LmrMoveCount    ,  1., 32.),    "LmrMoveCount"),
+		OptionTunableParam(SpinType<double>(RazorMultDelta  ,  5., 100.),   "RazorMultDelta"),
+		OptionTunableParam(SpinType<double>(RfpMultDelta    , 10., 400.),   "RfpMultDelta"),
+		OptionTunableParam(SpinType<double>(FutilityDelta   ,  2., 216.),   "FutilityDelta"),
+		}
+	);
 }
 
 void UniversalChessInterface::parseUCI() {
@@ -267,31 +293,59 @@ void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
-	std::string token;
-	strm >> std::skipws >> token >> std::skipws >> token;
+	std::string option, token;
+	strm >> std::skipws >> token >> std::skipws >> option;
 
-	if (token == "Clear") {
+	if (option == "Clear") {
 		strm >> std::skipws >> token;
 
 		if (token == "Hash") {
 			_search.clearHashTT();
 		}
 	}
-	else if (token == "Hash") {
+	
+	if (option == "Hash") {
 		strm >> std::skipws >> token;
 
 		if (token == "value") {
 			strm >> std::skipws >> token;
 			
-			const SpinType::int_t val = std::stoi(token);
+			const ll val = std::stoi(token);
 
 			_options.hash.set(val);
 			_search.resizeHashTT(_options.hash.getCurrentValue() * 1_MB);
 		}
 	}
+
+#if defined(_ENABLE_TUNING)
+
+	for (OptionTunableParam& param : _options.tunable_params) {
+		if (option == param.str) {
+			strm >> std::skipws >> token;
+
+			if (token == "value") {
+				strm >> std::skipws >> token;
+
+				const double val = std::stod(token);
+				param.set(val);
+				
+				int* const addr = reinterpret_cast<int*>(GlobParamMapping.getAddressOf(param.str));				
+				ASSERT(addr, "Invalid static-address to tunable parameter");
+
+				*addr = static_cast<int>(std::round(val));
+				break;
+			}
+		}
+	}
+
+#endif
 }
 
 void UniversalChessInterface::parseShowOptions() {
 	_options.hash.print();
 	_options.clear_hash.print();
+
+	for (OptionTunableParam& param : _options.tunable_params) {
+		param.print();
+	}
 }

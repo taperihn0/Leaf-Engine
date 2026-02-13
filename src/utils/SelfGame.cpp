@@ -9,7 +9,24 @@ SelfGame::SelfGame(size_t tt_size_per_search)
                    Search(TranspositionTable(tt_size_per_search)) } 
 {}
 
+Game::Result SelfGame::start(SearchLimits limits) {
+    static constexpr bool DisableCollectData = false;
+    const auto res = setupMatch<DisableCollectData>(limits, nullptr);
+    return res;
+}
+
 Game::Result SelfGame::start(std::vector<ExtPackedPosition>& packed_positions, SearchLimits limits) {
+    static constexpr bool CollectData = true;
+    const auto res = setupMatch<CollectData>(limits, &packed_positions);
+    return res;
+}
+
+template <bool CollectData>
+Game::Result SelfGame::setupMatch(SearchLimits limits, 
+                                  std::vector<ExtPackedPosition>* const packed_positions) 
+{
+    ASSERTNOLOG(!CollectData or packed_positions);
+
     _search_by_side[WHITE].registerNewGame();
     _search_by_side[BLACK].registerNewGame();
 
@@ -38,8 +55,9 @@ Game::Result SelfGame::start(std::vector<ExtPackedPosition>& packed_positions, S
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
-
-        packed_positions.emplace_back(pos);
+        
+        if constexpr (CollectData)
+            packed_positions->emplace_back(pos);
 
         timer.go();
         Move32b move = curr_search.bestMove<Search::SEARCH_NO_INFO>(pos, record, limits);
@@ -53,7 +71,7 @@ Game::Result SelfGame::start(std::vector<ExtPackedPosition>& packed_positions, S
             limits.btime -= think_time - limits.binc;
     }
 
-    return game_result;
+    return game_result;    
 }
 
 } // namespace Utils

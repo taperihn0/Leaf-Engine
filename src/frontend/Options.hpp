@@ -2,6 +2,8 @@
 
 #include "backend/Common.hpp"
 
+// ----- States -----
+
 enum class OptionValueType {
     TYPE_SPIN = 0,
     TYPE_BUTTON = 1
@@ -11,17 +13,20 @@ struct OptionType {
     virtual void print() const = 0;
 };
 
+template <typename T>
 struct SpinType : public OptionType {
-    using int_t = ll;
+    using ValType = T;
 
-    SpinType(int_t def, int_t ma, int_t mi);
-    void setCurrent(int_t val);
+    static_assert(std::is_arithmetic_v<ValType>);
+
+    SpinType(ValType def, ValType ma, ValType mi);
+    void setCurrent(ValType val);
     void print() const override;
 
-    int_t default_value;
-    int_t current_value;
-    int_t max_value;
-    int_t min_value;
+    ValType default_value;
+    ValType current_value;
+    ValType max_value;
+    ValType min_value;
 };
 
 struct ButtonType : public OptionType {
@@ -30,17 +35,21 @@ struct ButtonType : public OptionType {
     type current_value;
 };
 
+// ----- Option class -----
+
 struct Option {
     virtual void print() const = 0;
 };
 
-struct OptionHash : public Option {
-    OptionHash(SpinType val);
-    void print() const override;
-    void set(SpinType::int_t val);
-    SpinType::int_t getCurrentValue() const;
+// ----- Custom options -----
 
-    SpinType value;
+struct OptionHash : public Option {
+    OptionHash(SpinType<ll> val);
+    void print() const override;
+    void set(ll val);
+    ll getCurrentValue() const;
+
+    SpinType<ll> value;
 };
 
 struct OptionClearHash : public Option {
@@ -50,7 +59,20 @@ struct OptionClearHash : public Option {
     ButtonType value;
 };
 
-_INTERNAL SpinType::SpinType(int_t def, int_t mi, int_t ma)
+struct OptionTunableParam : public Option {
+    OptionTunableParam(SpinType<double> val, std::string option_str);
+    void print() const override;
+    void set(double val);
+    double getCurrentValue() const;
+
+    std::string str;
+    SpinType<double> value;
+};
+
+// ----- Internal implementation -----
+
+template <typename T>
+_INTERNAL SpinType<T>::SpinType(ValType def, ValType mi, ValType ma)
     : default_value(def)
     , current_value(0)
     , max_value(ma)
@@ -59,11 +81,13 @@ _INTERNAL SpinType::SpinType(int_t def, int_t mi, int_t ma)
     setCurrent(def);
 }
 
-_INTERNAL void SpinType::setCurrent(int_t val) {
+template <typename T>
+_INTERNAL void SpinType<T>::setCurrent(ValType val) {
     current_value = std::clamp(val, min_value, max_value);
 }
 
-_INTERNAL void SpinType::print() const {
+template <typename T>
+_INTERNAL void SpinType<T>::print() const {
     std::cout << " type spin default " << default_value 
               << " min " << min_value
               << " max " << max_value << std::endl;
@@ -73,28 +97,49 @@ _INTERNAL void ButtonType::print() const {
     std::cout << " type button" << std::endl;
 }
 
-#define _OPTION(name) "option name " name
+// ----- Custom options - implementation -----
 
-_INTERNAL OptionHash::OptionHash(SpinType val)
+#define _OPTION_LITERAL(name) "option name "   name
+#define _OPTION_STR(name)     "option name " + name
+
+_INTERNAL OptionHash::OptionHash(SpinType<ll> val)
     : value(val) 
 {}
 
-_INTERNAL void OptionHash::set(SpinType::int_t val) {
+_INTERNAL void OptionHash::set(ll val) {
     value.setCurrent(val);
 }
 
-_INTERNAL SpinType::int_t OptionHash::getCurrentValue() const {
+_INTERNAL ll OptionHash::getCurrentValue() const {
     return value.current_value;
 }
 
 _INTERNAL void OptionHash::print() const {
-    std::cout << _OPTION("Hash");
+    std::cout << _OPTION_LITERAL("Hash");
     value.print();
 }
 
 _INTERNAL void OptionClearHash::print() const {
-    std::cout << _OPTION("Clear Hash");
+    std::cout << _OPTION_LITERAL("Clear Hash");
     value.print();
+}
+
+_INTERNAL OptionTunableParam::OptionTunableParam(SpinType<double> val, std::string option_str) 
+    : str(option_str)
+    , value(val) 
+{}
+
+_INTERNAL void OptionTunableParam::print() const {
+    std::cout << _OPTION_STR(str);
+    value.print();
+}
+
+_INTERNAL void OptionTunableParam::set(double val) {
+    value.setCurrent(val);
+}
+
+_INTERNAL double OptionTunableParam::getCurrentValue() const {
+    return value.current_value;
 }
 
 #undef _OPTION

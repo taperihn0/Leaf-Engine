@@ -4,7 +4,12 @@
 
 namespace nn {
 
+// Just for the easy development
+#if defined(_MSC_VER)
 static constexpr std::string_view DefaultNetworkPath = "C:\\dev\\Leaf-Engine\\src\\assets\\nets\\publius_net128_0_h.bin";
+#else
+static constexpr std::string_view DefaultNetworkPath = "src/assets/nets/publius_net128_0_h.bin";
+#endif
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;

@@ -1,5 +1,6 @@
 #include "Search.hpp"
 #include "NetworkEval.hpp"
+#include "Tuning.hpp"
 
 #ifdef _COLLECT_SEARCH_STATS
 #include <iomanip>
@@ -191,13 +192,13 @@ TreeStack::TreeStack() {
 void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 	ASSERTNOLOG(history_buffer);
 
-	for (int i = 0; i < _Count; i++) {
+	for (int i = 0; i < static_cast<int>(_Count); i++) {
         NodeInfo* const node = &_stack[i];
 
 		node->clear();
 		node->move_picker.setHistoryBuffer(history_buffer);
-        node->cluster.prev_cluster = i - 1 >= 0     ? &(node - 1)->cluster : nullptr;
-        node->cluster.next_cluster = i + 1 < _Count ? &(node + 1)->cluster : nullptr;
+        node->cluster.prev_cluster = i - 1 >= 0 ? &(node - 1)->cluster : nullptr;
+        node->cluster.next_cluster = i + 1 < static_cast<int>(_Count) ? &(node + 1)->cluster : nullptr;
 	}
 }
 
@@ -407,18 +408,7 @@ Score Search::negaMax(Position& pos,
 
 	static constexpr OrderType OrderPolicy 	  = STAGED;
 	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
-	static constexpr int 	   RazorDepth  	  = 2;
 	static constexpr Score 	   RazorBaseDelta = 150;
-	static constexpr Score 	   RazorMultDelta = 25;
-	static constexpr int	   IidDepth 	  = 3;
-	static constexpr int	   IidDivShift 	  = 1;
-	static constexpr int	   RfpDepth       = 6;
-	static constexpr Score	   RfpMultDelta   = 150;
-	static constexpr int	   NullReduction  = 2;
-	static constexpr int	   FutilityDepth  = 4;
-	static constexpr Score	   FutilityDelta  = 32;
-	static constexpr int	   LmrDepth 	  = 2;
-	static constexpr int	   LmrMoveCount   = 2;
 
 	if constexpr (!Root) {
 
@@ -464,7 +454,7 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 	
-	else if (!Root and (results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+	else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
     
@@ -535,7 +525,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+			if (eval + RazorBaseDelta + (Score)RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
@@ -563,7 +553,7 @@ Score Search::negaMax(Position& pos,
 			_UNUSED const Score iid_score =
 				negaMax<false, NmNodeType, false>(pos, limits, results, game, node,
 												  alpha, beta,
-												  depth >> IidDivShift,
+												  4 * depth / IidDepthDiv,
 												  ply);
 
 			TTEntry iid_entry;
@@ -596,7 +586,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval - RfpMultDelta * depth >= beta) {
+			if (eval - (Score)RfpMultDelta * depth >= beta) {
 				const Score reduced_eval = eval - (depth << 6);
 				return reduced_eval;
 			}
@@ -685,7 +675,7 @@ Score Search::negaMax(Position& pos,
 				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval + FutilityDelta * depth * depth < alpha) {
+			if (eval + (Score)FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
@@ -863,7 +853,7 @@ Score Search::quiesce(Position& pos,
 	if (isInsufficientMaterial(pos))
 		return Score::Draw;
 
-	if ((results.nodes_cnt & _CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+	if ((results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
     
@@ -1205,9 +1195,7 @@ bool Search::canRepetitionDraw(const Position& pos,
 			
 			if (!(occupied & (BitBoard(org) | BitBoard(dst))))
 				continue;
-
-			assert(unpacked(pos, move16b).isKnight() == move16b.isKnight());
-
+				
 			if (!(onlyBetween(org, dst) & occupied) or move16b.isKnight())
 				return true;
 		}
