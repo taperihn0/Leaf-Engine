@@ -6,6 +6,7 @@
 #include "Opening.hpp"
 #include "Filepath.hpp"
 #include "PostProcess.hpp"
+#include "SPSA.h"
 
 #include <sstream>
 
@@ -228,6 +229,11 @@ void parseFilterTrainData(std::istringstream& strm) {
     }
 }
 
+void parseSPSA(std::istringstream& strm) {
+    Utils::SPSA_Tuning tuner;
+    tuner.run();
+}
+
 int main(int argc, char* argv[]) {
 	ZobristHash::fillKeys();
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
@@ -237,7 +243,7 @@ int main(int argc, char* argv[]) {
 	Utils::DataCollector collector;
 
 	// C-style streams aren't used there
-	std::ios_base::sync_with_stdio(false);
+	//std::ios_base::sync_with_stdio(false);
 
 	std::cout << "Utility module for " << EngineName << '\n';
 
@@ -267,6 +273,7 @@ int main(int argc, char* argv[]) {
         else if (token == "merge_selfplay_files")  parseMerge(strm);
         else if (token == "packed_to_train_entry") parse2TrainEntry(strm);
         else if (token == "filter_train_data")     parseFilterTrainData(strm);
+        else if (token == "spsa")                  parseSPSA(strm);
 
 	} while (command != "quit");
 }

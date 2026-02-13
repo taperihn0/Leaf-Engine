@@ -23,7 +23,7 @@ Position::Position() {
 	_zhash = 0_ui64;
 }
 
-Position::Position(std::string init_fen) { 
+Position::Position(std::string init_fen) {
 	setByFEN(init_fen); 
 }
 

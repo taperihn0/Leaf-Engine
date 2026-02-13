@@ -1,8 +1,4 @@
-#include "UCI.hpp"
-#include "backend/Magic.hpp"
-#include "backend/Attacks.hpp"
-#include "backend/MoveGen.hpp"
-#include "backend/Hash.hpp"
+#include "EntryPoint.h"
 
 /*
 	NOTES:
@@ -22,10 +18,5 @@
 */
 
 int main(int argc, const char* argv[]) {
-	ZobristHash::fillKeys();
-	SlidersMagics::initAttackTables<Piece::BISHOP>();
-	SlidersMagics::initAttackTables<Piece::ROOK>();
-
-	UniversalChessInterface uci_obj;
-	uci_obj.loop(argc, argv);
+	startEngine(argc, argv);
 }
