@@ -2,7 +2,7 @@
 #include "Search.hpp"
 
 timepoint_t Clock::timePoint() { 
-	return _clock_data.now(); 
+	return internal_clock_t::now();
 }
 
 time_ms_t Clock::getMilliseconds(timepoint_t stop, timepoint_t start) { 

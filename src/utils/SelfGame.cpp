@@ -36,7 +36,7 @@ Game::Result SelfGame::setupMatch(SearchLimits limits,
     Game game(OpeningGenerator::getPosition(), time_constraint, limits.wtime, limits.btime);
     Game::Result game_result;
 
-    unsigned int draw_full_moves = 0;
+    uint draw_full_moves = 0;
 
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();

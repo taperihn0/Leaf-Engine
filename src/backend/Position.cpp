@@ -72,6 +72,10 @@ void Position::setStartingPos() {
 	setByFEN(static_cast<std::string>(StartposFEN));
 }
 
+std::string Position::createFEN() {
+	return (std::string)StartposFEN;
+}
+
 Position::enumStatusFlag Position::isValid() const {
     if (_zhash != ZobristHash::generateOnFly(*this))
         return POSITION_HASH_INVALID;

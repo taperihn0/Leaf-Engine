@@ -60,7 +60,10 @@ void OpeningGenerator::load() {
 }
 
 const Position& OpeningGenerator::getPosition() {
-    assert(!_positions.empty());
+    if (!_positions.empty()) {
+        ASSERT(false, "Openings are not loaded");
+    }
+
     size_t random_index = random<size_t>(0, _positions.size() - 1);
     return _positions[random_index];
 }

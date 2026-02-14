@@ -6,15 +6,18 @@
 #include <chrono>
 
 using time_ms_t = ll;
-using timepoint_t = std::chrono::system_clock::time_point;
+using internal_clock_t = std::chrono::steady_clock;
+using timepoint_t = internal_clock_t::time_point;
+
+INLINE constexpr time_ms_t operator"" _ms(ull t) {
+	return static_cast<time_ms_t>(t);
+}
 
 class Clock {
 public:
+	Clock() = delete;
 	static timepoint_t timePoint();
 	static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
-private:
-	using _internal_clock_t = std::chrono::system_clock;
-	static _internal_clock_t _clock_data;
 };
 
 class Timer {
@@ -29,5 +32,6 @@ struct SearchLimits;
 
 class TimeMan {
 public:
+	TimeMan() = delete;
 	static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
 };
