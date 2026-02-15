@@ -6,7 +6,6 @@
 namespace Utils {
 
 std::vector<Position> OpeningGenerator::_positions;
-std::ifstream         OpeningGenerator::_openings_file;
 
 void OpeningGenerator::load() {
     if (!_positions.empty())
@@ -60,7 +59,36 @@ void OpeningGenerator::load() {
 }
 
 const Position& OpeningGenerator::getPosition() {
-    if (!_positions.empty()) {
+    if (_positions.empty()) {
+        ASSERT(false, "Openings are not loaded");
+    }
+
+    size_t random_index = random<size_t>(0, _positions.size() - 1);
+    return _positions[random_index];
+}
+
+OpeningSuite::OpeningSuite(std::string path) {
+    load(path);
+}
+
+void OpeningSuite::load(std::string path) {
+    std::ifstream openings_file(path);
+
+    if (!openings_file) {
+        ASSERT(false, "Failed to open " + path);
+        return;
+    }
+
+    std::string line;
+
+    while (getline(openings_file, line)) {
+        Position pos_from_line(line);
+        _positions.push_back(pos_from_line);
+    }
+}
+
+const Position& OpeningSuite::getPosition() {
+    if (_positions.empty()) {
         ASSERT(false, "Openings are not loaded");
     }
 

@@ -215,14 +215,14 @@ bool Move32b::isLegal(Position& pos) {
 }
 
 template <typename T>
-void MoveData<T>::print() const {
+void MoveData<T>::print(std::ostream& os) const {
 #if defined(PURE_NOTATION_DISPLAY)
 	if (_rmove == Null) {
 		std::cout << "0000";
 	}
 	else {
-		getOrigin().print(), getTarget().print();
-		if (isPromotion()) Piece(BLACK, getPromoPiece()).print();
+		getOrigin().print(os), getTarget().print(os);
+		if (isPromotion()) Piece(BLACK, getPromoPiece()).print(os);
 	}
 #else
 	ASSERT(false, "Prining moves in algebraic notation not supported");
@@ -294,5 +294,5 @@ template Piece::enumType Move32b::getCaptured(const Position&) const;
 template bool Move32b::isPseudoLegal_fromList<true>(const Position&) const;
 template bool Move32b::isPseudoLegal_fromList<false>(const Position&) const;
 
-template void Move16b::print() const;
-template void Move32b::print() const;
+template void Move16b::print(std::ostream& os) const;
+template void Move32b::print(std::ostream& os) const;

@@ -15,18 +15,33 @@ namespace Utils {
 class OpeningGenerator {
 public:
     static void load();
-
     static const Position& getPosition();
 private:
     static inline const std::string _OpeningFile = "src/assets/sets/crafty_2500_new.epd";
 
     static constexpr int            _OpeningEvalThreshold = 400;
+#if !defined(DEBUG)
     static constexpr int            _RandomPerPos   = 25;
+#else
+    static constexpr int            _RandomPerPos   = 2;
+#endif
     static constexpr int            _MinRandomMoves = 2;
     static constexpr int            _MaxRandomMoves = 14;
 
     static std::vector<Position>    _positions;
-    static std::ifstream            _openings_file;
+};
+
+/* EPD Openings loader.
+*/
+class OpeningSuite {
+public:
+    OpeningSuite() = default;
+    OpeningSuite(std::string path);
+
+    void load(std::string path);
+    const Position& getPosition();
+private:
+    std::vector<Position> _positions;
 };
 
 } // namespace Utils

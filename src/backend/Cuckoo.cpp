@@ -5,12 +5,12 @@
 #include "Hash.hpp"
 
 CuckooTables::CuckooTables() {
-	_cuckoo_entry_buff = reinterpret_cast<_CuckooEntry*>(new _CuckooEntry[_CuckooTableSize]);
+	_cuckoo_entry_buff = new _CuckooEntry[_CuckooTableSize];
 	memset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
 }
 
 CuckooTables::~CuckooTables() {
-	delete _cuckoo_entry_buff;
+	delete[] _cuckoo_entry_buff;
 }
 
 void CuckooTables::init() {

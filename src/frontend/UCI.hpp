@@ -13,9 +13,9 @@ public:
 	static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
 
 	void loop(int argc, const char* argv[]);
-private:
-	void initTunableOptions();
 
+	static std::vector<OptionTunableParam>& getTunableOptions();
+private:
 	void parseUCI();
 	void parseNewGame();
 	void parsePosition(std::istringstream& strm);
@@ -40,5 +40,5 @@ private:
 	Search         _search;
 	Position 	   _pos;
 	FullInfoRecord _game;
-	Options 	   _options;
+	static Options _options;
 };

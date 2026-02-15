@@ -184,7 +184,7 @@ public:
 		_rmove &= ~LEGALLY_MOVED, _rmove |= static_cast<uint32_t>(legal) << 25;
 	}
 
-	void print() const;
+	void print(std::ostream& os = std::cout) const;
 
 	bool isPseudoLegal(const Position& pos) const;
 
@@ -326,7 +326,7 @@ INLINE Move16b packed(Move32b move) {
 // used only in testing templates.
 // prefered way to print a move is to juse use print() method
 INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
-	b.print();
+	b.print(out);
 	return out;
 }
 

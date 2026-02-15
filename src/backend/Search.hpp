@@ -22,8 +22,8 @@ struct SearchLimits {
     // and returns whether given number is below quiescent-node threshold.
     bool anyQuiesceNodesLeft(ull qnodes_so_far);
 
-	time_ms_t depth		  = 0,
-			  wtime		  = 0,
+	int 	  depth		  = 0;
+	time_ms_t wtime		  = 0,
 			  btime		  = 0;
 	time_ms_t winc		  = 0, 
 			  binc		  = 0,
@@ -92,8 +92,6 @@ struct AccumulatorCluster {
 struct NodeInfo {
 	void clear();
 
-	Score						parent_alpha;
-	Score						parent_beta;
 	enumColor					side2move;
 	MoveOrder					move_picker;
 	Position::IrreversibleState state;
@@ -107,6 +105,7 @@ struct NodeInfo {
 	uint8_t						move_index;
 	TTEntry::Bound				bound;
     AccumulatorCluster          cluster;
+	bool						cuckoo_check;
 };
 
 class TreeStack {
@@ -151,6 +150,8 @@ inline _P_CONSTEXPR int FutilityMoveCount = 1;
 inline _P_CONSTEXPR int RazorBaseDelta    = 150;
 inline _P_CONSTEXPR int QMaterialDelta    = 900;
 inline _P_CONSTEXPR int QProbeDepth		  = -1;
+//inline _P_CONSTEXPR int ContemptFactor 	  = 10;
+inline _P_CONSTEXPR int NNEvalScale		  = 8;
 
 class Search {
 public:
@@ -213,6 +214,9 @@ private:
 				  NodeInfo* node, 
 				  Score alpha, Score beta, 
 				  int depth, int ply);
+	
+	template <bool Root>
+	Score getDrawScore(const NodeInfo* node);
 
 	int calculateExtension(Position& pos, NodeInfo* node);
 

@@ -7,6 +7,11 @@
 #endif
 
 #define _TT_PROBE_QSEARCH
+//#define _CUCKOO_DRAW
+
+#if defined(_CUCKOO_DRAW)
+#error "No proper draw value handling"
+#endif
 
 INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
@@ -148,8 +153,6 @@ void SearchResults::printSearchStats() {
 #endif
 
 void NodeInfo::clear() {
-	parent_alpha     = Score::Undef;
-	parent_beta	     = Score::Undef;
 	side2move		 = WHITE;
 	state 			 = {};
 	best_move = move = Move32b::Null;
@@ -164,6 +167,8 @@ void NodeInfo::clear() {
 	cluster.accum_cache.clearBuffers();
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
+
+	cuckoo_check	= false;
 }
 
 void Search::clearHashTT() {
@@ -344,7 +349,7 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
 
-	for (unsigned d = 1; d <= limits.depth; d++) {
+	for (int d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
 
         // TODO: So far, I reject last move when search is finished.
@@ -412,12 +417,26 @@ Score Search::negaMax(Position& pos,
 	if constexpr (!Root) {
 
 		if (pos.getHalfmoveClock() >= 100 or isInsufficientMaterial(pos))
-			return Score::Draw;
+			return getDrawScore<Root>(node);
 	}
 
 	NodeInfo* const prev_node = node - 1;
-
+	
 	node->side2move = pos.getTurn();
+
+#if !defined(_CUCKOO_DRAW)
+
+	if constexpr (!Root) {
+		if (isRepetitionCycle<IsPV>(pos, game, node, ply, results)) {
+
+#if defined(_COLLECT_SEARCH_STATS)
+			results.rep_cnt++;
+#endif
+			return getDrawScore<Root>(node);
+		}
+	}
+
+#else // Cuckoo further draw checking
 
 	if constexpr (!Root) {
 
@@ -425,7 +444,7 @@ Score Search::negaMax(Position& pos,
 		*  however, we could already check if there is any repetition out there in cuckoo tables.
 		*  If my parent searched for a repetition and failed, we probably don't have any repetition.
 		*/
-		if (IsPV or prev_node->parent_alpha >= Score::Draw) {
+		if (!prev_node->cuckoo_check) {
 
 			if (isRepetitionCycle<IsPV>(pos, game, node, ply, results)) {
 
@@ -439,6 +458,9 @@ Score Search::negaMax(Position& pos,
 	}
 
 	if constexpr (!IsPV) {
+
+		node->cuckoo_check = alpha < Score::Draw;
+
 		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -452,6 +474,8 @@ Score Search::negaMax(Position& pos,
 			}
 		}
 	}
+
+#endif
 	
 	else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -491,9 +515,6 @@ Score Search::negaMax(Position& pos,
 								 				  ply);
 	}
 
-	node->parent_alpha = alpha;
-	node->parent_beta = beta;
-	
 	results.nodes_cnt++;
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -798,11 +819,12 @@ Score Search::negaMax(Position& pos,
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		node->bound = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::Mate + ply : Score::Draw;
+		node->best_score = node->check ? -Score::Mate + ply : getDrawScore<Root>(node);
 	}
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
 		const Move16b bestmove16b = packed(node->best_move);
+
 		_tt.write(hash, 
 				  depth, ply, 
 				  node->bound, 
@@ -849,7 +871,7 @@ Score Search::quiesce(Position& pos,
 	node->side2move = pos.getTurn();
 
 	if (isInsufficientMaterial(pos))
-		return Score::Draw;
+		return getDrawScore<Root>(node);
 
 	if ((results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -1020,6 +1042,11 @@ Score Search::quiesce(Position& pos,
 	return alpha;
 }
 
+template <bool Root>
+_FORCEINLINE Score Search::getDrawScore(_UNUSED const NodeInfo* node) {
+	return Score::Draw;
+}
+
 // TODO: smarter extension calculation
 INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
 	_declUnused(pos);
@@ -1035,6 +1062,7 @@ INLINE Score Search::evaluate(const Position& pos,
 							  enumColor side2move, 
 							  SearchResults& results)
 {
+
 #if defined(_COLLECT_SEARCH_STATS)
 	if constexpr (NodeType & QUIESCE_NODE)
 		results.qeval_cnt++;
@@ -1063,7 +1091,10 @@ INLINE Score Search::evaluate(const Position& pos,
 	_declUnused(pos);
 #endif
 
-	return nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
+	Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
+	eval = eval * 8 / static_cast<Score>(NNEvalScale);
+
+	return eval;
 }
 
 template <bool IsPV>

@@ -13,6 +13,10 @@ INLINE constexpr time_ms_t operator"" _ms(ull t) {
 	return static_cast<time_ms_t>(t);
 }
 
+INLINE constexpr time_ms_t operator"" _s(ull t) {
+	return static_cast<time_ms_t>(t) * 1000;
+}
+
 class Clock {
 public:
 	Clock() = delete;

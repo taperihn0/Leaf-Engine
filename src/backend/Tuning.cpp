@@ -22,6 +22,8 @@ void TunableParametersMap::createMapping() {
     _addr["RazorBaseDelta"]      = &RazorBaseDelta;
     _addr["QMaterialDelta"]      = &QMaterialDelta;
     _addr["QProbeDepth"]         = &QProbeDepth;
+    //_addr["ContemptFactor"]      = &ContemptFactor;
+    _addr["NNEvalScale"]         = &NNEvalScale;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {

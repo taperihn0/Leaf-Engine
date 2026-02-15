@@ -6,6 +6,10 @@ namespace Utils {
 
 #if defined(_MSC_VER)
 
+struct EngineProcess {
+    static_assert(false);
+};
+
 #else
 
 #include <cstdio>

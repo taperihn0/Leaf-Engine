@@ -71,9 +71,8 @@ public:
 		return std::string{ "abcdefgh"[_sq & 7], static_cast<char>(_sq / 8 + '1') };
 	}
 
-	void print(std::string end = "") const {
-		ASSERT(isValid(), "Trying to call print on invalid square");
-		std::cout << toStr() << end;
+	void print(std::ostream& os = std::cout) const {
+		os << toStr();
 	}
 
 	INLINE constexpr bool isValid() const {

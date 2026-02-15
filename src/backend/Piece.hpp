@@ -46,10 +46,10 @@ public:
 		_type = piece_type;
 	}
 
-	void print() const {
-		if (_type == NONE) std::cout << ' ';
-		else if (_col == WHITE) std::cout << _WhitesStr[_type];
-		else std::cout << _BlacksStr[_type];
+	void print(std::ostream& os = std::cout) const {
+		if (_type == NONE) os << ' ';
+		else if (_col == WHITE) os << _WhitesStr[_type];
+		else os << _BlacksStr[_type];
 	}
 
 	INLINE Piece::uint_t value() const {
@@ -79,6 +79,11 @@ private:
 	enumType _type;
 	enumColor _col;
 };
+
+INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
+	p.print(os);
+	return os;
+}
 
 INLINE constexpr Piece::uint_t value(Piece::enumType p) {
 	return static_cast<Piece::uint_t>(p);

@@ -232,7 +232,7 @@ void parseFilterTrainData(std::istringstream& strm) {
 
 void parseSPSA(std::istringstream& strm) {
     Utils::SPSA_Tuning tuner;
-    tuner.run();
+    tuner.start();
 }
 
 int main(int argc, char* argv[]) {

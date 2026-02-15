@@ -8,6 +8,33 @@
 
 #include <sstream>
 
+UniversalChessInterface::Options UniversalChessInterface::_options = { 
+		// --- Regular parameters
+		OptionHash(SpinType<ll>(1, 1, 512)), 
+		OptionClearHash(),
+		{ // --- Tunable parameters
+		OptionTunableParam(SpinType<double>(MaxQuietsHistoryPow, 1.,   16.),    "MaxQuietsHistoryPow"),
+		OptionTunableParam(SpinType<double>(CheckNodeCount,      64.,  32768.), "CheckNodeCount"),
+		OptionTunableParam(SpinType<double>(IidDepth,            1.,   10.),    "IidDepth"),
+		OptionTunableParam(SpinType<double>(IidDepthDiv,         5.,   16.),    "IidDepthDiv"),
+		OptionTunableParam(SpinType<double>(RfpDepth,     	     1.,   10.),    "RfpDepth"),
+		OptionTunableParam(SpinType<double>(RazorDepth,          1.,   10.),    "RazorDepth"),
+		OptionTunableParam(SpinType<double>(FutilityDepth,       1.,   10.),    "FutilityDepth"),
+		OptionTunableParam(SpinType<double>(LmrDepth,     	     1.,   10.),    "LmrDepth"),
+		OptionTunableParam(SpinType<double>(NullReduction,       1.,   10.),    "NullReduction"),
+		OptionTunableParam(SpinType<double>(LmrMoveCount,        1.,   32.),    "LmrMoveCount"),
+		OptionTunableParam(SpinType<double>(RazorMultDelta,      5.,   100.),   "RazorMultDelta"),
+		OptionTunableParam(SpinType<double>(RfpMultDelta,        10.,  400.),   "RfpMultDelta"),
+		OptionTunableParam(SpinType<double>(FutilityMoveCount,   0.,   32.),    "FutilityMoveCount"),
+		OptionTunableParam(SpinType<double>(FutilityDelta,       2.,   216.),   "FutilityDelta"),
+		OptionTunableParam(SpinType<double>(RazorBaseDelta,      20.,  500.),   "RazorBaseDelta"),
+		OptionTunableParam(SpinType<double>(QMaterialDelta,      200., 1500.),  "QMaterialDelta"),
+		OptionTunableParam(SpinType<double>(QProbeDepth,         -5.,  5.),     "QProbeDepth"),
+		//OptionTunableParam(SpinType<double>(ContemptFactor,      0.,   50.),    "ContemptFactor"),
+		OptionTunableParam(SpinType<double>(NNEvalScale,         2.,   32),     "NNEvalScale"),
+		}
+};
+
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth - 1;
@@ -80,13 +107,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 UniversalChessInterface::UniversalChessInterface()
 	: _search(TranspositionTable(1_MB))
 	, _pos(StartposFEN)
-	, _options{ 
-		OptionHash(SpinType<ll>(1, 1, 512)), 
-		OptionClearHash(),
-		{} }
-{
-	initTunableOptions();
-}
+{}
 
 // ARGUMENTS AREN'T USED FOR NOW
 void UniversalChessInterface::loop(int, const char*[]) {
@@ -129,30 +150,8 @@ void UniversalChessInterface::loop(int, const char*[]) {
 	} while (command != "quit");
 }
 
-void UniversalChessInterface::initTunableOptions() {
-#if defined(_ENABLE_TUNING)
-	_options.tunable_params.insert(_options.tunable_params.end(),
-		{
-		OptionTunableParam(SpinType<double>(MaxQuietsHistoryPow, 1.,   16.),    "MaxQuietsHistoryPow"),
-		OptionTunableParam(SpinType<double>(CheckNodeCount,      64.,  32768.), "CheckNodeCount"),
-		OptionTunableParam(SpinType<double>(IidDepth,            1.,   10.),    "IidDepth"),
-		OptionTunableParam(SpinType<double>(IidDepthDiv,         5.,   16.),    "IidDepthDiv"),
-		OptionTunableParam(SpinType<double>(RfpDepth,     	     1.,   10.),    "RfpDepth"),
-		OptionTunableParam(SpinType<double>(RazorDepth,          1.,   10.),    "RazorDepth"),
-		OptionTunableParam(SpinType<double>(FutilityDepth,       1.,   10.),    "FutilityDepth"),
-		OptionTunableParam(SpinType<double>(LmrDepth,     	     1.,   10.),    "LmrDepth"),
-		OptionTunableParam(SpinType<double>(NullReduction,       1.,   10.),    "NullReduction"),
-		OptionTunableParam(SpinType<double>(LmrMoveCount,        1.,   32.),    "LmrMoveCount"),
-		OptionTunableParam(SpinType<double>(RazorMultDelta,      5.,   100.),   "RazorMultDelta"),
-		OptionTunableParam(SpinType<double>(RfpMultDelta,        10.,  400.),   "RfpMultDelta"),
-		OptionTunableParam(SpinType<double>(FutilityMoveCount,   0.,   32.),    "FutilityMoveCount"),
-		OptionTunableParam(SpinType<double>(FutilityDelta,       2.,   216.),   "FutilityDelta"),
-		OptionTunableParam(SpinType<double>(RazorBaseDelta,      20.,  500.),   "RazorBaseDelta"),
-		OptionTunableParam(SpinType<double>(QMaterialDelta,      200., 1500.),  "QMaterialDelta"),
-		OptionTunableParam(SpinType<double>(QProbeDepth,         -5.,  5.),     "QProbeDepth"),
-		}
-	);
-#endif
+std::vector<OptionTunableParam>& UniversalChessInterface::getTunableOptions() {
+	return _options.tunable_params;
 }
 
 void UniversalChessInterface::parseUCI() {
@@ -187,6 +186,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 		}
 
 		_pos.setByFEN(given_fen);
+		_game.clear();
 	}
 	else if (token == "startpos") {
 		_pos.setStartingPos();
@@ -203,7 +203,6 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
 			Move32b move = Move32b::fromStr<Move32b::Notation::REGULAR>(_pos, token);
-
 			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move);
 		}

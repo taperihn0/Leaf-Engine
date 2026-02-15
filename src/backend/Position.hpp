@@ -85,7 +85,7 @@ public:
 	void setByFEN(std::string fen);
 	void setStartingPos();
 
-	std::string createFEN();
+	std::string createFEN() const;
 
     enum enumStatusFlag {
         POSITION_NO_ERROR          = 0,

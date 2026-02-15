@@ -5,6 +5,8 @@
 #include "Search.hpp"
 #include "Accumulator.hpp"
 
+#include <sstream>
+
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
 	: _kingside(kinit), _queenside(qinit) {}
 
@@ -72,8 +74,70 @@ void Position::setStartingPos() {
 	setByFEN(static_cast<std::string>(StartposFEN));
 }
 
-std::string Position::createFEN() {
-	return (std::string)StartposFEN;
+std::string Position::createFEN() const {
+	std::stringstream fen;
+
+    for (int y = 7; y >= 0; --y) {
+        int empty_count = 0;
+        for (int x = 0; x < 8; ++x) {
+            int sq = y * 8 + x;
+            bool found = false;
+
+            for (enumColor col : {WHITE, BLACK}) {
+                for (int p_type = 0; p_type < 6; ++p_type) {
+                    if (_piece_bb[col][p_type].isOccupiedSq(sq)) {
+                        if (empty_count > 0) {
+                            fen << empty_count;
+                            empty_count = 0;
+                        }
+
+						fen << Piece(col, static_cast<Piece::enumType>(p_type));
+						
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+
+            if (!found) {
+                empty_count++;
+            }
+        }
+
+        if (empty_count > 0) {
+            fen << empty_count;
+        }
+
+        if (y > 0) {
+            fen << '/';
+        }
+    }
+
+	fen << ' ' << "wb"[_turn] << ' ';
+
+	if (_castling_rights[WHITE].isAnyPossible() or
+	    _castling_rights[BLACK].isAnyPossible()) {
+		for (enumColor side : { WHITE, BLACK }) {
+			if (!_castling_rights[side].isAnyPossible())
+				continue;
+
+			if (_castling_rights[side].isShortPossible())
+				fen << "Kk"[side];
+			if (_castling_rights[side].isLongPossible())
+				fen << "Qq"[side];
+		}
+	} 
+	else fen << '-';
+
+	fen << ' ';
+	_ep_square.print(fen);
+
+	fen << ' ' << static_cast<int>(_halfmove_count) 
+		<< ' ' << static_cast<int>(_fullmove_count);
+
+	assert(Position(fen.str()) == *this);
+	return fen.str();
 }
 
 Position::enumStatusFlag Position::isValid() const {
@@ -502,53 +566,58 @@ template uint64_t Position::perft<false>(unsigned depth);
 template uint64_t Position::perft<true>(unsigned depth);
 
 void Position::setGameStatesFromStr(const std::string fen, size_t i) {
-	_turn.fromChar(fen[i]);
+    std::stringstream ss(fen.substr(i));
+    std::string turn, 
+				castling, 
+				epstr;
 
-	i += 2;
-	_castling_rights[WHITE].clear(), _castling_rights[BLACK].clear();
+    if (ss >> turn)
+        _turn.fromChar(turn[0]);
 
-	for (; fen[i] != ' '; i++) {
-		switch (fen[i]) {
-		case 'K':
-			_castling_rights[WHITE].setKingSide(true);
-			break;
-		case 'Q':
-			_castling_rights[WHITE].setQueenSide(true);
-			break;
-		case 'k':
-			_castling_rights[BLACK].setKingSide(true);
-			break;
-		case 'q':
-			_castling_rights[BLACK].setQueenSide(true);
-			break;
-		default:
-			break;
-		}
-	}
+    _castling_rights[WHITE].clear();
+    _castling_rights[BLACK].clear();
 
-	_ep_square = Square::None;
+    if (ss >> castling) {
+        for (char c : castling) {
+            switch (c) {
+                case 'K': 
+					_castling_rights[WHITE].setKingSide(true);  
+					break;
+                case 'Q': 
+					_castling_rights[WHITE].setQueenSide(true); 
+					break;
+                case 'k': 
+					_castling_rights[BLACK].setKingSide(true);  
+					break;
+                case 'q': 
+					_castling_rights[BLACK].setQueenSide(true); 
+					break;
+                default: 
+					break;
+            }
+        }
+    }
 
-	if (fen[++i] != '-') {
-		_ep_square = Square::fromChar(fen[i], fen[i + 1]);
-	}
+    _ep_square = Square::None;
 
-	i += 2;
+    if (ss >> epstr && epstr != "-") {
+        if (epstr.length() >= 2)
+            _ep_square = Square::fromChar(epstr[0], epstr[1]);
+    }
 
-	_halfmove_count = 0;
-	for (; i < size(fen) and fen[i] != ' '; i++) {
-		_halfmove_count *= 10;
-		_halfmove_count += fen[i] - '0';
-	}
+	int probe_clock = 0;
 
-	i++;
+    if (!(ss >> probe_clock))
+        _halfmove_count = 0;
+	else 
+		_halfmove_count = probe_clock;
 
-	_fullmove_count = 0;
-	for (; i < size(fen) and fen[i] != ' '; i++) {
-		_fullmove_count *= 10;
-		_fullmove_count += fen[i] - '0';
-	}
+    if (!(ss >> probe_clock))
+        _fullmove_count = 0;
+	else 
+		_fullmove_count = probe_clock;
 
-	_zhash = ZobristHash::generateOnFly(*this);
+    _zhash = ZobristHash::generateOnFly(*this);
 }
 
 INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
