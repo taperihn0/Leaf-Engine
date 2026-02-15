@@ -14,7 +14,7 @@ _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) 
 _FORCEINLINE void labelLog(std::ostream& is, uint8_t label, const std::string& str) {
 
 #if !defined(DEBUG)
-    if (lv & LOG_DEBUG) 
+    if (label & LOG_DEBUG) 
         return;
 #endif
 
@@ -86,7 +86,7 @@ void SPSA_Tuning::start() {
     theta_plus.reserve(tunable_options.size());
     theta_minus.reserve(tunable_options.size());
 
-    static constexpr uint IterCount = 11;
+    static constexpr uint IterCount = 4000;
 
 	SearchLimits limits;
 
@@ -97,6 +97,38 @@ void SPSA_Tuning::start() {
     limits.winc = limits.binc = 20_ms;
 
     _openings.load("src/assets/sets/Nunn_Openings.epd");
+    
+    {
+        std::string line;
+
+        readline(os0, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+
+        readline(os1, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+
+#if defined(DEBUG)
+
+        log(is0, "options");
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+
+        for (int i = 0; 
+             i < tunable_options.size() and readline(os0, line);
+             i++) {
+            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+        }
+
+        log(is1, "options");
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+
+        for (int i = 0; 
+             i < tunable_options.size() and readline(os1, line);
+             i++) {
+            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+        }
+
+#endif
+    }
 
     tune(theta, theta_plus, theta_minus, IterCount, limits,
          os0, is0, os1, is1);
@@ -134,9 +166,13 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
 
     std::ofstream log_file("spsa_log_feb14.txt", std::ios_base::app);
 
+    uint theta_plus_win_cnt = 0;
+    uint theta_minus_win_cnt = 0;
+    uint draw_cnt = 0;
+
     for (int k = 0; k < n; k++) {
 
-        labelLog(std::cout, LOG_INFO, "ITERATION K = " + std::to_string(k));
+        labelLog(std::cout, LOG_INFO, "Iteration k = " + std::to_string(k));
 
         for (SPSA_Parameter& param : params) {
             param.ak = param.a / std::pow(A + k + 1, Alpha);
@@ -151,8 +187,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        [&](const SPSA_Parameter& param) -> SPSA_PackedParameter {
                             SPSA_PackedParameter packed;
                             packed.name = &param.name;
-                            packed.value += param.delta * param.ck;
-                            packed.value = std::clamp(param.value, param.min, param.max);
+                            packed.value = param.value + param.delta * param.ck;
+                            packed.value = std::clamp(packed.value, param.min, param.max);
                             return packed;
                        });
         std::transform(theta.begin(), theta.end(),
@@ -160,18 +196,26 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        [&](const SPSA_Parameter& param) -> SPSA_PackedParameter {
                             SPSA_PackedParameter packed;
                             packed.name = &param.name;
-                            packed.value -= param.delta * param.ck;
-                            packed.value = std::clamp(param.value, param.min, param.max);
+                            packed.value = param.value - param.delta * param.ck;
+                            packed.value = std::clamp(packed.value, param.min, param.max);
                             return packed;
                        });
 
         applyOptions(theta_plus, engine_os0, engine_is0, LOG_DEBUG | LOG_ENGINE_0);
         applyOptions(theta_minus, engine_os1, engine_is1, LOG_DEBUG | LOG_ENGINE_1);
 
-        const float res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1);
+        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1);
+
+        if (res == 1) {
+            theta_plus_win_cnt++;
+        } 
+        else if (res == -1) {
+            theta_minus_win_cnt++;
+        } 
+        else draw_cnt++;
 
         for (SPSA_Parameter& param : params) {
-            const double gradient = res / (2. * param.ck * param.delta);
+            const double gradient = static_cast<double>(res) / (2. * param.ck * param.delta);
             param.value += param.ak * gradient;
             param.value = std::clamp(param.value, param.min, param.max);
         }
@@ -179,10 +223,20 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         theta_plus.clear();
         theta_minus.clear();
 
+        labelLog(std::cout, LOG_DEBUG, "Game result: " + std::to_string(res));
+        
+        std::stringstream info;
+        info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
+             << theta_plus_win_cnt << " | "
+             << theta_minus_win_cnt << " | "
+             << draw_cnt;
+
+        labelLog(std::cout, LOG_INFO, info.str());
+
         if (k % 10 == 0)
             writeCheckpoint(log_file, theta, k);
 
-        labelLog(std::cout, LOG_DEBUG, "Game result: " + std::to_string(res));
+        if (k >= 500) break;
     }
 }
 
@@ -214,7 +268,7 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
     }
 }
 
-INLINE float SPSA_Tuning::match(SearchLimits limits,
+INLINE int  SPSA_Tuning::match(SearchLimits limits,
                                 std::istream& engine_os0, std::ostream& engine_is0,
                                 std::istream& engine_os1, std::ostream& engine_is1)
 {
@@ -319,12 +373,12 @@ INLINE float SPSA_Tuning::match(SearchLimits limits,
     // -1. - if player 1 wins
 
     if (isWhiteWin(game_result)) {
-        return plus_player_white ? 1.f : -1.f;
+        return plus_player_white ? 1 : -1;
     }
     else if (isBlackWin(game_result)) {
-        return plus_player_white ? -1.f : 1.f;
+        return plus_player_white ? -1 : 1;
     }
-    return 0.f;
+    return 0;
 }
 
 void SPSA_Tuning::sentPosition(const std::string& start_fen, 

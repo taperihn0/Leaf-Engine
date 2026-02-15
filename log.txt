@@ -1,0 +1,220 @@
+Utility module for Leaf Lite
+[INFO] Iteration k = 0
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 0 | 1 | 0
+[INFO] Iteration k = 1
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 0 | 2 | 0
+[INFO] Iteration k = 2
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 0 | 2 | 1
+[INFO] Iteration k = 3
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 1 | 2 | 1
+[INFO] Iteration k = 4
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 2 | 2 | 1
+[INFO] Iteration k = 5
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 3 | 2 | 1
+[INFO] Iteration k = 6
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 3 | 3 | 1
+[INFO] Iteration k = 7
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 3 | 4 | 1
+[INFO] Iteration k = 8
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 3 | 5 | 1
+[INFO] Iteration k = 9
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 3 | 6 | 1
+[INFO] Iteration k = 10
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 6 | 1
+[INFO] Iteration k = 11
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 7 | 1
+[INFO] Iteration k = 12
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 7 | 2
+[INFO] Iteration k = 13
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 8 | 2
+[INFO] Iteration k = 14
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 9 | 2
+[INFO] Iteration k = 15
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 10 | 2
+[INFO] Iteration k = 16
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 4 | 11 | 2
+[INFO] Iteration k = 17
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 5 | 11 | 2
+[INFO] Iteration k = 18
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 6 | 11 | 2
+[INFO] Iteration k = 19
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 7 | 11 | 2
+[INFO] Iteration k = 20
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 7 | 12 | 2
+[INFO] Iteration k = 21
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 7 | 13 | 2
+[INFO] Iteration k = 22
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 7 | 14 | 2
+[INFO] Iteration k = 23
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 7 | 15 | 2
+[INFO] Iteration k = 24
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 8 | 15 | 2
+[INFO] Iteration k = 25
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 9 | 15 | 2
+[INFO] Iteration k = 26
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 9 | 16 | 2
+[INFO] Iteration k = 27
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 10 | 16 | 2
+[INFO] Iteration k = 28
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 11 | 16 | 2
+[INFO] Iteration k = 29
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 11 | 17 | 2
+[INFO] Iteration k = 30
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 12 | 17 | 2
+[INFO] Iteration k = 31
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 13 | 17 | 2
+[INFO] Iteration k = 32
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 14 | 17 | 2
+[INFO] Iteration k = 33
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 14 | 18 | 2
+[INFO] Iteration k = 34
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 14 | 19 | 2
+[INFO] Iteration k = 35
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 15 | 19 | 2
+[INFO] Iteration k = 36
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 16 | 19 | 2
+[INFO] Iteration k = 37
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 16 | 20 | 2
+[INFO] Iteration k = 38
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 16 | 21 | 2
+[INFO] Iteration k = 39
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 16 | 22 | 2
+[INFO] Iteration k = 40
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 17 | 22 | 2
+[INFO] Iteration k = 41
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 17 | 23 | 2
+[INFO] Iteration k = 42
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 18 | 23 | 2
+[INFO] Iteration k = 43
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 19 | 23 | 2
+[INFO] Iteration k = 44
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 19 | 24 | 2
+[INFO] Iteration k = 45
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 20 | 24 | 2
+[INFO] Iteration k = 46
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 21 | 24 | 2
+[INFO] Iteration k = 47
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 22 | 24 | 2
+[INFO] Iteration k = 48
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 23 | 24 | 2
+[INFO] Iteration k = 49
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 24 | 24 | 2
+[INFO] Iteration k = 50
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 25 | 24 | 2
+[INFO] Iteration k = 51
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 26 | 24 | 2
+[INFO] Iteration k = 52
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 26 | 25 | 2
+[INFO] Iteration k = 53
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 26 | 26 | 2
+[INFO] Iteration k = 54
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 27 | 26 | 2
+[INFO] Iteration k = 55
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 27 | 27 | 2
+[INFO] Iteration k = 56
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 28 | 27 | 2
+[INFO] Iteration k = 57
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 29 | 27 | 2
+[INFO] Iteration k = 58
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 30 | 27 | 2
+[INFO] Iteration k = 59
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 30 | 28 | 2
+[INFO] Iteration k = 60
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 30 | 29 | 2
+[INFO] Iteration k = 61
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 31 | 29 | 2
+[INFO] Iteration k = 62
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 32 | 29 | 2
+[INFO] Iteration k = 63
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 32 | 30 | 2
+[INFO] Iteration k = 64
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 33 | 30 | 2
+[INFO] Iteration k = 65
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 33 | 30 | 3
+[INFO] Iteration k = 66
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 33 | 31 | 3
+[INFO] Iteration k = 67
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 34 | 31 | 3
+[INFO] Iteration k = 68
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 34 | 32 | 3
+[INFO] Iteration k = 69
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 32 | 3
+[INFO] Iteration k = 70
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 33 | 3
+[INFO] Iteration k = 71
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 34 | 3
+[INFO] Iteration k = 72
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 35 | 3
+[INFO] Iteration k = 73
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 36 | 3
+[INFO] Iteration k = 74
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 35 | 37 | 3
+[INFO] Iteration k = 75
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 36 | 37 | 3
+[INFO] Iteration k = 76
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 37 | 37 | 3
+[INFO] Iteration k = 77
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 37 | 38 | 3
+[INFO] Iteration k = 78
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 38 | 38 | 3
+[INFO] Iteration k = 79
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 39 | 38 | 3
+[INFO] Iteration k = 80
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 39 | 39 | 3
+[INFO] Iteration k = 81
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 39 | 40 | 3
+[INFO] Iteration k = 82
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 40 | 40 | 3
+[INFO] Iteration k = 83
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 41 | 40 | 3
+[INFO] Iteration k = 84
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 42 | 40 | 3
+[INFO] Iteration k = 85
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 43 | 40 | 3
+[INFO] Iteration k = 86
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 44 | 40 | 3
+[INFO] Iteration k = 87
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 45 | 40 | 3
+[INFO] Iteration k = 88
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 45 | 41 | 3
+[INFO] Iteration k = 89
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 45 | 42 | 3
+[INFO] Iteration k = 90
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 46 | 42 | 3
+[INFO] Iteration k = 91
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 46 | 43 | 3
+[INFO] Iteration k = 92
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 47 | 43 | 3
+[INFO] Iteration k = 93
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 48 | 43 | 3
+[INFO] Iteration k = 94
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 48 | 44 | 3
+[INFO] Iteration k = 95
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 49 | 44 | 3
+[INFO] Iteration k = 96
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 49 | 45 | 3
+[INFO] Iteration k = 97
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 50 | 45 | 3
+[INFO] Iteration k = 98
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 50 | 46 | 3
+[INFO] Iteration k = 99
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 51 | 46 | 3
+[INFO] Iteration k = 100
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 52 | 46 | 3
+[INFO] Iteration k = 101
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 52 | 47 | 3
+[INFO] Iteration k = 102
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 52 | 48 | 3
+[INFO] Iteration k = 103
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 52 | 49 | 3
+[INFO] Iteration k = 104
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 53 | 49 | 3
+[INFO] Iteration k = 105
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 53 | 50 | 3
+[INFO] Iteration k = 106
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 53 | 51 | 3
+[INFO] Iteration k = 107
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 53 | 52 | 3
+[INFO] Iteration k = 108
+[INFO] Theta Plus Wins | Theta Minus Wins | Draws: 53 | 53 | 3
+[INFO] Iteration k = 109

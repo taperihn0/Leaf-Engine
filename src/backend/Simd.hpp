@@ -111,7 +111,7 @@ using _max_platf_register_i_t = __m512i;
 #define _max_register_madd_i16(a, b)               _mm512_madd_epi16((a), (b))
 
 static _FORCEINLINE int32_t sumElements_i16(_max_platf_register_i_t a) {
-    return _mm512_reduce_add_epi32(*a);
+    return _mm512_reduce_add_epi32(a);
 }
 
 #elif defined(_NN_USE_AVX2)
@@ -210,7 +210,7 @@ using _max_platf_register_i_t = __m128i;
 #define _max_register_madd_i16(a, b)               _mm_madd_epi16((a), (b))
 
 static _FORCEINLINE int32_t sumElements_i16(_max_platf_register_i_t a) {
-    __m128i s = _mm_hadd_epi32(*a, *a);
+    __m128i s = _mm_hadd_epi32(a, a);
     s = _mm_hadd_epi32(s, s);
     return _mm_cvtsi128_si32(s);
 }

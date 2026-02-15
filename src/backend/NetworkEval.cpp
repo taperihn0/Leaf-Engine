@@ -88,8 +88,8 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
         const _max_platf_register_i_t  s2m_clamp = _max_register_min_i16(_max_register_max_i16(s2m_base[i], zero_vec), qa_vec);
         const _max_platf_register_i_t ns2m_clamp = _max_register_min_i16(_max_register_max_i16(ns2m_base[i], zero_vec), qa_vec);
 
-        const __m256i rs2m  = _max_register_madd_i16(_max_register_mul_i16(weights_base[i], s2m_clamp ), s2m_clamp);
-        const __m256i rns2m = _max_register_madd_i16(_max_register_mul_i16(weights_base[i + ChunkCount], ns2m_clamp), ns2m_clamp);
+        const _max_platf_register_i_t rs2m  = _max_register_madd_i16(_max_register_mul_i16(weights_base[i], s2m_clamp ), s2m_clamp);
+        const _max_platf_register_i_t rns2m = _max_register_madd_i16(_max_register_mul_i16(weights_base[i + ChunkCount], ns2m_clamp), ns2m_clamp);
 
         sum_vec = _max_register_add_i32(sum_vec, rs2m);
         sum_vec = _max_register_add_i32(sum_vec, rns2m);

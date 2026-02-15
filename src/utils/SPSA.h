@@ -52,7 +52,7 @@ private:
                       std::istream& engine_os, std::ostream& engine_is,
                       enumLogLabel ret_msg_label);
 
-    float match(SearchLimits limits,
+    int  match(SearchLimits limits,
                 std::istream& engine_os0, std::ostream& engine_is0,
                 std::istream& engine_os1, std::ostream& engine_is1);
 

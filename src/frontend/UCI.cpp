@@ -16,12 +16,12 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(MaxQuietsHistoryPow, 1.,   16.),    "MaxQuietsHistoryPow"),
 		OptionTunableParam(SpinType<double>(CheckNodeCount,      64.,  32768.), "CheckNodeCount"),
 		OptionTunableParam(SpinType<double>(IidDepth,            1.,   10.),    "IidDepth"),
-		OptionTunableParam(SpinType<double>(IidDepthDiv,         5.,   16.),    "IidDepthDiv"),
-		OptionTunableParam(SpinType<double>(RfpDepth,     	     1.,   10.),    "RfpDepth"),
-		OptionTunableParam(SpinType<double>(RazorDepth,          1.,   10.),    "RazorDepth"),
-		OptionTunableParam(SpinType<double>(FutilityDepth,       1.,   10.),    "FutilityDepth"),
-		OptionTunableParam(SpinType<double>(LmrDepth,     	     1.,   10.),    "LmrDepth"),
-		OptionTunableParam(SpinType<double>(NullReduction,       1.,   10.),    "NullReduction"),
+		OptionTunableParam(SpinType<double>(IidDepthDiv,         4.,   16.),    "IidDepthDiv"),
+		OptionTunableParam(SpinType<double>(RfpDepth,     	     1.,   7.),     "RfpDepth"),
+		OptionTunableParam(SpinType<double>(RazorDepth,          1.,   7.),     "RazorDepth"),
+		OptionTunableParam(SpinType<double>(FutilityDepth,       1.,   7.),     "FutilityDepth"),
+		OptionTunableParam(SpinType<double>(LmrDepth,     	     2.,   7.),     "LmrDepth"),
+		OptionTunableParam(SpinType<double>(NullReduction,       1.,   7.),     "NullReduction"),
 		OptionTunableParam(SpinType<double>(LmrMoveCount,        1.,   32.),    "LmrMoveCount"),
 		OptionTunableParam(SpinType<double>(RazorMultDelta,      5.,   100.),   "RazorMultDelta"),
 		OptionTunableParam(SpinType<double>(RfpMultDelta,        10.,  400.),   "RfpMultDelta"),
@@ -31,7 +31,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(QMaterialDelta,      200., 1500.),  "QMaterialDelta"),
 		OptionTunableParam(SpinType<double>(QProbeDepth,         -5.,  5.),     "QProbeDepth"),
 		//OptionTunableParam(SpinType<double>(ContemptFactor,      0.,   50.),    "ContemptFactor"),
-		OptionTunableParam(SpinType<double>(NNEvalScale,         2.,   32),     "NNEvalScale"),
+		OptionTunableParam(SpinType<double>(NNEvalScale,         2.,   12.),     "NNEvalScale"),
 		}
 };
 
