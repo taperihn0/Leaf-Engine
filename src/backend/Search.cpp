@@ -457,7 +457,7 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
-	if constexpr (!IsPV) {
+	if constexpr (!Root and !IsPV) {
 
 		node->cuckoo_check = alpha < Score::Draw;
 
