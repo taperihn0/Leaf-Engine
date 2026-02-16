@@ -10,7 +10,7 @@
 				"CMAKE_BUILD_TYPE": "Debug",
 				"COLLECT_SEARCH_STATS": "ON",
 				"INCLUDE_TESTS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_AVX2": "ON"
 			}
 		},
 		{
@@ -22,7 +22,7 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_AVX2": "ON"
 			}
 		},
 		{
@@ -34,7 +34,7 @@
 				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
 				"COLLECT_SEARCH_STATS": "ON",
 				"INCLUDE_TESTS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_AVX2": "ON"
 			}
 		},
 		{
@@ -46,7 +46,7 @@
 				"CMAKE_BUILD_TYPE": "Debug",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_AVX2": "ON"
 			}
 		},
 		{
@@ -58,7 +58,7 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
+				"ENABLE_SIMD_AVX2": "ON",
 				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
 			}
 		}

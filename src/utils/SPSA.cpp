@@ -204,7 +204,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         applyOptions(theta_plus, engine_os0, engine_is0, LOG_DEBUG | LOG_ENGINE_0);
         applyOptions(theta_minus, engine_os1, engine_is1, LOG_DEBUG | LOG_ENGINE_1);
 
-        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1);
+        std::string res_str;
+        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -223,7 +224,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         theta_plus.clear();
         theta_minus.clear();
 
-        labelLog(std::cout, LOG_DEBUG, "Game result: " + std::to_string(res));
+        labelLog(std::cout, LOG_DEBUG, "Game result: " + res_str + ", " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -270,7 +271,8 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
 
 INLINE int  SPSA_Tuning::match(SearchLimits limits,
                                 std::istream& engine_os0, std::ostream& engine_is0,
-                                std::istream& engine_os1, std::ostream& engine_is1)
+                                std::istream& engine_os1, std::ostream& engine_is1,
+                                std::string& info)
 {
     // Is, os are relative to the engines.
     // We're writing to os, reading from is.
@@ -313,8 +315,6 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
     Game game(opening, time_constraint, limits.wtime, limits.btime);
     Game::Result game_result;
 
-    static constexpr time_ms_t MoveOverhead = 15_ms;
-
     uint draw_full_moves = 0;
 
     enumLogLabel debug_labels[2];
@@ -344,15 +344,17 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
                                      debug_labels[side2move]);
         time_ms_t think_time = timer.duration();
 
-        game.applyMove(move, think_time);
-
         if (time_constraint and side2move == WHITE) {
             limits.wtime -= think_time - limits.winc;
-            limits.wtime += MoveOverhead;
+            limits.wtime += Game::MoveOverhead;
+
+            game.applyMove(move, think_time - limits.winc - Game::MoveOverhead);
         }
         else if (time_constraint) {
             limits.btime -= think_time - limits.binc;
-            limits.btime += MoveOverhead;
+            limits.btime += Game::MoveOverhead;
+
+            game.applyMove(move, think_time - limits.binc - Game::MoveOverhead);
         }
 
         ASSERTNOLOG(eval != Score::Undef);
@@ -368,6 +370,8 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
             break;
         }
     }
+
+    info = toStr(game_result);
 
     //  1. - if player 0 wins
     // -1. - if player 1 wins

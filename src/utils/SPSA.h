@@ -54,7 +54,8 @@ private:
 
     int  match(SearchLimits limits,
                 std::istream& engine_os0, std::ostream& engine_is0,
-                std::istream& engine_os1, std::ostream& engine_is1);
+                std::istream& engine_os1, std::ostream& engine_is1,
+                std::string& info);
 
     void sentPosition(const std::string& start_fen, 
                       const FullInfoRecord& record,

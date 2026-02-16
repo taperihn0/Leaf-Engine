@@ -12,8 +12,9 @@ Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, ti
 void Game::applyMove(Move32b move, time_ms_t think_time) {
     bool side2move = _current_pos.getTurn();
 
-    if (_time_constraint)
+    if (_time_constraint) {
         _time_left_sided[side2move] -= think_time;
+    }
 
     _current_pos.make(move);
 
