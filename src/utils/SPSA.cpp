@@ -164,7 +164,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
     }
 
-    std::ofstream log_file("spsa_log_feb14.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_feb15.txt", std::ios_base::app);
 
     uint theta_plus_win_cnt = 0;
     uint theta_minus_win_cnt = 0;
@@ -224,7 +224,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         theta_plus.clear();
         theta_minus.clear();
 
-        labelLog(std::cout, LOG_DEBUG, "Game result: " + res_str + ", " + std::to_string(res));
+        labelLog(std::cout, LOG_DEBUG, "Game info: " + res_str + ", numeric: " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -246,7 +246,7 @@ void SPSA_Tuning::writeCheckpoint(std::ofstream& file,
                                   uint k)
 {
     std::stringstream ss;
-    ss << "[CHECKPOINT] ITERATION K = " << k << '\n';
+    ss << "[CHECKPOINT] Iteration K = " << k << '\n';
 
     for (SPSA_Parameter& param : theta) {
         ss << param.name << " = " << param.value << '\n';

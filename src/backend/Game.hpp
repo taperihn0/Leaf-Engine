@@ -87,6 +87,8 @@ public:
 	FullInfoRecord& getHistoryRecord();
 
 	static constexpr time_ms_t MoveOverhead = 15_ms;
+    static constexpr time_ms_t TimeMargin   = 40_ms;
+
 private:
 	bool isGameCycle() const;
 	bool isStaleMate() const;

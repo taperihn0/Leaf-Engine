@@ -29,8 +29,6 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
 #define WIN_BY_ADJUCATION(color) static_cast<Game::Result>(Game::WHITE_WIN_BY_ADJUCATION + (color))
 #define WIN_BY_TIMEOUT(color)    static_cast<Game::Result>(Game::WHITE_WIN_BY_TIMEOUT + (color))
 
-static constexpr time_ms_t TimeMargin = 40_ms;
-
 bool Game::isWin(Game::Result& full) const {
     bool side2move = _current_pos.getTurn();
 
