@@ -405,7 +405,7 @@ Score Search::negaMax(Position& pos,
 					  Score alpha, Score beta, 
 					  int depth, int ply) 
 {
-	assert(0 <= depth and depth < MaxDepth - 1);
+	assert(0 <= depth and depth <= MaxDepth - 1);
 	assert(alpha < beta);
 
 	if constexpr (Root) assert(!ply);

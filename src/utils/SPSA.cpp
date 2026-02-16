@@ -69,8 +69,8 @@ void SPSA_Tuning::start() {
         param.value = option.getCurrentValue();
         param.min = option.value.min_value;
         param.max = option.value.max_value;
-        param.r = 0.025;
-        param.c = (param.max - param.min) / 12.;
+        param.r = 0.03;
+        param.c = (param.max - param.min) / 10.;
 
         return param;
     };
@@ -164,7 +164,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
     }
 
-    std::ofstream log_file("spsa_log_feb14.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_feb15.txt", std::ios_base::app);
 
     uint theta_plus_win_cnt = 0;
     uint theta_minus_win_cnt = 0;
