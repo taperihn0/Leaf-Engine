@@ -161,7 +161,7 @@ inline _P_CONSTEXPR int NullImprovingSink = 4.;
 inline _P_CONSTEXPR int DynImprovementDepth = 6;
 inline _P_CONSTEXPR int TTEvalCorrRate	  = 2;
 
-inline constexpr int CheckNodeCount    = 2048;
+inline constexpr int CheckNodeCount = 2048;
 
 class Search {
 public:

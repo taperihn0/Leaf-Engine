@@ -20,7 +20,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(RazorDepth,          1.,   7.),     "RazorDepth", 		    1.3),
 		OptionTunableParam(SpinType<double>(FutilityDepth,       1.,   7.),     "FutilityDepth", 	    1.3),
 		OptionTunableParam(SpinType<double>(LmrDepth,     	     2.,   7.),     "LmrDepth", 			1.2),
-		OptionTunableParam(SpinType<double>(NullReduction,       1.,   7.),     "NullReduction", 		1.3),
+		OptionTunableParam(SpinType<double>(NullReduction,       9.,   32.),     "NullReduction", 		1.3),
 		OptionTunableParam(SpinType<double>(LmrMoveCount,        1.,   32.),    "LmrMoveCount", 		1.),
 		OptionTunableParam(SpinType<double>(RazorMultDelta,      5.,   100.),   "RazorMultDelta", 		1.),
 		OptionTunableParam(SpinType<double>(RfpMultDelta,        10.,  400.),   "RfpMultDelta", 		1.),

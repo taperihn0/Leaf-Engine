@@ -55,6 +55,7 @@ INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined (_MSC_VER)
 	void* m = _aligned_malloc(size, alignment);
 #else
+    ASSERT(size % alignment == 0, "Size must be multiple of alignment for some platforms");
 	void* m = std::aligned_alloc(alignment, size);
 #endif
 	ASSERT(m, "Failed to allocate memory");
