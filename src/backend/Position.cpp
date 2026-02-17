@@ -184,25 +184,12 @@ void Position::print() const {
 	}
 
 	std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
-		<< "     A   B   C   D   E   F   G   H\n\n"
-		<< "FEN States: ";
+			  << "     A   B   C   D   E   F   G   H\n\n"
+			  << "FEN: ";
 
-	_turn.print();
-	std::cout << ' ';
+	const std::string fen = createFEN();
 
-	if (_castling_rights[WHITE].isAnyPossible())
-		_castling_rights[WHITE].printByColor(WHITE);
-	if (_castling_rights[BLACK].isAnyPossible())
-		_castling_rights[BLACK].printByColor(BLACK);
-
-	if (!_castling_rights[WHITE].isAnyPossible() and 
-		!_castling_rights[BLACK].isAnyPossible())
-		std::cout << '-';
-
-	std::cout << ' ';
-	_ep_square.print();
-	std::cout << ' ' << static_cast<int>(_halfmove_count)
-		<< ' ' << _fullmove_count << '\n';
+	std::cout << fen << '\n';
 }
 
 bool Position::operator==(const Position& pos) const {

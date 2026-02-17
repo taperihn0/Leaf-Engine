@@ -66,6 +66,10 @@ public:
 		return _raw;
 	}
 
+	INLINE explicit operator float() const {
+		return static_cast<float>(_raw);
+	}
+
 	INLINE bool isValid() const {
 		return _raw != Undef and _raw != -Undef;
 	}

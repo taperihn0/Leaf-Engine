@@ -69,7 +69,7 @@ void SPSA_Tuning::start() {
         param.value = option.getCurrentValue();
         param.min = option.value.min_value;
         param.max = option.value.max_value;
-        param.r = 0.03;
+        param.r = 0.025 * option.rate;
         param.c = (param.max - param.min) / 10.;
 
         return param;
@@ -93,8 +93,8 @@ void SPSA_Tuning::start() {
     // Game parameters
 	limits.depth = MaxDepth - 1; // no depth limit
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 2_s;
-    limits.winc = limits.binc = 20_ms;
+    limits.wtime = limits.btime = 40_s;
+    limits.winc = limits.binc = 400_ms;
 
     _openings.load("src/assets/sets/Nunn_Openings.epd");
     
@@ -128,6 +128,19 @@ void SPSA_Tuning::start() {
         }
 
 #endif
+
+        // set TT sizes
+        
+        static const size_t mb_tt_size = 64;
+
+        std::stringstream tt_log;
+        tt_log << "setoption name Hash value " << mb_tt_size;
+
+        log(is0, tt_log.str());
+        labelLog(std::cout, LOG_INFO | LOG_ENGINE_0, tt_log.str());
+
+        log(is1, tt_log.str());
+        labelLog(std::cout, LOG_INFO | LOG_ENGINE_1, tt_log.str());
     }
 
     tune(theta, theta_plus, theta_minus, IterCount, limits,

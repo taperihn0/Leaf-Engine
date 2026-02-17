@@ -6,7 +6,6 @@
 
 void TunableParametersMap::createMapping() {
     _addr["MaxQuietsHistoryPow"] = &MaxQuietsHistoryPow;
-    _addr["CheckNodeCount"]      = &CheckNodeCount;
     _addr["IidDepth"]            = &IidDepth;
     _addr["IidDepthDiv"]         = &IidDepthDiv;
     _addr["RfpDepth"]            = &RfpDepth;
@@ -22,8 +21,14 @@ void TunableParametersMap::createMapping() {
     _addr["RazorBaseDelta"]      = &RazorBaseDelta;
     _addr["QMaterialDelta"]      = &QMaterialDelta;
     _addr["QProbeDepth"]         = &QProbeDepth;
-    //_addr["ContemptFactor"]      = &ContemptFactor;
     _addr["NNEvalScale"]         = &NNEvalScale;
+    _addr["NullDepth"]           = &NullDepth;
+    _addr["ImprovingRate"]       = &ImprovingRate;
+    _addr["RfpImprovingSink"]    = &RfpImprovingSink;
+    _addr["NullMargin"]          = &NullMargin;
+    _addr["NullImprovingSink"]   = &NullImprovingSink ;
+    _addr["DynImprovementDepth"] = &DynImprovementDepth;
+    _addr["TTEvalCorrRate"]      = &TTEvalCorrRate;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {
