@@ -60,13 +60,14 @@ struct OptionClearHash : public Option {
 };
 
 struct OptionTunableParam : public Option {
-    OptionTunableParam(SpinType<double> val, std::string option_str);
+    OptionTunableParam(SpinType<double> val, std::string option_str, double step_rate = 1.);
     void print() const override;
     void set(double val);
     double getCurrentValue() const;
 
-    std::string str;
+    std::string      str;
     SpinType<double> value;
+    double           rate;
 };
 
 // ----- Internal implementation -----
@@ -124,9 +125,10 @@ _INTERNAL void OptionClearHash::print() const {
     value.print();
 }
 
-_INTERNAL OptionTunableParam::OptionTunableParam(SpinType<double> val, std::string option_str) 
+_INTERNAL OptionTunableParam::OptionTunableParam(SpinType<double> val, std::string option_str, double step_rate) 
     : str(option_str)
     , value(val) 
+    , rate(step_rate)
 {}
 
 _INTERNAL void OptionTunableParam::print() const {

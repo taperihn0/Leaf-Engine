@@ -157,6 +157,8 @@ void NodeInfo::clear() {
 	state 			 = {};
 	best_move = move = Move32b::Null;
 	score 			 = Score::Undef;
+	eval 			 = Score::Undef;
+	improving_rate   = 0.f;
 	can_move 		 = false;
 	best_score 		 = Score::Undef;
 	check 			 = false;
@@ -411,8 +413,8 @@ Score Search::negaMax(Position& pos,
 	if constexpr (Root) assert(!ply);
 	else 				assert(ply > 0);
 
-	static constexpr OrderType OrderPolicy 	  = STAGED;
-	static constexpr bool	   IsPV 	   	  = NmNodeType & PV_NODE;
+	static constexpr OrderType OrderPolicy = STAGED;
+	static constexpr bool	   IsPV 	   = NmNodeType & PV_NODE;
 
 	if constexpr (!Root) {
 
@@ -529,7 +531,10 @@ Score Search::negaMax(Position& pos,
 	NodeInfo* const next_node = node + 1;
 
 	node->move = Move32b::Null;
-	Score eval = tt_entry.eval;
+	node->eval = tt_entry.eval;
+	node->improving_rate = 0.f;
+
+	Score corr_eval = Score::Undef;
 
 	/* Razoring -
 	*  if we're at lower depth and the eval is really low
@@ -541,11 +546,13 @@ Score Search::negaMax(Position& pos,
 		if (!node->check and
 			depth <= RazorDepth)
 		{
-			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+			if (!node->eval.isValid()) {
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
+			
+			corr_eval = adjustEvalScore(node->eval, tt_entry.score);
 
-			if (eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+			if (corr_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
 				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
@@ -588,7 +595,34 @@ Score Search::negaMax(Position& pos,
 												: Move32b::Null;
 
 			if (!tt_move.isNull() and iid_entry.eval.isValid()) {
-				eval = iid_entry.eval;
+				node->eval = iid_entry.eval;
+			}
+		}
+	}
+
+	/* Dynamic Improving implementation -
+	*  we're clamping improvement rate to range [-1., 1.]
+	*/
+
+	if (!Root and !IsPV and !node->check) {
+
+		if (node->eval.isValid() or depth <= DynImprovementDepth) {
+
+			if (!node->eval.isValid()) {
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+			}
+
+			const NodeInfo* prev_eval_node = nullptr;
+
+			if (ply > 2 and (node - 2)->eval.isValid())
+				prev_eval_node = node - 2;
+			else if (ply > 4 and (node - 4)->eval.isValid())
+				prev_eval_node = node - 4;
+		
+			if (prev_eval_node) {
+				const Score diff = node->eval - prev_eval_node->eval;
+				node->improving_rate = std::clamp(prev_eval_node->improving_rate + static_cast<float>(diff) / ImprovingRate, 
+													-1.f, 1.f);
 			}
 		}
 	}
@@ -600,14 +634,14 @@ Score Search::negaMax(Position& pos,
 	if constexpr (!Root and !IsPV) {
 		if (!node->check and
 			depth <= RfpDepth and
-			tt_move.isQuiet())
+			(tt_move.isNull() or tt_move.isQuiet()))
 		{
-			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+			if (!node->eval.isValid()) {
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval - RfpMultDelta * depth >= beta) {
-				const Score reduced_eval = eval - (depth << 6);
+			if (node->eval - (-node->improving_rate / RfpImprovingSink + 1.) * RfpMultDelta * depth >= beta) {
+				const Score reduced_eval = (node->eval + beta) / 2;
 				return reduced_eval;
 			}
 		}
@@ -620,45 +654,56 @@ Score Search::negaMax(Position& pos,
 	*  So we can do beta cutoff.
 	*/
 	if constexpr (!Root and NullMove) {
-		if (!node->check and depth >= NullReduction + 1) {
-			assert(prev_node->move != Move32b::Null);
-			
-			pos.makeNull(node->state, accum_cache);
 
-            AccumulatorCluster* curr_cluster = &node->cluster;
-            AccumulatorCluster* next_cluster = curr_cluster->next_cluster;
-            AccumulatorCluster* prev_cluster = curr_cluster->prev_cluster;
+		if (!node->check and 
+			depth >= NullDepth) {
 
-            assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
+			if (!node->eval.isValid()) {
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+			}
 
-			node->move = Move32b::Null;
-            next_cluster->prev_cluster = prev_cluster;
+			if (node->eval - (-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth >= beta) {
 
-
-			const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
-																		-beta, -beta + 1, 
-																		depth - NullReduction - 1, 
-																		ply + 1);
-			pos.unmakeNull(node->state);
-            next_cluster->prev_cluster = curr_cluster;
-
-			/* Unless Null Move Pruning is not handled properly in the endgame, 
-			*  verification search is just needed to prevent Zugzwang.
-			*/
-			if (score >= beta) {
-				const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
-																			beta - 1, beta, 
-																			depth - NullReduction - 1, 
-																			ply);
+				assert(prev_node->move != Move32b::Null);
 				
-				if (verify >= beta) {
-					_tt.write(hash, 
-							  depth - NullReduction, ply, 
-							  TTEntry::UPPERBOUND, 
-							  verify, Move16b::Null, eval, 
-							  results);
+				pos.makeNull(node->state, accum_cache);
 
-					return verify;
+				AccumulatorCluster* const curr_cluster = &node->cluster;
+				AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
+				AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
+
+				assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
+
+				node->move = Move32b::Null;
+				next_cluster->prev_cluster = prev_cluster;
+				
+				const int nm_depth = 8 * depth / NullReduction;
+
+				const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
+																			-beta, -beta + 1, 
+																			nm_depth, 
+																			ply + 1);
+				pos.unmakeNull(node->state);
+				next_cluster->prev_cluster = curr_cluster;
+
+				/* Unless Null Move Pruning is not handled properly in the endgame, 
+				*  verification search is just needed to prevent Zugzwang.
+				*/
+				if (score >= beta) {
+					const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+																				beta - 1, beta, 
+																				nm_depth, 
+																				ply);
+					
+					if (verify >= beta) {
+						_tt.write(hash, 
+								nm_depth, ply, 
+								TTEntry::UPPERBOUND, 
+								verify, packed(tt_move), node->eval, 
+								results);
+
+						return verify;
+					}
 				}
 			}
 		}
@@ -691,11 +736,11 @@ Score Search::negaMax(Position& pos,
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
-			if (!eval.isValid()) {
-				eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+			if (!node->eval.isValid()) {
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (eval + FutilityDelta * depth * depth < alpha) {
+			if (node->eval + FutilityDelta * depth * depth < alpha) {
 				node->score = alpha;
 
 				if (node->score > node->best_score) {
@@ -828,7 +873,7 @@ Score Search::negaMax(Position& pos,
 		_tt.write(hash, 
 				  depth, ply, 
 				  node->bound, 
-				  node->best_score, bestmove16b, eval, 
+				  node->best_score, bestmove16b, node->eval, 
 				  results);
 	}
 
@@ -920,27 +965,27 @@ Score Search::quiesce(Position& pos,
 	results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-	const Score stand_pat = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results)
-													         : tt_entry.eval;
+	node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results)
+												  : tt_entry.eval;
 #else
-	const Score stand_pat = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+	node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
 	*  then prune all of the branches.
 	*/
-	if (stand_pat + QMaterialDelta < alpha)
+	if (node->eval + QMaterialDelta < alpha)
 		return alpha;
 	
 	/* Standing Pat Cutoff -
 	*  when we're already above the beta, we can make a cutoff.
 	*/
-	else if (stand_pat > alpha) {
-		if (stand_pat >= beta) 
+	else if (node->eval > alpha) {
+		if (node->eval >= beta) 
 			return beta;
 
-		node->score = alpha = stand_pat;
+		node->score = alpha = node->eval;
 	}
 
 	node->move_picker.clear<QuiescentOrderPolicy>();
@@ -1095,6 +1140,16 @@ INLINE Score Search::evaluate(const Position& pos,
 	eval = eval * 8 / static_cast<Score>(NNEvalScale);
 
 	return eval;
+}
+
+_FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {
+	assert(eval.isValid());
+
+	if (!tt_score.isValid() or eval.isMateScore())
+		return eval;
+
+	const Score tt_eval_diff = tt_score - eval;
+	return eval + tt_eval_diff / TTEvalCorrRate;
 }
 
 template <bool IsPV>

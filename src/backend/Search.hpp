@@ -98,6 +98,8 @@ struct NodeInfo {
 	Move32b						move;
 	Move32b						best_move;
 	Score						score;
+	Score						eval;
+	float 						improving_rate;
 	bool						can_move;
 	Score						best_score;
 	bool						check;
@@ -134,14 +136,14 @@ private:
 	NodeInfo* _stack;
 };
 
-inline _P_CONSTEXPR int CheckNodeCount    = 4096;
 inline _P_CONSTEXPR int	IidDepth 	      = 3;
 inline _P_CONSTEXPR int	IidDepthDiv       = 8;
 inline _P_CONSTEXPR int	RfpDepth          = 6;
 inline _P_CONSTEXPR int RazorDepth        = 2;
 inline _P_CONSTEXPR int	FutilityDepth     = 4;
 inline _P_CONSTEXPR int	LmrDepth 	      = 2;
-inline _P_CONSTEXPR int	NullReduction     = 2;
+inline _P_CONSTEXPR int	NullReduction     = 16;
+inline _P_CONSTEXPR int NullDepth		  = 3;
 inline _P_CONSTEXPR int	LmrMoveCount      = 2;
 inline _P_CONSTEXPR int RazorMultDelta    = 25;
 inline _P_CONSTEXPR int RfpMultDelta      = 150;
@@ -150,8 +152,16 @@ inline _P_CONSTEXPR int FutilityMoveCount = 1;
 inline _P_CONSTEXPR int RazorBaseDelta    = 150;
 inline _P_CONSTEXPR int QMaterialDelta    = 900;
 inline _P_CONSTEXPR int QProbeDepth		  = -1;
-//inline _P_CONSTEXPR int ContemptFactor 	  = 10;
+//inline _P_CONSTEXPR int ContemptFactor 	  = 5;
 inline _P_CONSTEXPR int NNEvalScale		  = 8;
+inline _P_CONSTEXPR int ImprovingRate     = 50;
+inline _P_CONSTEXPR int RfpImprovingSink  = 2;
+inline _P_CONSTEXPR int NullMargin 		  = 20;
+inline _P_CONSTEXPR int NullImprovingSink = 4.;
+inline _P_CONSTEXPR int DynImprovementDepth = 6;
+inline _P_CONSTEXPR int TTEvalCorrRate	  = 2;
+
+inline constexpr int CheckNodeCount    = 2048;
 
 class Search {
 public:
@@ -227,6 +237,8 @@ private:
 				   const NodeInfo* preroot, 
 				   enumColor side2move, 
 				   SearchResults& results);
+
+	Score adjustEvalScore(Score eval, Score tt_score);
 
 	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, 
