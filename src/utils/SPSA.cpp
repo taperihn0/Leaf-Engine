@@ -224,7 +224,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         theta_plus.clear();
         theta_minus.clear();
 
-        labelLog(std::cout, LOG_DEBUG, "Game info: " + res_str + ", numeric: " + std::to_string(res));
+        labelLog(std::cout, LOG_INFO, "Game info: " + res_str + ", numeric: " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -237,7 +237,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         if (k % 10 == 0)
             writeCheckpoint(log_file, theta, k);
 
-        if (k >= 500) break;
+        //if (k >= 500) break;
     }
 }
 
