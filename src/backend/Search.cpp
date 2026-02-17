@@ -192,7 +192,7 @@ void Search::registerNewGame() {
 }
 
 TreeStack::TreeStack() {
-	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(_Count * sizeof(NodeInfo),  CACHELINE_SIZE));
+	_stack = reinterpret_cast<NodeInfo*>(new NodeInfo[_Count]);
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
@@ -210,7 +210,8 @@ void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 }
 
 TreeStack::~TreeStack() {
-	alignedFree(_stack);
+	//alignedFree(_stack);
+	delete[] _stack;
 }
 
 INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
@@ -614,9 +615,9 @@ Score Search::negaMax(Position& pos,
 
 			const NodeInfo* prev_eval_node = nullptr;
 
-			if (ply > 2 and (node - 2)->eval.isValid())
+			if (node - preroot > 2 and (node - 2)->eval.isValid())
 				prev_eval_node = node - 2;
-			else if (ply > 4 and (node - 4)->eval.isValid())
+			else if (node - preroot > 4 and (node - 4)->eval.isValid())
 				prev_eval_node = node - 4;
 		
 			if (prev_eval_node) {
