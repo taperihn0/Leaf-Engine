@@ -142,6 +142,7 @@ inline _P_CONSTEXPR int	RfpDepth          = 6;
 inline _P_CONSTEXPR int RazorDepth        = 2;
 inline _P_CONSTEXPR int	FutilityDepth     = 4;
 inline _P_CONSTEXPR int	LmrDepth 	      = 2;
+inline _P_CONSTEXPR int NullDiffScale	  = 1000; //
 inline _P_CONSTEXPR int	NullReduction     = 16;
 inline _P_CONSTEXPR int NullDepth		  = 3;
 inline _P_CONSTEXPR int	LmrMoveCount      = 2;
@@ -152,7 +153,6 @@ inline _P_CONSTEXPR int FutilityMoveCount = 1;
 inline _P_CONSTEXPR int RazorBaseDelta    = 150;
 inline _P_CONSTEXPR int QMaterialDelta    = 900;
 inline _P_CONSTEXPR int QProbeDepth		  = -1;
-//inline _P_CONSTEXPR int ContemptFactor 	  = 5;
 inline _P_CONSTEXPR int NNEvalScale		  = 8;
 inline _P_CONSTEXPR int ImprovingRate     = 50;
 inline _P_CONSTEXPR int RfpImprovingSink  = 2;
@@ -239,6 +239,8 @@ private:
 				   SearchResults& results);
 
 	Score adjustEvalScore(Score eval, Score tt_score);
+
+	int getNullSearchDepth(Score eval, Score beta, int depth);
 
 	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, 

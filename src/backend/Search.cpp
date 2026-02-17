@@ -678,7 +678,7 @@ Score Search::negaMax(Position& pos,
 				node->move = Move32b::Null;
 				next_cluster->prev_cluster = prev_cluster;
 				
-				const int nm_depth = 8 * depth / NullReduction;
+				const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
 
 				const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																			-beta, -beta + 1, 
@@ -1151,6 +1151,12 @@ _FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {
 
 	const Score tt_eval_diff = tt_score - eval;
 	return eval + tt_eval_diff / TTEvalCorrRate;
+}
+
+_FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
+	const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
+	const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
+	return std::lroundf(8.f * diff_scale * depth / NullReduction);
 }
 
 template <bool IsPV>

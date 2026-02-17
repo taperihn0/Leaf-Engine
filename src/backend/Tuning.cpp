@@ -29,6 +29,7 @@ void TunableParametersMap::createMapping() {
     _addr["NullImprovingSink"]   = &NullImprovingSink ;
     _addr["DynImprovementDepth"] = &DynImprovementDepth;
     _addr["TTEvalCorrRate"]      = &TTEvalCorrRate;
+    _addr["NullDiffScale"]       = &NullDiffScale;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {
