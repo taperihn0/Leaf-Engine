@@ -1156,7 +1156,7 @@ _FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {
 _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
 	const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
 	const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
-	return std::lroundf(8.f * diff_scale * depth / NullReduction);
+	return std::clamp<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1, depth - 1);
 }
 
 template <bool IsPV>

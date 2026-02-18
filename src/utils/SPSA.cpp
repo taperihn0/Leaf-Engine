@@ -69,7 +69,7 @@ void SPSA_Tuning::start() {
         param.value = option.getCurrentValue();
         param.min = option.value.min_value;
         param.max = option.value.max_value;
-        param.r = 0.05 * option.rate;
+        param.r = 0.15 * option.rate;
         param.c = (param.max - param.min) / 10.;
 
         return param;
@@ -93,7 +93,7 @@ void SPSA_Tuning::start() {
     // Game parameters
 	limits.depth = MaxDepth - 1; // no depth limit
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 40_s;
+    limits.wtime = limits.btime = 40_ms;
     limits.winc = limits.binc = 400_ms;
 
     _openings.load("src/assets/sets/Nunn_Openings.epd");
@@ -177,7 +177,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
     }
 
-    std::ofstream log_file("spsa_log_feb15.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_feb18.txt", std::ios_base::app);
 
     uint theta_plus_win_cnt = 0;
     uint theta_minus_win_cnt = 0;
