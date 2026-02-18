@@ -69,7 +69,7 @@ void SPSA_Tuning::start() {
         param.value = option.getCurrentValue();
         param.min = option.value.min_value;
         param.max = option.value.max_value;
-        param.r = 0.025 * option.rate;
+        param.r = 0.05 * option.rate;
         param.c = (param.max - param.min) / 10.;
 
         return param;
