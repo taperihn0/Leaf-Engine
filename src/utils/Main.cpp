@@ -231,8 +231,11 @@ void parseFilterTrainData(std::istringstream& strm) {
 }
 
 void parseSPSA(std::istringstream& strm) {
+    int thread_count;
+    strm >> std::skipws >> thread_count;
+    
     Utils::SPSA_Tuning tuner;
-    tuner.start();
+    tuner.start(thread_count);
 }
 
 int main(int argc, char* argv[]) {

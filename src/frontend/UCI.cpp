@@ -30,7 +30,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(QMaterialDelta,      200., 1500.),  "QMaterialDelta", 		0.3),
 		OptionTunableParam(SpinType<double>(QProbeDepth,         -5.,  5.),     "QProbeDepth", 			2.),
 		//OptionTunableParam(SpinType<double>(ContemptFactor,      0.,   50.),    "ContemptFactor", 1.),
-		OptionTunableParam(SpinType<double>(NNEvalScale,         2.,   12.),    "NNEvalScale", 			1.5),
+		OptionTunableParam(SpinType<double>(NNEvalScale,         7.,   12.),    "NNEvalScale", 			1.5),
 		OptionTunableParam(SpinType<double>(ImprovingRate, 		 20,   100.),   "ImprovingRate" , 	  	0.7),
 		OptionTunableParam(SpinType<double>(RfpImprovingSink, 	 1,    10.),    "RfpImprovingSink",   	1.4),
 		OptionTunableParam(SpinType<double>(NullMargin, 		 10,   150.),   "NullMargin", 			0.5),

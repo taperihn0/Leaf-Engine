@@ -4,14 +4,21 @@
 
 #include <sys/wait.h>
 #include <sstream>
+#include <atomic>
+#include <mutex>
 
 namespace Utils {
     
 _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) {
-    return static_cast<enumLogLabel>(static_cast<uint8_t>(s0) | static_cast<uint8_t>(s1));
+    return static_cast<enumLogLabel>(static_cast<uint16_t>(s0) | static_cast<uint16_t>(s1));
 }
 
-_FORCEINLINE void labelLog(std::ostream& is, uint8_t label, const std::string& str) {
+_FORCEINLINE enumLogLabel threadLabel(uint id) {
+    ASSERTNOLOG(id < SPSA_Tuning::ThreadLimit);
+    return static_cast<enumLogLabel>(16 << id);
+}
+
+_FORCEINLINE void labelLog(std::ostream& is, uint16_t label, const std::string& str) {
 
 #if !defined(DEBUG)
     if (label & LOG_DEBUG) 
@@ -21,7 +28,7 @@ _FORCEINLINE void labelLog(std::ostream& is, uint8_t label, const std::string& s
     if (label != LOG_NO_LABEL) {
         std::string labels;
 
-        auto add_label = [&](uint8_t bit, const char* name) {
+        auto add_label = [&](uint16_t bit, const char* name) {
             if (label & bit) {
                 if (!labels.empty()) 
                     labels += "|";
@@ -34,6 +41,18 @@ _FORCEINLINE void labelLog(std::ostream& is, uint8_t label, const std::string& s
         add_label(LOG_INFO,     "INFO");
         add_label(LOG_ENGINE_0, "PLAYER_0");
         add_label(LOG_ENGINE_1, "PLAYER_1");
+
+        const auto& thread_label = [](uint id) {
+            ASSERTNOLOG(id < SPSA_Tuning::ThreadLimit);
+            return static_cast<enumLogLabel>(16 << id);
+        };
+
+        for (uint id = 0; id < SPSA_Tuning::ThreadLimit; id++) {
+            std::stringstream thr;
+            thr << "THREAD_" << id;
+            add_label(threadLabel(id), thr.str().c_str());
+        }
+
         is << "[" << labels << "] ";
     }
 
@@ -48,7 +67,85 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
     return std::getline(os, line);
 }
 
-void SPSA_Tuning::start() {
+static constexpr uint             IterCount = 4000;
+static constexpr int              A = IterCount / 10;
+static constexpr double           Alpha = 0.602;
+static constexpr double           Gamma = 0.101;
+static constexpr std::string_view OpeningPath = "src/assets/sets/Nunn_Openings.epd";
+
+std::atomic<int> curr_iter;
+std::mutex       param_mutex;
+
+void SPSA_Tuning::start(uint thread_count) {
+    if (thread_count > ThreadLimit) {
+        std::cout << "Too many threads requested" << std::endl;
+        return;
+    }
+
+    const auto& tunable_options = UniversalChessInterface::getTunableOptions();
+    const uint param_count = tunable_options.size();
+
+    std::vector<SPSA_Parameter> params;
+    params.reserve(param_count);
+
+    std::transform(tunable_options.begin(),
+                   tunable_options.end(),
+                   std::back_inserter(params),
+                   [](OptionTunableParam option) {
+                        SPSA_Parameter param;
+
+                        param.name = option.str;
+                        param.value = option.getCurrentValue();
+                        param.min = option.value.min_value;
+                        param.max = option.value.max_value;
+                        param.r = 500 * 0.15 * option.rate;
+                        param.c = 500 * (param.max - param.min) / 10.;
+
+                        return param;
+                    });
+
+    const double PowFactor = std::pow(A + 1, Alpha);
+
+    for (int i = 0; i < param_count; i++) {
+        params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
+    }
+    
+    SearchLimits limits;
+
+    // Game parameters
+	limits.depth = MaxDepth / 2; // avoid depth overflow
+    limits.nodes = 0; // no node limit
+    limits.wtime = limits.btime = 50_ms;
+    limits.winc = limits.binc = 1_ms;
+
+    _openings.load(std::string(OpeningPath));
+
+    std::ofstream log_file("spsa_log_feb20.txt", std::ios_base::app);
+
+    curr_iter.store(0);
+
+    std::vector<std::thread> threads;
+
+    for (int id = 0; id < thread_count; id++) {
+        threads.emplace_back([&](std::vector<SPSA_Parameter>& theta, 
+                                 std::ofstream& log_file, 
+                                 SearchLimits limits,
+                                 uint id) 
+        {
+            this->startThread(theta, log_file, limits, id);
+        }, 
+        std::ref(params), std::ref(log_file), limits, id);
+    }
+
+    for (auto& thread : threads)
+        thread.join();
+}
+
+void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta, 
+                              std::ofstream& log_file, 
+                              SearchLimits limits,
+                              uint id) 
+{
     auto engine0 = spawnProcess();
     auto engine1 = spawnProcess();
 
@@ -57,74 +154,43 @@ void SPSA_Tuning::start() {
     auto& is1 = *engine1.in;
     auto& os1 = *engine1.out;
 
-    const auto& tunable_options = UniversalChessInterface::getTunableOptions();
-
-    std::vector<SPSA_Parameter> theta;
-    theta.reserve(tunable_options.size());
-
-    auto tranform_func = [](OptionTunableParam option) {
-        SPSA_Parameter param;
-
-        param.name = option.str;
-        param.value = option.getCurrentValue();
-        param.min = option.value.min_value;
-        param.max = option.value.max_value;
-        param.r = 0.15 * option.rate;
-        param.c = (param.max - param.min) / 10.;
-
-        return param;
-    };
-
-    std::transform(tunable_options.begin(),
-                   tunable_options.end(),
-                   std::back_inserter(theta),
-                   tranform_func);
+    const size_t param_count = theta.size();
 
     std::vector<SPSA_PackedParameter> theta_plus;
     std::vector<SPSA_PackedParameter> theta_minus;
 
-    theta_plus.reserve(tunable_options.size());
-    theta_minus.reserve(tunable_options.size());
+    theta_plus.reserve(param_count);
+    theta_minus.reserve(param_count);
 
-    static constexpr uint IterCount = 4000;
+    const enumLogLabel thread_label = threadLabel(id);
 
-	SearchLimits limits;
-
-    // Game parameters
-	limits.depth = MaxDepth - 1; // no depth limit
-    limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 40_ms;
-    limits.winc = limits.binc = 400_ms;
-
-    _openings.load("src/assets/sets/Nunn_Openings.epd");
-    
     {
         std::string line;
 
         readline(os0, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
 
         readline(os1, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
 
 #if defined(DEBUG)
 
         log(is0, "options");
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
 
         for (int i = 0; 
-             i < tunable_options.size() and readline(os0, line);
+             i < param_count and readline(os0, line);
              i++) {
-            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0, line);
+            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
         }
 
         log(is1, "options");
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
 
         for (int i = 0; 
-             i < tunable_options.size() and readline(os1, line);
+             i < param_count and readline(os1, line);
              i++) {
-            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1, line);
+            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
         }
 
 #endif
@@ -137,14 +203,14 @@ void SPSA_Tuning::start() {
         tt_log << "setoption name Hash value " << mb_tt_size;
 
         log(is0, tt_log.str());
-        labelLog(std::cout, LOG_INFO | LOG_ENGINE_0, tt_log.str());
+        labelLog(std::cout, LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
         log(is1, tt_log.str());
-        labelLog(std::cout, LOG_INFO | LOG_ENGINE_1, tt_log.str());
+        labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
     tune(theta, theta_plus, theta_minus, IterCount, limits,
-         os0, is0, os1, is1);
+         os0, is0, os1, is1, log_file, id);
 
     {
         std::string msg = "quit";
@@ -162,38 +228,41 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        std::vector<SPSA_PackedParameter>& theta_minus,
                        uint n, SearchLimits limits,
                        std::istream& engine_os0, std::ostream& engine_is0,
-                       std::istream& engine_os1, std::ostream& engine_is1)
+                       std::istream& engine_os1, std::ostream& engine_is1,
+                       std::ofstream& log_file,
+                       uint id)
 {
     const uint A = n / 10;
-
-    static constexpr double Alpha = 0.602;
-    static constexpr double Gamma = 0.101;
-
     const size_t param_count = params.size();
-
-    const double PowFactor = std::pow(A + 1, Alpha);
-
-    for (int i = 0; i < param_count; i++) {
-        params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
-    }
-
-    std::ofstream log_file("spsa_log_feb18.txt", std::ios_base::app);
 
     uint theta_plus_win_cnt = 0;
     uint theta_minus_win_cnt = 0;
     uint draw_cnt = 0;
 
-    for (int k = 0; k < n; k++) {
+    ASSERTNOLOG(id < ThreadLimit);
+    const enumLogLabel curr_thread_label = static_cast<enumLogLabel>(16 << (id));
 
-        labelLog(std::cout, LOG_INFO, "Iteration k = " + std::to_string(k));
+    while (true) {
+        const uint k = curr_iter.fetch_add(1);
 
-        for (SPSA_Parameter& param : params) {
-            param.ak = param.a / std::pow(A + k + 1, Alpha);
-            param.ck = param.c / std::pow(k + 1, Gamma);
+        if (k >= IterCount) break;
+
+        labelLog(std::cout, LOG_INFO | curr_thread_label, "Iteration k = " + std::to_string(curr_iter));
+
+        std::vector<SPSA_Parameter> local_params(param_count);
+
+        {
+            std::lock_guard<std::mutex> lock(param_mutex);
+            local_params = params;
+        }
+
+        for (SPSA_Parameter& param : local_params) {
+            param.ak = param.a / std::pow(A + curr_iter + 1, Alpha);
+            param.ck = param.c / std::pow(curr_iter + 1, Gamma);
             param.delta = static_cast<double>(2 * random<int>(0, 1) - 1);
         }
 
-        std::vector<SPSA_Parameter>& theta = params;
+        std::vector<SPSA_Parameter>& theta = local_params;
 
         std::transform(theta.begin(), theta.end(),
                        std::back_inserter(theta_plus),
@@ -214,11 +283,11 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             return packed;
                        });
 
-        applyOptions(theta_plus, engine_os0, engine_is0, LOG_DEBUG | LOG_ENGINE_0);
-        applyOptions(theta_minus, engine_os1, engine_is1, LOG_DEBUG | LOG_ENGINE_1);
+        applyOptions(theta_plus, engine_os0, engine_is0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
+        applyOptions(theta_minus, engine_os1, engine_is1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
         std::string res_str;
-        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str);
+        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str, id);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -228,16 +297,20 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         } 
         else draw_cnt++;
 
-        for (SPSA_Parameter& param : params) {
-            const double gradient = static_cast<double>(res) / (2. * param.ck * param.delta);
-            param.value += param.ak * gradient;
-            param.value = std::clamp(param.value, param.min, param.max);
+        {
+            std::lock_guard<std::mutex> lock(param_mutex);
+
+            for (int i = 0; i < param_count; i++) {
+                const double gradient = static_cast<double>(res) / (2. * local_params[i].ck * local_params[i].delta);
+                params[i].value += local_params[i].ak * gradient;
+                params[i].value = std::clamp(params[i].value, params[i].min, params[i].max);
+            }
+
+            if (k % 10 == 0)
+                writeCheckpoint(log_file, params, k);
         }
 
-        theta_plus.clear();
-        theta_minus.clear();
-
-        labelLog(std::cout, LOG_INFO, "Game info: " + res_str + ", numeric: " + std::to_string(res));
+        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + res_str + ", numeric: " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -245,12 +318,10 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
              << theta_minus_win_cnt << " | "
              << draw_cnt;
 
-        labelLog(std::cout, LOG_INFO, info.str());
+        labelLog(std::cout, LOG_INFO | curr_thread_label, info.str());
 
-        if (k % 10 == 0)
-            writeCheckpoint(log_file, theta, k);
-
-        //if (k >= 500) break;
+        theta_plus.clear();
+        theta_minus.clear();
     }
 }
 
@@ -283,9 +354,10 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
 }
 
 INLINE int  SPSA_Tuning::match(SearchLimits limits,
-                                std::istream& engine_os0, std::ostream& engine_is0,
-                                std::istream& engine_os1, std::ostream& engine_is1,
-                                std::string& info)
+                               std::istream& engine_os0, std::ostream& engine_is0,
+                               std::istream& engine_os1, std::ostream& engine_is1,
+                               std::string& info,
+                               uint id)
 {
     // Is, os are relative to the engines.
     // We're writing to os, reading from is.
@@ -330,12 +402,13 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
 
     uint draw_full_moves = 0;
 
+    const enumLogLabel thread_label = threadLabel(id);
     enumLogLabel debug_labels[2];
     
-    debug_labels[0] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_0 
-                                        : LOG_DEBUG | LOG_ENGINE_1;
-    debug_labels[1] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_1 
-                                        : LOG_DEBUG | LOG_ENGINE_0;
+    debug_labels[0] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_0 | thread_label 
+                                        : LOG_DEBUG | LOG_ENGINE_1 | thread_label;
+    debug_labels[1] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_1 | thread_label 
+                                        : LOG_DEBUG | LOG_ENGINE_0 | thread_label;
 
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();

@@ -385,6 +385,8 @@ bool Search::search(Position& pos,
 
 	_declUnused(score); // score unused so far
 
+	results.seldepth = std::max(results.seldepth, results.depth);
+
     if (results.depth > 1 and (!limits.isTimeLeft()
         or !limits.anyNodesLeft(results.nodes_cnt)
         or !limits.anyQuiesceNodesLeft(results.qnodes_cnt)))
@@ -623,7 +625,7 @@ Score Search::negaMax(Position& pos,
 			if (prev_eval_node) {
 				const Score diff = node->eval - prev_eval_node->eval;
 				node->improving_rate = std::clamp(prev_eval_node->improving_rate + static_cast<float>(diff) / ImprovingRate, 
-													-1.f, 1.f);
+												  -1.f, 1.f);
 			}
 		}
 	}
@@ -1137,10 +1139,12 @@ INLINE Score Search::evaluate(const Position& pos,
 	_declUnused(pos);
 #endif
 
-	Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
-	eval = eval * 8 / static_cast<Score>(NNEvalScale);
+	const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
+	const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale;
 
-	return eval;
+	assert(std::abs(scaled_eval) < Score::Mate);
+
+	return static_cast<Score>(scaled_eval);
 }
 
 _FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {

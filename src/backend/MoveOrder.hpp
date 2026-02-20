@@ -39,7 +39,7 @@ enum OrderType {
 *	 - Generates only captures in quiescent node.
 */
 
-inline _P_CONSTEXPR int MaxQuietsHistoryPow = 12;
+inline _P_CONSTEXPR int MaxQuietsHistoryPow = 14;
 inline _P_CONSTEXPR int MaxQuietsHistory = 1 << MaxQuietsHistoryPow;
 
 class MoveOrder {
