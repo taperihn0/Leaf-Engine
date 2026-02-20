@@ -77,7 +77,9 @@ std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
 void SPSA_Tuning::start(uint thread_count) {
-    if (thread_count > ThreadLimit) {
+    const auto plat_thread_cnt = std::thread::hardware_concurrency();
+
+    if (thread_count > plat_thread_cnt) {
         std::cout << "Too many threads requested" << std::endl;
         return;
     }
@@ -98,8 +100,8 @@ void SPSA_Tuning::start(uint thread_count) {
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 500 * 0.15 * option.rate;
-                        param.c = 500 * (param.max - param.min) / 10.;
+                        param.r = 0.07 * option.rate;
+                        param.c = (param.max - param.min) / 12.;
 
                         return param;
                     });
@@ -115,8 +117,8 @@ void SPSA_Tuning::start(uint thread_count) {
     // Game parameters
 	limits.depth = MaxDepth / 2; // avoid depth overflow
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 50_ms;
-    limits.winc = limits.binc = 1_ms;
+    limits.wtime = limits.btime = 60_s;
+    limits.winc = limits.binc = 600_ms;
 
     _openings.load(std::string(OpeningPath));
 
@@ -146,8 +148,8 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
                               SearchLimits limits,
                               uint id) 
 {
-    auto engine0 = spawnProcess();
     auto engine1 = spawnProcess();
+    auto engine0 = spawnProcess();
 
     auto& is0 = *engine0.in;
     auto& os0 = *engine0.out;
@@ -410,6 +412,13 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
     debug_labels[1] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_1 | thread_label 
                                         : LOG_DEBUG | LOG_ENGINE_0 | thread_label;
 
+    enumLogLabel info_labels[2];
+
+    info_labels[0] = plus_player_white ? LOG_INFO | LOG_ENGINE_0 | thread_label 
+                                       : LOG_INFO | LOG_ENGINE_1 | thread_label;
+    info_labels[1] = plus_player_white ? LOG_INFO | LOG_ENGINE_1 | thread_label 
+                                       : LOG_INFO | LOG_ENGINE_0 | thread_label;
+
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         const bool side2move = pos.getTurn();
@@ -420,7 +429,7 @@ INLINE int  SPSA_Tuning::match(SearchLimits limits,
         sentPosition(start_fen, record, 
                      *curr_player.os, 
                      *curr_player.is,
-                     debug_labels[side2move]);
+                     info_labels[side2move]); // we're logging positions in any build mode
 
         timer.go();
         Move32b move = getPlayerMove(limits, pos, 

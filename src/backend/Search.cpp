@@ -578,7 +578,7 @@ Score Search::negaMax(Position& pos,
 	*  That strategy can only pay off when the move ordering is actually 
 	*  very important.
 	*/
-	if constexpr (IsPV) {
+	if constexpr (!Root and IsPV) {
 		if (depth >= IidDepth and tt_move.isNull()) {
 			_UNUSED const Score iid_score =
 				negaMax<false, NmNodeType, false>(pos, limits, results, game, node,
