@@ -1,6 +1,7 @@
 # My own scripts
 scripts/
 *.txt
+CMakePresets.json
 
 build/
 
