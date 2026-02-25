@@ -6,7 +6,7 @@
 #include "Opening.hpp"
 #include "Filepath.hpp"
 #include "PostProcess.hpp"
-#include "SPSA.h"
+#include "SPSA.hpp"
 #include "frontend/Setup.hpp"
 
 #include <sstream>

@@ -1,4 +1,4 @@
-#include "SPSA.h"
+#include "SPSA.hpp"
 #include "Process.hpp"
 #include "frontend/UCI.hpp"
 

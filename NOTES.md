@@ -1,4 +1,6 @@
 ### feature: parameter-tuning + TT evaluation correction + dynamic improvement + search heuristic limitation tweaks
+*SIDE NOTE: Testing performed on 5s+0.1s time control. Parameters tuning done via Parallel SPSA tuning under 60s+600ms time control.*
+
 Score of leaf-tune vs leaf-tte-1: 490 - 67 - 232  [0.768] 789 <br>
 ...      leaf-tune playing White: 255 - 31 - 109  [0.784] 395 <br>
 ...      leaf-tune playing Black: 235 - 36 - 123  [0.753] 394 <br>

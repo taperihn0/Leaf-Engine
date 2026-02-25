@@ -426,6 +426,11 @@ Score Search::negaMax(Position& pos,
 	}
 	
 	node->side2move = pos.getTurn();
+	NodeInfo* const prev_node = node - 1;
+
+#if !defined(DEBUG) /* annoying warning in RELEASE builds */
+	_declUnused(prev_node);
+#endif
 
 #if !defined(_CUCKOO_DRAW)
 
@@ -440,8 +445,6 @@ Score Search::negaMax(Position& pos,
 	}
 
 #else // Cuckoo further draw checking
-
-	NodeInfo* const prev_node = node - 1;
 
 	if constexpr (!Root) {
 
