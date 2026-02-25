@@ -1,4 +1,12 @@
-### feature: little changes in rewriting tt
+### feature: parameter-tuning + TT evaluation correction + dynamic improvement + search heuristic limitation tweaks
+Score of leaf-tune vs leaf-tte-1: 490 - 67 - 232  [0.768] 789 <br>
+...      leaf-tune playing White: 255 - 31 - 109  [0.784] 395 <br>
+...      leaf-tune playing Black: 235 - 36 - 123  [0.753] 394 <br>
+...      White vs Black: 291 - 266 - 232  [0.516] 789 <br>
+Elo difference: 208.0 +/- 22.0, LOS: 100.0 %, DrawRatio: 29.4 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### feature: little changes in rewriting TT
 Score of leaf-tte-1 vs leaf-tte: 981 - 950 - 2069  [0.504] 4000  <br>
 ...      leaf-tte-1 playing White: 533 - 422 - 1045  [0.528] 2000  <br>
 ...      leaf-tte-1 playing Black: 448 - 528 - 1024  [0.480] 2000  <br>
