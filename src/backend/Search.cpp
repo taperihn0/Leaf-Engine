@@ -428,7 +428,7 @@ Score Search::negaMax(Position& pos,
 	node->side2move = pos.getTurn();
 	NodeInfo* const prev_node = node - 1;
 
-#if !defined(DEBUG) /* annoying warning in RELEASE builds */
+#if !defined(DEBUG) /* disable annoying warning in RELEASE builds */
 	_declUnused(prev_node);
 #endif
 
@@ -1163,7 +1163,8 @@ _FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {
 _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
 	const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
 	const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
-	return std::clamp<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1, depth - 1);
+	assert(8 * depth / NullReduction < depth); // don't return same depth, we could stuck in a loop
+	return std::max<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1);
 }
 
 template <bool IsPV>
