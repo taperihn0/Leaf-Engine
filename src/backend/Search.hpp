@@ -136,30 +136,30 @@ private:
 	NodeInfo* _stack;
 };
 
-inline _P_CONSTEXPR int	IidDepth 	      = 4;//3;
-inline _P_CONSTEXPR int	IidDepthDiv       = 10;//8;
+inline _P_CONSTEXPR int	IidDepth 	      = 3;//3;
+inline _P_CONSTEXPR int	IidDepthDiv       = 12;//8;
 inline _P_CONSTEXPR int	RfpDepth          = 3;//6;
 inline _P_CONSTEXPR int RazorDepth        = 2;//2;
 inline _P_CONSTEXPR int	FutilityDepth     = 4;//4;
-inline _P_CONSTEXPR int	LmrDepth 	      = 3;//2;
-inline _P_CONSTEXPR int NullDiffScale	  = 1100;//1000;
+inline _P_CONSTEXPR int	LmrDepth 	      = 2;//2;
+inline _P_CONSTEXPR int NullDiffScale	  = 1092;//1000;
 inline _P_CONSTEXPR int	NullReduction     = 29;//16;
-inline _P_CONSTEXPR int NullDepth		  = 5;//3;
-inline _P_CONSTEXPR int	LmrMoveCount      = 4;//2;
-inline _P_CONSTEXPR int RazorMultDelta    = 22;//25;
-inline _P_CONSTEXPR int RfpMultDelta      = 139;//150;
-inline _P_CONSTEXPR int FutilityDelta     = 10;//32;
-inline _P_CONSTEXPR int FutilityMoveCount = 6;//1;
-inline _P_CONSTEXPR int RazorBaseDelta    = 100;//150;
-inline _P_CONSTEXPR int QMaterialDelta    = 976;//900;
+inline _P_CONSTEXPR int NullDepth		  = 4;//3;
+inline _P_CONSTEXPR int	LmrMoveCount      = 6;//2;
+inline _P_CONSTEXPR int RazorMultDelta    = 20;//25;
+inline _P_CONSTEXPR int RfpMultDelta      = 131;//150;
+inline _P_CONSTEXPR int FutilityDelta     = 17;//32;
+inline _P_CONSTEXPR int FutilityMoveCount = 7;//1;
+inline _P_CONSTEXPR int RazorBaseDelta    = 81;//150;
+inline _P_CONSTEXPR int QMaterialDelta    = 1004;//900;
 inline _P_CONSTEXPR int QProbeDepth		  = -2;//-1;
 inline _P_CONSTEXPR int NNEvalScale		  = 9;//8;
-inline _P_CONSTEXPR int ImprovingRate     = 60;//50;
-inline _P_CONSTEXPR int RfpImprovingSink  = 3;//2;
+inline _P_CONSTEXPR int ImprovingRate     = 63;//50;
+inline _P_CONSTEXPR int RfpImprovingSink  = 2;//2;
 inline _P_CONSTEXPR int NullMargin 		  = 11;//20;
-inline _P_CONSTEXPR int NullImprovingSink = 2;//4;
+inline _P_CONSTEXPR int NullImprovingSink = 3;//4;
 inline _P_CONSTEXPR int DynImprovementDepth = 8;//= 6;
-inline _P_CONSTEXPR int TTEvalCorrRate	  = 2;//2;
+inline _P_CONSTEXPR int TTEvalCorrRate	  = 3;//2;
 
 inline constexpr int CheckNodeCount = 2048;
 

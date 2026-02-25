@@ -424,8 +424,6 @@ Score Search::negaMax(Position& pos,
 		if (pos.getHalfmoveClock() >= 100 or isInsufficientMaterial(pos))
 			return getDrawScore<Root>(node);
 	}
-
-	NodeInfo* const prev_node = node - 1;
 	
 	node->side2move = pos.getTurn();
 
@@ -442,6 +440,8 @@ Score Search::negaMax(Position& pos,
 	}
 
 #else // Cuckoo further draw checking
+
+	NodeInfo* const prev_node = node - 1;
 
 	if constexpr (!Root) {
 
