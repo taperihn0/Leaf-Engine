@@ -1,3 +1,11 @@
+### feature: time soft limit inside ID framework
+Score of leaf-time-soft vs leaf-tune: 256 - 237 - 551  [0.509] 1044 <br>
+...      leaf-time-soft playing White: 154 - 107 - 261  [0.545] 522 <br>
+...      leaf-time-soft playing Black: 102 - 130 - 290  [0.473] 522 <br>
+...      White vs Black: 284 - 209 - 551  [0.536] 1044 <br>
+Elo difference: 6.3 +/- 14.5, LOS: 80.4 %, DrawRatio: 52.8 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: parameter-tuning + TT evaluation correction + dynamic improvement + search heuristic limitation tweaks
 *SIDE NOTE: Testing performed on 5s+0.1s time control. Parameters tuning done via Parallel SPSA tuning under 60s+600ms time control.*
 
@@ -26,7 +34,6 @@ Score of leaf-tte vs leaf-avx2: 510 - 471 - 1019  [0.510] 2000 <br>
 Elo difference: 6.8 +/- 10.7, LOS: 89.3 %, DrawRatio: 50.9 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
-
 ### feature: (768->128)x2->1 NNUE with SIMD vectorization, fixed little bugs in search
 Score of leaf-avx2-1 vs leaf-nn64: 1624 - 45 - 331  [0.895] 2000 <br>
 ...      leaf-avx2-1 playing White: 831 - 24 - 145  [0.903] 1000 <br>
@@ -34,7 +41,6 @@ Score of leaf-avx2-1 vs leaf-nn64: 1624 - 45 - 331  [0.895] 2000 <br>
 ...      White vs Black: 852 - 817 - 331  [0.509] 2000 <br>
 Elo difference: 371.8 +/- 18.6, LOS: 100.0 %, DrawRatio: 16.6 % <br>
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
-
 
 ### feature: (768->64)x2->1 NNUE 
 [~200 ELO] <br>

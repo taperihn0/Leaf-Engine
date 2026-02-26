@@ -67,7 +67,7 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
     return std::getline(os, line);
 }
 
-static constexpr uint             IterCount = 4000;
+static constexpr uint             IterCount = 6000;
 static constexpr int              A = IterCount / 10;
 static constexpr double           Alpha = 0.602;
 static constexpr double           Gamma = 0.101;
@@ -100,7 +100,7 @@ void SPSA_Tuning::start(uint thread_count) {
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 0.07 * option.rate;
+                        param.r = 0.035 * option.rate;
                         param.c = (param.max - param.min) / 12.;
 
                         return param;
@@ -117,8 +117,8 @@ void SPSA_Tuning::start(uint thread_count) {
     // Game parameters
 	limits.depth = MaxDepth / 2; // avoid depth overflow
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 60_s;
-    limits.winc = limits.binc = 600_ms;
+    limits.wtime = limits.btime = 20_s;
+    limits.winc = limits.binc = 200_ms;
 
     _openings.load(std::string(OpeningPath));
 

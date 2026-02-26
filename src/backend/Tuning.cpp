@@ -26,7 +26,7 @@ void TunableParametersMap::createMapping() {
     _addr["ImprovingRate"]       = &ImprovingRate;
     _addr["RfpImprovingSink"]    = &RfpImprovingSink;
     _addr["NullMargin"]          = &NullMargin;
-    _addr["NullImprovingSink"]   = &NullImprovingSink ;
+    _addr["NullImprovingSink"]   = &NullImprovingSink;
     _addr["DynImprovementDepth"] = &DynImprovementDepth;
     _addr["TTEvalCorrRate"]      = &TTEvalCorrRate;
     _addr["NullDiffScale"]       = &NullDiffScale;
@@ -34,6 +34,15 @@ void TunableParametersMap::createMapping() {
     _addr["UnstableMultMargin"]  = &UnstableMultMargin;
     _addr["MinTimeBranchFactor"] = &MinTimeBranchFactor;
     _addr["MaxTimeBranchFactor"] = &MaxTimeBranchFactor;
+    _addr["PawnCapturedScore"]   = &PawnCapturedScore;
+    _addr["KnightCapturedScore"] = &KnightCapturedScore;
+    _addr["BishopCapturedScore"] = &BishopCapturedScore;
+    _addr["RookCapturedScore"]   = &RookCapturedScore;
+    _addr["QueenCapturedScore"]  = &QueenCapturedScore;
+    _addr["ToKnightPromoScore"]  = &ToKnightPromoScore;
+    _addr["ToBishopPromoScore"]  = &ToBishopPromoScore;
+    _addr["ToRookPromoScore"]    = &ToRookPromoScore;
+    _addr["ToQueenPromoScore"]   = &ToQueenPromoScore;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {

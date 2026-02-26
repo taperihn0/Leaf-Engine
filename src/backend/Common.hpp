@@ -53,7 +53,7 @@
 #define _NORETURN    [[noreturn]]
 #define _UNUSED      [[maybe_unused]]
 
-#if defined(BUILD_UTILS)
+#if defined(BUILD_UTILS) or defined(DEBUG)
 #define _ENABLE_TUNING
 #endif
 
@@ -72,7 +72,7 @@
 #endif
 
 template <typename T>
-static void _declUnused(T&&) {}
+_INTERNAL void _declUnused(T&&) {}
 
 static constexpr std::string_view EngineName = "Leaf Lite";
 static constexpr std::string_view Author     = "Szymon Belz";
@@ -136,7 +136,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 #define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
-static bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
+_INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
 	std::cout << text << '\n' << file << ", line " << line << '\n';
 	exit(EXIT_FAILURE);
 	return false;
