@@ -7,7 +7,7 @@
 class MoveList {
 public:
 	struct Entry {
-		using movescore_t = int16_t;
+		using movescore_t = int32_t;
 
 		INLINE constexpr bool operator==(Entry b) const noexcept {
 			return move == b.move;
@@ -19,7 +19,8 @@ public:
 
 	using entryscore_t = Entry::movescore_t;
 
-	static_assert(_IS_SAME_TYPE(entryscore_t, int16_t));
+	static_assert(_IS_SAME_TYPE(entryscore_t, int32_t) or
+				  _IS_SAME_TYPE(entryscore_t, int16_t));
 
 	INLINE void sort(size_t first, size_t end) {
 		std::sort(_moves.data() + first, _moves.data() + end, _greater_score);

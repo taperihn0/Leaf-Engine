@@ -135,12 +135,20 @@ INLINE bool MoveOrder::nextFromList(Move32b& move) {
 	return move == _hash_move or move == _killer_move ? nextFromList(move) : true;
 }
 
-static constexpr std::array<int16_t, 6> CaptureScore = {
-	100, 300, 300, 500, 900, 10000
+static std::array<int16_t, 5> CaptureScore = {
+	static_cast<int16_t>(PawnCapturedScore), 
+	static_cast<int16_t>(KnightCapturedScore), 
+	static_cast<int16_t>(BishopCapturedScore), 
+	static_cast<int16_t>(RookCapturedScore), 
+	static_cast<int16_t>(QueenCapturedScore), 
 };
 
-static constexpr std::array<int16_t, 5> PromotionScore = {
-	0, 150, 100, 100, 900
+static std::array<int16_t, 5> PromotionScore = {
+	static_cast<int16_t>(0),    					// pawn placeholder 
+	static_cast<int16_t>(ToKnightPromoScore), 
+	static_cast<int16_t>(ToBishopPromoScore), 
+	static_cast<int16_t>(ToRookPromoScore),
+	static_cast<int16_t>(ToQueenPromoScore)
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
@@ -167,7 +175,10 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 			const Piece::uint_t vic = move->getCaptured(pos);
 			*score = CaptureScore[vic] - piece_ind;
 		}
-
+		
+		/* We treat promotions as 'captures' here, since it 
+		*  is obviously a tactical move.
+		*/
 		if (move->isPromotion()) {
 			const Piece::uint_t promo = value(move->getPromoPiece());
 			*score += PromotionScore[promo];
@@ -188,7 +199,11 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 		const Piece::uint_t piece = value(move->getPiece());
 		const Square dst = move->getTarget();
 
-		*score = _tables->_quiets_history[side][piece][dst] + MaxQuietsHistory;
+		/* Since quiet move history value is in range [-MaxQuietsHistory, +MaxQuietsHistory],
+		*  we shift so that we got non-negative actual score.
+		*/
+		const int16_t* quiet_value = &_tables->_quiets_history[side][piece][dst];
+		*score = *quiet_value + MaxQuietsHistory;
 	}
 }
 

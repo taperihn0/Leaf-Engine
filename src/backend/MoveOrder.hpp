@@ -42,6 +42,20 @@ enum OrderType {
 inline _P_CONSTEXPR int MaxQuietsHistoryPow = 13;
 inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 
+/* MVV-LVA captures and promotion scores 
+*/
+
+inline _P_CONSTEXPR int PawnCapturedScore   = 100;
+inline _P_CONSTEXPR int KnightCapturedScore = 300;
+inline _P_CONSTEXPR int BishopCapturedScore = 300;
+inline _P_CONSTEXPR int RookCapturedScore   = 500;
+inline _P_CONSTEXPR int QueenCapturedScore  = 900;
+
+inline _P_CONSTEXPR int ToKnightPromoScore  = 150;
+inline _P_CONSTEXPR int ToBishopPromoScore  = 100;
+inline _P_CONSTEXPR int ToRookPromoScore    = 100;
+inline _P_CONSTEXPR int ToQueenPromoScore   = 900;
+
 class MoveOrder {
 public:
 	MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
@@ -87,7 +101,8 @@ private:
 		PICK_QUIETS,
 	};
 
-	static_assert(_IS_SAME_TYPE(MoveList::entryscore_t, int16_t));
+	static_assert(_IS_SAME_TYPE(MoveList::entryscore_t, int16_t) or
+				  _IS_SAME_TYPE(MoveList::entryscore_t, int32_t));
 
 	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
 
