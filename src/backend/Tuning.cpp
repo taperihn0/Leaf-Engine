@@ -35,11 +35,8 @@ void TunableParametersMap::createMapping() {
     _addr["UnstableMultMargin"]  = &UnstableMultMargin;
     _addr["MinTimeBranchFactor"] = &MinTimeBranchFactor;
     _addr["MaxTimeBranchFactor"] = &MaxTimeBranchFactor;
-    _addr["PawnCapturedScore"]   = &PawnCapturedScore;
     _addr["KnightCapturedScore"] = &KnightCapturedScore;
     _addr["BishopCapturedScore"] = &BishopCapturedScore;
-    _addr["RookCapturedScore"]   = &RookCapturedScore;
-    _addr["QueenCapturedScore"]  = &QueenCapturedScore;
     _addr["ToKnightPromoScore"]  = &ToKnightPromoScore;
     _addr["ToBishopPromoScore"]  = &ToBishopPromoScore;
     _addr["ToRookPromoScore"]    = &ToRookPromoScore;

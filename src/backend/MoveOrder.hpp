@@ -45,11 +45,11 @@ inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 /* MVV-LVA captures and promotion scores 
 */
 
-inline _P_CONSTEXPR int PawnCapturedScore   = 100;
+inline constexpr    int PawnCapturedScore   = 100;
 inline _P_CONSTEXPR int KnightCapturedScore = 300;
 inline _P_CONSTEXPR int BishopCapturedScore = 300;
-inline _P_CONSTEXPR int RookCapturedScore   = 500;
-inline _P_CONSTEXPR int QueenCapturedScore  = 900;
+inline constexpr    int RookCapturedScore   = 500;
+inline constexpr    int QueenCapturedScore  = 900;
 
 inline _P_CONSTEXPR int ToKnightPromoScore  = 150;
 inline _P_CONSTEXPR int ToBishopPromoScore  = 100;

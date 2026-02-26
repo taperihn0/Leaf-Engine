@@ -137,20 +137,20 @@ INLINE bool MoveOrder::nextFromList(Move32b& move) {
 	return move == _hash_move or move == _killer_move ? nextFromList(move) : true;
 }
 
-static std::array<int16_t, 5> CaptureScore = {
-	static_cast<int16_t>(PawnCapturedScore), 
-	static_cast<int16_t>(KnightCapturedScore), 
-	static_cast<int16_t>(BishopCapturedScore), 
-	static_cast<int16_t>(RookCapturedScore), 
-	static_cast<int16_t>(QueenCapturedScore), 
+static std::array<const int16_t*, 5> CaptureScore = {
+	reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
+	reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
+	reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
+	reinterpret_cast<const int16_t*>(&RookCapturedScore), 
+	reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
 };
 
-static std::array<int16_t, 5> PromotionScore = {
-	static_cast<int16_t>(0),    					// pawn placeholder 
-	static_cast<int16_t>(ToKnightPromoScore), 
-	static_cast<int16_t>(ToBishopPromoScore), 
-	static_cast<int16_t>(ToRookPromoScore),
-	static_cast<int16_t>(ToQueenPromoScore)
+static std::array<int16_t*, 5> PromotionScore = {
+	nullptr,    					// pawn placeholder 
+	reinterpret_cast<int16_t*>(&ToKnightPromoScore), 
+	reinterpret_cast<int16_t*>(&ToBishopPromoScore), 
+	reinterpret_cast<int16_t*>(&ToRookPromoScore),
+	reinterpret_cast<int16_t*>(&ToQueenPromoScore)
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
@@ -170,12 +170,12 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 		*score = 0;
 
 		if (move->isEnPassant()) {
-			*score = CaptureScore[Piece::PAWN] - value(Piece::PAWN);
+			*score = *CaptureScore[Piece::PAWN] - value(Piece::PAWN);
 		}
 		else if (move->isCapture()) {
 			const Piece::uint_t piece_ind = value(move->getPiece());
 			const Piece::uint_t vic = move->getCaptured(pos);
-			*score = CaptureScore[vic] - piece_ind;
+			*score = *CaptureScore[vic] - piece_ind;
 		}
 		
 		/* We treat promotions as 'captures' here, since it 
@@ -183,7 +183,7 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 		*/
 		if (move->isPromotion()) {
 			const Piece::uint_t promo = value(move->getPromoPiece());
-			*score += PromotionScore[promo];
+			*score += *PromotionScore[promo];
 		}
 	}
 }
