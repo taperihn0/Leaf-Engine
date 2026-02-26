@@ -122,7 +122,7 @@ void SPSA_Tuning::start(uint thread_count) {
 
     _openings.load(std::string(OpeningPath));
 
-    std::ofstream log_file("spsa_log_feb20.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_feb26.txt", std::ios_base::app);
 
     curr_iter.store(0);
 
@@ -199,7 +199,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
 
         // set TT sizes
         
-        static const size_t mb_tt_size = 64;
+        static const size_t mb_tt_size = 32;
 
         std::stringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
