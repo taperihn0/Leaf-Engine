@@ -98,10 +98,12 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	const Square dst = move.getTarget();
 
 	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
+	const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
 
-	_tables->_quiets_history[side][piece][dst] += Sign * bonus - (((ll)_tables->_quiets_history[side][piece][dst] * bonus) / MaxQuietsHistory);
+	_tables->_quiets_history[side][piece][dst] += Sign * bonus
+												  - (quiet_value * bonus) / MaxQuietsHistory;
 
-	assert(abs(_tables->_quiets_history[side][piece][dst]) <= MaxQuietsHistory);
+	assert(abs(quiet_value) <= MaxQuietsHistory);
 }
 
 template <OrderType Type>
@@ -210,8 +212,4 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 template bool MoveOrder::nextMove<STAGED, false>(const TreeStack&, const Position&, Move32b&);
 template bool MoveOrder::nextMove<STAGED, true> (const TreeStack&, const Position&, Move32b&);
 template bool MoveOrder::nextMove<QUIESCENT, false>(const TreeStack&, const Position&, Move32b&);
-
 template void MoveOrder::updateQuietsHistory(Move32b, enumColor, int);
-
-template void MoveOrder::updateQuietEntry<-1>(Move32b, enumColor, int);
-template void MoveOrder::updateQuietEntry<1> (Move32b, enumColor, int);
