@@ -12,6 +12,8 @@
 #include "Cuckoo.hpp"
 
 struct SearchLimits {
+	bool isTimeLimit();
+
     bool isTimeLeft();
 
     // anyNodesLeft compares current any-node count (both search and quiescent nodes)
@@ -54,6 +56,8 @@ struct SearchResults {
 	size_t	  tt_entries		= 0;
 	Move32b   best_move			= Move32b::Null;
 	time_ms_t duration			= 0;
+	ull 	  nodes_per_depth[MaxDepth] = {};
+	time_ms_t time_per_depth[MaxDepth]  = {};
 
 #if defined (_COLLECT_SEARCH_STATS)
 	ull       pvnodes_cnt		= 0,
@@ -160,6 +164,9 @@ inline _P_CONSTEXPR int NullMargin 		  = 11;//20;
 inline _P_CONSTEXPR int NullImprovingSink = 3;//4;
 inline _P_CONSTEXPR int DynImprovementDepth = 8;//= 6;
 inline _P_CONSTEXPR int TTEvalCorrRate	  = 3;//2;
+inline _P_CONSTEXPR int NextDepthTimeRed  = 6;
+inline _P_CONSTEXPR int UnstableMatMargin = 30;
+inline _P_CONSTEXPR int UnstableMultMargin = 2;
 
 inline constexpr int CheckNodeCount = 2048;
 

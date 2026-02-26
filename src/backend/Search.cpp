@@ -13,6 +13,10 @@
 #error "No proper draw value handling"
 #endif
 
+INLINE bool SearchLimits::isTimeLimit() {
+	return search_time;
+}
+
 INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
@@ -322,9 +326,10 @@ template <Search::enumInfoLevel InfoLevel>
 Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth < MaxDepth, "Invalid depth");
 
+	_tt.newGeneration();
+	
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
-	_tt.newGeneration();
 
 	const Move32b bm = iterativeDeepening<InfoLevel>(pos, game, limits);
 	return bm;
@@ -352,15 +357,67 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
 
+	bool unstable = false;
+
 	for (int d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
+
+		/* We approximate how much time we need for 
+		*  next search. This is done via Efective Branch Factor (EBF)
+		*  estimator. We also consider unstability of the search in order
+		*  to setup a rational breaking system when we got too little time
+		*  for deeper search.
+		*/
+		if (limits.isTimeLimit() and d - 2 > 0 and 
+			search_results.nodes_per_depth[d - 2] > 0) 
+		{
+			double ef_branch_factor = search_results.nodes_per_depth[d - 1] / 
+									  search_results.nodes_per_depth[d - 2];
+
+			if (d - 3 > 0 and 
+				search_results.nodes_per_depth[d - 3] > 0) 
+			{
+				double ef_branch_factor2 = search_results.nodes_per_depth[d - 2] / 
+									  	   search_results.nodes_per_depth[d - 3];
+
+				ef_branch_factor = (ef_branch_factor + ef_branch_factor2) / 2.;
+			}
+
+			ef_branch_factor = std::clamp(ef_branch_factor, 1.2, 5.); // avoid strange instabilities in shallow depths
+
+			const time_ms_t approx_search_time = static_cast<time_ms_t>(search_results.time_per_depth[d - 1] * 
+																		ef_branch_factor);
+
+			const int time_margin_mult = unstable ? UnstableMultMargin : 1;
+
+			if (time_margin_mult * limits.search_time < 4 * approx_search_time / NextDepthTimeRed)
+				break;
+		}
+
+		const ull		prev_total_node_cnt = d > 1 ? search_results.nodes_cnt : 0;
+		const time_ms_t prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
+		const Score     prev_best_score 	= d > 1 ? root->best_score 		   : Score::Undef;
+		const Move32b	prev_best_move		= d > 1 ? root->best_move  		   : Move32b::Null;
 
         // TODO: So far, I reject last move when search is finished.
         // TODO: Sometimes it might be actually not really bad.
 		if (!search<InfoLevel>(pos, game, limits, search_results))
 			break;
-
+		
 		search_results.registerBestMove(root->best_move);
+
+		search_results.nodes_per_depth[d] = search_results.nodes_cnt - prev_total_node_cnt;
+		search_results.time_per_depth[d]  = search_results.duration  - prev_total_duration;
+
+		/* Setting up unstability flag */
+
+		unstable = false;
+
+		if (prev_best_score.isValid() and root->best_score.isValid())
+			unstable |= (abs(static_cast<int>(root->best_score) - static_cast<int>(prev_best_score)) > UnstableMatMargin);
+		
+		if (!prev_best_move.isNull() and !root->best_move.isNull())
+			unstable |= (prev_best_move != root->best_move);
 	}
 
     if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO) {
@@ -378,12 +435,12 @@ bool Search::search(Position& pos,
 					const FullInfoRecord& game, 
 					SearchLimits& limits, SearchResults& results) 
 {
-	const Score score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
-									   -Score::Mate, +Score::Mate, 
-									   results.depth, 
-									   0);
+	const Score root_score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
+									   		-Score::Mate, +Score::Mate, 
+									   		results.depth, 
+									   		0);
 
-	_declUnused(score); // score unused so far
+	_declUnused(root_score);
 
 	results.seldepth = std::max(results.seldepth, results.depth);
 
@@ -396,8 +453,9 @@ bool Search::search(Position& pos,
 
 	results.duration = limits.timer.duration();
 
-	if constexpr (InfoLevel == SEARCH_FULL_INFO)
+	if constexpr (InfoLevel == SEARCH_FULL_INFO) {
 		results.print(this, pos, _tt);
+	}
 
 	return true;
 }
