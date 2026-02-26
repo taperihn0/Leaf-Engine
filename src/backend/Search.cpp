@@ -383,14 +383,17 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 				ef_branch_factor = (ef_branch_factor + ef_branch_factor2) / 2.;
 			}
 
-			ef_branch_factor = std::clamp(ef_branch_factor, 1.2, 5.); // avoid strange instabilities in shallow depths
+			// avoid strange instabilities in shallow depths
+			ef_branch_factor = std::clamp(ef_branch_factor, 
+										  static_cast<double>(MinTimeBranchFactor), 
+										  static_cast<double>(MaxTimeBranchFactor)); 
 
 			const time_ms_t approx_search_time = static_cast<time_ms_t>(search_results.time_per_depth[d - 1] * 
 																		ef_branch_factor);
 
-			const int time_margin_mult = unstable ? UnstableMultMargin : 1;
+			const float time_margin_mult = unstable ? (UnstableMultMargin / 4.) : 1.;
 
-			if (time_margin_mult * limits.search_time < 4 * approx_search_time / NextDepthTimeRed)
+			if (time_margin_mult * limits.search_time < 4. * approx_search_time / NextDepthTimeRed)
 				break;
 		}
 
@@ -413,8 +416,10 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 
 		unstable = false;
 
-		if (prev_best_score.isValid() and root->best_score.isValid())
-			unstable |= (abs(static_cast<int>(root->best_score) - static_cast<int>(prev_best_score)) > UnstableMatMargin);
+		if (prev_best_score.isValid() and root->best_score.isValid()) {
+			const int score_diff = static_cast<int>(root->best_score) - static_cast<int>(prev_best_score);
+			unstable |= (abs(score_diff) > UnstableMatMargin);
+		}
 		
 		if (!prev_best_move.isNull() and !root->best_move.isNull())
 			unstable |= (prev_best_move != root->best_move);

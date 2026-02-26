@@ -148,9 +148,15 @@ static constexpr int MaxDepth = 128,
 					 MaxGameMoves = 512;
 
 template <typename T>
-constexpr T sq(T x) {
+_FORCEINLINE constexpr T sq(T x) {
 	static_assert(std::is_integral_v<T>);
 	return x * x;
+}
+
+template <typename T>
+_FORCEINLINE constexpr T abs(T x) {
+	static_assert(is_numeric<T>);
+	return x < 0 ? -x : x;
 }
 
 template <typename T>

@@ -39,6 +39,11 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(TTEvalCorrRate, 	 2,    6.),     "TTEvalCorrRate", 		1.8),
 		OptionTunableParam(SpinType<double>(NullDiffScale, 	 	 300., 1500.),  "NullDiffScale", 		0.4),
 		OptionTunableParam(SpinType<double>(NullDepth, 	 	     2.,   5.),     "NullDepth", 		    2.7),
+		OptionTunableParam(SpinType<double>(NextDepthTimeRed ,   4.,   8.), 	"NextDepthTimeRed",     2.5),
+		OptionTunableParam(SpinType<double>(UnstableMatMargin,   10.,  80.), 	"UnstableMatMargin",    2.1),
+		OptionTunableParam(SpinType<double>(UnstableMultMargin,  4.,   12.), 	"UnstableMultMargin",   2.7),
+		OptionTunableParam(SpinType<double>(MinTimeBranchFactor, 1.,   2.), 	"MinTimeBranchFactor",  2.),
+		OptionTunableParam(SpinType<double>(MaxTimeBranchFactor, 3.,   5.), 	"MaxTimeBranchFactor",  2.),
 		}, 
 };
 

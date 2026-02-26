@@ -30,6 +30,10 @@ void TunableParametersMap::createMapping() {
     _addr["DynImprovementDepth"] = &DynImprovementDepth;
     _addr["TTEvalCorrRate"]      = &TTEvalCorrRate;
     _addr["NullDiffScale"]       = &NullDiffScale;
+    _addr["UnstableMatMargin"]   = &UnstableMatMargin;
+    _addr["UnstableMultMargin"]  = &UnstableMultMargin;
+    _addr["MinTimeBranchFactor"] = &MinTimeBranchFactor;
+    _addr["MaxTimeBranchFactor"] = &MaxTimeBranchFactor;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {
