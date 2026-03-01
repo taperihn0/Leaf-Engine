@@ -145,12 +145,12 @@ static std::array<const int16_t*, 5> CaptureScore = {
 	reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
 };
 
-static std::array<int16_t*, 5> PromotionScore = {
+static std::array<const int16_t*, 5> PromotionScore = {
 	nullptr,    					// pawn placeholder 
-	reinterpret_cast<int16_t*>(&ToKnightPromoScore), 
-	reinterpret_cast<int16_t*>(&ToBishopPromoScore), 
-	reinterpret_cast<int16_t*>(&ToRookPromoScore),
-	reinterpret_cast<int16_t*>(&ToQueenPromoScore)
+	reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
+	reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 
+	reinterpret_cast<const int16_t*>(&ToRookPromoScore),
+	reinterpret_cast<const int16_t*>(&ToQueenPromoScore)
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {

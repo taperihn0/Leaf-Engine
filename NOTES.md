@@ -1,3 +1,11 @@
+### feature: move ordering and time man parameters tuning
+Score of leaf-tune-1 vs leaf-time: 411 - 365 - 795  [0.515] 1571 <br>
+...      leaf-tune-1 playing White: 234 - 159 - 392  [0.548] 785 <br>
+...      leaf-tune-1 playing Black: 177 - 206 - 403  [0.482] 786 <br>
+...      White vs Black: 440 - 336 - 795  [0.533] 1571 <br>
+Elo difference: 10.2 +/- 12.1, LOS: 95.1 %, DrawRatio: 50.6 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: time soft limit inside ID framework
 Score of leaf-time-soft vs leaf-tune: 256 - 237 - 551  [0.509] 1044 <br>
 ...      leaf-time-soft playing White: 154 - 107 - 261  [0.545] 522 <br>

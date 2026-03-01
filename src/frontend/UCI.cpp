@@ -55,7 +55,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
-	limits.depth = MaxDepth - 1;
+	limits.depth = MaxDepth;
     limits.nodes = 0;
 
 #define TERMINATE_READ_IF_EMPTY(str, res) \
@@ -68,7 +68,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
             TERMINATE_READ_IF_EMPTY(token, limits);
 
         	if (isValidUnsigned(token))
-        		limits.depth = std::stoi(token);
+        		limits.depth = std::min(limits.depth, std::stoi(token));
         }
         else if (token == "wtime") {
             strm >> std::skipws >> token;

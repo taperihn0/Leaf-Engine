@@ -82,6 +82,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og -O0")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 
 		if (NOT BUILD_UTILS)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")

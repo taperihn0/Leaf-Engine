@@ -324,7 +324,7 @@ Search::~Search() {
 
 template <Search::enumInfoLevel InfoLevel>
 Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {
-	ASSERT(1 <= limits.depth and limits.depth < MaxDepth, "Invalid depth");
+	ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
 	_tt.newGeneration();
 	
@@ -473,11 +473,14 @@ Score Search::negaMax(Position& pos,
 					  Score alpha, Score beta, 
 					  int depth, int ply) 
 {
-	assert(0 <= depth and depth <= MaxDepth - 1);
+	assert(0 <= depth and depth <= MaxSelDepth);
 	assert(alpha < beta);
 
 	if constexpr (Root) assert(!ply);
 	else 				assert(ply > 0);
+
+	NodeInfo* const preroot = _tree_stack.getPreRootNode();
+	node->side2move = pos.getTurn();
 
 	static constexpr OrderType OrderPolicy = STAGED;
 	static constexpr bool	   IsPV 	   = NmNodeType & PV_NODE;
@@ -488,7 +491,6 @@ Score Search::negaMax(Position& pos,
 			return getDrawScore<Root>(node);
 	}
 	
-	node->side2move = pos.getTurn();
 	NodeInfo* const prev_node = node - 1;
 
 #if !defined(DEBUG) /* disable annoying warning in RELEASE builds */
@@ -596,8 +598,8 @@ Score Search::negaMax(Position& pos,
 	if constexpr (Root)
 		node->check = pos.isInCheck(node->side2move);
 
-	NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	NodeInfo* const next_node = node + 1;
+	assert(next_node - preroot < MaxSelDepth);
 
 	node->move = Move32b::Null;
 	node->eval = tt_entry.eval;
