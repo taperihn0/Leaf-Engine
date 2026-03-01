@@ -50,6 +50,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(ToBishopPromoScore , 50.,  300.),   "ToBishopPromoScore",   1.3),
 		OptionTunableParam(SpinType<double>(ToRookPromoScore   , 150., 500.),   "ToRookPromoScore",     1.3),
 		OptionTunableParam(SpinType<double>(ToQueenPromoScore  , 700., 1020.),  "ToQueenPromoScore",    1.3),
+		OptionTunableParam(SpinType<double>(ContemptDiv        , 30.,  160.),   "ContemptDiv",          1.8),
 		}, 
 };
 

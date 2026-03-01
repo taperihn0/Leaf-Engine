@@ -62,6 +62,10 @@ public:
 		return -_raw;
 	}
 
+	INLINE explicit operator int_t() const {
+		return _raw;
+	}
+
 	INLINE explicit operator int() const {
 		return _raw;
 	}

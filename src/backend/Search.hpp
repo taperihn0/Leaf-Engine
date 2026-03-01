@@ -169,6 +169,7 @@ inline _P_CONSTEXPR int UnstableMatMargin = 42;
 inline _P_CONSTEXPR int UnstableMultMargin = 8;
 inline _P_CONSTEXPR int MinTimeBranchFactor = 1;
 inline _P_CONSTEXPR int MaxTimeBranchFactor = 5;
+inline _P_CONSTEXPR int ContemptDiv		  = 90;
 
 inline constexpr int CheckNodeCount = 2048;
 
@@ -247,7 +248,7 @@ private:
 				   enumColor side2move, 
 				   SearchResults& results);
 
-	Score adjustEvalScore(Score eval, Score tt_score);
+	Score adjustEvalScore(Score eval, Score score);
 
 	int getNullSearchDepth(Score eval, Score beta, int depth);
 
@@ -271,6 +272,8 @@ private:
 	// for very MoveOrder in TreeStack.
 	// Also, Search class in responsible for allocation and deallocation.
 	MoveOrderHistoryTables* _history_buff;
+
+	Score::int_t 			_contempt = Score::Undef;
 };
 
 INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {

@@ -357,6 +357,9 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
 
+	const Score eval = evaluate<PV_NODE>(pos, _tree_stack, root, preroot, pos.getTurn(), search_results);
+	root->eval = eval;
+
 	bool unstable = false;
 
 	for (int d = 1; d <= limits.depth; d++) {
@@ -401,6 +404,9 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		const time_ms_t prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
 		const Score     prev_best_score 	= d > 1 ? root->best_score 		   : Score::Undef;
 		const Move32b	prev_best_move		= d > 1 ? root->best_move  		   : Move32b::Null;
+
+		const Score corr_eval = adjustEvalScore(eval, prev_best_score);
+		_contempt = unstable ? 0 : static_cast<Score::int_t>(corr_eval / ContemptDiv);
 
         // TODO: So far, I reject last move when search is finished.
         // TODO: Sometimes it might be actually not really bad.
@@ -1159,8 +1165,11 @@ Score Search::quiesce(Position& pos,
 }
 
 template <bool Root>
-_FORCEINLINE Score Search::getDrawScore(_UNUSED const NodeInfo* node) {
-	return Score::Draw;
+_FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {
+	const NodeInfo* const root = _tree_stack.getRootNode();
+	assert(_contempt != Score::Undef);
+	return root->side2move == node->side2move ? Score::Draw - _contempt
+											  : Score::Draw;
 }
 
 // TODO: smarter extension calculation
@@ -1215,13 +1224,13 @@ INLINE Score Search::evaluate(const Position& pos,
 	return static_cast<Score>(scaled_eval);
 }
 
-_FORCEINLINE Score Search::adjustEvalScore(Score eval, Score tt_score) {
+_FORCEINLINE Score Search::adjustEvalScore(Score eval, Score score) {
 	assert(eval.isValid());
 
-	if (!tt_score.isValid() or eval.isMateScore())
+	if (!score.isValid() or eval.isMateScore())
 		return eval;
 
-	const Score tt_eval_diff = tt_score - eval;
+	const Score tt_eval_diff = score - eval;
 	return eval + tt_eval_diff / TTEvalCorrRate;
 }
 
