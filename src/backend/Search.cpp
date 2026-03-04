@@ -40,7 +40,7 @@ INLINE void SearchResults::printBestMove() {
 	std::cout << '\n';
 }
 
-INLINE void SearchResults::print(const Search* search, const Position& pos, TranspositionTable& tt) {
+INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << 
@@ -53,22 +53,7 @@ INLINE void SearchResults::print(const Search* search, const Position& pos, Tran
 		<< "hashfull "   << tt.getHashfull() << ' '
 		<< "pv ";
 
-	Position cpy = pos;
-
-	// print PV line
-	while (depth--) {
-		TTEntry tt_entry;
-		const bool tt_hit = search->_tt.probe(tt_entry, cpy.getZobristKey(), -Score::MateBound, +Score::MateBound, depth);
-
-		Move32b pv_move = unpacked(cpy, tt_entry.move);
-
-		if (!tt_hit or pv_move.isNull()) 
-			break;
-
-		pv_move.print(), std::cout << ' ';
-
-		cpy.make(pv_move);
-	}
+	printPV(root_pv_line, pv_len);
 
 	// flush every line
 	std::cout << std::endl;
@@ -84,6 +69,16 @@ INLINE void SearchResults::printShort() {
 #if defined(_COLLECT_SEARCH_STATS)
 	printSearchStats();
 #endif
+}
+
+void SearchResults::printPV(const PVInfo* root_pv_line, uint16_t pv_len) {
+	assert(root_pv_line);
+
+	for (uint16_t i = 0; i < pv_len; i++) {
+		const Move16b m16 = root_pv_line[i].best_move;
+		m16.print();
+		std::cout << ' ';
+	}
 }
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -174,7 +169,10 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-	cuckoo_check	= false;
+	cuckoo_check	 = false;
+
+	std::memset(pv_line, 0, MaxDepth * sizeof(PVInfo));
+	pv_line_len = 0;
 }
 
 void Search::clearHashTT() {
@@ -215,7 +213,6 @@ void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
 
 TreeStack::~TreeStack() {
 	alignedFree(_stack);
-	//delete[] _stack;
 }
 
 INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
@@ -405,8 +402,12 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		const Score     prev_best_score 	= d > 1 ? root->best_score 		   : Score::Undef;
 		const Move32b	prev_best_move		= d > 1 ? root->best_move  		   : Move32b::Null;
 
+		// Adjust contempt factor based on a corrected evaluation
 		const Score corr_eval = adjustEvalScore(eval, prev_best_score);
 		_contempt = unstable ? 0 : static_cast<Score::int_t>(corr_eval / ContemptDiv);
+
+		// Inject previous PV line to hash table
+		refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
 
         // TODO: So far, I reject last move when search is finished.
         // TODO: Sometimes it might be actually not really bad.
@@ -446,7 +447,9 @@ bool Search::search(Position& pos,
 					const FullInfoRecord& game, 
 					SearchLimits& limits, SearchResults& results) 
 {
-	const Score root_score = -negaMax<true>(pos, limits, results, game, _tree_stack.getRootNode(), 
+	NodeInfo* root = _tree_stack.getRootNode();
+
+	const Score root_score = -negaMax<true>(pos, limits, results, game, root, 
 									   		-Score::Mate, +Score::Mate, 
 									   		results.depth, 
 									   		0);
@@ -465,7 +468,7 @@ bool Search::search(Position& pos,
 	results.duration = limits.timer.duration();
 
 	if constexpr (InfoLevel == SEARCH_FULL_INFO) {
-		results.print(this, pos, _tt);
+		results.print(root->pv_line, root->pv_line_len, _tt);
 	}
 
 	return true;
@@ -610,6 +613,7 @@ Score Search::negaMax(Position& pos,
 	node->move = Move32b::Null;
 	node->eval = tt_entry.eval;
 	node->improving_rate = 0.f;
+	node->pv_line_len = 0;
 
 	Score corr_eval = Score::Undef;
 
@@ -774,10 +778,10 @@ Score Search::negaMax(Position& pos,
 					
 					if (verify >= beta) {
 						_tt.write(hash, 
-								nm_depth, ply, 
-								TTEntry::UPPERBOUND, 
-								verify, packed(tt_move), node->eval, 
-								results);
+								  nm_depth, ply, 
+								  TTEntry::UPPERBOUND, 
+								  verify, packed(tt_move), node->eval, 
+								  results);
 
 						return verify;
 					}
@@ -923,6 +927,15 @@ Score Search::negaMax(Position& pos,
 
 				node->bound = TTEntry::EXACT;
 				alpha = node->score;
+				
+				/* Collect PV from the child */
+				if constexpr (IsPV) {
+					node->pv_line[0].best_move = packed(node->best_move);
+					node->pv_line[0].score = node->best_score;
+
+					std::memcpy(node->pv_line + 1, next_node->pv_line, next_node->pv_line_len * sizeof(PVInfo));
+					node->pv_line_len = next_node->pv_line_len + 1;
+				}
 			}
 		}
 		else if (!limits.isTimeLeft() or
@@ -1239,6 +1252,45 @@ _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
 	const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
 	assert(8 * depth / NullReduction < depth); // don't return same depth, we could stuck in a loop
 	return std::max<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1);
+}
+
+void Search::refreshPVinTT(const Position& pos, 
+						   const PVInfo* root_pv_line, uint16_t pv_len,
+						   SearchResults& results) {
+	assert(root_pv_line != nullptr);
+	
+	Position cpy_pos = pos;
+
+	for (uint16_t i = 0; i < pv_len; i++) {
+		const Move16b pv_move = root_pv_line[i].best_move;
+		const Score score = root_pv_line[i].score;
+		const uint64_t key = cpy_pos.getZobristKey();
+		const int depth = pv_len - i;
+
+		assert(!pv_move.isNull());
+
+		TTEntry tt_entry;
+		tt_entry.move = Move16b::Null;
+
+		const bool tt_hit = _tt.probe(tt_entry, 
+									  key,
+									  -Score::MateBound, +Score::MateBound, 
+									  depth);
+
+		if (!tt_hit or pv_move != tt_entry.move) {
+			const Score eval = tt_hit ? tt_entry.eval 
+									  : Score::Undef;
+			
+			_tt.write(key,
+					  depth, i, 
+					  TTEntry::EXACT, 
+					  score, pv_move, eval, 
+					  results);
+		}
+		
+		Move32b pv_unpack = unpacked(cpy_pos, pv_move);
+		cpy_pos.make(pv_unpack);
+	}
 }
 
 template <bool IsPV>

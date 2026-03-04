@@ -36,7 +36,7 @@ INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 		_mm256_store_si256(reinterpret_cast<__m256i*>(d + i), pack4i_ch);
 	}
 
-#elif defined (LEAF_SIMD_SSE2)
+#elif defined (LEAF_SIMD_SSE4_2)
 	ASSERT(cnt % AlignmentBound == 0, "Size must be a multiple of 16");
 	__m128i pack2i_ch = _mm_set1_epi8(ch);
 

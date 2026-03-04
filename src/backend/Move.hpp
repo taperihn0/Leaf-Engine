@@ -32,13 +32,12 @@ public:
 
 	// do not consider whether move would be legally moved, since it's not a thing to compare
 	INLINE constexpr bool operator!=(MoveData b) const noexcept {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
-		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) != (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
+		return !(*this == b);
 	}
 
 	INLINE constexpr bool operator==(MoveData b) const noexcept {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
-		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) == (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
+		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) 
+			== (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
 	}
 
 	// simplified make function. Leaves other data fields empty, initializing only

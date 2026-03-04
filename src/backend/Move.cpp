@@ -221,11 +221,14 @@ void MoveData<T>::print(std::ostream& os) const {
 		std::cout << "0000";
 	}
 	else {
-		getOrigin().print(os), getTarget().print(os);
-		if (isPromotion()) Piece(BLACK, getPromoPiece()).print(os);
+		getOrigin().print(os); 
+		getTarget().print(os);
+
+		if (isPromotion()) 
+			Piece(BLACK, getPromoPiece()).print(os);
 	}
 #else
-	ASSERT(false, "Prining moves in algebraic notation not supported");
+	ASSERT(false, "Printing moves in algebraic notation not supported");
 #endif
 }
 

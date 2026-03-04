@@ -36,13 +36,15 @@ struct SearchLimits {
 };
 
 class Search;
+struct PVInfo;
 
 struct SearchResults {
 	void registerBestMove(Move32b move);
 
 	void printBestMove();
-	void print(const Search* search, const Position& pos, TranspositionTable& tt);
+	void print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt);
 	void printShort();
+	void printPV(const PVInfo* root_pv_line, uint16_t pv_len);
 
 #if defined (_COLLECT_SEARCH_STATS)
 	void printSearchStats();
@@ -93,6 +95,11 @@ struct AccumulatorCluster {
     AccumulatorCluster*  next_cluster;
 };
 
+struct PVInfo {	
+	Move16b best_move;
+	Score   score;
+};
+
 struct NodeInfo {
 	void clear();
 
@@ -112,6 +119,8 @@ struct NodeInfo {
 	TTEntry::Bound				bound;
     AccumulatorCluster          cluster;
 	bool						cuckoo_check;
+	PVInfo 	       				pv_line[MaxDepth];
+	uint16_t 					pv_line_len;
 };
 
 class TreeStack {
@@ -251,6 +260,10 @@ private:
 	Score adjustEvalScore(Score eval, Score score);
 
 	int getNullSearchDepth(Score eval, Score beta, int depth);
+
+	void refreshPVinTT(const Position& pos, 
+					   const PVInfo* root_pv_line, uint16_t pv_len,
+					   SearchResults& results);
 
 	template <bool IsPV>
 	bool isRepetitionCycle(const Position& pos, 
