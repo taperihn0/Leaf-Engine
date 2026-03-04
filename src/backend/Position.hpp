@@ -298,7 +298,7 @@ private:
 
 INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
 	return _queenside == rights._queenside
-		   and _kingside == rights._kingside;
+		and _kingside == rights._kingside;
 }
 
 INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
@@ -308,23 +308,35 @@ INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::f1 : Square::f8;
-	return !pos.attacked_KingIncluded(IntermediateSq, pos.getTurn());
+	static constexpr Square KingDstSq = Side == WHITE ? Square::g1 : Square::g8;
+
+	return !pos.attacked_KingIncluded(IntermediateSq, Side)
+		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
 INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos, enumColor side) const {
-	const Square IntermediateSq = side == WHITE ? Square::f1 : Square::f8;
-	return !pos.attacked_KingIncluded(IntermediateSq, pos.getTurn());
+	const Square intermediate_sq = side == WHITE ? Square::f1 : Square::f8;
+	const Square king_dst_sq = side == WHITE ? Square::g1 : Square::g8;
+
+	return !pos.attacked_KingIncluded(intermediate_sq, side)
+		and !(kingAttacks(king_dst_sq) & pos.getKingBySide(!side));
 }
 
 template <enumColor Side>
 INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::d1 : Square::d8;
-	return !pos.attacked_KingIncluded(IntermediateSq, pos.getTurn());
+	static constexpr Square KingDstSq = Side == WHITE ? Square::c1 : Square::c8;
+
+	return !pos.attacked_KingIncluded(IntermediateSq, Side)
+		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
 INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos, enumColor side) const {
-	const Square IntermediateSq = side == WHITE ? Square::d1 : Square::d8;
-	return !pos.attacked_KingIncluded(IntermediateSq, pos.getTurn());
+	const Square intermediate_sq = side == WHITE ? Square::d1 : Square::d8;
+	const Square king_dst_sq = side == WHITE ? Square::c1 : Square::c8;
+
+	return !pos.attacked_KingIncluded(intermediate_sq, side)
+		and !(kingAttacks(king_dst_sq) & pos.getKingBySide(!side));
 }
 
 template <enumColor Side>
@@ -337,11 +349,11 @@ INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied) const {
 }
 
 INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied, enumColor side) const {
-	const BitBoard Intermediates = side == WHITE ?
+	const BitBoard intermediates = side == WHITE ?
 		BitBoard(Square::f1) | BitBoard(Square::g1)
 		: BitBoard(Square::f8) | BitBoard(Square::g8);
 
-	return !(occupied & Intermediates);
+	return !(occupied & intermediates);
 }
 
 template <enumColor Side>
@@ -354,11 +366,11 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied) const {
 }
 
 INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor side) const {
-	const BitBoard Intermediates = side == WHITE ?
+	const BitBoard intermediates = side == WHITE ?
 		BitBoard(Square::b1) | BitBoard(Square::c1) | BitBoard(Square::d1)
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
 
-	return !(occupied & Intermediates);
+	return !(occupied & intermediates);
 }
 
 INLINE bool Position::operator!=(const Position& pos) const {
@@ -431,8 +443,8 @@ INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
 
 INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) const {
 	const BitBoard queen = _piece_bb[!side][Piece::QUEEN],
-		rookQueen = _piece_bb[!side][Piece::ROOK] | queen,
-		bishopQueen = _piece_bb[!side][Piece::BISHOP] | queen;
+				   rookQueen = _piece_bb[!side][Piece::ROOK] | queen,
+				   bishopQueen = _piece_bb[!side][Piece::BISHOP] | queen;
 
 	return (_piece_bb[!side][Piece::PAWN] & pawnAttacks(sq, side))
 		| (_piece_bb[!side][Piece::KNIGHT] & knightAttacks(sq))
