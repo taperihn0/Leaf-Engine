@@ -29,10 +29,6 @@ INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
     return !qnodes or qnodes_so_far < qnodes;
 }
 
-INLINE void SearchResults::registerBestMove(Move32b move) {
-	best_move = move;
-}
-
 INLINE void SearchResults::printBestMove() {
 	ASSERT(!best_move.isNull(), "Null bestmove");
 	std::cout << "bestmove ";
@@ -409,12 +405,12 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		// Inject previous PV line to hash table
 		refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
 
-        // TODO: So far, I reject last move when search is finished.
-        // TODO: Sometimes it might be actually not really bad.
-		if (!search<InfoLevel>(pos, game, limits, search_results))
-			break;
+		const bool terminate = !search<InfoLevel>(pos, game, limits, search_results);
 		
-		search_results.registerBestMove(root->best_move);
+		search_results.best_move = root->best_move;
+
+		if (terminate) 
+			break;
 
 		search_results.nodes_per_depth[d] = search_results.nodes_cnt - prev_total_node_cnt;
 		search_results.time_per_depth[d]  = search_results.duration  - prev_total_duration;
@@ -430,6 +426,9 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		
 		if (!prev_best_move.isNull() and !root->best_move.isNull())
 			unstable |= (prev_best_move != root->best_move);
+
+		assert(root->pv_line_len > 0);
+		assert(!root->pv_line[0].best_move.isNull());
 	}
 
     if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO) {
@@ -734,7 +733,7 @@ Score Search::negaMax(Position& pos,
 	*  if we're doing so well even after not making a move, we must be winning here.
 	*  So we can do beta cutoff.
 	*/
-	if constexpr (!Root and NullMove) {
+	if constexpr (!Root and NullMove and !IsPV) {
 
 		if (!node->check and 
 			depth >= NullDepth) {
@@ -1278,13 +1277,10 @@ void Search::refreshPVinTT(const Position& pos,
 									  depth);
 
 		if (!tt_hit or pv_move != tt_entry.move) {
-			const Score eval = tt_hit ? tt_entry.eval 
-									  : Score::Undef;
-			
 			_tt.write(key,
 					  depth, i, 
 					  TTEntry::EXACT, 
-					  score, pv_move, eval, 
+					  score, pv_move, Score::Undef, 
 					  results);
 		}
 		
