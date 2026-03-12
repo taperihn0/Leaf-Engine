@@ -489,6 +489,7 @@ Score Search::negaMax(Position& pos,
 
 	NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	node->side2move = pos.getTurn();
+	node->pv_line_len = 0;
 
 	static constexpr OrderType OrderPolicy = STAGED;
 	static constexpr bool	   IsPV 	   = NmNodeType & PV_NODE;
@@ -501,7 +502,7 @@ Score Search::negaMax(Position& pos,
 	
 	NodeInfo* const prev_node = node - 1;
 
-#if !defined(DEBUG) /* disable annoying warning in RELEASE builds */
+#if !defined(_CUCKOO_DRAW) /* disable annoying warning in RELEASE builds */
 	_declUnused(prev_node);
 #endif
 
@@ -612,7 +613,6 @@ Score Search::negaMax(Position& pos,
 	node->move = Move32b::Null;
 	node->eval = tt_entry.eval;
 	node->improving_rate = 0.f;
-	node->pv_line_len = 0;
 
 	Score corr_eval = Score::Undef;
 
@@ -932,7 +932,7 @@ Score Search::negaMax(Position& pos,
 					node->pv_line[0].best_move = packed(node->best_move);
 					node->pv_line[0].score = node->best_score;
 
-					std::memcpy(node->pv_line + 1, next_node->pv_line, next_node->pv_line_len * sizeof(PVInfo));
+					memCopy(node->pv_line + 1, next_node->pv_line, next_node->pv_line_len * sizeof(PVInfo));
 					node->pv_line_len = next_node->pv_line_len + 1;
 				}
 			}
@@ -942,7 +942,6 @@ Score Search::negaMax(Position& pos,
                  !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
         {
 			if (Root and node->best_move.isNull()) {
-				// TODO: move at root assigned here might be illegal.
 				node->best_move = node->move;
 			}
 

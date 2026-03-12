@@ -9,11 +9,13 @@
 
 static _FORCEINLINE void prefetch(const void* addr) {
 #ifdef _ENABLE_PREFETCH
+
 #if defined(_MSC_VER) or defined(_INTEL_COMPILER)
 	_mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T2);
 #else
 	__builtin_prefetch(addr, 1, 2);
 #endif
+
 #endif // _ENABLE_PREFETCH
 }
 
@@ -49,6 +51,13 @@ INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	std::memset(dst, ch, cnt);
 #endif
 
+	return dst;
+}
+
+INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
+	byte* d = reinterpret_cast<byte*>(dst);
+	const byte* s = reinterpret_cast<const byte*>(src);
+	std::copy_n(s, cnt, d);
 	return dst;
 }
 

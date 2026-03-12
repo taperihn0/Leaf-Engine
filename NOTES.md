@@ -1,10 +1,10 @@
 ### feature: contempt factor
-Score of leaf-contempt vs leaf-tune-1: 149 - 116 - 238  [0.533] 503
-...      leaf-contempt playing White: 85 - 52 - 115  [0.565] 252
-...      leaf-contempt playing Black: 64 - 64 - 123  [0.500] 251
-...      White vs Black: 149 - 116 - 238  [0.533] 503
-Elo difference: 22.8 +/- 22.0, LOS: 97.9 %, DrawRatio: 47.3 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+Score of leaf-contempt vs leaf-tune-1: 149 - 116 - 238  [0.533] 503 <br>
+...      leaf-contempt playing White: 85 - 52 - 115  [0.565] 252 <br>
+...      leaf-contempt playing Black: 64 - 64 - 123  [0.500] 251 <br>
+...      White vs Black: 149 - 116 - 238  [0.533] 503 <br>
+Elo difference: 22.8 +/- 22.0, LOS: 97.9 %, DrawRatio: 47.3 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### feature: move ordering and time man parameters tuning
 Score of leaf-tune-1 vs leaf-time: 411 - 365 - 795  [0.515] 1571 <br>
