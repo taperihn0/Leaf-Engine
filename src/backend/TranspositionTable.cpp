@@ -1,6 +1,17 @@
 #include "TranspositionTable.hpp"
 #include "Search.hpp"
 
+TTEntry::TTEntry()
+	: key16(0)
+	, key18(0)
+	, generation(0)
+	, bound(Bound::NONE)
+	, depth(0)
+	, score(Score::Undef)
+	, move(Move16b::Null)
+	, eval(Score::Undef)
+{}
+
 TranspositionTable::TranspositionTable(size_t mb_size) {
 	ASSERT(isPow2(mb_size), "Transposition table must be size of 2 power");
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));

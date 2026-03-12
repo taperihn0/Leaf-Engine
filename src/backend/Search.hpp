@@ -131,7 +131,7 @@ public:
 	TreeStack(TreeStack&&)			   = delete;
 	TreeStack(TreeStack&)			   = delete;
 	TreeStack operator=(TreeStack&)    = delete;
-	TreeStack operator=(TreeStack&& t) = delete;
+	TreeStack operator=(TreeStack&&)   = delete;
 
 	void init(MoveOrderHistoryTables* history_buffer);
 

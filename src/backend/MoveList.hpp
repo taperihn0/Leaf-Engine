@@ -22,6 +22,8 @@ public:
 	static_assert(_IS_SAME_TYPE(entryscore_t, int32_t) or
 				  _IS_SAME_TYPE(entryscore_t, int16_t));
 
+	MoveList() = default;
+
 	INLINE void sort(size_t first, size_t end) {
 		std::sort(_moves.data() + first, _moves.data() + end, _greater_score);
 	}
@@ -107,8 +109,8 @@ private:
 		return a.score > b.score;
 	};
 
-	size_t _idx = 0;
-	std::array<Entry, _MaxSize> _moves;
+	size_t						_idx = 0;
+	std::array<Entry, _MaxSize> _moves = {};
 };
 
 inline void MoveList::selectSort(size_t first_ind) {

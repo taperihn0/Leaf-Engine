@@ -1,6 +1,6 @@
 # My own scripts
 scripts/
-*.txt
+log.txt
 CMakePresets.json
 
 build/

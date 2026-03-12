@@ -24,6 +24,7 @@ bool MoveOrder::nextMove(const TreeStack&, const Position& pos, Move32b& next_mo
 	// GCC requires that, without that case it reports warning [-Wswitch]
 	case enumStage::NONE: 
 		assert(false);
+		break;
 	case enumStage::HASH_MOVE:
 		_stage = enumStage::CAPTURES;
 
@@ -100,8 +101,8 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
 	const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
 
-	_tables->_quiets_history[side][piece][dst] += Sign * bonus
-												  - (quiet_value * bonus) / MaxQuietsHistory;
+	_tables->_quiets_history[side][piece][dst] += 
+		static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxQuietsHistory);
 
 	assert(abs(quiet_value) <= MaxQuietsHistory);
 }

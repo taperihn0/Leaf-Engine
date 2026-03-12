@@ -20,6 +20,8 @@ struct TTEntry {
 		MAX_BOUND  = 3
 	};
 
+	TTEntry();
+
 	INLINE bool isEmpty() const { 
 		return depth == 0 and bound == NONE; 
 	}

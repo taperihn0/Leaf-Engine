@@ -367,13 +367,13 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		if (limits.isTimeLimit() and d - 2 > 0 and 
 			search_results.nodes_per_depth[d - 2] > 0) 
 		{
-			double ef_branch_factor = search_results.nodes_per_depth[d - 1] / 
+			double ef_branch_factor = 1. * search_results.nodes_per_depth[d - 1] / 
 									  search_results.nodes_per_depth[d - 2];
 
 			if (d - 3 > 0 and 
 				search_results.nodes_per_depth[d - 3] > 0) 
 			{
-				double ef_branch_factor2 = search_results.nodes_per_depth[d - 2] / 
+				double ef_branch_factor2 = 1. * search_results.nodes_per_depth[d - 2] / 
 									  	   search_results.nodes_per_depth[d - 3];
 
 				ef_branch_factor = (ef_branch_factor + ef_branch_factor2) / 2.;
@@ -387,7 +387,7 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 			const time_ms_t approx_search_time = static_cast<time_ms_t>(search_results.time_per_depth[d - 1] * 
 																		ef_branch_factor);
 
-			const float time_margin_mult = unstable ? (UnstableMultMargin / 4.) : 1.;
+			const float time_margin_mult = unstable ? (UnstableMultMargin / 4.f) : 1.f;
 
 			if (time_margin_mult * limits.search_time < 4. * approx_search_time / NextDepthTimeRed)
 				break;
@@ -720,7 +720,7 @@ Score Search::negaMax(Position& pos,
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (node->eval - (-node->improving_rate / RfpImprovingSink + 1.) * RfpMultDelta * depth >= beta) {
+			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / RfpImprovingSink + 1.) * RfpMultDelta * depth) >= beta) {
 				const Score reduced_eval = (node->eval + beta) / 2;
 				return reduced_eval;
 			}
@@ -742,7 +742,7 @@ Score Search::negaMax(Position& pos,
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 			}
 
-			if (node->eval - (-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth >= beta) {
+			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth) >= beta) {
 
 				assert(prev_node->move != Move32b::Null);
 				
@@ -1257,15 +1257,19 @@ void Search::refreshPVinTT(const Position& pos,
 						   const PVInfo* root_pv_line, uint16_t pv_len,
 						   SearchResults& results) {
 	assert(root_pv_line != nullptr);
-	
+
+	if (results.depth <= 1)
+		return;
+
 	Position cpy_pos = pos;
 
 	for (uint16_t i = 0; i < pv_len; i++) {
 		const Move16b pv_move = root_pv_line[i].best_move;
 		const Score score = root_pv_line[i].score;
 		const uint64_t key = cpy_pos.getZobristKey();
-		const int depth = pv_len - i;
+		const int depth = results.depth - i;
 
+		assert(depth > 0);
 		assert(!pv_move.isNull());
 
 		TTEntry tt_entry;
@@ -1278,7 +1282,7 @@ void Search::refreshPVinTT(const Position& pos,
 
 		if (!tt_hit or pv_move != tt_entry.move) {
 			_tt.write(key,
-					  depth, i, 
+					  static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
 					  TTEntry::EXACT, 
 					  score, pv_move, Score::Undef, 
 					  results);
@@ -1287,6 +1291,46 @@ void Search::refreshPVinTT(const Position& pos,
 		Move32b pv_unpack = unpacked(cpy_pos, pv_move);
 		cpy_pos.make(pv_unpack);
 	}
+
+	// Assert we got PV-move at root - got it directly from previous best move
+
+	const uint64_t key = pos.getZobristKey();
+	const Move16b  root_best_move = packed(results.best_move);
+	const int depth = results.depth;
+	const Score score = results.score_cp;
+
+	if (!pv_len) {
+		TTEntry tt_entry;
+		tt_entry.move = Move16b::Null;
+
+		const bool tt_hit = _tt.probe(tt_entry,
+									  key,
+									  -Score::MateBound, +Score::MateBound,
+									  depth);
+
+		if (!tt_hit or root_best_move != tt_entry.move) {
+			_tt.write(key,
+					  depth, 0,
+					  TTEntry::EXACT,
+					  score, root_best_move, Score::Undef,
+					  results);
+		}
+	}
+
+#if defined(DEBUG)
+	// Check if PV-move for root node is actually there
+
+	TTEntry tt_entry;
+	tt_entry.move = Move16b::Null;
+
+	const bool tt_hit = _tt.probe(tt_entry,
+								  key,
+								  -Score::MateBound, +Score::MateBound,
+								  depth);
+
+	assert(!tt_entry.move.isNull());
+
+#endif
 }
 
 template <bool IsPV>
