@@ -1318,17 +1318,17 @@ void Search::refreshPVinTT(const Position& pos,
 	}
 
 #if defined(DEBUG)
-	// Check if PV-move for root node is actually there
 
+	// Check if PV-move for root node is actually there
 	TTEntry tt_entry;
 	tt_entry.move = Move16b::Null;
 
-	const bool tt_hit = _tt.probe(tt_entry,
-								  key,
-								  -Score::MateBound, +Score::MateBound,
-								  depth);
+	_tt.probe(tt_entry,
+			  key,
+			  -Score::MateBound, +Score::MateBound,
+			  depth);
 
-	assert(!tt_entry.move.isNull());
+	ASSERTNOLOG(!tt_entry.move.isNull());
 
 #endif
 }
