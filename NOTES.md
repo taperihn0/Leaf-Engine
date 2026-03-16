@@ -1,3 +1,10 @@
+Score of leaf-pv-store vs leaf-contempt: 956 - 891 - 2153  [0.508] 4000
+...      leaf-pv-store playing White: 547 - 388 - 1065  [0.540] 2000
+...      leaf-pv-store playing Black: 409 - 503 - 1088  [0.476] 2000
+...      White vs Black: 1050 - 797 - 2153  [0.532] 4000
+Elo difference: 5.6 +/- 7.3, LOS: 93.5 %, DrawRatio: 53.8 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
 ### feature: contempt factor
 Score of leaf-contempt vs leaf-tune-1: 149 - 116 - 238  [0.533] 503 <br>
 ...      leaf-contempt playing White: 85 - 52 - 115  [0.565] 252 <br>
