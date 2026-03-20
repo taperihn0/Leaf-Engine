@@ -1,6 +1,7 @@
 #include "Search.hpp"
 #include "NetworkEval.hpp"
 #include "Tuning.hpp"
+#include "StaticEval.hpp"
 
 #ifdef _COLLECT_SEARCH_STATS
 #include <iomanip>
