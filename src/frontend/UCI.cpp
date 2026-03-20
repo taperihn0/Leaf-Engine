@@ -36,7 +36,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(NullMargin, 		 3.,   50.),    "NullMargin", 			0.3),
 		OptionTunableParam(SpinType<double>(NullImprovingSink ,  1.,   10.), 	"NullImprovingSink", 	1.4),
 		OptionTunableParam(SpinType<double>(DynImprovementDepth, 6.,   16.),    "DynImprovementDepth",  1.6),
-		OptionTunableParam(SpinType<double>(TTEvalCorrRate, 	 1.,   3.),     "TTEvalCorrRate", 		2.2),
+		//OptionTunableParam(SpinType<double>(TTEvalCorrRate, 	 1.,   3.),     "TTEvalCorrRate", 		2.2),
 		OptionTunableParam(SpinType<double>(NullDiffScale, 	 	 800., 1300.),  "NullDiffScale", 		0.23),
 		OptionTunableParam(SpinType<double>(NullDepth, 	 	     2.,   5.),     "NullDepth", 		    2.7),
 		OptionTunableParam(SpinType<double>(NextDepthTimeRed ,   4.,   8.), 	"NextDepthTimeRed",     2.5),

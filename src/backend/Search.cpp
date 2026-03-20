@@ -800,10 +800,9 @@ Score Search::negaMax(Position& pos,
 	node->bound 		 = TTEntry::LOWERBOUND;
 
 	for (node->move_index = 0; 
-		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move); 
+		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move);
 		 node->move_index++) 
 	{
-
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
 		_tt.prefetchBucket(next_hash);
 
@@ -835,61 +834,64 @@ Score Search::negaMax(Position& pos,
 
 		bool do_full_search = true;
 
-		if (pos.make(node->move, accum_cache)) {
-			node->can_move = true;
+		if (!pos.make(node->move, accum_cache)) {
+			pos.unmake(node->move, node->state);
+			continue;
+		}
 
-			const enumColor next_side = !node->side2move;
+		node->can_move = true;
 
-			next_node->check = pos.isInCheck(next_side);
-			const int extend = calculateExtension(pos, node);
+		const enumColor next_side = !node->side2move;
 
-			/* Principle Variation Search -
-			*  So far it was avoided in NON-PV nodes.
-			*  Now, always searching first move with full window, no matter what.
-			*  After that search, every other node is expected CUT node and 
-			*  is being search with Null window.
+		next_node->check = pos.isInCheck(next_side);
+		const int extend = calculateExtension(pos, node);
+
+		/* Principle Variation Search -
+		*  So far it was avoided in NON-PV nodes.
+		*  Now, always searching first move with full window, no matter what.
+		*  After that search, every other node is expected CUT node and 
+		*  is being search with Null window.
+		*/
+		if (node->moves_searched > 0) {
+
+			/* Late Move Reduction -
+			*  Try to reduce late moves, since they are statistically less interesting.
+			*  Prove they fail low using Null window search with some reduction.
+			*  If somehow they fail high, then re-search without reduction.
 			*/
-			if (node->moves_searched > 0) {
-
-				/* Late Move Reduction -
-				*  Try to reduce late moves, since they are statistically less interesting.
-				*  Prove they fail low using Null window search with some reduction.
-				*  If somehow they fail high, then re-search without reduction.
-				*/
-				if (node->moves_searched >= LmrMoveCount and 
-					depth >= LmrDepth and 
-					!extend) /* TODO: LMR criteria */
-				{
-					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
-																	 -alpha - 1, -alpha, 
-																	 depth - 2, 
-																	 ply + 1);
-				}
-				else node->score = alpha + 1;
+			if (node->moves_searched >= LmrMoveCount and 
+				depth >= LmrDepth and 
+				!extend) /* TODO: LMR criteria */
+			{
+				node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
+																	-alpha - 1, -alpha, 
+																	depth - 2, 
+																	ply + 1);
+			}
+			else node->score = alpha + 1;
 				
-				if (node->score > alpha) {
-					node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
-																	 -alpha - 1, -alpha, 
-																	 depth - 1 + extend, 
-																	 ply + 1);
-					/* full search already done */
-					if constexpr (!IsPV)
-						do_full_search = false;
-				}
-
-				if (node->score <= alpha)
+			if (node->score > alpha) {
+				node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
+																	-alpha - 1, -alpha, 
+																	depth - 1 + extend, 
+																	ply + 1);
+				/* full search already done */
+				if constexpr (!IsPV)
 					do_full_search = false;
-			} 
-
-			if (do_full_search) {
-				node->score = -negaMax<false, NmNodeType, true>(pos, limits, results, game, next_node,
-															    -beta, -alpha, 
-															    depth - 1 + extend, 
-															    ply + 1);
 			}
 
-			node->moves_searched++;
+			if (node->score <= alpha)
+				do_full_search = false;
+		} 
+
+		if (do_full_search) {
+			node->score = -negaMax<false, NmNodeType, true>(pos, limits, results, game, next_node,
+															-beta, -alpha, 
+															depth - 1 + extend, 
+															ply + 1);
 		}
+
+		node->moves_searched++;
 
 		pos.unmake(node->move, node->state);
 
