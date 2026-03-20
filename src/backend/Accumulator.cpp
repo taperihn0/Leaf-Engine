@@ -82,7 +82,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     assert(weights != nullptr);
     assert(side_active_features != nullptr);
 
-#if defined(LEAF_SIMD_AVX512) || defined(LEAF_SIMD_AVX2) || defined(LEAF_SIMD_SSE2)
+#if defined(_NN_USE_AVX512) || defined(_NN_USE_AVX2) || defined(_NN_USE_SSE2)
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
@@ -159,7 +159,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     assert(removed_features != nullptr);
     assert(this != prev_acc);
 
-#if defined(LEAF_SIMD_AVX512) || defined(LEAF_SIMD_AVX2) || defined(LEAF_SIMD_SSE2)
+#if defined(_NN_USE_AVX512) || defined(_NN_USE_AVX2) || defined(_NN_USE_SSE2)
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;

@@ -12,60 +12,35 @@
     or defined(LEAF_SIMD_AVX2) \
     or defined(LEAF_SIMD_AVX) 
 #include <immintrin.h>   // AVX, AVX2, AVX-512, BMI, FMA, etc.
-
 #elif defined(LEAF_SIMD_SSE4_2)
 #include <nmmintrin.h>   // SSE4.2
-
 #elif defined(LEAF_SIMD_SSE4_1)
 #include <smmintrin.h>   // SSE4.1
-
 #elif defined(LEAF_SIMD_SSSE3)
 #include <tmmintrin.h>   // SSSE3
-
 #elif defined(LEAF_SIMD_SSE3)
 #include <pmmintrin.h>   // SSE3
-
 #elif defined(LEAF_SIMD_SSE2)
 #include <emmintrin.h>   // SSE2
-
 #elif defined(LEAF_SIMD_SEE)
 #include <xmmintrin.h>   // SSE
-
 #endif
 
 #ifdef LEAF_SIMD_AVX512
 #define _NN_USE_AVX512
-
 #elif defined(LEAF_SIMD_AVX2)
 #define _NN_USE_AVX2
-
-#elif  defined(LEAF_SIMD_SSE4_2) \
+#elif defined(LEAF_SIMD_SSE4_2) \
     or defined(LEAF_SIMD_SSE4_1) \
     or defined(LEAF_SIMD_SSSE3)  \
     or defined(LEAF_SIMD_SSE3)   \
     or defined(LEAF_SIMD_SSE2) 
 #define _NN_USE_SSE2
-
 #elif defined(LEAF_SIMD_SEE)
 #define _NN_NO_SIMD
-
 #endif
 
 #endif // LEAF_FORCE_PURE
-
-#if defined(LEAF_SIMD_AVX512)
-#define _NN_USE_AVX512
-
-#elif defined(LEAF_SIMD_AVX2)
-#define _NN_USE_AVX2
-
-#elif defined(LEAF_SIMD_SSE2)
-#define _NN_USE_SSE2
-
-#else
-#define _NN_NO_SIMD
-
-#endif
 
 #ifdef _NN_USE_AVX512
 
@@ -216,4 +191,3 @@ static _FORCEINLINE int32_t sumElements_i16(_max_platf_register_i_t a) {
 }
 
 #endif
-

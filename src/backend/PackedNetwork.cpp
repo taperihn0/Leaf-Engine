@@ -57,7 +57,8 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
 #if defined(_MSC_VER)
 
     _fh = CreateFileA(path.data(), GENERIC_READ, FILE_SHARE_READ, 
-                      nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, 
+                      nullptr, OPEN_EXISTING, 
+                      FILE_ATTRIBUTE_READONLY | FILE_FLAG_SEQUENTIAL_SCAN,
                       nullptr);
 
     if (_fh == INVALID_HANDLE_VALUE) {
@@ -75,7 +76,6 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
-
 
     _maph = CreateFileMapping(_fh, nullptr, PAGE_READONLY, high_size, low_size, nullptr);
 
