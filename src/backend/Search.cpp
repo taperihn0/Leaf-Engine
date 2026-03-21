@@ -163,12 +163,12 @@ void NodeInfo::clear() {
 	moves_searched 	 = 0;
 	move_index 		 = 0;
 	bound 			 = TTEntry::NONE;
+	cuckoo_check	 = false;
+	is_cut			 = false;
 
 	cluster.accum_cache.clearBuffers();
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
-
-	cuckoo_check	 = false;
 
 	std::memset(pv_line, 0, MaxDepth * sizeof(PVInfo));
 	pv_line_len = 0;
@@ -408,7 +408,7 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 		// Inject previous PV line to hash table
 		refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
 
-		const bool terminate = !search<InfoLevel>(pos, game, limits, search_results);
+		const bool terminate = !goSearch<InfoLevel>(pos, game, limits, search_results);
 		
 		search_results.best_move = root->best_move;
 
@@ -445,9 +445,9 @@ Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, Se
 }
 
 template <Search::enumInfoLevel InfoLevel>
-bool Search::search(Position& pos, 
-					const FullInfoRecord& game, 
-					SearchLimits& limits, SearchResults& results) 
+bool Search::goSearch(Position& pos, 
+					  const FullInfoRecord& game, 
+					  SearchLimits& limits, SearchResults& results) 
 {
 	NodeInfo* root = _tree_stack.getRootNode();
 
@@ -503,10 +503,10 @@ Score Search::negaMax(Position& pos,
 			return getDrawScore<Root>(node);
 	}
 	
-	NodeInfo* const prev_node = node - 1;
+	NodeInfo* const parent_node = node - 1;
 
 #if !defined(_CUCKOO_DRAW) /* disable annoying warning in RELEASE builds */
-	_declUnused(prev_node);
+	_declUnused(parent_node);
 #endif
 
 #if !defined(_CUCKOO_DRAW)
@@ -562,7 +562,8 @@ Score Search::negaMax(Position& pos,
 
 #endif
 	
-	else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
+	else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and 
+			 !limits.isTimeLeft()) {
 		return -Score::Undef;
 	}
     
@@ -607,11 +608,13 @@ Score Search::negaMax(Position& pos,
 	results.npvnodes_cnt += !IsPv;
 #endif
 
-	if constexpr (Root)
+	if constexpr (Root) {
+		node->is_cut = false;
 		node->check = pos.isInCheck(node->side2move);
+	}
 
-	NodeInfo* const next_node = node + 1;
-	assert(next_node - preroot < MaxSelDepth);
+	NodeInfo* const child_node = node + 1;
+	assert(child_node - preroot < MaxSelDepth);
 
 	node->move = Move32b::Null;
 	node->eval = tt_entry.eval;
@@ -630,7 +633,9 @@ Score Search::negaMax(Position& pos,
 			depth <= RazorDepth)
 		{
 			if (!node->eval.isValid()) {
-				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+												  node, preroot, 
+												  node->side2move, results);
 			}
 			
 			corr_eval = adjustEvalScore(node->eval, tt_entry.score);
@@ -660,6 +665,8 @@ Score Search::negaMax(Position& pos,
 	*/
 	if constexpr (!Root and IsPv) {
 		if (depth >= IidDepth and tt_move.isNull()) {
+			child_node->is_cut = !node->is_cut;
+
 			_UNUSED const Score iid_score =
 				negaMax<NmNodeType, false>(pos, limits, results, game, node,
 										   alpha, beta,
@@ -692,7 +699,9 @@ Score Search::negaMax(Position& pos,
 		if (node->eval.isValid() or depth <= DynImprovementDepth) {
 
 			if (!node->eval.isValid()) {
-				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+												  node, preroot, 
+												  node->side2move, results);
 			}
 
 			const NodeInfo* prev_eval_node = nullptr;
@@ -720,7 +729,9 @@ Score Search::negaMax(Position& pos,
 			(tt_move.isNull() or tt_move.isQuiet()))
 		{
 			if (!node->eval.isValid()) {
-				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+												  node, preroot, 
+												  node->side2move, results);
 			}
 
 			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / RfpImprovingSink + 1.) * RfpMultDelta * depth) >= beta) {
@@ -739,15 +750,18 @@ Score Search::negaMax(Position& pos,
 	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
-			depth >= NullDepth) {
+			depth >= NullDepth and
+			node->is_cut) {
 
 			if (!node->eval.isValid()) {
-				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+												  node, preroot, 
+												  node->side2move, results);
 			}
 
 			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth) >= beta) {
-
-				assert(prev_node->move != Move32b::Null);
+				
+				assert(parent_node->move != Move32b::Null);
 				
 				pos.makeNull(node->state, accum_cache);
 
@@ -762,10 +776,12 @@ Score Search::negaMax(Position& pos,
 				
 				const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
 
-				const Score score = -negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
-																			-beta, -beta + 1, 
-																			nm_depth, 
-																			ply + 1);
+				child_node->is_cut = !node->is_cut;
+
+				const Score score = -negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
+																	 -beta, -beta + 1, 
+																	 nm_depth, 
+																	 ply + 1);
 				pos.unmakeNull(node->state);
 				next_cluster->prev_cluster = curr_cluster;
 
@@ -774,9 +790,9 @@ Score Search::negaMax(Position& pos,
 				*/
 				if (score >= beta) {
 					const Score verify = negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
-																				beta - 1, beta, 
-																				nm_depth, 
-																				ply);
+																		 beta - 1, beta, 
+																		 nm_depth, 
+																		 ply);
 					
 					if (verify >= beta) {
 						_tt.write(hash, 
@@ -821,7 +837,9 @@ Score Search::negaMax(Position& pos,
 			!node->move.isQueenPromotion())
 		{
 			if (!node->eval.isValid()) {
-				node->eval = evaluate<NmNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+												  node, preroot, 
+												  node->side2move, results);
 			}
 
 			if (node->eval + FutilityDelta * depth * depth < alpha) {
@@ -846,15 +864,18 @@ Score Search::negaMax(Position& pos,
 
 		const enumColor next_side = !node->side2move;
 
-		next_node->check = pos.isInCheck(next_side);
+		child_node->check = pos.isInCheck(next_side);
 
 		/* Extensions estimation
 		*/
 
-		const float frac_extension = next_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
+		const float frac_extension = child_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
 													  : 0.f;
 
-		const int extension = std::clamp<int>(std::lroundf(next_node->check), 0, 1);
+		const int extension = std::clamp<int>(std::lroundf(child_node->check), 0, 1);
+
+		bool full_depth_search = !IsPv and !(node->moves_searched > 0);
+		bool full_window_search = IsPv and !node->moves_searched;
 
 		/* Dynamic Depth Late Move Reduction -
 		*  consider float reduction based on contextual information
@@ -863,7 +884,8 @@ Score Search::negaMax(Position& pos,
 
 		float frac_reduction = 0.f;
 
-		if (node->move.isQuiet() or node->move.isUnderPromotion()) {
+		if (!full_depth_search and !full_window_search and 
+			(node->move.isQuiet() or node->move.isUnderPromotion())) {
 			
 			if constexpr (!IsPv)
 				frac_reduction += NotPvNodeReduction;
@@ -871,31 +893,30 @@ Score Search::negaMax(Position& pos,
 			if (node->check)
 				frac_reduction -= CheckReduction;
 
-			if (node->move_picker.getKillerMove<OrderPolicy>() == node->move)
-				frac_reduction -= KillerMoveReduction;
-
 			if (node->move.getPiece() == Piece::PAWN) 
 				frac_reduction -= PawnMoveReduction;
 
-			if (tt_move.isCapture())
+			if (!tt_move.isNull() and tt_move.isCapture())
 				frac_reduction += HashCapReduction;
 
-			if (move_score != UndefMoveScore and
-				!node->move.isPromotion())
+			if (node->move_picker.getKillerMove<OrderPolicy>() == node->move)
+				frac_reduction -= KillerMoveReduction;
+
+			else if (!node->move.isPromotion()) {
+				assert(move_score != UndefMoveScore);
 				frac_reduction += static_cast<float>(move_score) / MoveScoreReductionRate;
+			}
 
 			frac_reduction -= frac_extension * ExtensionReduction;
 			frac_reduction -= node->improving_rate * ImprovingReductionRate;
-			frac_reduction += std::sqrt(node->moves_searched) * MoveCountReductionRate / MoveCountReductionDiv;
-
+			frac_reduction += std::sqrt(static_cast<float>(node->moves_searched)) * MoveCountReductionRate / MoveCountReductionDiv;
 			frac_reduction /= TotalReductionRate;
 		}
 
 		const int reduction = std::clamp<int>(std::lroundf(frac_reduction), 0, depth - 1);
 		const int reduct_depth = depth - 1 - reduction;
 
-		bool full_depth_search = !IsPv and !(node->moves_searched > 0);
-		bool full_window_search = IsPv and !node->moves_searched;
+		child_node->is_cut = !node->is_cut;
 
 		/* Principle Variation Search -
 		*  Search only fist move with full window.
@@ -909,16 +930,20 @@ Score Search::negaMax(Position& pos,
 			*  Prove they fail low using Null window search with some reduction.
 			*  If somehow they fail high, then re-search without reduction.
 			*/
-			const bool do_lmr = (node->moves_searched >= LmrMoveCount and
-							     (node->move.isQuiet() or node->move.isUnderPromotion()) and
+			const bool do_lmr = (//node->moves_searched >= LmrMoveCount and
+								 (node->move.isQuiet() or node->move.isUnderPromotion()) and
 								 depth >= LmrDepth and
 								 reduction > 0);
 		
 			if (do_lmr) {
-				node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, next_node,
+				child_node->is_cut = true;
+
+				node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, child_node,
 														  -alpha - 1, -alpha,
 														  reduct_depth,
 														  ply + 1);
+
+				child_node->is_cut = !(node->score > alpha);
 			} 
 		
 			full_depth_search = !do_lmr or node->score > alpha;
@@ -927,16 +952,17 @@ Score Search::negaMax(Position& pos,
 		const int ext_depth = depth - 1 + extension;
 
 		if (full_depth_search and !full_window_search) {
-			node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, next_node,
+			node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, child_node,
 													  -alpha - 1, -alpha,
 													  ext_depth,
 													  ply + 1);
 
+			child_node->is_cut = !(node->score > alpha);
 			full_window_search = IsPv and node->score > alpha;
 		}
 
 		if (full_window_search) {
-			node->score = -negaMax<NmNodeType, true>(pos, limits, results, game, next_node,
+			node->score = -negaMax<NmNodeType, true>(pos, limits, results, game, child_node,
 													 -beta, -alpha, 
 													 ext_depth,
 													 ply + 1);
@@ -985,8 +1011,8 @@ Score Search::negaMax(Position& pos,
 					node->pv_line[0].best_move = packed(node->best_move);
 					node->pv_line[0].score = node->best_score;
 
-					memCopy(node->pv_line + 1, next_node->pv_line, next_node->pv_line_len * sizeof(PVInfo));
-					node->pv_line_len = next_node->pv_line_len + 1;
+					memCopy(node->pv_line + 1, child_node->pv_line, child_node->pv_line_len * sizeof(PVInfo));
+					node->pv_line_len = child_node->pv_line_len + 1;
 				}
 			}
 		}
@@ -1018,7 +1044,7 @@ Score Search::negaMax(Position& pos,
 				  results);
 	}
 
-	next_node->move_picker.setKillerMove(Move32b::Null);
+	child_node->move_picker.setKillerMove(Move32b::Null);
 
 	if constexpr (Root) {
 		results.score_cp = node->best_score;
@@ -1058,7 +1084,9 @@ Score Search::quiesce(Position& pos,
 	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	
 	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
-		return evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+		return evaluate<QNodeType>(pos, _tree_stack, 
+								   node, preroot, 
+								   node->side2move, results);
 	}
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1093,7 +1121,9 @@ Score Search::quiesce(Position& pos,
 	results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-	node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results)
+	node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, 
+																	    node, preroot, 
+																		node->side2move, results)
 												  : tt_entry.eval;
 #else
 	node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
@@ -1137,6 +1167,9 @@ Score Search::quiesce(Position& pos,
 	}
 #endif
 
+	NodeInfo* const child_node = node + 1;
+	assert(child_node - preroot < MaxSelDepth);
+
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
 	node->moves_searched = 0;
@@ -1159,7 +1192,8 @@ Score Search::quiesce(Position& pos,
 		*/
 		if (node->move.isCapture() and
 			!node->move.isEnPassant() and 
-			!node->move.isPromotion())
+			!node->move.isPromotion() and
+			!node->is_cut)
 		{
 			const Square org = node->move.getOrigin();
 			const Square dst = node->move.getTarget();
@@ -1172,14 +1206,19 @@ Score Search::quiesce(Position& pos,
 				continue;
 		}
 
-		if (pos.make(node->move, accum_cache)) {
-			node->score = -quiesce<QNodeType>(pos, limits, results, node + 1,
-											  -beta, -alpha,
-											  depth - 1,
-											  ply + 1);
-
-			node->moves_searched++;
+		if (!pos.make(node->move, accum_cache)) {
+			pos.unmake(node->move, node->state);
+			continue;
 		}
+
+		child_node->is_cut = !node->is_cut;
+
+		node->score = -quiesce<QNodeType>(pos, limits, results, child_node,
+										  -beta, -alpha,
+										  depth - 1,
+										  ply + 1);
+
+		node->moves_searched++;
 
 		pos.unmake(node->move, node->state);
 

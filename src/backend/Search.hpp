@@ -119,6 +119,7 @@ struct NodeInfo {
 	bool						cuckoo_check;
 	PVInfo 	       				pv_line[MaxDepth];
 	uint16_t 					pv_line_len;
+	bool						is_cut;
 };
 
 class TreeStack {
@@ -148,47 +149,47 @@ private:
 };
 
 inline _P_CONSTEXPR int	IidDepth 	      = 3;
-inline _P_CONSTEXPR int	IidDepthDiv       = 9;
+inline _P_CONSTEXPR int	IidDepthDiv       = 8;
 inline _P_CONSTEXPR int	RfpDepth          = 4;
 inline _P_CONSTEXPR int RazorDepth        = 2;
 inline _P_CONSTEXPR int	FutilityDepth     = 4;
 inline _P_CONSTEXPR int	LmrDepth 	      = 2;
-inline _P_CONSTEXPR int NullDiffScale	  = 1090;
+inline _P_CONSTEXPR int NullDiffScale	  = 1087;
 inline _P_CONSTEXPR int	NullReduction     = 27;
 inline _P_CONSTEXPR int NullDepth		  = 4;
-inline _P_CONSTEXPR int	LmrMoveCount      = 6;
-inline _P_CONSTEXPR int RazorMultDelta    = 22;
-inline _P_CONSTEXPR int RfpMultDelta      = 128;
-inline _P_CONSTEXPR int FutilityDelta     = 19;
-inline _P_CONSTEXPR int FutilityMoveCount = 8;
-inline _P_CONSTEXPR int RazorBaseDelta    = 98;
-inline _P_CONSTEXPR int QMaterialDelta    = 1074;
+inline _P_CONSTEXPR int	LmrMoveCount      = 0;
+inline _P_CONSTEXPR int RazorMultDelta    = 23;
+inline _P_CONSTEXPR int RfpMultDelta      = 122;
+inline _P_CONSTEXPR int FutilityDelta     = 17;
+inline _P_CONSTEXPR int FutilityMoveCount = 7;
+inline _P_CONSTEXPR int RazorBaseDelta    = 101;
+inline _P_CONSTEXPR int QMaterialDelta    = 1075;
 inline _P_CONSTEXPR int QProbeDepth		  = -3;
 inline _P_CONSTEXPR int NNEvalScale		  = 12;
 inline _P_CONSTEXPR int ImprovingRate     = 56;
 inline _P_CONSTEXPR int RfpImprovingSink  = 3;
-inline _P_CONSTEXPR int NullMargin 		  = 7;
+inline _P_CONSTEXPR int NullMargin 		  = 6;
 inline _P_CONSTEXPR int NullImprovingSink = 3;
 inline _P_CONSTEXPR int DynImprovementDepth = 10;
 inline _P_CONSTEXPR int TTEvalCorrRate	  = 3;
 inline _P_CONSTEXPR int NextDepthTimeRed  = 5;
-inline _P_CONSTEXPR int UnstableMatMargin = 37;
+inline _P_CONSTEXPR int UnstableMatMargin = 32;
 inline _P_CONSTEXPR int UnstableMultMargin = 8;
 inline _P_CONSTEXPR int MinTimeBranchFactor = 1;
 inline _P_CONSTEXPR int MaxTimeBranchFactor = 5;
-inline _P_CONSTEXPR int ContemptDiv		  = 132;
-inline _P_CONSTEXPR int ImprovingExtensionRate = 7;
-inline _P_CONSTEXPR int NotPvNodeReduction = 6;
-inline _P_CONSTEXPR int CheckReduction	  = 27;
-inline _P_CONSTEXPR int ExtensionReduction = 31;
-inline _P_CONSTEXPR int PawnMoveReduction = 4;
-inline _P_CONSTEXPR int ImprovingReductionRate = 5;
-inline _P_CONSTEXPR int MoveCountReductionRate = 12;
+inline _P_CONSTEXPR int ContemptDiv		  = 115;
+inline _P_CONSTEXPR int ImprovingExtensionRate = 4;
+inline _P_CONSTEXPR int NotPvNodeReduction = 5;
+inline _P_CONSTEXPR int CheckReduction	  = 31;
+inline _P_CONSTEXPR int ExtensionReduction = 35;
+inline _P_CONSTEXPR int PawnMoveReduction = 7;
+inline _P_CONSTEXPR int ImprovingReductionRate = 8;
+inline _P_CONSTEXPR int MoveCountReductionRate = 10;
 inline _P_CONSTEXPR int MoveCountReductionDiv = 9;
-inline _P_CONSTEXPR int HashCapReduction  = 18;
-inline _P_CONSTEXPR int KillerMoveReduction = 12;
-inline _P_CONSTEXPR int MoveScoreReductionRate = 174;
-inline _P_CONSTEXPR int TotalReductionRate = 40;
+inline _P_CONSTEXPR int HashCapReduction  = 13;
+inline _P_CONSTEXPR int KillerMoveReduction = 13;
+inline _P_CONSTEXPR int MoveScoreReductionRate = 192;
+inline _P_CONSTEXPR int TotalReductionRate = 28;
 
 inline constexpr int CheckNodeCount = 2048;
 
@@ -235,9 +236,9 @@ private:
 	Move32b iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits);
 
 	template <enumInfoLevel InfoLevel>
-	bool search(Position& pos, 
-				const FullInfoRecord& game, 
-				SearchLimits& limits, SearchResults& results);
+	bool goSearch(Position& pos, 
+				  const FullInfoRecord& game, 
+				  SearchLimits& limits, SearchResults& results);
 
 	template <enumNode NmNodeType, bool NullMove, bool Root = false>
 	Score negaMax(Position& pos, 
