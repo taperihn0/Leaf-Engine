@@ -100,7 +100,7 @@ void SPSA_Tuning::start(uint thread_count) {
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 0.035 * option.rate;
+                        param.r = 0.052 * option.rate;
                         param.c = (param.max - param.min) / 12.;
 
                         return param;
@@ -117,12 +117,12 @@ void SPSA_Tuning::start(uint thread_count) {
     // Game parameters
 	limits.depth = MaxDepth; // avoid depth overflow
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 20_s;
-    limits.winc = limits.binc = 200_ms;
+    limits.wtime = limits.btime = 8_s;
+    limits.winc = limits.binc = 150_ms;
 
     _openings.load(std::string(OpeningPath));
 
-    std::ofstream log_file("spsa_log_feb26.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_mar21.txt", std::ios_base::app);
 
     curr_iter.store(0);
 

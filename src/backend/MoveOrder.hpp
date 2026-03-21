@@ -46,14 +46,14 @@ inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 */
 
 inline constexpr    int PawnCapturedScore   = 100;
-inline _P_CONSTEXPR int KnightCapturedScore = 299;
-inline _P_CONSTEXPR int BishopCapturedScore = 305;
+inline _P_CONSTEXPR int KnightCapturedScore = 285;
+inline _P_CONSTEXPR int BishopCapturedScore = 318;
 inline constexpr    int RookCapturedScore   = 500;
 inline constexpr    int QueenCapturedScore  = 900;
-inline _P_CONSTEXPR int ToKnightPromoScore  = 160;
-inline _P_CONSTEXPR int ToBishopPromoScore  = 92;
-inline _P_CONSTEXPR int ToRookPromoScore    = 173;
-inline _P_CONSTEXPR int ToQueenPromoScore   = 895;
+inline _P_CONSTEXPR int ToKnightPromoScore  = 184;
+inline _P_CONSTEXPR int ToBishopPromoScore  = 87;
+inline _P_CONSTEXPR int ToRookPromoScore    = 191;
+inline _P_CONSTEXPR int ToQueenPromoScore   = 902;
 
 class MoveOrder {
 public:
