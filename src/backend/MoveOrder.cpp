@@ -16,7 +16,11 @@ MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables)
 */
 
 template <OrderType Type, bool Root>
-bool MoveOrder::nextMove(const TreeStack&, const Position& pos, Move32b& next_move) {
+bool MoveOrder::nextMove(const TreeStack&, 
+						 const Position& pos, 
+						 Move32b& next_move,
+						 int16_t& move_score) 
+{
 	static_assert(!Root or Type == STAGED);
 	assert(_tables != nullptr);
 	
@@ -43,7 +47,7 @@ bool MoveOrder::nextMove(const TreeStack&, const Position& pos, Move32b& next_mo
 
 		[[fallthrough]];
 	case enumStage::PICK_CAPTURES:
-		if (nextFromList(next_move))
+		if (nextFromList(next_move, move_score))
 			return true;
 		
 		if constexpr (Type == QUIESCENT)
@@ -83,7 +87,7 @@ bool MoveOrder::nextMove(const TreeStack&, const Position& pos, Move32b& next_mo
 
 		scoreQuiets(_quiets_ind, side);
 
-		return nextFromList(next_move);
+		return nextFromList(next_move, move_score);
 	}
 
 	return false;
@@ -128,14 +132,16 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
 	}
 }
 
-INLINE bool MoveOrder::nextFromList(Move32b& move) {
+INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 
 	_move_list.selectSort(_iterator);
-	move = _move_list.getMove(_iterator++);
+	move = _move_list.getMove(_iterator);
+	score = _move_list.getScore(_iterator++);
 
-	return move == _hash_move or move == _killer_move ? nextFromList(move) : true;
+	return move == _hash_move or move == _killer_move ? nextFromList(move, score) 
+													  : true;
 }
 
 static std::array<const int16_t*, 5> CaptureScore = {
@@ -210,7 +216,7 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 	}
 }
 
-template bool MoveOrder::nextMove<STAGED, false>(const TreeStack&, const Position&, Move32b&);
-template bool MoveOrder::nextMove<STAGED, true> (const TreeStack&, const Position&, Move32b&);
-template bool MoveOrder::nextMove<QUIESCENT, false>(const TreeStack&, const Position&, Move32b&);
+template bool MoveOrder::nextMove<STAGED, false>(const TreeStack&, const Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<STAGED, true> (const TreeStack&, const Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<QUIESCENT, false>(const TreeStack&, const Position&, Move32b&, int16_t&);
 template void MoveOrder::updateQuietsHistory(Move32b, enumColor, int);

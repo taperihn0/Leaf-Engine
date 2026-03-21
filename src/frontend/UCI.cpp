@@ -9,10 +9,10 @@
 #include <sstream>
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
-		// --- Regular parameters
+		// --- Regular parameters ---
 		OptionHash(SpinType<ll>(1, 1, 512)), 
 		OptionClearHash(),
-		{ // --- Tunable parameters
+		{ // --- Tunable parameters ---
 		OptionTunableParam(SpinType<double>(MaxQuietsHistoryPow, 12.,  14.),    "MaxQuietsHistoryPow",  1.2),
 		OptionTunableParam(SpinType<double>(IidDepth,            2.,   5.),     "IidDepth", 		    2.8),
 		OptionTunableParam(SpinType<double>(IidDepthDiv,         8.,   14.),    "IidDepthDiv", 		    2.8),
@@ -29,14 +29,13 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(RazorBaseDelta,      20.,  500.),   "RazorBaseDelta", 		0.4),
 		OptionTunableParam(SpinType<double>(QMaterialDelta,      700., 1200.),  "QMaterialDelta", 		0.45),
 		OptionTunableParam(SpinType<double>(QProbeDepth,         -5.,  1.),     "QProbeDepth", 			1.3),
-		//OptionTunableParam(SpinType<double>(ContemptFactor,      0.,   50.),    "ContemptFactor", 1.),
 		OptionTunableParam(SpinType<double>(NNEvalScale,         7.,   12.),    "NNEvalScale", 			1.5),
 		OptionTunableParam(SpinType<double>(ImprovingRate, 		 30.,  90.),    "ImprovingRate" , 	  	0.7),
 		OptionTunableParam(SpinType<double>(RfpImprovingSink, 	 1.,   10.),    "RfpImprovingSink",   	1.4),
 		OptionTunableParam(SpinType<double>(NullMargin, 		 3.,   50.),    "NullMargin", 			0.3),
 		OptionTunableParam(SpinType<double>(NullImprovingSink ,  1.,   10.), 	"NullImprovingSink", 	1.4),
 		OptionTunableParam(SpinType<double>(DynImprovementDepth, 6.,   16.),    "DynImprovementDepth",  1.6),
-		//OptionTunableParam(SpinType<double>(TTEvalCorrRate, 	 1.,   3.),     "TTEvalCorrRate", 		2.2),
+		OptionTunableParam(SpinType<double>(TTEvalCorrRate, 	 1.,   3.),     "TTEvalCorrRate", 		2.2),
 		OptionTunableParam(SpinType<double>(NullDiffScale, 	 	 800., 1300.),  "NullDiffScale", 		0.23),
 		OptionTunableParam(SpinType<double>(NullDepth, 	 	     2.,   5.),     "NullDepth", 		    2.7),
 		OptionTunableParam(SpinType<double>(NextDepthTimeRed ,   4.,   8.), 	"NextDepthTimeRed",     2.5),
@@ -44,13 +43,25 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(UnstableMultMargin,  4.,   12.), 	"UnstableMultMargin",   2.7),
 		OptionTunableParam(SpinType<double>(MinTimeBranchFactor, 1.,   2.), 	"MinTimeBranchFactor",  2.),
 		OptionTunableParam(SpinType<double>(MaxTimeBranchFactor, 3.,   5.), 	"MaxTimeBranchFactor",  2.),
+		OptionTunableParam(SpinType<double>(ContemptDiv,		 30.,  160.),   "ContemptDiv",          1.8),
+		OptionTunableParam(SpinType<double>(ImprovingExtensionRate, 2., 10.),	"ImprovingExtensionRate", 2.9),
+		OptionTunableParam(SpinType<double>(NotPvNodeReduction,     1., 20.),	"NotPvNodeReduction",     2.6),
+		OptionTunableParam(SpinType<double>(CheckReduction,			5., 60.),	"CheckReduction",		  2.1),
+		OptionTunableParam(SpinType<double>(ExtensionReduction,		5., 50.),	"ExtensionReduction",     2.2),
+		OptionTunableParam(SpinType<double>(PawnMoveReduction,		1., 15.),	"PawnMoveReduction",      2.7),
+		OptionTunableParam(SpinType<double>(ImprovingReductionRate, 3., 15.),	"ImprovingReductionRate", 2.6),
+		OptionTunableParam(SpinType<double>(MoveCountReductionRate, 6., 12.),	"MoveCountReductionRate", 1.9),
+		OptionTunableParam(SpinType<double>(MoveCountReductionDiv,  2., 12.),	"MoveCountReductionDiv",  1.6),
+		OptionTunableParam(SpinType<double>(HashCapReduction,		10.,50.),	"HashCapReduction",		  2.1),
+		OptionTunableParam(SpinType<double>(KillerMoveReduction,	5., 40.),	"KillerMoveReduction",    1.9),
+		OptionTunableParam(SpinType<double>(MoveScoreReductionRate, 64.,700.),	"MoveScoreReductionRate", 0.25),
+		OptionTunableParam(SpinType<double>(TotalReductionRate,  25.,  80.),	"TotalReductionRate",   1.7),
 		OptionTunableParam(SpinType<double>(KnightCapturedScore, 260., 350.),   "KnightCapturedScore",  0.8),
 		OptionTunableParam(SpinType<double>(BishopCapturedScore, 260., 350.),   "BishopCapturedScore",  0.8),
-		OptionTunableParam(SpinType<double>(ToKnightPromoScore , 80.,  300.),   "ToKnightPromoScore",   1.3),
-		OptionTunableParam(SpinType<double>(ToBishopPromoScore , 50.,  300.),   "ToBishopPromoScore",   1.3),
-		OptionTunableParam(SpinType<double>(ToRookPromoScore   , 150., 500.),   "ToRookPromoScore",     1.3),
-		OptionTunableParam(SpinType<double>(ToQueenPromoScore  , 700., 1020.),  "ToQueenPromoScore",    1.3),
-		OptionTunableParam(SpinType<double>(ContemptDiv        , 30.,  160.),   "ContemptDiv",          1.8),
+		OptionTunableParam(SpinType<double>(ToKnightPromoScore,  80.,  300.),   "ToKnightPromoScore",   1.3),
+		OptionTunableParam(SpinType<double>(ToBishopPromoScore,  50.,  300.),   "ToBishopPromoScore",   1.3),
+		OptionTunableParam(SpinType<double>(ToRookPromoScore,    150., 500.),   "ToRookPromoScore",     1.3),
+		OptionTunableParam(SpinType<double>(ToQueenPromoScore,   700., 1020.),  "ToQueenPromoScore",    1.3),
 		}, 
 };
 

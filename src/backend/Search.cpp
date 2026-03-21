@@ -14,6 +14,8 @@
 #error "No proper draw value handling"
 #endif
 
+static constexpr int16_t UndefMoveScore = std::numeric_limits<int16_t>::min();
+
 INLINE bool SearchLimits::isTimeLimit() {
 	return search_time;
 }
@@ -449,10 +451,10 @@ bool Search::search(Position& pos,
 {
 	NodeInfo* root = _tree_stack.getRootNode();
 
-	const Score root_score = -negaMax<true>(pos, limits, results, game, root, 
-									   		-Score::Mate, +Score::Mate, 
-									   		results.depth, 
-									   		0);
+	const Score root_score = -negaMax<PV_NODE, false, true>(pos, limits, results, game, root, 
+									   					    -Score::Mate, +Score::Mate, 
+									   					    results.depth, 
+									   					    0);
 
 	_declUnused(root_score);
 
@@ -474,7 +476,7 @@ bool Search::search(Position& pos,
 	return true;
 }
 
-template <bool Root, Search::enumNode NmNodeType, bool NullMove>
+template <Search::enumNode NmNodeType, bool NullMove, bool Root>
 Score Search::negaMax(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
 					  const FullInfoRecord& game, 
@@ -493,7 +495,7 @@ Score Search::negaMax(Position& pos,
 	node->pv_line_len = 0;
 
 	static constexpr OrderType OrderPolicy = STAGED;
-	static constexpr bool	   IsPV 	   = NmNodeType & PV_NODE;
+	static constexpr bool	   IsPv 	   = NmNodeType & PV_NODE;
 
 	if constexpr (!Root) {
 
@@ -510,7 +512,7 @@ Score Search::negaMax(Position& pos,
 #if !defined(_CUCKOO_DRAW)
 
 	if constexpr (!Root) {
-		if (isRepetitionCycle<IsPV>(pos, game, node, ply, results)) {
+		if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
 
 #if defined(_COLLECT_SEARCH_STATS)
 			results.rep_cnt++;
@@ -529,7 +531,7 @@ Score Search::negaMax(Position& pos,
 		*/
 		if (!prev_node->cuckoo_check) {
 
-			if (isRepetitionCycle<IsPV>(pos, game, node, ply, results)) {
+			if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
 
 #if defined(_COLLECT_SEARCH_STATS)
 				results.rep_cnt++;
@@ -540,7 +542,7 @@ Score Search::negaMax(Position& pos,
 		}
 	}
 
-	if constexpr (!Root and !IsPV) {
+	if constexpr (!Root and !IsPv) {
 
 		node->cuckoo_check = alpha < Score::Draw;
 
@@ -581,8 +583,8 @@ Score Search::negaMax(Position& pos,
 	tt_entry.score = Score::Undef;
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
-	const bool exact_hit = (!IsPV and tt_hit) or
-						   (IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
+	const bool exact_hit = (!IsPv and tt_hit) or
+						   (IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
 	if (!Root and exact_hit) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -601,8 +603,8 @@ Score Search::negaMax(Position& pos,
 	results.nodes_cnt++;
 
 #if defined(_COLLECT_SEARCH_STATS)
-	results.pvnodes_cnt += IsPV;
-	results.npvnodes_cnt += !IsPV;
+	results.pvnodes_cnt += IsPv;
+	results.npvnodes_cnt += !IsPv;
 #endif
 
 	if constexpr (Root)
@@ -623,7 +625,7 @@ Score Search::negaMax(Position& pos,
 	*  To ensure our intuition, we dive into quiescence search to verify the position.
 	*  If we fail low, we've got a cutoff.
 	*/
-	if constexpr (!Root and !IsPV) {
+	if constexpr (!Root and !IsPv) {
 		if (!node->check and
 			depth <= RazorDepth)
 		{
@@ -656,13 +658,13 @@ Score Search::negaMax(Position& pos,
 	*  That strategy can only pay off when the move ordering is actually 
 	*  very important.
 	*/
-	if constexpr (!Root and IsPV) {
+	if constexpr (!Root and IsPv) {
 		if (depth >= IidDepth and tt_move.isNull()) {
 			_UNUSED const Score iid_score =
-				negaMax<false, NmNodeType, false>(pos, limits, results, game, node,
-												  alpha, beta,
-												  4 * depth / IidDepthDiv,
-												  ply);
+				negaMax<NmNodeType, false>(pos, limits, results, game, node,
+										   alpha, beta,
+										   4 * depth / IidDepthDiv,
+										   ply);
 
 			TTEntry iid_entry;
 			iid_entry.eval = Score::Undef;
@@ -685,7 +687,7 @@ Score Search::negaMax(Position& pos,
 	*  we're clamping improvement rate to range [-1., 1.]
 	*/
 
-	if (!Root and !IsPV and !node->check) {
+	if (!Root and !IsPv and !node->check) {
 
 		if (node->eval.isValid() or depth <= DynImprovementDepth) {
 
@@ -712,7 +714,7 @@ Score Search::negaMax(Position& pos,
 	*  basically, when we're doing very well, we can prune.
 	*  Idea similar to Standing Pat cutoff in Q-Search.
 	*/
-	if constexpr (!Root and !IsPV) {
+	if constexpr (!Root and !IsPv) {
 		if (!node->check and
 			depth <= RfpDepth and
 			(tt_move.isNull() or tt_move.isQuiet()))
@@ -734,7 +736,7 @@ Score Search::negaMax(Position& pos,
 	*  if we're doing so well even after not making a move, we must be winning here.
 	*  So we can do beta cutoff.
 	*/
-	if constexpr (!Root and NullMove and !IsPV) {
+	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
 			depth >= NullDepth) {
@@ -760,7 +762,7 @@ Score Search::negaMax(Position& pos,
 				
 				const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
 
-				const Score score = -negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
+				const Score score = -negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, next_node,
 																			-beta, -beta + 1, 
 																			nm_depth, 
 																			ply + 1);
@@ -771,7 +773,7 @@ Score Search::negaMax(Position& pos,
 				*  verification search is just needed to prevent Zugzwang.
 				*/
 				if (score >= beta) {
-					const Score verify = negaMax<false, NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+					const Score verify = negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
 																				beta - 1, beta, 
 																				nm_depth, 
 																				ply);
@@ -800,8 +802,10 @@ Score Search::negaMax(Position& pos,
 	node->state 		 = pos.getIrreversibleState();
 	node->bound 		 = TTEntry::LOWERBOUND;
 
+	int16_t move_score = UndefMoveScore;
+
 	for (node->move_index = 0; 
-		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move);
+		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
 		 node->move_index++) 
 	{
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
@@ -845,51 +849,99 @@ Score Search::negaMax(Position& pos,
 		const enumColor next_side = !node->side2move;
 
 		next_node->check = pos.isInCheck(next_side);
-		const int extend = calculateExtension(pos, node);
+
+		/* Extensions estimation
+		*/
+
+		const float frac_extension = next_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
+													  : 0.f;
+
+		const int extension = std::clamp<int>(std::lroundf(next_node->check), 0, 1);
+
+		/* Dynamic Depth Late Move Reduction -
+		*  consider float reduction based on contextual information
+		*  about the move.
+		*/
+
+		float frac_reduction = 0.f;
+
+		if (node->move.isQuiet() or node->move.isUnderPromotion()) {
+			
+			if constexpr (!IsPv)
+				frac_reduction += NotPvNodeReduction;
+
+			if (node->check)
+				frac_reduction -= CheckReduction;
+
+			if (node->move_picker.getKillerMove<OrderPolicy>() == node->move)
+				frac_reduction -= KillerMoveReduction;
+
+			if (node->move.getPiece() == Piece::PAWN) 
+				frac_reduction -= PawnMoveReduction;
+
+			if (tt_move.isCapture())
+				frac_reduction += HashCapReduction;
+
+			if (move_score != UndefMoveScore and
+				!node->move.isPromotion())
+				frac_reduction += static_cast<float>(move_score) / MoveScoreReductionRate;
+
+			frac_reduction -= frac_extension * ExtensionReduction;
+			frac_reduction -= node->improving_rate * ImprovingReductionRate;
+			frac_reduction += std::sqrtf(node->moves_searched) * MoveCountReductionRate / MoveCountReductionDiv;
+
+			frac_reduction /= TotalReductionRate;
+		}
+
+		const int reduction = std::clamp<int>(std::lroundf(frac_reduction), 0, depth - 1);
+		const int reduct_depth = depth - 1 - reduction;
+
+		bool full_depth_search = !IsPv and !(node->moves_searched > 0);
+		bool full_window_search = IsPv and !node->moves_searched;
 
 		/* Principle Variation Search -
-		*  So far it was avoided in NON-PV nodes.
-		*  Now, always searching first move with full window, no matter what.
-		*  After that search, every other node is expected CUT node and 
+		*  Search only fist move with full window.
+		*  After that search, every other child node is expected Cut node and
 		*  is being search with Null window.
 		*/
-		if (node->moves_searched > 0) {
+		if (!full_depth_search and !full_window_search) {
 
 			/* Late Move Reduction -
 			*  Try to reduce late moves, since they are statistically less interesting.
 			*  Prove they fail low using Null window search with some reduction.
 			*  If somehow they fail high, then re-search without reduction.
 			*/
-			if (node->moves_searched >= LmrMoveCount and 
-				depth >= LmrDepth and 
-				!extend) /* TODO: LMR criteria */
-			{
-				node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
-																	-alpha - 1, -alpha, 
-																	depth - 2, 
-																	ply + 1);
-			}
-			else node->score = alpha + 1;
-				
-			if (node->score > alpha) {
-				node->score = -negaMax<false, NON_PV_NODE, true>(pos, limits, results, game, next_node,
-																	-alpha - 1, -alpha, 
-																	depth - 1 + extend, 
-																	ply + 1);
-				/* full search already done */
-				if constexpr (!IsPV)
-					do_full_search = false;
-			}
+			const bool do_lmr = (node->moves_searched >= LmrMoveCount and
+							     (node->move.isQuiet() or node->move.isUnderPromotion()) and
+								 depth >= LmrDepth and
+								 reduction > 0);
+		
+			if (do_lmr) {
+				node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, next_node,
+														  -alpha - 1, -alpha,
+														  reduct_depth,
+														  ply + 1);
+			} 
+		
+			full_depth_search = !do_lmr or node->score > alpha;
+		}
 
-			if (node->score <= alpha)
-				do_full_search = false;
-		} 
+		const int ext_depth = depth - 1 + extension;
 
-		if (do_full_search) {
-			node->score = -negaMax<false, NmNodeType, true>(pos, limits, results, game, next_node,
-															-beta, -alpha, 
-															depth - 1 + extend, 
-															ply + 1);
+		if (full_depth_search and !full_window_search) {
+			node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, next_node,
+													  -alpha - 1, -alpha,
+													  ext_depth,
+													  ply + 1);
+
+			full_window_search = IsPv and node->score > alpha;
+		}
+
+		if (full_window_search) {
+			node->score = -negaMax<NmNodeType, true>(pos, limits, results, game, next_node,
+													 -beta, -alpha, 
+													 ext_depth,
+													 ply + 1);
 		}
 
 		node->moves_searched++;
@@ -931,7 +983,7 @@ Score Search::negaMax(Position& pos,
 				alpha = node->score;
 				
 				/* Collect PV from the child */
-				if constexpr (IsPV) {
+				if constexpr (IsPv) {
 					node->pv_line[0].best_move = packed(node->best_move);
 					node->pv_line[0].score = node->best_score;
 
@@ -977,19 +1029,6 @@ Score Search::negaMax(Position& pos,
 	return node->best_score;
 }
 
-template Score Search::negaMax<true> (Position&, 
-									  SearchLimits&, SearchResults&, 
-									  const FullInfoRecord&, 
-									  NodeInfo*,
-									  Score, Score, 
-									  int, int);
-template Score Search::negaMax<false>(Position&,
-									  SearchLimits&, SearchResults&, 
-									  const FullInfoRecord&, 
-									  NodeInfo*,
-									  Score, Score, 
-									  int, int);
-
 template <Search::enumNode QNodeType>
 Score Search::quiesce(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
@@ -1000,7 +1039,7 @@ Score Search::quiesce(Position& pos,
 	assert(alpha < beta);
 
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
-	static constexpr bool	   IsPV = QNodeType & PV_NODE; 
+	static constexpr bool	   IsPv = QNodeType & PV_NODE; 
 	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
 	
@@ -1039,8 +1078,8 @@ Score Search::quiesce(Position& pos,
 	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
-	const bool exact_hit = (!IsPV and tt_hit) or 
-						   (IsPV and tt_hit and tt_entry.bound == TTEntry::EXACT);
+	const bool exact_hit = (!IsPv and tt_hit) or 
+						   (IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
 	if (exact_hit and depth <= QProbeDepth) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1086,7 +1125,7 @@ Score Search::quiesce(Position& pos,
 #if defined(_TT_PROBE_QSEARCH)
 	const Move16b ttm16b = tt_entry.move;
 
-	if ((!IsPV or tt_entry.bound != TTEntry::UPPERBOUND) and 
+	if ((!IsPv or tt_entry.bound != TTEntry::UPPERBOUND) and 
 		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion()))
 	{
 		const Move32b ttm32b = unpacked(pos, tt_entry.move);
@@ -1105,8 +1144,10 @@ Score Search::quiesce(Position& pos,
 	node->moves_searched = 0;
 	node->state = pos.getIrreversibleState();
 
+	int16_t move_score = UndefMoveScore;
+
 	for (node->move_index = 0; 
-		node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move); 
+		node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
 		node->move_index++) 
 	{
 		
@@ -1184,13 +1225,6 @@ _FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {
 	assert(_contempt != Score::Undef);
 	return root->side2move == node->side2move ? Score::Draw - _contempt
 											  : Score::Draw;
-}
-
-// TODO: smarter extension calculation
-INLINE int Search::calculateExtension(Position& pos, NodeInfo* node) {
-	_declUnused(pos);
-	NodeInfo* next_node = node + 1;
-	return next_node->check;
 }
 
 template <Search::enumNode NodeType>
@@ -1335,7 +1369,7 @@ void Search::refreshPVinTT(const Position& pos,
 #endif
 }
 
-template <bool IsPV>
+template <bool IsPv>
 bool Search::isRepetitionCycle(const Position& pos,
 							   const FullInfoRecord& game,
 							   const NodeInfo* node,
@@ -1369,7 +1403,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 
 		if (curr_hashkey == prev_node->state.hash_key) {
 
-			if constexpr (!IsPV)
+			if constexpr (!IsPv)
 				return true;
 
 			if (++rep_cnt >= 2)
@@ -1396,7 +1430,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 		if (((curr_halfclock - halfclock) & 1) and 
 			curr_hashkey == game.getPrevKey(halfclock)) {
 
-			if constexpr (!IsPV)
+			if constexpr (!IsPv)
 				return true;
 
 			if (++rep_cnt >= 2)

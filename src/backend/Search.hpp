@@ -39,8 +39,6 @@ class Search;
 struct PVInfo;
 
 struct SearchResults {
-	void registerBestMove(Move32b move);
-
 	void printBestMove();
 	void print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt);
 	void printShort();
@@ -158,7 +156,7 @@ inline _P_CONSTEXPR int	LmrDepth 	      = 2;
 inline _P_CONSTEXPR int NullDiffScale	  = 1090;
 inline _P_CONSTEXPR int	NullReduction     = 28;
 inline _P_CONSTEXPR int NullDepth		  = 4;
-inline _P_CONSTEXPR int	LmrMoveCount      = 7;
+inline _P_CONSTEXPR int	LmrMoveCount      = 3;
 inline _P_CONSTEXPR int RazorMultDelta    = 21;
 inline _P_CONSTEXPR int RfpMultDelta      = 123;
 inline _P_CONSTEXPR int FutilityDelta     = 15;
@@ -179,6 +177,18 @@ inline _P_CONSTEXPR int UnstableMultMargin = 8;
 inline _P_CONSTEXPR int MinTimeBranchFactor = 1;
 inline _P_CONSTEXPR int MaxTimeBranchFactor = 5;
 inline _P_CONSTEXPR int ContemptDiv		  = 90;
+inline _P_CONSTEXPR int ImprovingExtensionRate = 7;
+inline _P_CONSTEXPR int NotPvNodeReduction = 7;
+inline _P_CONSTEXPR int CheckReduction	  = 40;
+inline _P_CONSTEXPR int ExtensionReduction = 40;
+inline _P_CONSTEXPR int PawnMoveReduction = 6;
+inline _P_CONSTEXPR int ImprovingReductionRate = 8;
+inline _P_CONSTEXPR int MoveCountReductionRate = 10;
+inline _P_CONSTEXPR int MoveCountReductionDiv = 7;
+inline _P_CONSTEXPR int HashCapReduction  = 25;
+inline _P_CONSTEXPR int KillerMoveReduction = 13;
+inline _P_CONSTEXPR int MoveScoreReductionRate = 212;
+inline _P_CONSTEXPR int TotalReductionRate = 42;
 
 inline constexpr int CheckNodeCount = 2048;
 
@@ -229,7 +239,7 @@ private:
 				const FullInfoRecord& game, 
 				SearchLimits& limits, SearchResults& results);
 
-	template <bool Root, enumNode NmNodeType = PV_NODE, bool NullMove = !Root>
+	template <enumNode NmNodeType, bool NullMove, bool Root = false>
 	Score negaMax(Position& pos, 
 				  SearchLimits& limits, SearchResults& results, 
 				  const FullInfoRecord& game, 
@@ -246,8 +256,6 @@ private:
 	
 	template <bool Root>
 	Score getDrawScore(const NodeInfo* node);
-
-	int calculateExtension(Position& pos, NodeInfo* node);
 
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,

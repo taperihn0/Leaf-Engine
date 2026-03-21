@@ -50,6 +50,11 @@ public:
 		return _moves[idx].move;
 	}
 
+	INLINE entryscore_t getScore(size_t idx) const {
+		assert(idx < _idx);
+		return _moves[idx].score;
+	}
+
 	INLINE size_t count() const {
 		return _idx;
 	}

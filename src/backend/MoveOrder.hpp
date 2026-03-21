@@ -42,7 +42,7 @@ enum OrderType {
 inline _P_CONSTEXPR int MaxQuietsHistoryPow = 13;
 inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 
-/* MVV-LVA captures and promotion scores 
+/* MVV-LVA captures, promotion and castling scores 
 */
 
 inline constexpr    int PawnCapturedScore   = 100;
@@ -50,7 +50,6 @@ inline _P_CONSTEXPR int KnightCapturedScore = 299;
 inline _P_CONSTEXPR int BishopCapturedScore = 305;
 inline constexpr    int RookCapturedScore   = 500;
 inline constexpr    int QueenCapturedScore  = 900;
-
 inline _P_CONSTEXPR int ToKnightPromoScore  = 160;
 inline _P_CONSTEXPR int ToBishopPromoScore  = 92;
 inline _P_CONSTEXPR int ToRookPromoScore    = 173;
@@ -63,7 +62,10 @@ public:
 	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
 	template <OrderType Order, bool Root>
-	bool nextMove(const TreeStack& tree, const Position& pos, Move32b& next_move);
+	bool nextMove(const TreeStack& tree, 
+				  const Position& pos, 
+				  Move32b& next_move,
+				  int16_t& move_score);
 
 	void setHashMove(Move32b m);
 
@@ -86,7 +88,7 @@ public:
 
 	int16_t getQuietScore(Move32b move, enumColor side);
 private:
-	bool nextFromList(Move32b& move);
+	bool nextFromList(Move32b& move, int16_t& score);
 
 	void scoreCaptures(size_t first_ind, const Position& pos);
 	void scoreQuiets(size_t first_ind, enumColor side);
