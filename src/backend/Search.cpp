@@ -837,8 +837,6 @@ Score Search::negaMax(Position& pos,
 			}
 		}
 
-		bool do_full_search = true;
-
 		if (!pos.make(node->move, accum_cache)) {
 			pos.unmake(node->move, node->state);
 			continue;
@@ -888,7 +886,7 @@ Score Search::negaMax(Position& pos,
 
 			frac_reduction -= frac_extension * ExtensionReduction;
 			frac_reduction -= node->improving_rate * ImprovingReductionRate;
-			frac_reduction += std::sqrtf(node->moves_searched) * MoveCountReductionRate / MoveCountReductionDiv;
+			frac_reduction += std::sqrt(node->moves_searched) * MoveCountReductionRate / MoveCountReductionDiv;
 
 			frac_reduction /= TotalReductionRate;
 		}

@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <random>
 #include <algorithm>
+#include <cmath>
 
 #if defined(_MSC_VER)
 #include <windows.h>
