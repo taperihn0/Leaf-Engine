@@ -750,8 +750,7 @@ Score Search::negaMax(Position& pos,
 	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
-			depth >= NullDepth and
-			node->is_cut) {
+			depth >= NullDepth) {
 
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -834,7 +833,8 @@ Score Search::negaMax(Position& pos,
 			depth <= FutilityDepth and
 			node->moves_searched >= FutilityMoveCount and
 			node->move.isQuiet() and
-			!node->move.isQueenPromotion())
+			!node->move.isQueenPromotion() and
+			!node->is_cut)
 		{
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -870,7 +870,7 @@ Score Search::negaMax(Position& pos,
 		*/
 
 		const float frac_extension = child_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
-													  : 0.f;
+													   : 0.f;
 
 		const int extension = std::clamp<int>(std::lroundf(child_node->check), 0, 1);
 
@@ -930,7 +930,7 @@ Score Search::negaMax(Position& pos,
 			*  Prove they fail low using Null window search with some reduction.
 			*  If somehow they fail high, then re-search without reduction.
 			*/
-			const bool do_lmr = (//node->moves_searched >= LmrMoveCount and
+			const bool do_lmr = (node->moves_searched >= LmrMoveCount and
 								 (node->move.isQuiet() or node->move.isUnderPromotion()) and
 								 depth >= LmrDepth and
 								 reduction > 0);
@@ -1178,11 +1178,11 @@ Score Search::quiesce(Position& pos,
 	int16_t move_score = UndefMoveScore;
 
 	for (node->move_index = 0; 
-		node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
-		node->move_index++) 
+		 node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
+		 node->move_index++) 
 	{
 		
-#if defined(_TT_PROBE_QSEARCH)
+#if defined(_TT_PROBE_QSEARCH)	
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
 		_tt.prefetchBucket(next_hash);
 #endif
