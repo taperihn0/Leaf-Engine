@@ -1,9 +1,18 @@
-Score of leaf-pv-store vs leaf-contempt: 956 - 891 - 2153  [0.508] 4000
-...      leaf-pv-store playing White: 547 - 388 - 1065  [0.540] 2000
-...      leaf-pv-store playing Black: 409 - 503 - 1088  [0.476] 2000
-...      White vs Black: 1050 - 797 - 2153  [0.532] 4000
-Elo difference: 5.6 +/- 7.3, LOS: 93.5 %, DrawRatio: 53.8 %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+### feature: Dynamic Late Reductions & tuning
+Score of leaf-tune-1 vs leaf-simd-fix: 1166 - 930 - 1904  [0.529] 4000 <br>
+...      leaf-tune-1 playing White: 671 - 393 - 936  [0.570] 2000 <br>
+...      leaf-tune-1 playing Black: 495 - 537 - 968  [0.489] 2000 <br>
+...      White vs Black: 1208 - 888 - 1904  [0.540] 4000 <br>
+Elo difference: 20.5 +/- 7.8, LOS: 100.0 %, DrawRatio: 47.6 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### feature: save PV line in PV nodes and refresh PV line in TT
+Score of leaf-pv-store vs leaf-contempt: 956 - 891 - 2153  [0.508] 4000 <br>
+...      leaf-pv-store playing White: 547 - 388 - 1065  [0.540] 2000 <br>
+...      leaf-pv-store playing Black: 409 - 503 - 1088  [0.476] 2000 <br>
+...      White vs Black: 1050 - 797 - 2153  [0.532] 4000 <br>
+Elo difference: 5.6 +/- 7.3, LOS: 93.5 %, DrawRatio: 53.8 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
 
 ### feature: contempt factor
 Score of leaf-contempt vs leaf-tune-1: 149 - 116 - 238  [0.533] 503 <br>
