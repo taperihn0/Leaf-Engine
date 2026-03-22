@@ -60,8 +60,10 @@ struct SearchResults {
 	time_ms_t time_per_depth[MaxDepth + 1]  = {};
 
 #if defined (_COLLECT_SEARCH_STATS)
-	ull       pvnodes_cnt		= 0,
-			  npvnodes_cnt		= 0;
+	ull       pv_nodes_cnt		= 0,
+			  npv_nodes_cnt		= 0,
+			  cut_nodes_cnt		= 0,
+			  all_nodes_cnt		= 0;
 
 	ull		  tt_probe_cnt		= 0,
 			  qtt_probe_cnt		= 0,
@@ -72,8 +74,8 @@ struct SearchResults {
 	ull		  ttmove_cut_cnt	= 0,
 			  qttmove_cut_cnt	= 0;
 
-	ull		  beta_cut_cnt		= 0,
-			  qbeta_cut_cnt		= 0;
+	ull		  beta_cut_cnt		= 0;
+	ull		  qbeta_cut_cnt		= 0;
 
 	ull		  move_cut_cnt[MaxNodeMoves] = {};
 
@@ -84,6 +86,10 @@ struct SearchResults {
 	ull 	  rep_cnt			= 0;
 
 	ull 	  cuckoo_rep_cnt    = 0;
+
+	ull		  reduced_search_cnt = 0,
+			  reduced_search_fail_high = 0,
+			  reduced_search_fail_low = 0;
 #endif
 };
 
@@ -180,18 +186,28 @@ inline _P_CONSTEXPR int MaxTimeBranchFactor = 5;
 inline _P_CONSTEXPR int ContemptDiv = 132;
 inline _P_CONSTEXPR int ImprovingExtensionRate = 7;
 inline _P_CONSTEXPR int NotPvNodeReduction = 6;
+inline _P_CONSTEXPR int CutNodeReduction = 9;
 inline _P_CONSTEXPR int CheckReduction = 27;
 inline _P_CONSTEXPR int ExtensionReduction = 31;
 inline _P_CONSTEXPR int PawnMoveReduction = 4;
 inline _P_CONSTEXPR int ImprovingReductionRate = 5;
-inline _P_CONSTEXPR int MoveCountReductionRate = 12;
-inline _P_CONSTEXPR int MoveCountReductionDiv = 9;
+//inline _P_CONSTEXPR int MoveCountReductionRate = 12;
+//inline _P_CONSTEXPR int MoveCountReductionDiv = 9;
 inline _P_CONSTEXPR int HashCapReduction = 18;
 inline _P_CONSTEXPR int KillerMoveReduction = 12;
-inline _P_CONSTEXPR int MoveScoreReductionRate = 174;
+inline _P_CONSTEXPR int MoveScoreReductionRate = 12;
+inline _P_CONSTEXPR int MoveScoreReductionDiv = 5;
 inline _P_CONSTEXPR int TotalReductionRate = 40;
-
-inline constexpr int CheckNodeCount = 2048;
+inline _P_CONSTEXPR int CaptureNotPvNodeReduction = 9;
+inline _P_CONSTEXPR int CaptureCutNodeReduction = 12;
+inline _P_CONSTEXPR int CaptureCheckReduction = 33;
+inline _P_CONSTEXPR int CaptureHashCapReduction = 20;
+inline _P_CONSTEXPR int CaptureKillerMoveReduction = 20;
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = 50;
+inline _P_CONSTEXPR int CaptureExtensionReduction = 35;
+inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
+inline _P_CONSTEXPR int CaptureTotalReductionRate = 42;
+inline constexpr    int CheckNodeCount = 2048;
 
 class Search {
 public:

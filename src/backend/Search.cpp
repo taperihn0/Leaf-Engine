@@ -98,8 +98,10 @@ void SearchResults::printSearchStats() {
 	_ASSERT_NONZERO(nmnodes);
 
 	const float qnodes_rate      = static_cast<float>(qnodes_cnt) / nodes_cnt * 100;
-	const float pvnodes_rate     = static_cast<float>(pvnodes_cnt) / nodes_cnt * 100;
-	const float npvnodes_rate    = static_cast<float>(npvnodes_cnt) / nodes_cnt * 100;
+	const float pvnodes_rate     = static_cast<float>(pv_nodes_cnt) / nodes_cnt * 100;
+	const float npvnodes_rate    = static_cast<float>(npv_nodes_cnt) / nodes_cnt * 100;
+	const float cutnodes_rate    = static_cast<float>(cut_nodes_cnt) / nmnodes * 100;
+	const float allnodes_rate    = static_cast<float>(all_nodes_cnt) / nmnodes * 100;
 
 	const float qprobes_rate     = static_cast<float>(qtt_probe_cnt) / tt_probe_cnt * 100;
 	const float cuts_rate        = static_cast<float>(tt_cut_cnt) / tt_probe_cnt * 100;
@@ -112,12 +114,17 @@ void SearchResults::printSearchStats() {
 	const float nmeval_rate  	 = static_cast<float>(nmeval_cnt) / nmnodes * 100;
 	const float qeval_rate 		 = static_cast<float>(qeval_cnt) / qnodes_cnt * 100;
 
+	const float reduced_search_fail_rate = static_cast<float>(reduced_search_fail_low) / reduced_search_cnt * 100;
+	const float reduced_search_suc_rate = static_cast<float>(reduced_search_fail_high) / reduced_search_cnt * 100;
+
 	std::cout << "\n--SEARCH STATISTICS--";
 
 	std::cout
-		<< "\nQUIESCENT NODES:             " << qnodes_cnt        << ", " << qnodes_rate << '%'
-		<< "\nPV NODES:                    " << pvnodes_cnt       << ", " << pvnodes_rate << '%'
-		<< "\nNON PV NODES:                " << npvnodes_cnt      << ", " << npvnodes_rate << '%'
+		<< "\nQUIESCENT NODES:             " << qnodes_cnt		  << ", " << qnodes_rate << '%'
+		<< "\nPV NODES:                    " << pv_nodes_cnt	  << ", " << pvnodes_rate << '%'
+		<< "\nNON PV NODES:                " << npv_nodes_cnt	  << ", " << npvnodes_rate << '%'
+		<< "\nCUT NODES:                   " << cut_nodes_cnt	  << ", " << cutnodes_rate << '%'
+		<< "\nALL NODES:                   " << all_nodes_cnt	  << ", " << allnodes_rate << '%'
 		<< "\nTT PROBES:                   " << tt_probe_cnt
 		<< "\nTT PROBES IN QSEARCH:        " << qtt_probe_cnt     << ", " << qprobes_rate << '%'
 		<< "\nTT CUTS:                     " << tt_cut_cnt        << ", " << cuts_rate << '%'
@@ -125,12 +132,15 @@ void SearchResults::printSearchStats() {
 		<< "\nHASH-MOVE CUT:               " << ttmove_cut_cnt    << ", " << ttmove_cut_rate << '%'
 		<< "\nHASH-MOVE PROBE IN QSEARCH:  " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
 		<< "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
-		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt 		  << ", " << nmeval_rate << '%'
-		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt 		  << ", " << qeval_rate << '%'
+		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt        << ", " << nmeval_rate << '%'
+		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt         << ", " << qeval_rate << '%'
 		<< "\nREPETITION CALLS:            " << rep_call_cnt
 		<< "\nREPETITION CYCLES:           " << rep_cnt
 		<< "\nCUCKOO CYCLES:               " << cuckoo_rep_cnt
-		<< '\n';
+		<< "\nREDUCTION SEARCHES:          " << reduced_search_cnt << ", "
+		<< "\nREDUCTION SEARCH FAIL LOW:   " << reduced_search_fail_low << ", " << reduced_search_fail_rate << '%'
+		<< "\nREDUCTION SEARCH FAIL HIGH:  " << reduced_search_fail_high << ", " << reduced_search_suc_rate << '%'
+		<< "\n";
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
 
@@ -601,17 +611,19 @@ Score Search::negaMax(Position& pos,
 								 				  ply);
 	}
 
-	results.nodes_cnt++;
-
-#if defined(_COLLECT_SEARCH_STATS)
-	results.pvnodes_cnt += IsPv;
-	results.npvnodes_cnt += !IsPv;
-#endif
-
 	if constexpr (Root) {
 		node->is_cut = false;
 		node->check = pos.isInCheck(node->side2move);
 	}
+
+	results.nodes_cnt++;
+
+#if defined(_COLLECT_SEARCH_STATS)
+	results.pv_nodes_cnt += IsPv;
+	results.npv_nodes_cnt += !IsPv;
+	results.cut_nodes_cnt += node->is_cut;
+	results.all_nodes_cnt += !node->is_cut;
+#endif
 
 	NodeInfo* const child_node = node + 1;
 	assert(child_node - preroot < MaxSelDepth);
@@ -664,7 +676,10 @@ Score Search::negaMax(Position& pos,
 	*  very important.
 	*/
 	if constexpr (!Root and IsPv) {
-		if (depth >= IidDepth and tt_move.isNull()) {
+		if (depth >= IidDepth and 
+			tt_move.isNull() and
+			node->is_cut) 
+		{
 			child_node->is_cut = !node->is_cut;
 
 			_UNUSED const Score iid_score =
@@ -833,8 +848,7 @@ Score Search::negaMax(Position& pos,
 			depth <= FutilityDepth and
 			node->moves_searched >= FutilityMoveCount and
 			node->move.isQuiet() and
-			!node->move.isQueenPromotion() and
-			!node->is_cut)
+			!node->move.isQueenPromotion())
 		{
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -884,38 +898,71 @@ Score Search::negaMax(Position& pos,
 
 		float frac_reduction = 0.f;
 
-		if (!full_depth_search and !full_window_search and 
-			(node->move.isQuiet() or node->move.isUnderPromotion())) {
-			
-			if constexpr (!IsPv)
-				frac_reduction += NotPvNodeReduction;
+		if (!full_depth_search and 
+			!full_window_search and 
+			depth >= LmrDepth and
+			node->moves_searched >= LmrMoveCount) 
+		{	
+			const Piece::enumType pc = node->move.getPiece();
+			const Move32b killer = node->move_picker.getKillerMove<OrderPolicy>();
 
-			if (node->check)
-				frac_reduction -= CheckReduction;
+			if (node->move.isQuiet() and !node->move.isPromotion()) {
+				if constexpr (!IsPv) 
+					frac_reduction += NotPvNodeReduction;
 
-			if (node->move.getPiece() == Piece::PAWN) 
-				frac_reduction -= PawnMoveReduction;
+				if (node->is_cut) 
+					frac_reduction -= CutNodeReduction;
 
-			if (!tt_move.isNull() and tt_move.isCapture())
-				frac_reduction += HashCapReduction;
+				if (node->check) 
+					frac_reduction -= CheckReduction;
 
-			if (node->move_picker.getKillerMove<OrderPolicy>() == node->move)
-				frac_reduction -= KillerMoveReduction;
+				if (pc == Piece::PAWN) 
+					frac_reduction -= PawnMoveReduction;
 
-			else if (!node->move.isPromotion()) {
-				assert(move_score != UndefMoveScore);
-				frac_reduction += static_cast<float>(move_score) / MoveScoreReductionRate;
+				if (!tt_move.isNull() and tt_move.isCapture())
+					frac_reduction += HashCapReduction;
+
+				if (node->move == killer) 
+					frac_reduction -= KillerMoveReduction;
+
+				if (move_score != UndefMoveScore) {
+					const int16_t centered_score = move_score - MaxQuietsHistory;
+					const float rt = std::sqrtf(static_cast<float>(std::abs(centered_score)));
+					const float val = MoveScoreReductionRate * rt / MoveScoreReductionDiv;
+					frac_reduction += centered_score < 0 ? val : -val;
+				}
+
+				frac_reduction -= frac_extension * ExtensionReduction;
+				frac_reduction -= node->improving_rate * ImprovingReductionRate;
+				frac_reduction /= TotalReductionRate;
 			}
+			else {
+				if constexpr (!IsPv)
+					frac_reduction += CaptureNotPvNodeReduction;
 
-			frac_reduction -= frac_extension * ExtensionReduction;
-			frac_reduction -= node->improving_rate * ImprovingReductionRate;
-			frac_reduction += std::sqrt(static_cast<float>(node->moves_searched)) * MoveCountReductionRate / MoveCountReductionDiv;
-			frac_reduction /= TotalReductionRate;
+				if (node->is_cut)
+					frac_reduction -= CaptureCutNodeReduction;
+
+				if (node->check)
+					frac_reduction -= CaptureCheckReduction;
+
+				if (!tt_move.isNull() and tt_move.isCapture())
+					frac_reduction += CaptureHashCapReduction;
+
+				if (node->move == killer)
+					frac_reduction -= CaptureKillerMoveReduction;
+
+				if (move_score != UndefMoveScore and !node->move.isPromotion())
+					frac_reduction += move_score / CaptureMoveScoreReductionDiv;
+
+				frac_reduction -= frac_extension * CaptureExtensionReduction;
+				frac_reduction -= node->improving_rate * CaptureImprovingReductionRate;
+				frac_reduction /= CaptureTotalReductionRate;
+			}
 		}
-
 		const int reduction = std::clamp<int>(std::lroundf(frac_reduction), 0, depth - 1);
 		const int reduct_depth = depth - 1 - reduction;
-
+		
 		child_node->is_cut = !node->is_cut;
 
 		/* Principle Variation Search -
@@ -930,9 +977,8 @@ Score Search::negaMax(Position& pos,
 			*  Prove they fail low using Null window search with some reduction.
 			*  If somehow they fail high, then re-search without reduction.
 			*/
-			const bool do_lmr = (node->moves_searched >= LmrMoveCount and
-								 (node->move.isQuiet() or node->move.isUnderPromotion()) and
-								 depth >= LmrDepth and
+			const bool do_lmr = (depth >= LmrDepth and
+								 node->moves_searched >= LmrMoveCount and
 								 reduction > 0);
 		
 			if (do_lmr) {
@@ -944,6 +990,12 @@ Score Search::negaMax(Position& pos,
 														  ply + 1);
 
 				child_node->is_cut = !(node->score > alpha);
+
+#if defined(_COLLECT_SEARCH_STATS)
+				results.reduced_search_cnt++;
+				results.reduced_search_fail_high += !(node->score > alpha);
+				results.reduced_search_fail_low += node->score > alpha;
+#endif
 			} 
 		
 			full_depth_search = !do_lmr or node->score > alpha;
@@ -1192,8 +1244,7 @@ Score Search::quiesce(Position& pos,
 		*/
 		if (node->move.isCapture() and
 			!node->move.isEnPassant() and 
-			!node->move.isPromotion() and
-			!node->is_cut)
+			!node->move.isPromotion())
 		{
 			const Square org = node->move.getOrigin();
 			const Square dst = node->move.getTarget();
