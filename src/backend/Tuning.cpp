@@ -37,6 +37,7 @@ void TunableParametersMap::createMapping() {
     _addr["ContemptDiv"] = &ContemptDiv;
     _addr["ImprovingExtensionRate"] = &ImprovingExtensionRate;
     _addr["NotPvNodeReduction"] = &NotPvNodeReduction;
+    _addr["CutNodeReduction"] = &CutNodeReduction;
     _addr["CheckReduction"] = &CheckReduction;
     _addr["ExtensionReduction"] = &ExtensionReduction;
     _addr["PawnMoveReduction"] = &PawnMoveReduction;
@@ -46,6 +47,7 @@ void TunableParametersMap::createMapping() {
     _addr["HashCapReduction"] = &HashCapReduction;
     _addr["KillerMoveReduction"] = &KillerMoveReduction;
     _addr["MoveScoreReductionRate"] = &MoveScoreReductionRate;
+    _addr["MoveScoreReductionDiv"] = &MoveScoreReductionDiv;
     _addr["TotalReductionRate"] = &TotalReductionRate;
     _addr["CaptureNotPvNodeReduction"] = &CaptureNotPvNodeReduction;
     _addr["CaptureCutNodeReduction"] = &CaptureCutNodeReduction;

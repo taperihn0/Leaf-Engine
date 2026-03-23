@@ -927,7 +927,7 @@ Score Search::negaMax(Position& pos,
 
 				if (move_score != UndefMoveScore) {
 					const int16_t centered_score = move_score - MaxQuietsHistory;
-					const float rt = std::sqrtf(static_cast<float>(std::abs(centered_score)));
+					const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
 					const float val = MoveScoreReductionRate * rt / MoveScoreReductionDiv;
 					frac_reduction += centered_score < 0 ? val : -val;
 				}

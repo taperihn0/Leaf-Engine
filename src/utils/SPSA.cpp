@@ -122,7 +122,7 @@ void SPSA_Tuning::start(uint thread_count) {
 
     _openings.load(std::string(OpeningPath));
 
-    std::ofstream log_file("spsa_log_mar21.txt", std::ios_base::app);
+    std::ofstream log_file("spsa_log_mar21_2.txt", std::ios_base::app);
 
     curr_iter.store(0);
 
