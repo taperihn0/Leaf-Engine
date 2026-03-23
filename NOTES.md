@@ -1,3 +1,11 @@
+### feature: do not tt-cut in PV node
+Score of leaf-npv-probe vs leaf-lmr-fix: 1263 - 1196 - 1541  [0.508] 4000 <br>
+...      leaf-npv-probe playing White: 709 - 535 - 756  [0.543] 2000 <br>
+...      leaf-npv-probe playing Black: 554 - 661 - 785  [0.473] 2000 <br>
+...      White vs Black: 1370 - 1089 - 1541  [0.535] 4000 <br>
+Elo difference: 5.8 +/- 8.4, LOS: 91.2 %, DrawRatio: 38.5 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: Dynamic Late Reductions & tuning
 Score of leaf-tune-1 vs leaf-simd-fix: 1166 - 930 - 1904  [0.529] 4000 <br>
 ...      leaf-tune-1 playing White: 671 - 393 - 936  [0.570] 2000 <br>

@@ -605,8 +605,7 @@ Score Search::nmSearch(Position& pos,
 	tt_entry.score = Score::Undef;
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
-	const bool exact_hit = (!IsPv and tt_hit) or
-						   (IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
+	const bool exact_hit = !IsPv and tt_hit;
 
 	if (!Root and exact_hit) {
 #if defined(_COLLECT_SEARCH_STATS)
