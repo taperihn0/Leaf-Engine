@@ -45,24 +45,22 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(MaxTimeBranchFactor, 3.,   5.), 	"MaxTimeBranchFactor",  2.),
 		OptionTunableParam(SpinType<double>(ContemptDiv,		 30.,  160.),   "ContemptDiv",          1.8),
 		OptionTunableParam(SpinType<double>(ImprovingExtensionRate, 2., 10.),	"ImprovingExtensionRate", 2.9),
-		OptionTunableParam(SpinType<double>(NotPvNodeReduction,     1., 20.),	"NotPvNodeReduction",     2.6),
-		OptionTunableParam(SpinType<double>(CutNodeReduction,       1., 20.),	"CutNodeReduction",       2.6),
-		OptionTunableParam(SpinType<double>(CheckReduction,			5., 60.),	"CheckReduction",		  2.1),
-		OptionTunableParam(SpinType<double>(ExtensionReduction,		5., 50.),	"ExtensionReduction",     2.2),
-		OptionTunableParam(SpinType<double>(PawnMoveReduction,		1., 15.),	"PawnMoveReduction",      2.7),
-		OptionTunableParam(SpinType<double>(ImprovingReductionRate, 3., 15.),	"ImprovingReductionRate", 2.6),
-		//OptionTunableParam(SpinType<double>(MoveCountReductionRate, 6., 12.),	"MoveCountReductionRate", 1.9),
-		//OptionTunableParam(SpinType<double>(MoveCountReductionDiv,  2., 12.),	"MoveCountReductionDiv",  1.6),
-		OptionTunableParam(SpinType<double>(HashCapReduction,		10.,50.),	"HashCapReduction",		  2.1),
-		OptionTunableParam(SpinType<double>(KillerMoveReduction,	5., 40.),	"KillerMoveReduction",    1.9),
-		OptionTunableParam(SpinType<double>(MoveScoreReductionRate, 1., 25.),	"MoveScoreReductionRate", 0.25),
-		OptionTunableParam(SpinType<double>(MoveScoreReductionDiv,  1., 15.),	"MoveScoreReductionDiv", 0.34),
-		OptionTunableParam(SpinType<double>(TotalReductionRate,		25.,  80.),	"TotalReductionRate",     1.7),
-		OptionTunableParam(SpinType<double>(CaptureNotPvNodeReduction,    1., 20.), "CaptureNotPvNodeReduction",     2.6),
-		OptionTunableParam(SpinType<double>(CaptureCutNodeReduction,      1., 20.), "CaptureCutNodeReduction",      2.6),
-		OptionTunableParam(SpinType<double>(CaptureCheckReduction,        5., 60.), "CaptureCheckReduction",        2.1),
-		OptionTunableParam(SpinType<double>(CaptureHashCapReduction,      10.,50.), "CaptureHashCapReduction",      2.1),
-		OptionTunableParam(SpinType<double>(CaptureKillerMoveReduction,   5., 50.), "CaptureKillerMoveReduction",   2.),
+		OptionTunableParam(SpinType<double>(QuietNotPvNodeReduction,     1., 20.), "QuietNotPvNodeReduction",     2.6),
+		OptionTunableParam(SpinType<double>(QuietCutNodeReduction,       1., 20.), "QuietCutNodeReduction",       2.6),
+		OptionTunableParam(SpinType<double>(QuietCheckReduction,		 5., 60.), "QuietCheckReduction",		  2.1),
+		OptionTunableParam(SpinType<double>(QuietExtensionReduction,	 5., 50.), "QuietExtensionReduction",     2.2),
+		OptionTunableParam(SpinType<double>(QuietPawnMoveReduction,		 1., 15.), "QuietPawnMoveReduction",      2.7),
+		OptionTunableParam(SpinType<double>(QuietImprovingReductionRate, 3., 15.), "QuietImprovingReductionRate", 2.6),
+		OptionTunableParam(SpinType<double>(QuietHashCapReduction,		 10.,50.), "QuietHashCapReduction",		  2.1),
+		OptionTunableParam(SpinType<double>(QuietKillerMoveReduction,	 5., 40.), "QuietKillerMoveReduction",    1.9),
+		OptionTunableParam(SpinType<double>(QuietMoveScoreReductionRate, 1., 25.), "QuietMoveScoreReductionRate", 0.25),
+		OptionTunableParam(SpinType<double>(QuietMoveScoreReductionDiv,  1., 15.), "QuietMoveScoreReductionDiv",  0.34),
+		OptionTunableParam(SpinType<double>(QuietTotalReductionRate,	 25.,80.), "QuietTotalReductionRate",     1.7),
+		OptionTunableParam(SpinType<double>(CaptureNotPvNodeReduction,   1., 20.), "CaptureNotPvNodeReduction",   2.6),
+		OptionTunableParam(SpinType<double>(CaptureCutNodeReduction,     1., 20.), "CaptureCutNodeReduction",     2.6),
+		OptionTunableParam(SpinType<double>(CaptureCheckReduction,       5., 60.), "CaptureCheckReduction",       2.1),
+		OptionTunableParam(SpinType<double>(CaptureHashCapReduction,     10.,50.), "CaptureHashCapReduction",     2.1),
+		OptionTunableParam(SpinType<double>(CaptureKillerMoveReduction,  5., 50.), "CaptureKillerMoveReduction",  2.),
 		OptionTunableParam(SpinType<double>(CaptureMoveScoreReductionDiv, 30.,120.),"CaptureMoveScoreReductionDiv", 1.2),
 		OptionTunableParam(SpinType<double>(CaptureExtensionReduction,    5., 50.), "CaptureExtensionReduction",	2.2),
 		OptionTunableParam(SpinType<double>(CaptureImprovingReductionRate,3., 20.), "CaptureImprovingReductionRate",2.4),
@@ -266,7 +264,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 	}
 	
 	SearchLimits limits = loadSearchLimits(strm, token);
-	_search.bestMove(_pos, _game, limits);
+	_search.findBestMove(_pos, _game, limits);
 }
 
 void UniversalChessInterface::parseIsReady() {

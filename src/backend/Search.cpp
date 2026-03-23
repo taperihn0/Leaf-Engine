@@ -144,13 +144,20 @@ void SearchResults::printSearchStats() {
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
 
-	// print beta cutoff rate for each move index
-	for (size_t i = 0; i < MaxNodeMoves; i++) {
-		const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
+	// Move index stats
+	std::cout << "\n------ MOVE STATS ------";
 
-		if (ind_cut_rate > 0.01) {
-			std::cout << "\nMOVEIND " << std::setw(3) << i << ": " << ind_cut_rate << '%';
-		}
+	for (size_t i = 0; i < MaxNodeMoves / 2; i++) {
+		const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
+		const float ind_reduced_fail_high_rate = move_reduced_cnt[i] > 0 ? static_cast<float>(move_reduced_fail_high_cnt[i]) / move_reduced_cnt[i] * 100
+																		 : 0.f;
+		const float ind_reduction_avg = move_reduced_cnt[i] > 0 ? move_reduction_sum[i] / move_reduced_cnt[i] 
+																: 0.f;
+
+		std::cout << "\nMOVE INDEX " << std::setw(3) << i << " [BETA-CUTOFF, LATE-FAIL-HIGH, AVG-REDUCT]: "
+				  << std::setprecision(2) << std::setw(5) << std::fixed << ind_cut_rate << "%, "
+				  << std::setprecision(2) << std::setw(5) << std::fixed << ind_reduced_fail_high_rate << "%, "
+				  << std::setprecision(2) << std::setw(5) << std::fixed << ind_reduction_avg;
 	}
 
 	std::cout << "\n---------------------\n";
@@ -329,7 +336,9 @@ Search::~Search() {
 }
 
 template <Search::enumInfoLevel InfoLevel>
-Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits) {
+Move32b Search::findBestMove(Position& pos, 
+							 const FullInfoRecord& game, 
+							 SearchLimits limits) {
 	ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
 	_tt.newGeneration();
@@ -337,20 +346,22 @@ Move32b Search::bestMove(Position& pos, const FullInfoRecord& game, SearchLimits
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	const Move32b bm = iterativeDeepening<InfoLevel>(pos, game, limits);
+	const Move32b bm = goIterativeDeepening<InfoLevel>(pos, game, limits);
 	return bm;
 }
 
-Move32b Search::_bestMove_unittest(Search& search, 
+Move32b Search::_findBestMove_unittest(Search& search, 
 								   Position& pos, 
 								   const FullInfoRecord& game, 
 								   SearchLimits limits) 
 {
-	return search.bestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
+	return search.findBestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
 }
 
 template <Search::enumInfoLevel InfoLevel>
-Move32b Search::iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits) {
+Move32b Search::goIterativeDeepening(Position& pos,	
+									 const FullInfoRecord& game, 
+									 SearchLimits& limits) {
 	SearchResults search_results;
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
@@ -461,10 +472,10 @@ bool Search::goSearch(Position& pos,
 {
 	NodeInfo* root = _tree_stack.getRootNode();
 
-	const Score root_score = -negaMax<PV_NODE, false, true>(pos, limits, results, game, root, 
-									   					    -Score::Mate, +Score::Mate, 
-									   					    results.depth, 
-									   					    0);
+	const Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
+									   					     -Score::Mate, +Score::Mate, 
+									   					     results.depth, 
+									   					     0);
 
 	_declUnused(root_score);
 
@@ -487,12 +498,12 @@ bool Search::goSearch(Position& pos,
 }
 
 template <Search::enumNode NmNodeType, bool NullMove, bool Root>
-Score Search::negaMax(Position& pos, 
-					  SearchLimits& limits, SearchResults& results, 
-					  const FullInfoRecord& game, 
-					  NodeInfo* node,
-					  Score alpha, Score beta, 
-					  int depth, int ply) 
+Score Search::nmSearch(Position& pos, 
+					   SearchLimits& limits, SearchResults& results, 
+					   const FullInfoRecord& game, 
+					   NodeInfo* node,
+					   Score alpha, Score beta, 
+					   int depth, int ply) 
 {
 	assert(0 <= depth and depth <= MaxSelDepth);
 	assert(alpha < beta);
@@ -605,7 +616,7 @@ Score Search::negaMax(Position& pos,
 	}
 
 	if (!depth) {
-		return quiesce<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
+		return qSearch<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
 								 				  alpha, beta,
 								 				  depth,
 								 				  ply);
@@ -653,7 +664,7 @@ Score Search::negaMax(Position& pos,
 			corr_eval = adjustEvalScore(node->eval, tt_entry.score);
 
 			if (corr_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
-				const Score qscore = quiesce<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
+				const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
 													      		  	 	 ply + 1);
@@ -683,10 +694,10 @@ Score Search::negaMax(Position& pos,
 			child_node->is_cut = !node->is_cut;
 
 			_UNUSED const Score iid_score =
-				negaMax<NmNodeType, false>(pos, limits, results, game, node,
-										   alpha, beta,
-										   4 * depth / IidDepthDiv,
-										   ply);
+				nmSearch<NmNodeType, false>(pos, limits, results, game, node,
+										    alpha, beta,
+										    4 * depth / IidDepthDiv,
+										    ply);
 
 			TTEntry iid_entry;
 			iid_entry.eval = Score::Undef;
@@ -792,10 +803,10 @@ Score Search::negaMax(Position& pos,
 
 				child_node->is_cut = !node->is_cut;
 
-				const Score score = -negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
-																	 -beta, -beta + 1, 
-																	 nm_depth, 
-																	 ply + 1);
+				const Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
+																	  -beta, -beta + 1, 
+																	  nm_depth, 
+																	  ply + 1);
 				pos.unmakeNull(node->state);
 				next_cluster->prev_cluster = curr_cluster;
 
@@ -803,10 +814,10 @@ Score Search::negaMax(Position& pos,
 				*  verification search is just needed to prevent Zugzwang.
 				*/
 				if (score >= beta) {
-					const Score verify = negaMax<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
-																		 beta - 1, beta, 
-																		 nm_depth, 
-																		 ply);
+					const Score verify = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+																		  beta - 1, beta, 
+																		  nm_depth, 
+																		  ply);
 					
 					if (verify >= beta) {
 						_tt.write(hash, 
@@ -824,6 +835,7 @@ Score Search::negaMax(Position& pos,
 		
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
+
 	node->can_move 	 	 = false;
 	node->score 	 	 = 0;
 	node->best_move  	 = Move32b::Null;
@@ -908,33 +920,29 @@ Score Search::negaMax(Position& pos,
 
 			if (node->move.isQuiet() and !node->move.isPromotion()) {
 				if constexpr (!IsPv) 
-					frac_reduction += NotPvNodeReduction;
+					frac_reduction += QuietNotPvNodeReduction;
 
 				if (node->is_cut) 
-					frac_reduction -= CutNodeReduction;
+					frac_reduction -= QuietCutNodeReduction;
 
 				if (node->check) 
-					frac_reduction -= CheckReduction;
+					frac_reduction -= QuietCheckReduction;
 
 				if (pc == Piece::PAWN) 
-					frac_reduction -= PawnMoveReduction;
+					frac_reduction -= QuietPawnMoveReduction;
 
 				if (!tt_move.isNull() and tt_move.isCapture())
-					frac_reduction += HashCapReduction;
+					frac_reduction += QuietHashCapReduction;
 
 				if (node->move == killer) 
-					frac_reduction -= KillerMoveReduction;
+					frac_reduction -= QuietKillerMoveReduction;
 
-				if (move_score != UndefMoveScore) {
-					const int16_t centered_score = move_score - MaxQuietsHistory;
-					const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-					const float val = MoveScoreReductionRate * rt / MoveScoreReductionDiv;
-					frac_reduction += centered_score < 0 ? val : -val;
-				}
+				if (move_score != UndefMoveScore) 
+					frac_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
-				frac_reduction -= frac_extension * ExtensionReduction;
-				frac_reduction -= node->improving_rate * ImprovingReductionRate;
-				frac_reduction /= TotalReductionRate;
+				frac_reduction -= frac_extension * QuietExtensionReduction;
+				frac_reduction -= node->improving_rate * QuietImprovingReductionRate;
+				frac_reduction /= QuietTotalReductionRate;
 			}
 			else {
 				if constexpr (!IsPv)
@@ -953,13 +961,14 @@ Score Search::negaMax(Position& pos,
 					frac_reduction -= CaptureKillerMoveReduction;
 
 				if (move_score != UndefMoveScore and !node->move.isPromotion())
-					frac_reduction += move_score / CaptureMoveScoreReductionDiv;
+					frac_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
 				frac_reduction -= frac_extension * CaptureExtensionReduction;
 				frac_reduction -= node->improving_rate * CaptureImprovingReductionRate;
 				frac_reduction /= CaptureTotalReductionRate;
 			}
 		}
+
 		const int reduction = std::clamp<int>(std::lroundf(frac_reduction), 0, depth - 1);
 		const int reduct_depth = depth - 1 - reduction;
 		
@@ -984,10 +993,10 @@ Score Search::negaMax(Position& pos,
 			if (do_lmr) {
 				child_node->is_cut = true;
 
-				node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, child_node,
-														  -alpha - 1, -alpha,
-														  reduct_depth,
-														  ply + 1);
+				node->score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+														   -alpha - 1, -alpha,
+														   reduct_depth,
+														   ply + 1);
 
 				child_node->is_cut = !(node->score > alpha);
 
@@ -995,6 +1004,9 @@ Score Search::negaMax(Position& pos,
 				results.reduced_search_cnt++;
 				results.reduced_search_fail_high += !(node->score > alpha);
 				results.reduced_search_fail_low += node->score > alpha;
+				results.move_reduced_cnt[node->move_index]++;
+				results.move_reduced_fail_high_cnt[node->move_index] += !(node->score > alpha);
+				results.move_reduction_sum[node->move_index] += reduction;
 #endif
 			} 
 		
@@ -1004,20 +1016,20 @@ Score Search::negaMax(Position& pos,
 		const int ext_depth = depth - 1 + extension;
 
 		if (full_depth_search and !full_window_search) {
-			node->score = -negaMax<NON_PV_NODE, true>(pos, limits, results, game, child_node,
-													  -alpha - 1, -alpha,
-													  ext_depth,
-													  ply + 1);
+			node->score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+													   -alpha - 1, -alpha,
+													   ext_depth,
+													   ply + 1);
 
 			child_node->is_cut = !(node->score > alpha);
 			full_window_search = IsPv and node->score > alpha;
 		}
 
 		if (full_window_search) {
-			node->score = -negaMax<NmNodeType, true>(pos, limits, results, game, child_node,
-													 -beta, -alpha, 
-													 ext_depth,
-													 ply + 1);
+			node->score = -nmSearch<NmNodeType, true>(pos, limits, results, game, child_node,
+													  -beta, -alpha, 
+													  ext_depth,
+													  ply + 1);
 		}
 
 		node->moves_searched++;
@@ -1106,7 +1118,7 @@ Score Search::negaMax(Position& pos,
 }
 
 template <Search::enumNode QNodeType>
-Score Search::quiesce(Position& pos, 
+Score Search::qSearch(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
 					  NodeInfo* node, 
 					  Score alpha, Score beta, 
@@ -1264,7 +1276,7 @@ Score Search::quiesce(Position& pos,
 
 		child_node->is_cut = !node->is_cut;
 
-		node->score = -quiesce<QNodeType>(pos, limits, results, child_node,
+		node->score = -qSearch<QNodeType>(pos, limits, results, child_node,
 										  -beta, -alpha,
 										  depth - 1,
 										  ply + 1);
@@ -1630,7 +1642,7 @@ bool Search::isInsufficientMaterial(const Position& pos) {
 	return false;
 }
 
-template Move32b Search::bestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::bestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::bestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::bestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);

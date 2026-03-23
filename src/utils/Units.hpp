@@ -172,7 +172,7 @@ static bool ccrOneHourTest() {
 			ind += 3;
 			size_t last = nextToken(opt, ind);
 			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-			_TESTCASE(lcnt, equal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
+			_TESTCASE(lcnt, equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
 		}
 		else {
 			ind = opt.find("am");
@@ -180,7 +180,7 @@ static bool ccrOneHourTest() {
 			ind += 3;
 			size_t last = nextToken(opt, ind);
 			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-			_TESTCASE(lcnt, nonequal, move, Search::_bestMove_unittest, search, pos, tmpgame, limits);
+			_TESTCASE(lcnt, nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
 		}
 	}
 

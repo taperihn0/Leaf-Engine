@@ -60,7 +60,7 @@ Game::Result SelfGame::setupMatch(SearchLimits limits,
             packed_positions->emplace_back(pos);
 
         timer.go();
-        Move32b move = curr_search.bestMove<Search::SEARCH_NO_INFO>(pos, record, limits);
+        Move32b move = curr_search.findBestMove<Search::SEARCH_NO_INFO>(pos, record, limits);
         time_ms_t think_time = timer.duration();
 
         game.applyMove(move, think_time);

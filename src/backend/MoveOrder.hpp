@@ -42,8 +42,13 @@ enum OrderType {
 inline _P_CONSTEXPR int MaxQuietsHistoryPow = 13;
 inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 
-/* MVV-LVA captures, promotion and castling scores 
+/*
+*   Tunable parameters in move ordering.
 */
+
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = 13;
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = 5;
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = 63;
 
 inline constexpr    int PawnCapturedScore   = 100;
 inline _P_CONSTEXPR int KnightCapturedScore = 281;
@@ -87,6 +92,9 @@ public:
 	void skipQuiets();
 
 	int16_t getQuietScore(Move32b move, enumColor side);
+
+	static float getQuietDepthReduction(int16_t quiet_score);
+	static float getCaptureDepthReduction(int16_t capture_score);
 private:
 	bool nextFromList(Move32b& move, int16_t& score);
 
@@ -165,4 +173,15 @@ INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
 	const Piece::uint_t piece_ind = value(move.getPiece());
 	const Square dst = move.getTarget();
 	return _tables->_quiets_history[side][piece_ind][dst];
+}
+
+_FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
+	const int16_t centered_score = quiet_score - MaxQuietsHistory;
+	const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
+	const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
+	return centered_score < 0 ? val : -val;
+}
+
+_FORCEINLINE float MoveOrder::getCaptureDepthReduction(int16_t capture_score) {
+	return static_cast<float>(capture_score / CaptureMoveScoreReductionDiv);
 }

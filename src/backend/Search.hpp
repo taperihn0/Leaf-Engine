@@ -90,6 +90,10 @@ struct SearchResults {
 	ull		  reduced_search_cnt = 0,
 			  reduced_search_fail_high = 0,
 			  reduced_search_fail_low = 0;
+
+	ull		  move_reduced_cnt[MaxNodeMoves] = {};
+	ull 	  move_reduced_fail_high_cnt[MaxNodeMoves] = {};
+	float 	  move_reduction_sum[MaxNodeMoves] = {};
 #endif
 };
 
@@ -133,10 +137,10 @@ public:
 	TreeStack();
 	~TreeStack();
 
-	TreeStack(TreeStack&&)			   = delete;
-	TreeStack(TreeStack&)			   = delete;
-	TreeStack operator=(TreeStack&)    = delete;
-	TreeStack operator=(TreeStack&&)   = delete;
+	TreeStack(TreeStack&&)			 = delete;
+	TreeStack(TreeStack&)			 = delete;
+	TreeStack operator=(TreeStack&)  = delete;
+	TreeStack operator=(TreeStack&&) = delete;
 
 	void init(MoveOrderHistoryTables* history_buffer);
 
@@ -153,6 +157,12 @@ private:
 	static constexpr size_t _Count = MaxSelDepth;
 	NodeInfo* _stack;
 };
+
+/*
+*   Tunable parameters in internal search.
+*	_P_CONSTEXPR macro expands to constexpr in release builds, but it 
+*   is ignored in debug builds to allow changing parameters when tuning.
+*/
 
 inline _P_CONSTEXPR int	IidDepth = 3;
 inline _P_CONSTEXPR int	IidDepthDiv = 8;
@@ -185,23 +195,20 @@ inline _P_CONSTEXPR int MinTimeBranchFactor = 1;
 inline _P_CONSTEXPR int MaxTimeBranchFactor = 5;
 inline _P_CONSTEXPR int ContemptDiv = 126;
 inline _P_CONSTEXPR int ImprovingExtensionRate = 8;
-inline _P_CONSTEXPR int NotPvNodeReduction = 4;
-inline _P_CONSTEXPR int CutNodeReduction = 5;
-inline _P_CONSTEXPR int CheckReduction = 59;
-inline _P_CONSTEXPR int ExtensionReduction = 45;
-inline _P_CONSTEXPR int PawnMoveReduction = 2;
-inline _P_CONSTEXPR int ImprovingReductionRate = 6;
-inline _P_CONSTEXPR int HashCapReduction = 17;
-inline _P_CONSTEXPR int KillerMoveReduction = 12;
-inline _P_CONSTEXPR int MoveScoreReductionRate = 13;
-inline _P_CONSTEXPR int MoveScoreReductionDiv = 5;
-inline _P_CONSTEXPR int TotalReductionRate = 36;
+inline _P_CONSTEXPR int QuietNotPvNodeReduction = 4;
+inline _P_CONSTEXPR int QuietCutNodeReduction = 5;
+inline _P_CONSTEXPR int QuietCheckReduction = 59;
+inline _P_CONSTEXPR int QuietExtensionReduction = 45;
+inline _P_CONSTEXPR int QuietPawnMoveReduction = 2;
+inline _P_CONSTEXPR int QuietImprovingReductionRate = 6;
+inline _P_CONSTEXPR int QuietHashCapReduction = 17;
+inline _P_CONSTEXPR int QuietKillerMoveReduction = 12;
+inline _P_CONSTEXPR int QuietTotalReductionRate = 36;
 inline _P_CONSTEXPR int CaptureNotPvNodeReduction = 6;
 inline _P_CONSTEXPR int CaptureCutNodeReduction = 19;
 inline _P_CONSTEXPR int CaptureCheckReduction = 32;
 inline _P_CONSTEXPR int CaptureHashCapReduction = 26;
 inline _P_CONSTEXPR int CaptureKillerMoveReduction = 30;
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = 63;
 inline _P_CONSTEXPR int CaptureExtensionReduction = 31;
 inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
 inline _P_CONSTEXPR int CaptureTotalReductionRate = 47;
@@ -236,18 +243,23 @@ public:
 	Search operator=(Search&& t) = delete;
 
 	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
-	Move32b bestMove(Position& pos, const FullInfoRecord& game, SearchLimits limits);
-	static Move32b _bestMove_unittest(Search& search, 
-									  Position& pos, 
-									  const FullInfoRecord& game, 
-									  SearchLimits limits);
+	Move32b findBestMove(Position& pos, 
+						 const FullInfoRecord& game, 
+						 SearchLimits limits);
+
+	static Move32b _findBestMove_unittest(Search& search, 
+									      Position& pos, 
+									      const FullInfoRecord& game, 
+									      SearchLimits limits);
 	
 	void clearHashTT();
 	void resizeHashTT(size_t tt_size_mb);
 	void registerNewGame();
 private:
 	template <enumInfoLevel InfoLevel>
-	Move32b iterativeDeepening(Position& pos, const FullInfoRecord& game, SearchLimits& limits);
+	Move32b goIterativeDeepening(Position& pos, 
+								 const FullInfoRecord& game, 
+								 SearchLimits& limits);
 
 	template <enumInfoLevel InfoLevel>
 	bool goSearch(Position& pos, 
@@ -255,15 +267,15 @@ private:
 				  SearchLimits& limits, SearchResults& results);
 
 	template <enumNode NmNodeType, bool NullMove, bool Root = false>
-	Score negaMax(Position& pos, 
-				  SearchLimits& limits, SearchResults& results, 
-				  const FullInfoRecord& game, 
-				  NodeInfo* node,
-				  Score alpha, Score beta, 
-				  int depth, int ply);
+	Score nmSearch(Position& pos, 
+				   SearchLimits& limits, SearchResults& results, 
+				   const FullInfoRecord& game, 
+				   NodeInfo* node,
+				   Score alpha, Score beta, 
+				   int depth, int ply);
 
 	template <Search::enumNode QNodeType>
-	Score quiesce(Position& pos, 
+	Score qSearch(Position& pos, 
 				  SearchLimits& limits, SearchResults& results, 
 				  NodeInfo* node, 
 				  Score alpha, Score beta, 
