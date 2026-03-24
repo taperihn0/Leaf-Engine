@@ -6,7 +6,7 @@ enum enumColor : bool {
 	WHITE = 0, BLACK
 };
 
-INLINE constexpr enumColor operator!(enumColor opp) {
+_INLINE constexpr enumColor operator!(enumColor opp) {
 	return static_cast<enumColor>(!static_cast<bool>(opp));
 }
 
@@ -14,18 +14,18 @@ class Turn {
 public:
 	Turn() = default;
 	
-	INLINE constexpr Turn(enumColor c)
+	_INLINE constexpr Turn(enumColor c)
 		: _col(c) {}
 
-	INLINE constexpr operator enumColor() const {
+	_INLINE constexpr operator enumColor() const {
 		return _col;
 	}
 
-	INLINE constexpr Turn operator=(enumColor c) {
+	_INLINE constexpr Turn operator=(enumColor c) {
 		return _col = c;
 	}
 
-	INLINE constexpr Turn operator!() const {
+	_INLINE constexpr Turn operator!() const {
 		return !_col;
 	}
 

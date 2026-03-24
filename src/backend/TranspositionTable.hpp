@@ -22,16 +22,16 @@ struct TTEntry {
 
 	TTEntry();
 
-	INLINE bool isEmpty() const { 
+	_INLINE bool isEmpty() const { 
 		return depth == 0 and bound == NONE; 
 	}
 
-	INLINE void writeHash(uint32_t keyhi) {
+	_INLINE void writeHash(uint32_t keyhi) {
 		key16 = static_cast<uint16_t>(keyhi);
 		key18 = (keyhi & 0x30000) >> 16;
 	}
 
-	INLINE uint32_t getHash() const {
+	_INLINE uint32_t getHash() const {
 		uint32_t h;
 		std::memcpy(&h, this, sizeof(uint32_t));
 		return h & 0x3FFFF;

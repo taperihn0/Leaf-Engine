@@ -3,8 +3,13 @@
 #include "Position.hpp"
 #include "Score.hpp"
 
+/* 
+*  Static evaluation utilities.
+*/
+
 class StaticEval {
 public:
+	static Score evaluateEndgame(const Position& pos);
 	static Score matEval(const Position& pos);
 	static Score staticEval(const Position& pos);
 private:

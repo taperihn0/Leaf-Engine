@@ -58,17 +58,17 @@ inline const StaticAttackTables attack_tables;
 
 namespace {
 
-INLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
+_INLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
 	assert(sq.isValid() and sq.isNotNull());
 	return attack_tables.for_pawns[col_type][sq];
 }
 
-INLINE BitBoard knightAttacks(Square sq) {
+_INLINE BitBoard knightAttacks(Square sq) {
 	assert(sq.isValid() and sq.isNotNull());
 	return attack_tables.for_knights[sq];
 }
 
-INLINE BitBoard kingAttacks(Square sq) {
+_INLINE BitBoard kingAttacks(Square sq) {
 	assert(sq.isValid() and sq.isNotNull());
 	return attack_tables.for_kings[sq];
 }
@@ -151,7 +151,7 @@ BitBoard rayAttacksQueen(Square sq) {
 
 // generalized template
 template <Piece::enumType Piece>
-INLINE BitBoard attacks(Square sq, BitBoard occ) {
+_INLINE BitBoard attacks(Square sq, BitBoard occ) {
 	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE, "Unsupported piecetype in attacks func template");
 
 	if constexpr (Piece == Piece::KNIGHT)
@@ -166,7 +166,7 @@ INLINE BitBoard attacks(Square sq, BitBoard occ) {
 	return kingAttacks(sq);
 }
 
-INLINE BitBoard attacks(Piece::enumType piece, Square sq, BitBoard occ) {
+_INLINE BitBoard attacks(Piece::enumType piece, Square sq, BitBoard occ) {
 	if (piece == Piece::KNIGHT)
 		return knightAttacks(sq);
 	else if (piece == Piece::BISHOP)
@@ -179,7 +179,7 @@ INLINE BitBoard attacks(Piece::enumType piece, Square sq, BitBoard occ) {
 	return kingAttacks(sq);
 }
 
-INLINE BitBoard attacksIncludePawns(Piece::enumType piece, Square sq, BitBoard occ, enumColor col) {
+_INLINE BitBoard attacksIncludePawns(Piece::enumType piece, Square sq, BitBoard occ, enumColor col) {
 	if (piece == Piece::PAWN)
 		return pawnAttacks(sq, col);
 	else if (piece == Piece::KNIGHT)

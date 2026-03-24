@@ -216,7 +216,7 @@ bool Move32b::isLegal(Position& pos) {
 
 template <typename T>
 void MoveData<T>::print(std::ostream& os) const {
-#if defined(PURE_NOTATION_DISPLAY)
+#if defined(_PURE_NOTATION_DISPLAY)
 	if (_rmove == Null) {
 		std::cout << "0000";
 	}

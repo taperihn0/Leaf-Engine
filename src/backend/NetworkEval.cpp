@@ -3,11 +3,11 @@
 
 namespace nn {
 
-INLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
+_INLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
     return std::clamp(value, mi, ma);
 }
 
-INLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
+_INLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
     const int32_t c = static_cast<int32_t>(crelu(value, mi, ma));
     return c * c;
 }

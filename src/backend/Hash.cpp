@@ -5,7 +5,7 @@
 
 static constexpr int RandomSeed = 0xfff;
 
-INLINE uint64_t randomU64() {
+_INLINE uint64_t randomU64() {
 	return random<uint64_t>(1, std::numeric_limits<uint64_t>::max())
 		 & random<uint64_t>(1, std::numeric_limits<uint64_t>::max());
 }

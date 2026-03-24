@@ -25,15 +25,15 @@ public:
 
 	void printByColor(enumColor col_type) const;
 
-	INLINE bool isShortPossible() const {
+	_INLINE bool isShortPossible() const {
 		return _kingside;
 	}
 
-	INLINE bool isLongPossible() const {
+	_INLINE bool isLongPossible() const {
 		return _queenside;
 	}
 
-	INLINE bool isAnyPossible() const {
+	_INLINE bool isAnyPossible() const {
 		return _kingside or _queenside;
 	}
 
@@ -53,15 +53,15 @@ public:
 	bool notThroughPieces_Long(BitBoard occupied) const;
 	bool notThroughPieces_Long(BitBoard occupied, enumColor side) const;
 
-	INLINE void setKingSide(bool flag) {
+	_INLINE void setKingSide(bool flag) {
 		_kingside = flag;
 	}
 
-	INLINE void setQueenSide(bool flag) {
+	_INLINE void setQueenSide(bool flag) {
 		_queenside = flag;
 	}
 
-	INLINE void clear() {
+	_INLINE void clear() {
 		_kingside = false, _queenside = false;
 	}
 private:
@@ -106,103 +106,103 @@ public:
 	bool operator==(const Position& pos) const;
 	bool operator!=(const Position& pos) const;
 
-	INLINE BitBoard getPawnsBySide(enumColor col_type) const {
+	_INLINE BitBoard getPawnsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::PAWN];
 	}
 
-	INLINE BitBoard getKnightsBySide(enumColor col_type) const {
+	_INLINE BitBoard getKnightsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::KNIGHT];
 	}
 
-	INLINE BitBoard getBishopsBySide(enumColor col_type) const {
+	_INLINE BitBoard getBishopsBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::BISHOP];
 	}
 
-	INLINE BitBoard getRooksBySide(enumColor col_type) const {
+	_INLINE BitBoard getRooksBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::ROOK];
 	}
 
-	INLINE BitBoard getQueensBySide(enumColor col_type) const {
+	_INLINE BitBoard getQueensBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::QUEEN];
 	}
 
-	INLINE BitBoard getBishopsQueensBySide(enumColor col_type) const {
+	_INLINE BitBoard getBishopsQueensBySide(enumColor col_type) const {
 		return getBishopsBySide(col_type) | getQueensBySide(col_type);
 	}
 
-	INLINE BitBoard getRooksQueensBySide(enumColor col_type) const {
+	_INLINE BitBoard getRooksQueensBySide(enumColor col_type) const {
 		return getRooksBySide(col_type) | getQueensBySide(col_type);
 	}
 
-	INLINE BitBoard getKingBySide(enumColor col_type) const {
+	_INLINE BitBoard getKingBySide(enumColor col_type) const {
 		return _piece_bb[col_type][Piece::KING];
 	}
 
-	INLINE Square getKingSquare(enumColor col_type) const {
+	_INLINE Square getKingSquare(enumColor col_type) const {
 		assert(_king_sq[col_type] == _piece_bb[col_type][Piece::KING].bitScanForward());
 		return _king_sq[col_type];
 	}
 
-	INLINE BitBoard getBySide(enumColor col_type) const {
+	_INLINE BitBoard getBySide(enumColor col_type) const {
 		assert(_occupied[col_type] == getBySideOnFly(col_type));
 		return _occupied[col_type];
 	}
 
 	BitBoard getBySideOnFly(enumColor col_type) const;
 
-	INLINE BitBoard getWhites() const {
+	_INLINE BitBoard getWhites() const {
 		return getBySide(WHITE);
 	}
 
-	INLINE BitBoard getBlacks() const {
+	_INLINE BitBoard getBlacks() const {
 		return getBySide(BLACK);
 	}
 
-	INLINE BitBoard getPawns() const {
+	_INLINE BitBoard getPawns() const {
 		return getPawnsBySide(WHITE) | getPawnsBySide(BLACK);
 	}
 
-	INLINE BitBoard getKnights() const {
+	_INLINE BitBoard getKnights() const {
 		return getKnightsBySide(WHITE) | getKnightsBySide(BLACK);
 	}
 
-	INLINE BitBoard getBishops() const {
+	_INLINE BitBoard getBishops() const {
 		return getBishopsBySide(WHITE) | getBishopsBySide(BLACK);
 	}
 
-	INLINE BitBoard getRooks() const {
+	_INLINE BitBoard getRooks() const {
 		return getRooksBySide(WHITE) | getRooksBySide(BLACK);
 	}
 
-	INLINE BitBoard getQueens() const {
+	_INLINE BitBoard getQueens() const {
 		return getQueensBySide(WHITE) | getQueensBySide(BLACK);
 	}
 
-	INLINE BitBoard getOccupied() const {
+	_INLINE BitBoard getOccupied() const {
 		return getWhites() | getBlacks();
 	}
 
-	INLINE BitBoard getOppositePieces() const {
+	_INLINE BitBoard getOppositePieces() const {
 		return getBySide(!_turn);
 	}
 
-	INLINE BitBoard getOwnPieces() const {
+	_INLINE BitBoard getOwnPieces() const {
 		return getBySide(_turn);
 	}
 
-	INLINE BitBoard getEmpties() const {
+	_INLINE BitBoard getEmpties() const {
 		return ~getOccupied();
 	}
 
-	INLINE Turn getTurn() const {
+	_INLINE Turn getTurn() const {
 		return _turn;
 	}
 
-	INLINE Turn getOppositeTurn() const {
+	_INLINE Turn getOppositeTurn() const {
 		return !_turn;
 	}
 
-	INLINE Square getEnPassantSq() const {
+	_INLINE Square getEnPassantSq() const {
 		return _ep_square;
 	}
 
@@ -211,24 +211,28 @@ public:
 
 	BitBoard get(Piece::enumType piece, enumColor color) const;
 
-	INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
+	_INLINE CastlingRights getCastlingByColor(enumColor col_type) const {
 		return _castling_rights[col_type];
 	}
 
-	INLINE CastlingRights getOwnCastling() const {
+	_INLINE CastlingRights getOwnCastling() const {
 		return _castling_rights[_turn];
 	}
 
-	INLINE uint8_t getHalfmoveClock() const {
+	_INLINE uint8_t getHalfmoveClock() const {
 		return _halfmove_count;
 	}
 
-	INLINE uint16_t getFullmoveClock() const {
+	_INLINE uint16_t getFullmoveClock() const {
 		return _fullmove_count;
 	}
 
-	INLINE void setTurn(enumColor col_to_move) {
+	_INLINE void setTurn(enumColor col_to_move) {
 		_turn = col_to_move;
+	}
+
+	_INLINE int getPiecesCount() const {
+		return getOccupied().popCount();
 	}
 
 	// returns true whether square is attacked by any opposide-color piece excluding enemy king
@@ -261,7 +265,7 @@ public:
 
 	uint64_t likelyZobristKeyAfterMove(Move32b& move) const;
 
-	INLINE uint64_t getZobristKey() const {
+	_INLINE uint64_t getZobristKey() const {
 		return _zhash;
 	}
 
@@ -296,17 +300,17 @@ private:
 	uint16_t    						   _fullmove_count;
 };
 
-INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
+_INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
 	return _queenside == rights._queenside
 		and _kingside == rights._kingside;
 }
 
-INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
+_INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
 	return !(*this == rights);
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
+_INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::f1 : Square::f8;
 	static constexpr Square KingDstSq = Side == WHITE ? Square::g1 : Square::g8;
 
@@ -314,7 +318,7 @@ INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
 		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
-INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos, enumColor side) const {
+_INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos, enumColor side) const {
 	const Square intermediate_sq = side == WHITE ? Square::f1 : Square::f8;
 	const Square king_dst_sq = side == WHITE ? Square::g1 : Square::g8;
 
@@ -323,7 +327,7 @@ INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos, enumColor
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
+_INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::d1 : Square::d8;
 	static constexpr Square KingDstSq = Side == WHITE ? Square::c1 : Square::c8;
 
@@ -331,7 +335,7 @@ INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
 		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
-INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos, enumColor side) const {
+_INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos, enumColor side) const {
 	const Square intermediate_sq = side == WHITE ? Square::d1 : Square::d8;
 	const Square king_dst_sq = side == WHITE ? Square::c1 : Square::c8;
 
@@ -340,7 +344,7 @@ INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos, enumColor 
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied) const {
+_INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied) const {
 	static constexpr BitBoard Intermediates = Side == WHITE ?
 		BitBoard(Square::f1) | BitBoard(Square::g1)
 		: BitBoard(Square::f8) | BitBoard(Square::g8);
@@ -348,7 +352,7 @@ INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied) const {
 	return !(occupied & Intermediates);
 }
 
-INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied, enumColor side) const {
+_INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied, enumColor side) const {
 	const BitBoard intermediates = side == WHITE ?
 		BitBoard(Square::f1) | BitBoard(Square::g1)
 		: BitBoard(Square::f8) | BitBoard(Square::g8);
@@ -357,7 +361,7 @@ INLINE bool CastlingRights::notThroughPieces_Short(BitBoard occupied, enumColor 
 }
 
 template <enumColor Side>
-INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied) const {
+_INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied) const {
 	static constexpr BitBoard Intermediates = Side == WHITE ?
 		BitBoard(Square::b1) | BitBoard(Square::c1) | BitBoard(Square::d1)
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
@@ -365,7 +369,7 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied) const {
 	return !(occupied & Intermediates);
 }
 
-INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor side) const {
+_INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor side) const {
 	const BitBoard intermediates = side == WHITE ?
 		BitBoard(Square::b1) | BitBoard(Square::c1) | BitBoard(Square::d1)
 		: BitBoard(Square::b8) | BitBoard(Square::c8) | BitBoard(Square::d8);
@@ -373,11 +377,11 @@ INLINE bool CastlingRights::notThroughPieces_Long(BitBoard occupied, enumColor s
 	return !(occupied & intermediates);
 }
 
-INLINE bool Position::operator!=(const Position& pos) const {
+_INLINE bool Position::operator!=(const Position& pos) const {
 	return !(*this == pos);
 }
 
-INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
+_INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
 	return _piece_bb[col_type][Piece::PAWN]
 		| _piece_bb[col_type][Piece::KNIGHT]
 		| _piece_bb[col_type][Piece::BISHOP]
@@ -386,20 +390,20 @@ INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
 		| _piece_bb[col_type][Piece::KING];
 }
 
-INLINE Position::IrreversibleState Position::getIrreversibleState() const {
+_INLINE Position::IrreversibleState Position::getIrreversibleState() const {
 	return Position::IrreversibleState{ _ep_square, 
 										_halfmove_count,
 										_castling_rights, 
 										getZobristKey() };
 }
 
-INLINE void Position::clearPieces() {
+_INLINE void Position::clearPieces() {
 	std::memset(reinterpret_cast<void*>(_piece_bb.data()), 0, 2 * 6 * sizeof(BitBoard));
 	std::memset(reinterpret_cast<void*>(_occupied.data()), 0, 2 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>
-INLINE BitBoard Position::get() const {
+_INLINE BitBoard Position::get() const {
 	if constexpr (Piece == Piece::PAWN)
 		return getPawnsBySide(Color);
 	else if constexpr (Piece == Piece::KNIGHT)
@@ -414,7 +418,7 @@ INLINE BitBoard Position::get() const {
 	return getKingBySide(Color);
 }
 
-INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
+_INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
 	if (piece == Piece::PAWN)
 		return getPawnsBySide(color);
 	else if (piece == Piece::KNIGHT)
@@ -429,7 +433,7 @@ INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
 	return getKingBySide(color);
 }
 
-INLINE bool Position::attacked(Square sq, enumColor side) const {
+_INLINE bool Position::attacked(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
 	return (knightAttacks(sq) & getKnightsBySide(!side)) or
 		(pawnAttacks(sq, side) & getPawnsBySide(!side)) or
@@ -437,11 +441,11 @@ INLINE bool Position::attacked(Square sq, enumColor side) const {
 		(SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
 }
 
-INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
+_INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
 	return attacked(sq, side) or (kingAttacks(sq) & getKingBySide(!side));
 }
 
-INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) const {
+_INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) const {
 	const BitBoard queen = _piece_bb[!side][Piece::QUEEN],
 				   rookQueen = _piece_bb[!side][Piece::ROOK] | queen,
 				   bishopQueen = _piece_bb[!side][Piece::BISHOP] | queen;
@@ -453,11 +457,11 @@ INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) con
 		| (rookQueen & attacks<Piece::ROOK>(sq, occ));
 }
 
-INLINE bool Position::isInCheck(enumColor side) const {
+_INLINE bool Position::isInCheck(enumColor side) const {
 	return attacked(getKingSquare(side), side);
 }
 
-INLINE bool Position::isInDoubleCheck(enumColor side) const {
+_INLINE bool Position::isInDoubleCheck(enumColor side) const {
 	const Square king_sq = getKingSquare(side);
 	const BitBoard occupied = getOccupied();
 
@@ -482,7 +486,7 @@ INLINE bool Position::isInDoubleCheck(enumColor side) const {
 	return att_count >= 2;
 }
 
-INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) const {
+_INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) const {
 	const BitBoard occupied = getOccupied();
 	BitBoard bb;
 	
@@ -505,11 +509,11 @@ INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) 
 	return BitBoard(0_ui64);
 }
 
-INLINE BitBoard Position::getCheckers(enumColor side) const {
+_INLINE BitBoard Position::getCheckers(enumColor side) const {
 	return leastValuableAttackers(getKingSquare(side), side);
 }
 
-INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
+_INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
 	for (Piece::enumType piece_t : Piece::PieceTypeList) {
 		if (_piece_bb[by_color][piece_t].isOccupiedSq(sq))
 			return piece_t;
@@ -518,16 +522,16 @@ INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
 	return Piece::NONE;
 }
 
-INLINE Piece Position::fullPieceOn(Square sq) const {
+_INLINE Piece Position::fullPieceOn(Square sq) const {
 	const Piece::enumType type = pieceOn(sq, WHITE);
 	return type != Piece::NONE ? Piece(WHITE, type) : Piece(BLACK, pieceOn(sq, BLACK));
 }
 
-INLINE bool operator!(Position::enumStatusFlag err_flag) {
+_INLINE bool operator!(Position::enumStatusFlag err_flag) {
     return err_flag != Position::POSITION_NO_ERROR;
 }
 
-INLINE std::string toStr(Position::enumStatusFlag err_flag) {
+_INLINE std::string toStr(Position::enumStatusFlag err_flag) {
     switch (err_flag) {
     case Position::POSITION_NO_ERROR:
         return "no error";

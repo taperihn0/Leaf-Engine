@@ -16,30 +16,30 @@
 
 static constexpr int16_t UndefMoveScore = std::numeric_limits<int16_t>::min();
 
-INLINE bool SearchLimits::isTimeLimit() {
+_INLINE bool SearchLimits::isTimeLimit() {
 	return search_time;
 }
 
-INLINE bool SearchLimits::isTimeLeft() {
+_INLINE bool SearchLimits::isTimeLeft() {
 	return !search_time or timer.duration() < search_time;
 }
 
-INLINE bool SearchLimits::anyNodesLeft(ull nodes_so_far) {
+_INLINE bool SearchLimits::anyNodesLeft(ull nodes_so_far) {
     return !nodes or nodes_so_far < nodes;
 }
 
-INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
+_INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
     return !qnodes or qnodes_so_far < qnodes;
 }
 
-INLINE void SearchResults::printBestMove() {
+_INLINE void SearchResults::printBestMove() {
 	ASSERT(!best_move.isNull(), "Null bestmove");
 	std::cout << "bestmove ";
 	best_move.print();
 	std::cout << '\n';
 }
 
-INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
+_INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << 
@@ -62,7 +62,7 @@ INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, co
 #endif
 }
 
-INLINE void SearchResults::printShort() {
+_INLINE void SearchResults::printShort() {
 	std::cout << "Total nodes: " << nodes_cnt << '\n';
 	printBestMove();
 #if defined(_COLLECT_SEARCH_STATS)
@@ -231,20 +231,20 @@ TreeStack::~TreeStack() {
 	alignedFree(_stack);
 }
 
-INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
+_INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
 	assert(ply < _Count);
 	return _stack + ply + 1;
 }
 
-INLINE NodeInfo* TreeStack::getRootNode() {
+_INLINE NodeInfo* TreeStack::getRootNode() {
 	return _stack + 1;
 }
 
-INLINE NodeInfo* TreeStack::getPreRootNode() {
+_INLINE NodeInfo* TreeStack::getPreRootNode() {
 	return _stack;
 }
 
-INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
+_INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
 																	   const NodeInfo* const preroot)
 {
 	for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
@@ -258,7 +258,7 @@ INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const Acc
 	return &preroot->cluster;
 }
 
-INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
+_INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
 											   AccumulatorCluster* const accum_cluster)
 {
 	for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
@@ -374,10 +374,13 @@ Move32b Search::goIterativeDeepening(Position& pos,
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
 
-	const Score eval = evaluate<PV_NODE>(pos, _tree_stack, root, preroot, pos.getTurn(), search_results);
-	root->eval = eval;
-
+	_contempt = 0;
 	bool unstable = false;
+
+	const Score eval = evaluate<PV_NODE>(pos, _tree_stack, 
+										 root, preroot, 
+										 pos.getTurn(), search_results);
+	root->eval = eval;
 
 	for (int d = 1; d <= limits.depth; d++) {
 		search_results.depth = d;
@@ -424,6 +427,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
 		// Adjust contempt factor based on a corrected evaluation
 		const Score corr_eval = adjustEvalScore(eval, prev_best_score);
+
 		_contempt = unstable ? 0 : static_cast<Score::int_t>(corr_eval / ContemptDiv);
 
 		// Inject previous PV line to hash table
@@ -521,7 +525,7 @@ Score Search::nmSearch(Position& pos,
 	if constexpr (!Root) {
 
 		if (pos.getHalfmoveClock() >= 100 or isInsufficientMaterial(pos))
-			return getDrawScore<Root>(node);
+			return getDrawScore(node);
 	}
 	
 	NodeInfo* const parent_node = node - 1;
@@ -538,7 +542,7 @@ Score Search::nmSearch(Position& pos,
 #if defined(_COLLECT_SEARCH_STATS)
 			results.rep_cnt++;
 #endif
-			return getDrawScore<Root>(node);
+			return getDrawScore(node);
 		}
 	}
 
@@ -1094,7 +1098,7 @@ Score Search::nmSearch(Position& pos,
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		node->bound = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::Mate + ply : getDrawScore<Root>(node);
+		node->best_score = node->check ? -Score::Mate + ply : getDrawScore(node);
 	}
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
@@ -1133,7 +1137,7 @@ Score Search::qSearch(Position& pos,
 	node->side2move = pos.getTurn();
 
 	if (isInsufficientMaterial(pos))
-		return getDrawScore<Root>(node);
+		return getDrawScore(node);
 
 	if ((results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
 		return -Score::Undef;
@@ -1318,21 +1322,24 @@ Score Search::qSearch(Position& pos,
 	return alpha;
 }
 
-template <bool Root>
 _FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {
+	return applyContempt(Score::Draw, node);
+}
+
+_FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) {
 	const NodeInfo* const root = _tree_stack.getRootNode();
 	assert(_contempt != Score::Undef);
-	return root->side2move == node->side2move ? Score::Draw - _contempt
-											  : Score::Draw;
+	return root->side2move == node->side2move ? score - _contempt
+											  : score;
 }
 
 template <Search::enumNode NodeType>
-INLINE Score Search::evaluate(const Position& pos,
-							  TreeStack& _tree_stack,
-							  NodeInfo* node,
-							  const NodeInfo* preroot,
-							  enumColor side2move, 
-							  SearchResults& results)
+_INLINE Score Search::evaluate(const Position& pos,
+							   TreeStack& _tree_stack,
+							   NodeInfo* node,
+							   const NodeInfo* preroot,
+							   enumColor side2move, 
+							   SearchResults& results)
 {
 
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1344,6 +1351,15 @@ INLINE Score Search::evaluate(const Position& pos,
 #else
 	_declUnused(results);
 #endif
+
+	const int pc_cnt = pos.getPiecesCount();
+
+	if (pc_cnt <= 6) {
+		const Score eval = StaticEval::evaluateEndgame(pos);
+
+		if (eval != Score::Undef)
+			return applyContempt(eval, node);
+	}
 
     AccumulatorCluster* curr_accum_cluster = &node->cluster;
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
@@ -1366,9 +1382,15 @@ INLINE Score Search::evaluate(const Position& pos,
 	const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
 	const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale;
 
-	assert(std::abs(scaled_eval) < Score::Mate);
+	// Assert we won't overflow into mate score
+	assert(std::abs(scaled_eval) < Score::MateBound - 100);
 
-	return static_cast<Score>(scaled_eval);
+	const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
+	const float clock_reduct = std::clamp<int>(halfmoves_left, 0, 15) / 15.f;
+
+	const Score res_eval = static_cast<Score>(applyContempt(static_cast<Score>(scaled_eval), node) * clock_reduct);
+
+	return res_eval;
 }
 
 _FORCEINLINE Score Search::adjustEvalScore(Score eval, Score score) {
@@ -1598,7 +1620,7 @@ bool Search::isInsufficientMaterial(const Position& pos) {
 	if (pos.getPawns() or pos.getQueens())
 		return false;
 
-	const int piece_cnt = pos.getOccupied().popCount();
+	const int piece_cnt = pos.getPiecesCount();
 
 	// King versus King
 	if (piece_cnt == 2)

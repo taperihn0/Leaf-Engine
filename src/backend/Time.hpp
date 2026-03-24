@@ -9,11 +9,11 @@ using time_ms_t = ll;
 using internal_clock_t = std::chrono::steady_clock;
 using timepoint_t = internal_clock_t::time_point;
 
-INLINE constexpr time_ms_t operator"" _ms(ull t) {
+_INLINE constexpr time_ms_t operator"" _ms(ull t) {
 	return static_cast<time_ms_t>(t);
 }
 
-INLINE constexpr time_ms_t operator"" _s(ull t) {
+_INLINE constexpr time_ms_t operator"" _s(ull t) {
 	return static_cast<time_ms_t>(t) * 1000;
 }
 

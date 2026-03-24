@@ -6,79 +6,84 @@ class Score {
 public:
 	using int_t = int16_t;
 
-	INLINE Score() = default;
-	INLINE constexpr Score(int_t val) 
-		: _raw(val) {}
+	_INLINE Score() = default;
+	_INLINE constexpr Score(int_t val)
+		: _raw(val) {
+	}
 
-	INLINE Score operator+(Score b) const {
+	_INLINE Score operator+(Score b) const {
 		return _raw + b._raw;
 	}
 
-	INLINE Score operator+=(Score b) {
+	_INLINE Score operator+=(Score b) {
 		return _raw += b._raw;
 	}
 
-	INLINE Score operator-=(Score b) {
+	_INLINE Score operator-=(Score b) {
 		return _raw -= b._raw;
 	}
 
-	INLINE Score operator-(Score b) const {
+	_INLINE Score operator-(Score b) const {
 		return _raw - b._raw;
 	}
 
-	INLINE bool operator>(Score b) const {
+	_INLINE bool operator>(Score b) const {
 		return _raw > b._raw;
 	}
 
-	INLINE bool operator>=(Score b) const {
+	_INLINE bool operator>=(Score b) const {
 		return _raw >= b._raw;
 	}
 
-	INLINE bool operator<=(Score b) const {
+	_INLINE bool operator<=(Score b) const {
 		return _raw <= b._raw;
 	}
 
-	INLINE bool operator==(Score b) const {
+	_INLINE bool operator==(Score b) const {
 		return _raw == b._raw;
 	}
 
-	INLINE bool operator!=(Score b) const {
+	_INLINE bool operator!=(Score b) const {
 		return _raw != b._raw;
 	}
 
-	INLINE bool operator<(Score b) const {
+	_INLINE bool operator<(Score b) const {
 		return _raw < b._raw;
 	}
 
-	INLINE Score operator*(Score b) const {
+	_INLINE Score operator*(Score b) const {
 		return _raw * b._raw;
 	}
 
-	INLINE Score operator/(Score b) const {
+	_INLINE Score operator*(long double d) const {
+		return static_cast<Score::int_t>(_raw * d);
+	}
+
+	_INLINE Score operator/(Score b) const {
 		return _raw / b._raw;
 	}
 
-	INLINE Score operator-() const {
+	_INLINE Score operator-() const {
 		return -_raw;
 	}
 
-	INLINE explicit operator int_t() const {
+	_INLINE explicit operator int_t() const {
 		return _raw;
 	}
 
-	INLINE explicit operator int() const {
+	_INLINE explicit operator int() const {
 		return _raw;
 	}
 
-	INLINE explicit operator float() const {
+	_INLINE explicit operator float() const {
 		return static_cast<float>(_raw);
 	}
 
-	INLINE bool isValid() const {
+	_INLINE bool isValid() const {
 		return _raw != Undef and _raw != -Undef;
 	}
 
-	INLINE bool isMateScore() const {
+	_INLINE bool isMateScore() const {
 		return isValid() and (_raw > MateBound or _raw < -MateBound);
 	}
 

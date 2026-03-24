@@ -607,7 +607,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
     _zhash = ZobristHash::generateOnFly(*this);
 }
 
-INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
+_INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
 	return ((bishopsQueens & attacks<Piece::BISHOP>(sq, occ))
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }

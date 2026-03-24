@@ -32,32 +32,32 @@ public:
 	};
 
 	Square() = default;
-	INLINE constexpr Square(uint_t cpy)
+	_INLINE constexpr Square(uint_t cpy)
 		: _sq(cpy) { assert(isValid()); }
-	INLINE constexpr Square(enumSquare sq)
+	_INLINE constexpr Square(enumSquare sq)
 		: _sq(sq)  { assert(isValid()); }
 
-	INLINE constexpr Square operator=(uint_t sq) {
+	_INLINE constexpr Square operator=(uint_t sq) {
 		return _sq = sq;
 	}
 
-	INLINE constexpr operator uint_t() const {
+	_INLINE constexpr operator uint_t() const {
 		return _sq;
 	}
 
-	INLINE enumFile getFile() const {
+	_INLINE enumFile getFile() const {
 		return static_cast<enumFile>(_sq & 7);
 	}
 
-	INLINE enumRank getRank() const {
+	_INLINE enumRank getRank() const {
 		return static_cast<enumRank>(_sq / 8);
 	}
 
-	INLINE bool isNotNull() const {
+	_INLINE bool isNotNull() const {
 		return _sq != None;
 	}
 
-	INLINE bool isNull() const {
+	_INLINE bool isNull() const {
 		return _sq == None;
 	}
 
@@ -65,7 +65,7 @@ public:
 		return (file - 'a') + (rank - '1') * 8;
 	}
 
-	INLINE std::string toStr() const {
+	_INLINE std::string toStr() const {
 		ASSERT(isValid(), "Invalid square");
 		if (isNull()) return "-";
 		return std::string{ "abcdefgh"[_sq & 7], static_cast<char>(_sq / 8 + '1') };
@@ -75,7 +75,7 @@ public:
 		os << toStr();
 	}
 
-	INLINE constexpr bool isValid() const {
+	_INLINE constexpr bool isValid() const {
 		return _sq < 64 or _sq == None;
 	}
 
@@ -85,7 +85,7 @@ private:
 };
 
 // flipping square horizontally - a1 becomes a8 and vice versa.
-static INLINE Square verticalFlip(Square sq) {
+static _INLINE Square verticalFlip(Square sq) {
 	return sq ^ 56;
 }
 
@@ -93,7 +93,7 @@ static INLINE Square verticalFlip(Square sq) {
 *  when 'side' is BLACK, 'sq' is unchanged.
 *  when 'side' is WHITE, 'sq' is flipped vertically.
 */
-static INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
+static _INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
 	static std::array<int8_t, 2> ConvertVal = { 56, 0 };
 	return sq ^ ConvertVal[side];
 }

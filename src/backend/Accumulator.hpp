@@ -18,7 +18,7 @@ public:
     Accumulator& operator=(const Accumulator&) = delete;
 
     bool operator==(const Accumulator& accum) const ;
-    INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
+    _INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
     static int featureIndex(Square sq, 
@@ -72,7 +72,7 @@ private:
 
 struct FeatureData {
     FeatureData() = default;
-    INLINE FeatureData(Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
+    _INLINE FeatureData(Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
         : sq(pc_sq)
         , piece_type(pc_type)
         , side(pc_color)

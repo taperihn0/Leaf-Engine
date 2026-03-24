@@ -52,15 +52,15 @@ public:
 		else os << _BlacksStr[_type];
 	}
 
-	INLINE Piece::uint_t value() const {
+	_INLINE Piece::uint_t value() const {
 		return static_cast<Piece::uint_t>(_type);
 	}
 
-	INLINE enumType type() const {
+	_INLINE enumType type() const {
 		return _type;
 	}
 
-	INLINE enumColor color() const {
+	_INLINE enumColor color() const {
 		return _col;
 	}
 
@@ -80,15 +80,15 @@ private:
 	enumColor _col;
 };
 
-INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
+_INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
 	p.print(os);
 	return os;
 }
 
-INLINE constexpr Piece::uint_t value(Piece::enumType p) {
+_INLINE constexpr Piece::uint_t value(Piece::enumType p) {
 	return static_cast<Piece::uint_t>(p);
 }
 
-INLINE constexpr bool isSlider(Piece::enumType p) {
+_INLINE constexpr bool isSlider(Piece::enumType p) {
 	return p >= Piece::BISHOP and p <= Piece::QUEEN;
 }

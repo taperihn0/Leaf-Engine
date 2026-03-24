@@ -9,23 +9,23 @@ class MoveRecord {
 public:
 	MoveRecord() = default;
 
-	INLINE void recordMove(Move32b move) {
+	_INLINE void recordMove(Move32b move) {
 		assert(_idx < MaxGameMoves);
 		_move_history[_idx++] = move;
 	}
 
-	INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
+	_INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
 		assert(halfmove_cnt < _idx);
 		return _move_history[halfmove_cnt];
 	}
 
-	INLINE Move32b getCurrentMove() const {
+	_INLINE Move32b getCurrentMove() const {
 		ASSERT(_idx > 0, "No moves performed during a game");
 		return getPrevMove(_idx - 1);
 	}
 
-	INLINE size_t currentHalfCount() const { return _idx; }
-	INLINE void clear() 				   { _idx = 0; }
+	_INLINE size_t currentHalfCount() const { return _idx; }
+	_INLINE void clear() 				   { _idx = 0; }
 private:
 	std::array<Move32b, MaxGameMoves> _move_history;
 	size_t _idx = 0;
@@ -35,7 +35,7 @@ class FullInfoRecord : public MoveRecord {
 public:
 	FullInfoRecord() = default;
 
-	INLINE void recordInfo(uint64_t key, Move32b move) {
+	_INLINE void recordInfo(uint64_t key, Move32b move) {
 		size_t curr_idx = currentHalfCount();
 		assert(curr_idx < MaxGameMoves);
 		_key_history[curr_idx] = key;
@@ -43,7 +43,7 @@ public:
 		MoveRecord::recordMove(move);
 	}
 
-	INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
+	_INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
 		assert(halfmove_cnt < currentHalfCount());
 		return _key_history[halfmove_cnt];
 	}

@@ -19,7 +19,7 @@ static _FORCEINLINE void prefetch(const void* addr) {
 #endif // _ENABLE_PREFETCH
 }
 
-INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
+_INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	byte* d = reinterpret_cast<byte*>(dst);
 
 #if defined (LEAF_SIMD_AVX512)
@@ -54,14 +54,14 @@ INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	return dst;
 }
 
-INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
+_INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
 	byte* d = reinterpret_cast<byte*>(dst);
 	const byte* s = reinterpret_cast<const byte*>(src);
 	std::copy_n(s, cnt, d);
 	return dst;
 }
 
-INLINE void* alignedMalloc(size_t size, size_t alignment) {
+_INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined (_MSC_VER)
 	void* m = _aligned_malloc(size, alignment);
 #else
@@ -72,7 +72,7 @@ INLINE void* alignedMalloc(size_t size, size_t alignment) {
 	return m;
 }
 
-INLINE void alignedFree(void* block) {
+_INLINE void alignedFree(void* block) {
 #if defined (_MSC_VER)
 	_aligned_free(block);
 #else

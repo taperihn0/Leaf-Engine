@@ -11,96 +11,96 @@ public:
 	constexpr BitBoard(const BitBoard&) = default;
 	constexpr BitBoard(BitBoard&&) = default;
 
-	INLINE constexpr BitBoard(uint64_t raw_init)
+	_INLINE constexpr BitBoard(uint64_t raw_init)
 		: _board(raw_init) {}
 
-	INLINE constexpr BitBoard(Square sq)
+	_INLINE constexpr BitBoard(Square sq)
 		: _board(1_ui64 << sq) {}
 
-	INLINE constexpr BitBoard(Square::enumSquare sq)
+	_INLINE constexpr BitBoard(Square::enumSquare sq)
 		: _board(1_ui64 << sq) {}
 
-	INLINE constexpr operator uint64_t() const {
+	_INLINE constexpr operator uint64_t() const {
 		return _board;
 	}
 
-	INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
+	_INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
 		return _board = cpy._board;
 	}
 
-	INLINE constexpr BitBoard operator|=(BitBoard bb) {
+	_INLINE constexpr BitBoard operator|=(BitBoard bb) {
 		return _board |= bb._board;
 	}
 
-	INLINE constexpr BitBoard operator&=(BitBoard bb) {
+	_INLINE constexpr BitBoard operator&=(BitBoard bb) {
 		return _board &= bb._board;
 	}
 
-	INLINE constexpr BitBoard operator^=(BitBoard bb) {
+	_INLINE constexpr BitBoard operator^=(BitBoard bb) {
 		return _board ^= bb._board;
 	}
 
-	INLINE constexpr BitBoard operator>>=(int shift) {
+	_INLINE constexpr BitBoard operator>>=(int shift) {
 		return _board >>= shift;
 	}
 
-	INLINE constexpr BitBoard operator<<=(int shift) {
+	_INLINE constexpr BitBoard operator<<=(int shift) {
 		return _board <<= shift;
 	}
 
-	INLINE constexpr BitBoard operator|(BitBoard bb) const {
+	_INLINE constexpr BitBoard operator|(BitBoard bb) const {
 		return _board | bb._board;
 	}
 
-	INLINE constexpr BitBoard operator^(BitBoard bb) const {
+	_INLINE constexpr BitBoard operator^(BitBoard bb) const {
 		return _board ^ bb._board;
 	}
 
-	INLINE constexpr BitBoard operator^(uint64_t raw) const {
+	_INLINE constexpr BitBoard operator^(uint64_t raw) const {
 		return _board ^ raw;
 	}
 
-	INLINE constexpr BitBoard operator&(BitBoard bb) const {
+	_INLINE constexpr BitBoard operator&(BitBoard bb) const {
 		return _board & bb._board;
 	}
 
-	INLINE constexpr BitBoard operator&(uint64_t raw) const {
+	_INLINE constexpr BitBoard operator&(uint64_t raw) const {
 		return _board & raw;
 	}
 
-	INLINE constexpr BitBoard operator>>(int shift) const {
+	_INLINE constexpr BitBoard operator>>(int shift) const {
 		return _board >> shift;
 	}
 
-	INLINE constexpr BitBoard operator<<(int shift) const {
+	_INLINE constexpr BitBoard operator<<(int shift) const {
 		return _board << shift;
 	}
 
-	INLINE constexpr BitBoard operator*(BitBoard bb) const {
+	_INLINE constexpr BitBoard operator*(BitBoard bb) const {
 		return _board * bb._board;
 	}
 
-	INLINE constexpr BitBoard operator~() const {
+	_INLINE constexpr BitBoard operator~() const {
 		return ~_board;
 	}
 
-	INLINE constexpr BitBoard operator-() const {
+	_INLINE constexpr BitBoard operator-() const {
 		return static_cast<uint64_t>(-_board);
 	}
 
 	template <int Shift>
-	INLINE BitBoard genShift() const {
+	_INLINE BitBoard genShift() const {
 		if constexpr (Shift < 0) return _board >> (-Shift);
 		return _board << Shift;
 	}
 
-	INLINE BitBoard genShift(int shift) const {
+	_INLINE BitBoard genShift(int shift) const {
 		if (shift < 0) return _board >> (-shift);
 		return _board << shift;
 	}
 
 	template <int Shift>
-	INLINE BitBoard pawnsAttack() const {
+	_INLINE BitBoard pawnsAttack() const {
 		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
 		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? Not_H_File : Not_A_File;
 		return genShift<Shift>() & ExclFile;
@@ -117,75 +117,75 @@ public:
 	int bitScanReverse() const;
 
 	// bit scan forward but with LS1B reset
-	INLINE int dropForward() {
+	_INLINE int dropForward() {
 		const int ls1b = bitScanForward();
 		_board &= _board - 1;
 		return ls1b;
 	}
 
-	INLINE void popBit(Square sq) {
+	_INLINE void popBit(Square sq) {
 		assert(sq.isValid() and sq.isNotNull());
 		_board &= ~(1_ui64 << sq);
 	}
 
-	INLINE void setBit(int shift) {
+	_INLINE void setBit(int shift) {
 		assert(shift < 64);
 		_board |= (1_ui64 << shift);
 	}
 
-	INLINE bool getBit(int shift) const {
+	_INLINE bool getBit(int shift) const {
 		assert(shift < 64);
 		return _board & (1_ui64 << shift);
 	}
 
-	INLINE bool isEmptySq(Square sq) const {
+	_INLINE bool isEmptySq(Square sq) const {
 		return !getBit(sq);
 	}
 
-	INLINE bool isOccupiedSq(Square sq) const {
+	_INLINE bool isOccupiedSq(Square sq) const {
 		return getBit(sq);
 	}
 
-	INLINE void moveBit(Square origin, Square target) {
+	_INLINE void moveBit(Square origin, Square target) {
 		assert(getBit(origin));
 		popBit(origin);
 		setBit(target);
 	}
 
-	INLINE BitBoard oneBit() const {
+	_INLINE BitBoard oneBit() const {
 		return _board & -_board;
 	}
 
 	template <int Rank>
-	static INLINE constexpr BitBoard rank() {
+	static _INLINE constexpr BitBoard rank() {
 		static_assert(1 <= Rank and Rank <= 8, "Invalid rank");
 		return BitBoard(0xff_ui64 << ((Rank - 1) * 8));
 	}
 
-	static INLINE constexpr BitBoard rank(int rank) {
+	static _INLINE constexpr BitBoard rank(int rank) {
 		ASSERT(1 <= rank and rank <= 8, "Invalid rank");
 		return BitBoard(0xff_ui64 << ((rank - 1) * 8));
 	}
 
-	static INLINE constexpr BitBoard promorank(enumColor side) {
+	static _INLINE constexpr BitBoard promorank(enumColor side) {
 		return side == WHITE ? rank<8>() : rank<1>();
 	}
 
 	template <File TFile>
-	static INLINE constexpr BitBoard file() {
+	static _INLINE constexpr BitBoard file() {
 		return BitBoard(A_File << static_cast<int>(TFile));
 	}
 
-	static INLINE constexpr BitBoard file(int file) {
+	static _INLINE constexpr BitBoard file(int file) {
 		ASSERT(1 <= file and file <= 8, "Invalid file");
 		return BitBoard(A_File << file);
 	}
 
-	INLINE constexpr bool isEmpty() const {
+	_INLINE constexpr bool isEmpty() const {
 		return _board == 0_ui64;
 	}
 
-	INLINE constexpr bool isSingleBit() const {
+	_INLINE constexpr bool isSingleBit() const {
 		return !isEmpty() and isPow2(_board);
 	}
 
@@ -229,67 +229,67 @@ namespace {
 
 // one step only and shifting routines *
 
-INLINE BitBoard nortOne(BitBoard bb) {
+_INLINE BitBoard nortOne(BitBoard bb) {
 	return bb << 8;
 }
 
-INLINE BitBoard soutOne(BitBoard bb) {
+_INLINE BitBoard soutOne(BitBoard bb) {
 	return bb >> 8;
 }
 
-INLINE BitBoard westOne(BitBoard bb) {
+_INLINE BitBoard westOne(BitBoard bb) {
 	return (bb >> 1) & BitBoard::Not_H_File;
 }
 
-INLINE BitBoard eastOne(BitBoard bb) {
+_INLINE BitBoard eastOne(BitBoard bb) {
 	return (bb << 1) & BitBoard::Not_A_File;
 }
 
-INLINE BitBoard noEaOne(BitBoard bb) {
+_INLINE BitBoard noEaOne(BitBoard bb) {
 	return (bb << 9) & BitBoard::Not_A_File;
 }
 
-INLINE BitBoard soEaOne(BitBoard bb) {
+_INLINE BitBoard soEaOne(BitBoard bb) {
 	return (bb >> 7) & BitBoard::Not_A_File;
 }
 
-INLINE BitBoard soWeOne(BitBoard bb) {
+_INLINE BitBoard soWeOne(BitBoard bb) {
 	return (bb >> 9) & BitBoard::Not_H_File;
 }
 
-INLINE BitBoard noWeOne(BitBoard bb) {
+_INLINE BitBoard noWeOne(BitBoard bb) {
 	return (bb << 7) & BitBoard::Not_H_File;
 }
 
-INLINE BitBoard noNoEa(BitBoard bb) {
+_INLINE BitBoard noNoEa(BitBoard bb) {
 	return (bb << 17) & BitBoard::Not_A_File;
 }
 
-INLINE BitBoard noEaEa(BitBoard bb) {
+_INLINE BitBoard noEaEa(BitBoard bb) {
 	return (bb << 10) & BitBoard::Not_AB_File;
 }
 
-INLINE BitBoard soEaEa(BitBoard bb) {
+_INLINE BitBoard soEaEa(BitBoard bb) {
 	return (bb >> 6) & BitBoard::Not_AB_File;
 }
 
-INLINE BitBoard soSoEa(BitBoard bb) {
+_INLINE BitBoard soSoEa(BitBoard bb) {
 	return (bb >> 15) & BitBoard::Not_A_File;
 }
 
-INLINE BitBoard soSoWe(BitBoard bb) {
+_INLINE BitBoard soSoWe(BitBoard bb) {
 	return (bb >> 17) & BitBoard::Not_H_File;
 }
 
-INLINE BitBoard soWeWe(BitBoard bb) {
+_INLINE BitBoard soWeWe(BitBoard bb) {
 	return (bb >> 10) & BitBoard::Not_GH_File;
 }
 
-INLINE BitBoard noWeWe(BitBoard bb) {
+_INLINE BitBoard noWeWe(BitBoard bb) {
 	return (bb << 6) & BitBoard::Not_GH_File;
 }
 
-INLINE BitBoard noNoWe(BitBoard bb) {
+_INLINE BitBoard noNoWe(BitBoard bb) {
 	return (bb << 15) & BitBoard::Not_H_File;
 }
 

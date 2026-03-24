@@ -44,13 +44,13 @@
 
 #if defined(_MSC_VER)
 // using __forceinline by default - that came out to be more efficient
-#define INLINE				__forceinline 
+#define _INLINE				__forceinline 
 #define _FORCEINLINE		__forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]]
 #define _RESTRICT			__restrict
 #define _INTERNAL			inline
 #else
-#define INLINE				inline
+#define _INLINE				inline
 #define _FORCEINLINE		__attribute__((always_inline)) inline 
 #define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 
 #define _RESTRICT 			__restrict__
@@ -85,7 +85,7 @@ static constexpr std::string_view EngineName = "Leaf Lite";
 static constexpr std::string_view Author     = "Szymon Belz";
 
 // move format, so far only pure notation supported
-#define PURE_NOTATION_DISPLAY 
+#define _PURE_NOTATION_DISPLAY 
 
 #if defined(_MSC_VER)
 // Warning: operator '<<' : shift count negative or too big, undefined behavior
@@ -167,13 +167,13 @@ _FORCEINLINE constexpr T abs(T x) {
 }
 
 template <typename T>
-INLINE constexpr bool isPow2(T x) {
+_INLINE constexpr bool isPow2(T x) {
 	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
 	return (x & (x - 1)) == 0;
 }
 
 template <typename T>
-INLINE constexpr uint8_t get2pow(T x) {
+_INLINE constexpr uint8_t get2pow(T x) {
 	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
 	assert(x != 0);
 
@@ -186,15 +186,15 @@ INLINE constexpr uint8_t get2pow(T x) {
 #endif
 }
 
-INLINE bool isValidNumber(const std::string& str) {
+_INLINE bool isValidNumber(const std::string& str) {
 	return str.find_first_not_of("1234567890", 0) == std::string::npos;
 }
 
-INLINE bool isSigned(const std::string& str) {
+_INLINE bool isSigned(const std::string& str) {
 	return !str.empty() and str[0] == '-';
 }
 
-INLINE bool isValidUnsigned(const std::string& str) {
+_INLINE bool isValidUnsigned(const std::string& str) {
     return !isSigned(str) and isValidNumber(str);
 }
 
@@ -205,7 +205,7 @@ static constexpr int Seed = 1;
 static std::mt19937 GlobMersenne(Seed);
 
 template <typename Integer = int>
-INLINE Integer random(Integer l, Integer r) {
+_INLINE Integer random(Integer l, Integer r) {
     std::uniform_int_distribution<Integer> dist(l, r);
     return dist(GlobMersenne);
 }

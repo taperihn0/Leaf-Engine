@@ -87,11 +87,11 @@ bool Game::isGameCycle() const {
     return false;
 }
 
-INLINE bool Game::isStaleMate() const {
+_INLINE bool Game::isStaleMate() const {
     return !_cached.check and !_cached.any_response_cached;
 }
 
-INLINE bool Game::isAnyResponse() {
+_INLINE bool Game::isAnyResponse() {
     MoveList ml;
     MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(_current_pos, ml);
 

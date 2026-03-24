@@ -281,8 +281,8 @@ private:
 				  Score alpha, Score beta, 
 				  int depth, int ply);
 	
-	template <bool Root>
 	Score getDrawScore(const NodeInfo* node);
+	Score applyContempt(Score score, const NodeInfo* node);
 
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,
@@ -324,6 +324,6 @@ private:
 	Score::int_t 			_contempt = Score::Undef;
 };
 
-INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {
+_INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {
 	return static_cast<Search::enumNode>(static_cast<int>(node0) | static_cast<int>(node1));
 }

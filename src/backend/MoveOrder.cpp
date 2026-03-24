@@ -132,7 +132,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
 	}
 }
 
-INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
+_INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
 	if (_iterator >= _move_list.count()) 
 		return false;
 

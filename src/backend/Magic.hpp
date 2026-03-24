@@ -9,19 +9,19 @@
 // Resources need to be initializated by calling initAttackTables function.
 class SlidersMagics {
 public:
-    static INLINE constexpr int mIndexHash(BitBoard magic_bb, BitBoard relv_occ, int relv_bits) {
+    static _INLINE constexpr int mIndexHash(BitBoard magic_bb, BitBoard relv_occ, int relv_bits) {
         return static_cast<int>((relv_occ * magic_bb) >> (64 - relv_bits));
     }
 
-    static INLINE BitBoard bishopAttacks(Square sq, BitBoard occ) {
+    static _INLINE BitBoard bishopAttacks(Square sq, BitBoard occ) {
         return _mbishop_att[sq][mIndexHash(_magics_bishop[sq], _m_occupancy_bishop[sq] & occ, _m_bits_bishop[sq])];
     }
 
-    static INLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
+    static _INLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
         return _mrook_att[sq][mIndexHash(_magics_rook[sq], _m_occupancy_rook[sq] & occ, _m_bits_rook[sq])];
     }
 
-    static INLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
+    static _INLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
         return rookAttacks(sq, occ) | bishopAttacks(sq, occ);
     }
 

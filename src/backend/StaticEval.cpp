@@ -1,6 +1,38 @@
 #include "StaticEval.hpp"
 #include "Search.hpp"
 
+Score StaticEval::evaluateEndgame(const Position& pos) {
+	const int piece_cnt = pos.getPiecesCount();
+	const enumColor side2move = pos.getTurn();
+
+	// Pawnless endgames:
+	// https://en.wikipedia.org/wiki/Pawnless_chess_endgame
+
+	if (pos.getPawns().isEmpty()) {
+
+		// K + R vs K + R
+		if (piece_cnt == 4 and
+			pos.getRooksBySide(WHITE).isSingleBit() and
+			pos.getRooksBySide(BLACK).isSingleBit())
+			return Score::Draw;
+
+		// K + NN vs K
+		if (piece_cnt == 4 and
+			(pos.getKnightsBySide(WHITE) == 2 or
+			 pos.getKnightsBySide(BLACK) == 2))
+			return Score::Draw;
+
+		// K + NR vs K + R
+		if (piece_cnt == 5 and
+			pos.getRooksBySide(WHITE).isSingleBit() and
+			pos.getBishopsBySide(BLACK).isSingleBit() and
+			pos.getKnights().isSingleBit())
+			return Score::Draw;
+	}
+
+	return Score::Undef;
+}
+
 /*
 *	PeSTO evaluation tables provided by Chess Programming Wiki:
 *	https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function 
@@ -82,7 +114,7 @@ Score StaticEval::matEval(const Position& pos) {
 		+ (pos.getPawnsBySide(turn).popCount() - pos.getPawnsBySide(!turn).popCount()) * 100;
 }
 
-INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
 	BitBoard pawns = pos.getPawnsBySide(side);
 	int16_t res = 0;
 
@@ -94,7 +126,7 @@ INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
 	return Score(res);
 }
 
-INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side) {
 	BitBoard knights = pos.getKnightsBySide(side);
 	int16_t res = 0;
 
@@ -106,7 +138,7 @@ INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side) 
 	return Score(res);
 }
 
-INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side) {
 	BitBoard bishops = pos.getBishopsBySide(side);
 	int16_t res = 0;
 
@@ -118,7 +150,7 @@ INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side) 
 	return Score(res);
 }
 
-INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
 	BitBoard rooks = pos.getRooksBySide(side);
 	int16_t res = 0;
 
@@ -130,7 +162,7 @@ INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
 	return Score(res);
 }
 
-INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) {
 	BitBoard queens = pos.getQueensBySide(side);
 	int16_t res = 0;
 
@@ -142,7 +174,7 @@ INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) {
 	return res;
 }
 
-INLINE Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
+_INLINE Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
 	const Square ksq = pos.getKingSquare(side);
 	return Score(_mg_king_tables[blackPerspectiveFlip(ksq, side)]);
 }

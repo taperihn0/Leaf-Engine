@@ -8,23 +8,23 @@ class ZobristHash {
 public:	
 	constexpr ZobristHash() = default;
 	
-	INLINE constexpr ZobristHash(uint64_t key) 
+	_INLINE constexpr ZobristHash(uint64_t key) 
 		: _key(key) {}
 
-	INLINE constexpr operator uint64_t() const {
+	_INLINE constexpr operator uint64_t() const {
 		return _key;
 	}
 
-	INLINE constexpr ZobristHash& operator=(const ZobristHash& zh) {
+	_INLINE constexpr ZobristHash& operator=(const ZobristHash& zh) {
 		_key = zh._key;
 		return *this;
 	}
 
-	INLINE constexpr ZobristHash operator^(const ZobristHash& zh) const {
+	_INLINE constexpr ZobristHash operator^(const ZobristHash& zh) const {
 		return _key ^ zh._key;
 	}
 
-	INLINE constexpr ZobristHash operator^=(const ZobristHash& zh) {
+	_INLINE constexpr ZobristHash operator^=(const ZobristHash& zh) {
 		return _key ^= zh._key;
 	}
 
