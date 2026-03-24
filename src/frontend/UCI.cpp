@@ -199,7 +199,7 @@ void UniversalChessInterface::parseUCI() {
 			  << "uciok" << '\n';
 }
 
-inline void UniversalChessInterface::parseNewGame() {
+void UniversalChessInterface::parseNewGame() {
 	_game.clear();
 	_search.registerNewGame();
 }

@@ -35,7 +35,8 @@ EngineProcess spawnProcess() {
         
         const char* argv[] = { "LeafClone", nullptr };
 
-        startLoop(1, argv);
+        UniversalChessInterface uci;
+        uci.loop(1, argv);
 
         _exit(0);
     }

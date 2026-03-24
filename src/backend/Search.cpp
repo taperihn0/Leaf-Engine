@@ -1398,7 +1398,10 @@ void Search::refreshPVinTT(const Position& pos,
 
 	Position cpy_pos = pos;
 
-	for (uint16_t i = 0; i < std::min(static_cast<uint16_t>(results.depth), pv_len); i++) {
+	for (uint16_t i = 0; 
+		 i < std::min(static_cast<uint16_t>(results.depth), pv_len); 
+		 i++) 
+	{
 		const Move16b pv_move = root_pv_line[i].best_move;
 		const Score score = root_pv_line[i].score;
 		const uint64_t key = cpy_pos.getZobristKey();
@@ -1484,8 +1487,6 @@ bool Search::isRepetitionCycle(const Position& pos,
 	const uint64_t curr_hashkey = pos.getZobristKey();
 	const NodeInfo* prev_node = node;
 
-	int rep_cnt = 0;
-
 	for (int p = ply - 1; 
 		 p >= 0 and p >= ply - pos.getHalfmoveClock(); 
 		 p -= 2) 
@@ -1500,14 +1501,10 @@ bool Search::isRepetitionCycle(const Position& pos,
 		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			return false;
 
-		if (curr_hashkey == prev_node->state.hash_key) {
+		assert(prev_node->side2move == node->side2move);
 
-			if constexpr (!IsPv)
-				return true;
-
-			if (++rep_cnt >= 2)
-				return true;
-		}
+		if (curr_hashkey == prev_node->state.hash_key)
+			return true;
 	}
 
 	if (ply >= pos.getHalfmoveClock())
@@ -1525,15 +1522,8 @@ bool Search::isRepetitionCycle(const Position& pos,
 		if (move.isIrreversible())
 			return false;
 
-		if (((curr_halfclock - halfclock) & 1) and 
-			curr_hashkey == game.getPrevKey(halfclock)) {
-
-			if constexpr (!IsPv)
-				return true;
-
-			if (++rep_cnt >= 2)
-				return true;
-		}
+		if (curr_hashkey == game.getPrevKey(halfclock))
+			return true;
 	}
 	
 	return false;

@@ -1,4 +1,12 @@
-### feature: do not tt-cut in PV node
+### feature: single repetition check
+Score of leaf-single-draw vs leaf-nprobe: 1425 - 1139 - 1275  [0.537] 3839 <br>
+...      leaf-single-draw playing White: 822 - 497 - 601  [0.585] 1920 <br>
+...      leaf-single-draw playing Black: 603 - 642 - 674  [0.490] 1919 <br>
+...      White vs Black: 1464 - 1100 - 1275  [0.547] 3839 <br>
+Elo difference: 25.9 +/- 9.0, LOS: 100.0 %, DrawRatio: 33.2 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
+### feature: do not TT-cut in PV node
 Score of leaf-npv-probe vs leaf-lmr-fix: 1263 - 1196 - 1541  [0.508] 4000 <br>
 ...      leaf-npv-probe playing White: 709 - 535 - 756  [0.543] 2000 <br>
 ...      leaf-npv-probe playing Black: 554 - 661 - 785  [0.473] 2000 <br>
