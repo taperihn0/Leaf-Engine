@@ -9,8 +9,3 @@ _INTERNAL void setupInternals() {
 	SlidersMagics::initAttackTables<Piece::BISHOP>();
 	SlidersMagics::initAttackTables<Piece::ROOK>();
 }
-
-_INTERNAL void startLoop(int argc, const char* argv[]) {
-	UniversalChessInterface uci;
-	uci.loop(argc, argv);
-}

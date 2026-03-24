@@ -27,7 +27,7 @@ enum enumLogLabel : uint16_t {
 class SPSA_Tuning {
 public:
     SPSA_Tuning() = default;
-    void start(uint thread_count);
+    void start(uint thread_count, const std::string& spsa_log);
 
     static constexpr int ThreadLimit = 8;
 private:

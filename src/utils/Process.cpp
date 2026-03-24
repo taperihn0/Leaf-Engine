@@ -3,6 +3,19 @@
 
 namespace Utils {
 
+#if defined(_MSC_VER)
+
+EngineProcess spawnProcess() {
+#pragma WARNING("Unimplemented")
+	return EngineProcess{};
+}
+
+void waitForProcess(EngineProcess& proc) {
+#pragma WARNING("Unimplemented")
+}
+
+#else
+
 EngineProcess spawnProcess() {
     int out_pipe[2];
     int in_pipe[2];
@@ -41,5 +54,11 @@ EngineProcess spawnProcess() {
         return proc;
     }
 }
+
+void waitForProcess(EngineProcess& proc) {
+    waitpid(proc.pid, nullptr, 0);
+}
+
+#endif
 
 }

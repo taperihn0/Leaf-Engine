@@ -605,8 +605,7 @@ Score Search::nmSearch(Position& pos,
 	tt_entry.score = Score::Undef;
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
-	const bool exact_hit = (!IsPv and tt_hit) or
-						   (IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
+	const bool exact_hit = (!IsPv and tt_hit);
 
 	if (!Root and exact_hit) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1399,7 +1398,7 @@ void Search::refreshPVinTT(const Position& pos,
 
 	Position cpy_pos = pos;
 
-	for (uint16_t i = 0; i < pv_len; i++) {
+	for (uint16_t i = 0; i < std::min(static_cast<uint16_t>(results.depth), pv_len); i++) {
 		const Move16b pv_move = root_pv_line[i].best_move;
 		const Score score = root_pv_line[i].score;
 		const uint64_t key = cpy_pos.getZobristKey();
@@ -1517,7 +1516,6 @@ bool Search::isRepetitionCycle(const Position& pos,
 	const int game_rep_depth = 50 - ply;
 	const int curr_halfclock = static_cast<int>(game.currentHalfCount());
 
-	// iterate through only a subset of all game moves
 	for (int halfclock = curr_halfclock - 1;
 		 halfclock >= 0 and curr_halfclock - halfclock <= game_rep_depth;
 		 halfclock--) 
