@@ -25,6 +25,12 @@
 #undef max
 #endif
 
+#if defined(__GNUC__)
+#	define WARNING(x) message x
+#else
+#	define WARNING(x) message(x)
+#endif
+
 #if __cplusplus >= 202002L
 #define _CPP_STANDARD_20
 #elif __cplusplus >= 201702L

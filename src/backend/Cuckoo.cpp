@@ -42,8 +42,8 @@ void CuckooTables::init() {
 
 					if (attacks.isOccupiedSq(to)) {
 						uint32_t move_hash = static_cast<uint32_t>(ZobristHash::piece_keys[side][piece][from] ^ 
-																	ZobristHash::piece_keys[side][piece][to] ^ 
-																	ZobristHash::black_key);
+																   ZobristHash::piece_keys[side][piece][to] ^ 
+																   ZobristHash::black_key);
 
 						Move16b move16b = makePackedSimple(from, to);
 

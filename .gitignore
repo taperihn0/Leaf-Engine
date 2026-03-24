@@ -1,17 +1,18 @@
 # My own scripts
 scripts/
-log.txt
-spsa_log_feb20.txt
-spsa_log_feb26.txt
-spsa_log_mar21.txt
-spsa_log_mar21_1.txt
-spsa_log_mar21_2.txt
+logs/log.txt
+logs/spsa_log_feb20.txt
+logs/spsa_log_feb26.txt
+logs/spsa_log_mar21.txt
+logs/spsa_log_mar21_1.txt
+logs/spsa_log_mar21_2.txt
+misc/*.txt
+misc/selfplay/
 CMakePresets.json
 
 build/
 
 src/assets/lichess/*
-src/utils/selfplay
 src/utils/tmp
 src/assets/tmp/*
 

@@ -64,7 +64,7 @@ target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src"
 	"${CMAKE_SOURCE_DIR}/src/backend"
 	"${CMAKE_SOURCE_DIR}/src/frontend"
-	"${CMAKE_SOURCE_DIR}/src/util"
+	"${CMAKE_SOURCE_DIR}/src/utils"
 )
 
 # Platform detection

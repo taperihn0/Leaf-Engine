@@ -2,7 +2,6 @@
 #include "Process.hpp"
 #include "frontend/UCI.hpp"
 
-#include <sys/wait.h>
 #include <sstream>
 #include <atomic>
 #include <mutex>
@@ -76,7 +75,7 @@ static constexpr std::string_view OpeningPath = "src/assets/sets/Nunn_Openings.e
 std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
-void SPSA_Tuning::start(uint thread_count) {
+void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
     const auto plat_thread_cnt = std::thread::hardware_concurrency();
 
     if (thread_count > plat_thread_cnt) {
@@ -85,7 +84,7 @@ void SPSA_Tuning::start(uint thread_count) {
     }
 
     const auto& tunable_options = UniversalChessInterface::getTunableOptions();
-    const uint param_count = tunable_options.size();
+    const size_t param_count = tunable_options.size();
 
     std::vector<SPSA_Parameter> params;
     params.reserve(param_count);
@@ -122,13 +121,13 @@ void SPSA_Tuning::start(uint thread_count) {
 
     _openings.load(std::string(OpeningPath));
 
-    std::ofstream log_file("spsa_log_mar21_2.txt", std::ios_base::app);
+    std::ofstream log_file(spsa_log, std::ios_base::app);
 
     curr_iter.store(0);
 
     std::vector<std::thread> threads;
 
-    for (int id = 0; id < thread_count; id++) {
+    for (uint id = 0; id < thread_count; id++) {
         threads.emplace_back([&](std::vector<SPSA_Parameter>& theta, 
                                  std::ofstream& log_file, 
                                  SearchLimits limits,
@@ -220,9 +219,8 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         log(is1, msg);
     }
 
-    int status;
-    waitpid(engine0.pid, &status, 0);
-    waitpid(engine1.pid, &status, 0);
+    waitForProcess(engine0);
+    waitForProcess(engine1);
 }
 
 void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
@@ -488,7 +486,7 @@ void SPSA_Tuning::sentPosition(const std::string& start_fen,
     // Is, os are relative to the engines.
     // We're writing to os, reading from is.
 
-    const int curr_halfmove_clock = record.currentHalfCount();
+    const int curr_halfmove_clock = static_cast<int>(record.currentHalfCount());
 
     std::stringstream cmd;
     cmd << "position fen " << start_fen;

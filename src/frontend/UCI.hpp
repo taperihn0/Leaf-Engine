@@ -11,11 +11,10 @@ public:
 	~UniversalChessInterface() = default;
 
 	static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
-
-	void loop(int argc, const char* argv[]);
-
 	static std::vector<OptionTunableParam>& getTunableOptions();
-private:
+
+	virtual void loop(int argc, const char* argv[]);
+protected:
 	void parseUCI();
 	void parseNewGame();
 	void parsePosition(std::istringstream& strm);

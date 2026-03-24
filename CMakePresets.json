@@ -22,7 +22,7 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_AVX2": "ON"
 			}
 		},
 		{
@@ -44,9 +44,22 @@
 			"binaryDir": "${sourceDir}/build/Utils/Debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug",
-				"COLLECT_SEARCH_STATS": "OFF",
+				"COLLECT_SEARCH_STATS": "ON",
 				"BUILD_UTILS": "ON",
 				"ENABLE_SIMD_SSE4_2": "ON"
+			}
+		},
+		{
+			"name": "relwithdebinfoutils",
+			"displayName": "ReleaseWithDebInfoUtils",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Utils/Release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "ON",
+				"BUILD_UTILS": "ON",
+				"ENABLE_SIMD_SSE4_2": "ON",
+				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
 			}
 		},
 		{
@@ -61,28 +74,6 @@
 				"ENABLE_SIMD_SSE4_2": "ON",
 				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
 			}
-		}
-	],
-	"buildPresets": [
-		{
-			"name": "debug",
-			"configurePreset": "debug",
-			"targets": [ "Leaf" ]
-		},
-		{
-			"name": "release",
-			"configurePreset": "release",
-			"targets": [ "Leaf" ]
-		},
-		{
-			"name": "debugutils",
-			"configurePreset": "debugutils",
-			"targets": [ "LeafUtils" ]
-		},
-		{
-			"name": "releaseutils",
-			"configurePreset": "releaseutils",
-			"targets": [ "LeafUtils" ]
 		}
 	]
 }
