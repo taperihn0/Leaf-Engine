@@ -6,27 +6,27 @@ namespace Utils {
 
 class Filepath {
 public:
-    static INLINE std::string getWhiteWinOutputPath_asPCK(int thread_num) {
+    static _INLINE std::string getWhiteWinOutputPath_asPCK(int thread_num) {
         return std::string(_FileNameWhiteWin) + "_thread_" + std::to_string(thread_num) + ".pck";
     }
 
-    static INLINE std::string getBlackWinOutputPath_asPCK(int thread_num) {
+    static _INLINE std::string getBlackWinOutputPath_asPCK(int thread_num) {
         return std::string(_FileNameBlackWin) + "_thread_" + std::to_string(thread_num) + ".pck";
     }
 
-    static INLINE std::string getDrawOutputPath_asPCK(int thread_num) {
+    static _INLINE std::string getDrawOutputPath_asPCK(int thread_num) {
         return std::string(_FileNameDraw) + "_thread_" + std::to_string(thread_num) + ".pck";
     }
 
-    static INLINE std::string getWhiteWinOutputPath_asTDF(int thread_num) {
+    static _INLINE std::string getWhiteWinOutputPath_asTDF(int thread_num) {
         return std::string(_FileNameWhiteWin) + "_thread_" + std::to_string(thread_num) + ".tdf";
     }
 
-    static INLINE std::string getBlackWinOutputPath_asTDF(int thread_num) {
+    static _INLINE std::string getBlackWinOutputPath_asTDF(int thread_num) {
         return std::string(_FileNameBlackWin) + "_thread_" + std::to_string(thread_num) + ".tdf";
     }
 
-    static INLINE std::string getDrawOutputPath_asTDF(int thread_num) {
+    static _INLINE std::string getDrawOutputPath_asTDF(int thread_num) {
         return std::string(_FileNameDraw) + "_thread_" + std::to_string(thread_num) + ".tdf";
     }
 private:

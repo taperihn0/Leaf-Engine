@@ -1224,9 +1224,9 @@ Score Search::qSearch(Position& pos,
 	*/
 	else if (node->eval > alpha) {
 		if (node->eval >= beta) 
-			return beta;
+			return node->eval;
 
-		node->score = alpha = node->eval;
+		alpha = node->eval;
 	}
 
 	node->move_picker.clear<QuiescentOrderPolicy>();
@@ -1342,7 +1342,7 @@ Score Search::qSearch(Position& pos,
 	}
 
 	return node->best_score != -Score::Infinity ? node->best_score 
-												: node->eval;
+												: alpha;
 }
 
 _FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {

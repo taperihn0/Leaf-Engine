@@ -3,7 +3,6 @@
 
 Score StaticEval::evaluateEndgame(const Position& pos) {
 	const int piece_cnt = pos.getPiecesCount();
-	const enumColor side2move = pos.getTurn();
 
 	// Pawnless endgames:
 	// https://en.wikipedia.org/wiki/Pawnless_chess_endgame
