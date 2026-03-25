@@ -16,7 +16,7 @@ MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables)
 */
 
 template <OrderType Type, bool Root>
-bool MoveOrder::nextMove(const TreeStack&, 
+bool MoveOrder::nextMove(const NodeInfo* node,
 						 const Position& pos, 
 						 Move32b& next_move,
 						 int16_t& move_score) 
@@ -61,14 +61,24 @@ bool MoveOrder::nextMove(const TreeStack&,
 
 		_stage = enumStage::QUIETS;
 		_quiets_ind = _iterator;
-
-		if (!_killer_move.isNull() and
-			_killer_move != _hash_move and
-			!Root and
-			_killer_move.isPseudoLegal(pos))
+		
 		{
-			next_move = _killer_move;
-			return true;
+			uint64_t parent_hash = 0;
+
+			if constexpr (!Root) {
+				const NodeInfo* const parent_node = node - 1;
+				parent_hash = parent_node->state.hash_key;
+			}
+
+			if (!_killer_move.isNull() and
+				_killer_move != _hash_move and
+				!Root and
+				parent_hash == _killer_move_parent_hash and
+				_killer_move.isPseudoLegal(pos))
+			{
+				next_move = _killer_move;
+				return true;
+			}
 		}
 
 		[[fallthrough]];
@@ -216,7 +226,7 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 	}
 }
 
-template bool MoveOrder::nextMove<STAGED, false>(const TreeStack&, const Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<STAGED, true> (const TreeStack&, const Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<QUIESCENT, false>(const TreeStack&, const Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, const Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<STAGED, true> (const NodeInfo*, const Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<QUIESCENT, false>(const NodeInfo*, const Position&, Move32b&, int16_t&);
 template void MoveOrder::updateQuietsHistory(Move32b, enumColor, int);

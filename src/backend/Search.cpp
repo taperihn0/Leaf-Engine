@@ -532,7 +532,7 @@ Score Search::nmSearch(Position& pos,
 
 #if !defined(_CUCKOO_DRAW) /* disable annoying warning in RELEASE builds */
 	_declUnused(parent_node);
-#endif
+#endif // _CUCKOO_DRAW
 
 #if !defined(_CUCKOO_DRAW)
 
@@ -541,7 +541,7 @@ Score Search::nmSearch(Position& pos,
 
 #if defined(_COLLECT_SEARCH_STATS)
 			results.rep_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 			return getDrawScore(node);
 		}
 	}
@@ -560,7 +560,7 @@ Score Search::nmSearch(Position& pos,
 
 #if defined(_COLLECT_SEARCH_STATS)
 				results.rep_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 
 				return Score::Draw;
 			}
@@ -575,7 +575,7 @@ Score Search::nmSearch(Position& pos,
 
 #if defined(_COLLECT_SEARCH_STATS)
 			results.cuckoo_rep_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 
 			alpha = Score::Draw;
 
@@ -585,7 +585,7 @@ Score Search::nmSearch(Position& pos,
 		}
 	}
 
-#endif
+#endif // _CUCKOO_DRAW
 	
 	else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and 
 			 !limits.isTimeLeft()) {
@@ -601,7 +601,7 @@ Score Search::nmSearch(Position& pos,
 
 #if defined(_COLLECT_SEARCH_STATS)
 	results.tt_probe_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 
 	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
@@ -614,7 +614,7 @@ Score Search::nmSearch(Position& pos,
 	if (!Root and exact_hit) {
 #if defined(_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 		return tt_entry.score;
 	}
 
@@ -637,13 +637,14 @@ Score Search::nmSearch(Position& pos,
 	results.npv_nodes_cnt += !IsPv;
 	results.cut_nodes_cnt += node->is_cut;
 	results.all_nodes_cnt += !node->is_cut;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 
 	NodeInfo* const child_node = node + 1;
 	assert(child_node - preroot < MaxSelDepth);
 
 	node->move = Move32b::Null;
 	node->eval = tt_entry.eval;
+	node->state = pos.getIrreversibleState();
 	node->improving_rate = 0.f;
 
 	Score corr_eval = Score::Undef;
@@ -680,8 +681,8 @@ Score Search::nmSearch(Position& pos,
 	}
 
 	Move32b ttm32b = unpacked(pos, tt_entry.move);
-	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : 
-												  Move32b::Null;
+	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
+												: Move32b::Null;
 	
 	/* Internal Iterative Deepening -
 	*  done only in PV Nodes. When no hash move is found for said node, 
@@ -722,7 +723,6 @@ Score Search::nmSearch(Position& pos,
 	/* Dynamic Improving implementation -
 	*  we're clamping improvement rate to range [-1., 1.]
 	*/
-
 	if (!Root and !IsPv and !node->check) {
 
 		if (node->eval.isValid() or depth <= DynImprovementDepth) {
@@ -816,7 +816,11 @@ Score Search::nmSearch(Position& pos,
 				/* Unless Null Move Pruning is not handled properly in the endgame, 
 				*  verification search is just needed to prevent Zugzwang.
 				*/
-				if (score >= beta) {
+				const int piece_cnt = pos.getPiecesCount();
+
+				if (piece_cnt <= 64 and 
+					score >= beta) 
+				{
 					const Score verify = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
 																		  beta - 1, beta, 
 																		  nm_depth, 
@@ -835,22 +839,33 @@ Score Search::nmSearch(Position& pos,
 			}
 		}
 	}
+
+	uint64_t parent_hash_of_killer = 0;
+	const uint64_t parent_hash = Root ? 0 : parent_node->state.hash_key;
+	Move32b killer = node->move_picker.getKillerMove<OrderPolicy>(parent_hash_of_killer);
+	
+	// Assert we don't probe junk killer move
+	if (Root or 
+		killer.isNull() or 
+		parent_hash_of_killer != parent_hash or
+		!killer.isPseudoLegal(pos)) {
+		killer = Move32b::Null;
+	}
 		
 	node->move_picker.clear<OrderPolicy>();
 	node->move_picker.setHashMove(tt_move);
 
 	node->can_move 	 	 = false;
-	node->score 	 	 = 0;
+	node->score 	 	 = Score::Undef;
+	node->move			 = Move32b::Null;
 	node->best_move  	 = Move32b::Null;
 	node->best_score 	 = -Score::Infinity;
 	node->moves_searched = 0;
-	node->state 		 = pos.getIrreversibleState();
 	node->bound 		 = TTEntry::LOWERBOUND;
 
 	int16_t move_score = UndefMoveScore;
-
 	for (node->move_index = 0; 
-		 node->move_picker.nextMove<OrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
+		 node->move_picker.nextMove<OrderPolicy, Root>(node, pos, node->move, move_score);
 		 node->move_index++) 
 	{
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
@@ -919,7 +934,6 @@ Score Search::nmSearch(Position& pos,
 			node->moves_searched >= LmrMoveCount) 
 		{	
 			const Piece::enumType pc = node->move.getPiece();
-			const Move32b killer = node->move_picker.getKillerMove<OrderPolicy>();
 
 			if (node->move.isQuiet() and !node->move.isPromotion()) {
 				if constexpr (!IsPv) 
@@ -937,7 +951,7 @@ Score Search::nmSearch(Position& pos,
 				if (!tt_move.isNull() and tt_move.isCapture())
 					frac_reduction += QuietHashCapReduction;
 
-				if (node->move == killer) 
+				if (!killer.isNull() and node->move == killer) 
 					frac_reduction -= QuietKillerMoveReduction;
 
 				if (move_score != UndefMoveScore) 
@@ -960,7 +974,7 @@ Score Search::nmSearch(Position& pos,
 				if (!tt_move.isNull() and tt_move.isCapture())
 					frac_reduction += CaptureHashCapReduction;
 
-				if (node->move == killer)
+				if (!killer.isNull() and node->move == killer)
 					frac_reduction -= CaptureKillerMoveReduction;
 
 				if (move_score != UndefMoveScore and !node->move.isPromotion())
@@ -1010,7 +1024,7 @@ Score Search::nmSearch(Position& pos,
 				results.move_reduced_cnt[node->move_index]++;
 				results.move_reduced_fail_high_cnt[node->move_index] += !(node->score > alpha);
 				results.move_reduction_sum[node->move_index] += reduction;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 			} 
 		
 			full_depth_search = !do_lmr or node->score > alpha;
@@ -1055,7 +1069,7 @@ Score Search::nmSearch(Position& pos,
 					if (node->move.isQuiet() and 
 						!node->move.isQueenPromotion()) 
 					{
-						node->move_picker.setKillerMove(node->move);
+						node->move_picker.setKillerMove(node->move, parent_hash);
 						node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth);
 					}
 
@@ -1065,15 +1079,14 @@ Score Search::nmSearch(Position& pos,
 
 					results.beta_cut_cnt++;
 					results.move_cut_cnt[node->move_index]++;
-#endif
-
+#endif // _COLLECT_SEARCH_STATS
 					break;
 				}
 
 				node->bound = TTEntry::EXACT;
 				alpha = node->score;
 				
-				/* Collect PV from the child */
+				/* Collect Pv from the child */
 				if constexpr (IsPv) {
 					node->pv_line[0].best_move = packed(node->best_move);
 					node->pv_line[0].score = node->best_score;
@@ -1098,7 +1111,8 @@ Score Search::nmSearch(Position& pos,
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		node->bound = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::Mate + ply : getDrawScore(node);
+		node->best_score = node->check ? -Score::Mate + ply 
+									   : getDrawScore(node);
 	}
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
@@ -1111,7 +1125,9 @@ Score Search::nmSearch(Position& pos,
 				  results);
 	}
 
-	child_node->move_picker.setKillerMove(Move32b::Null);
+	if constexpr (!Root) {
+		child_node->move_picker.setKillerMove(Move32b::Null, 0);
+	}
 
 	if constexpr (Root) {
 		results.score_cp = node->best_score;
@@ -1156,16 +1172,16 @@ Score Search::qSearch(Position& pos,
 								   node->side2move, results);
 	}
 
-#if defined(_COLLECT_SEARCH_STATS)
-	results.tt_probe_cnt++;
-	results.qtt_probe_cnt++;
-#endif
-
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
 	tt_entry.move = Move16b::Null;
 	tt_entry.score = Score::Undef;
+
+#if defined(_COLLECT_SEARCH_STATS)
+	results.tt_probe_cnt++;
+	results.qtt_probe_cnt++;
+#endif // _COLLECT_SEARCH_STATS
 
 	const uint64_t hash = pos.getZobristKey();
 	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
@@ -1178,10 +1194,10 @@ Score Search::qSearch(Position& pos,
 #if defined(_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
 		results.qtt_cut_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
 		return tt_entry.score;
 	}
-#endif
+#endif // _TT_PROBE_QSEARCH
 
 	results.nodes_cnt++;
 	results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
@@ -1192,9 +1208,9 @@ Score Search::qSearch(Position& pos,
 																	    node, preroot, 
 																		node->side2move, results)
 												  : tt_entry.eval;
-#else
+#else 
 	node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
-#endif
+#endif // _TT_PROBE_QSEARCH
 
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
@@ -1223,16 +1239,16 @@ Score Search::qSearch(Position& pos,
 	if ((!IsPv or tt_entry.bound != TTEntry::UPPERBOUND) and 
 		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion()))
 	{
-		const Move32b ttm32b = unpacked(pos, tt_entry.move);
-		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b :
-											  Move32b::Null;
-		node->move_picker.setHashMove(tt_move);
-
 #if defined(_COLLECT_SEARCH_STATS)
 		results.qttmove_probe_cnt++;
-#endif
+#endif // _COLLECT_SEARCH_STATS
+
+		const Move32b ttm32b = unpacked(pos, tt_entry.move);
+		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
+											: Move32b::Null;
+		node->move_picker.setHashMove(tt_move);
 	}
-#endif
+#endif // _TT_PROBE_QSEARCH
 
 	NodeInfo* const child_node = node + 1;
 	assert(child_node - preroot < MaxSelDepth);
@@ -1240,19 +1256,22 @@ Score Search::qSearch(Position& pos,
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
 	node->moves_searched = 0;
-	node->state = pos.getIrreversibleState();
+	node->state			 = pos.getIrreversibleState();
+	node->best_move		 = Move32b::Null;
+	node->move			 = Move32b::Null;
+	node->score			 = Score::Undef;
+	node->best_score     = -Score::Infinity;
 
 	int16_t move_score = UndefMoveScore;
-
-	for (node->move_index = 0; 
-		 node->move_picker.nextMove<QuiescentOrderPolicy, Root>(_tree_stack, pos, node->move, move_score);
+	for (node->move_index = 0;
+		 node->move_picker.nextMove<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
 		 node->move_index++) 
 	{
 		
 #if defined(_TT_PROBE_QSEARCH)	
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
 		_tt.prefetchBucket(next_hash);
-#endif
+#endif // _TT_PROBE_QSEARCH
 
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
@@ -1294,6 +1313,9 @@ Score Search::qSearch(Position& pos,
 			node->move.isLegalMoved() and 
 			node->score > alpha) 
 		{
+			node->best_move = node->move;
+			node->best_score = node->score;
+
 			if (node->score >= beta) {
 #if defined(_COLLECT_SEARCH_STATS)
 				if (node->move == tt_move) {
@@ -1305,8 +1327,8 @@ Score Search::qSearch(Position& pos,
 				results.qbeta_cut_cnt++;
 
 				results.move_cut_cnt[node->move_index]++;
-#endif
-				return beta;
+#endif // _COLLECT_SEARCH_STATS
+				break;
 			}
 			
 			alpha = node->score;
@@ -1319,7 +1341,8 @@ Score Search::qSearch(Position& pos,
 		}
 	}
 
-	return alpha;
+	return node->best_score != -Score::Infinity ? node->best_score 
+												: node->eval;
 }
 
 _FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {
@@ -1386,7 +1409,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 	assert(std::abs(scaled_eval) < Score::MateBound - 100);
 
 	const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-	const float clock_reduct = std::clamp<int>(halfmoves_left, 0, 15) / 15.f;
+	const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) / static_cast<float>(HalfMovesEvalLimit);
 
 	const Score res_eval = static_cast<Score>(applyContempt(static_cast<Score>(scaled_eval), node) * clock_reduct);
 

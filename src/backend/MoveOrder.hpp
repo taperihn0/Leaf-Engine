@@ -67,7 +67,7 @@ public:
 	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
 	template <OrderType Order, bool Root>
-	bool nextMove(const TreeStack& tree, 
+	bool nextMove(const NodeInfo* node, 
 				  const Position& pos, 
 				  Move32b& next_move,
 				  int16_t& move_score);
@@ -75,10 +75,10 @@ public:
 	void setHashMove(Move32b m);
 
 	template <OrderType Type = STAGED>
-	void setKillerMove(Move32b m);
+	void setKillerMove(Move32b m, uint64_t parent_hash);
 
 	template <OrderType Type = STAGED>
-	Move32b getKillerMove();
+	Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
 	template <int8_t Sign, OrderType Order = STAGED>
 	void updateQuietEntry(Move32b move, enumColor side, int depth);
@@ -122,8 +122,9 @@ private:
 	size_t _iterator       = 0;
 	size_t _quiets_ind	   = 0;
 
-	Move32b _hash_move	   = Move32b::Null;
-	Move32b _killer_move   = Move32b::Null;
+	Move32b	 _hash_move	   = Move32b::Null;
+	Move32b	 _killer_move  = Move32b::Null;
+	uint64_t _killer_move_parent_hash = 0;
 
 	MoveList _move_list;
 };
@@ -141,14 +142,16 @@ _INLINE void MoveOrder::setHashMove(Move32b m) {
 }
 
 template <OrderType Type>
-_INLINE void MoveOrder::setKillerMove(Move32b m) {
+_INLINE void MoveOrder::setKillerMove(Move32b m, uint64_t parent_hash) {
 	static_assert(Type == STAGED);
 	_killer_move = m;
+	_killer_move_parent_hash = parent_hash;
 }
 
 template <OrderType Type>
-_INLINE Move32b MoveOrder::getKillerMove() {
+_INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
 	static_assert(Type == STAGED);
+	killer_move_parent_hash = _killer_move_parent_hash;
 	return _killer_move;
 }
 

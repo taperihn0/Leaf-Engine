@@ -212,6 +212,7 @@ inline _P_CONSTEXPR int CaptureKillerMoveReduction = 30;
 inline _P_CONSTEXPR int CaptureExtensionReduction = 31;
 inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
 inline _P_CONSTEXPR int CaptureTotalReductionRate = 47;
+inline _P_CONSTEXPR int HalfMovesEvalLimit = 15;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {
