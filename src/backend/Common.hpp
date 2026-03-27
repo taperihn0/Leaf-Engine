@@ -74,8 +74,10 @@
 
 #if defined(_ENABLE_TUNING)
 #define _P_CONSTEXPR
+#define _P_STATIC
 #else
 #define _P_CONSTEXPR constexpr
+#define _P_STATIC    static
 #endif
 
 template <typename T>

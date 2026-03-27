@@ -193,7 +193,7 @@ _INTERNAL bool ccrOneHourTest() {
 }
 
 _INTERNAL bool nullMoveTest() {
-	static constexpr int SearchDepth = 12;
+	static constexpr int SearchDepth = 18;
 	static_assert(1 <= SearchDepth and SearchDepth < MaxDepth);
 
 	Position pos;

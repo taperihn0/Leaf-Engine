@@ -216,8 +216,12 @@ inline _P_CONSTEXPR int CaptureExtensionReduction = 31;
 inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
 inline _P_CONSTEXPR int CaptureTotalReductionRate = 47;
 inline _P_CONSTEXPR int HalfMovesEvalLimit = 15;
-inline _P_CONSTEXPR int NullMatThreshold = 1000;
-inline _P_CONSTEXPR int NullVerifyMatLimit = 1200;
+inline _P_CONSTEXPR int NullMatThreshold = 1200;
+inline _P_CONSTEXPR int NullVerifyMatLimit = 1400;
+inline _P_CONSTEXPR int MateThreadFracExtensionRate = 12;
+inline _P_CONSTEXPR int MateThreadFracExtensionDiv = 16;
+inline _P_CONSTEXPR int MaxMoveExtensionRate = 16;
+inline _P_CONSTEXPR int MaxMoveExtensionDiv = 16;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {

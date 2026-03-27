@@ -777,7 +777,13 @@ Score Search::nmSearch(Position& pos,
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 	const int total_mat = pos.getOnBoardMaterial();
-	float static_reduction = 0.f;
+	float static_extension = 0.f;
+	
+	_P_STATIC _P_CONSTEXPR 
+	float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
+
+	_P_STATIC _P_CONSTEXPR 
+	float MateThreadFracExtension = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -855,7 +861,7 @@ Score Search::nmSearch(Position& pos,
 					return score;
 				}
 				else if (score <= -Score::MateBound) {
-					static_reduction = 0;
+					static_extension = MateThreadFracExtension;
 				}
 			}
 		}
@@ -931,15 +937,16 @@ Score Search::nmSearch(Position& pos,
 
 		child_node->check = pos.isInCheck(next_side);
 
-		/* Extensions estimation
+		/* Move Extensions -
+		*  include static extension and move info
 		*/
 
-		float frac_extension = static_extension;
+		float move_extension = static_extension;
 		
-		frac_extension += child_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
-										    : 0.f;
+		if (child_node->check)
+			move_extension += node->improving_rate / ImprovingExtensionRate;
 
-		const int extension = std::clamp<int>(std::lroundf(child_node->check), 0, 1);
+		move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
 
 		bool full_depth_search = !IsPv and !(node->moves_searched > 0);
 		bool full_window_search = IsPv and !node->moves_searched;
@@ -980,7 +987,7 @@ Score Search::nmSearch(Position& pos,
 				if (move_score != UndefMoveScore) 
 					move_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
-				move_reduction -= frac_extension * QuietExtensionReduction;
+				move_reduction -= move_extension * QuietExtensionReduction;
 				move_reduction -= node->improving_rate * QuietImprovingReductionRate;
 				move_reduction /= QuietTotalReductionRate;
 			}
@@ -1003,13 +1010,15 @@ Score Search::nmSearch(Position& pos,
 				if (move_score != UndefMoveScore and !node->move.isPromotion())
 					move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
-				move_reduction -= frac_extension * CaptureExtensionReduction;
+				move_reduction -= move_extension * CaptureExtensionReduction;
 				move_reduction -= node->improving_rate * CaptureImprovingReductionRate;
 				move_reduction /= CaptureTotalReductionRate;
 			}
 		}
 
+		const int extension = std::lroundf(move_extension);
 		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
+
 		const int reduct_depth = depth - 1 - reduction;
 		
 		child_node->is_cut = !node->is_cut;
