@@ -4,6 +4,7 @@
 #include "Time.hpp"
 #include "Search.hpp"
 #include "Accumulator.hpp"
+#include "StaticEval.hpp"
 
 #include <sstream>
 
@@ -225,6 +226,18 @@ bool Position::operator==(const Position& pos) const {
 	}
 	
 	return true;
+}
+
+int Position::getOnBoardMaterial(enumColor side) const {
+	return getQueensBySide(side).popCount() * QueenValue +
+		   getRooksBySide(side).popCount() * RookValue +
+		   getBishopsBySide(side).popCount() * BishopValue +
+		   getKnightsBySide(side).popCount() * KnightValue +
+		   getPawnsBySide(side).popCount() * PawnValue;
+}
+
+int Position::getOnBoardMaterial() const {
+	return getOnBoardMaterial(WHITE) + getOnBoardMaterial(BLACK);
 }
 
 bool Position::make(Move32b& move) {

@@ -71,9 +71,31 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
+				"ENABLE_SIMD_AVX2": "ON",
 				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
 			}
 		}
+	],
+	"buildPresets": [
+		{
+			"name": "debug",
+			"configurePreset": "debug",
+			"targets": [ "Leaf" ]
+		},
+		{
+			"name": "release",
+			"configurePreset": "release",
+			"targets": [ "Leaf" ]
+		},
+		{
+			"name": "debugutils",
+			"configurePreset": "debugutils",
+			"targets": [ "LeafUtils" ]
+		},
+		{
+			"name": "releaseutils",
+			"configurePreset": "releaseutils",
+			"targets": [ "LeafUtils" ]
+		},
 	]
 }

@@ -3,7 +3,7 @@
 #include "PackedPosition.hpp"
 #include "backend/Common.hpp"
 #include "frontend/UCI.hpp"
-#include "Units.hpp"
+#include "Tests.hpp"
 #include "Collector.hpp"
 #include "Opening.hpp"
 #include "Filepath.hpp"

@@ -248,18 +248,19 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 
 		strm >> std::skipws >> token;
 
-		if (token == "uci")						   parseUCI();
-		else if (token == "ucinewgame") 		   parseNewGame();
-		else if (token == "position")			   parsePosition(strm);
-		else if (token == "print")				   _pos.print();
-		else if (token == "go")					   parseGo(strm);
-		else if (token == "isready")			   parseIsReady();
-		else if (token == "export_net") 		   parseNet(strm);
-		else if (token == "rewrite_header")		   parseRewriteNet(strm);
-		else if (token == "options")			   parseShowOptions();
-		else if (token == "setoption")			   parseSetOptions(strm);
-		else if (token == "test_pack")             packedPositionTests();
-		else if (token == "test_ccr_one_hour")     ccrOneHourTest();
+        if (token == "uci")						   parseUCI();
+        else if (token == "ucinewgame") 		   parseNewGame();
+        else if (token == "position")			   parsePosition(strm);
+        else if (token == "print")				   _pos.print();
+        else if (token == "go")					   parseGo(strm);
+        else if (token == "isready")			   parseIsReady();
+        else if (token == "export_net") 		   parseNet(strm);
+        else if (token == "rewrite_header")		   parseRewriteNet(strm);
+        else if (token == "options")			   parseShowOptions();
+        else if (token == "setoption")			   parseSetOptions(strm);
+        else if (token == "test_pack")             packedPositionTests();
+        else if (token == "test_ccr_one_hour")     ccrOneHourTest();
+        else if (token == "test_null_move")        nullMoveTest();
 		else if (token == "test_see")		       seeTests();
 		else if (token == "test_pack_on")          parsePackedFile(strm);
 		else if (token == "test_extpack_on")       parseExtPackedFile(strm);
