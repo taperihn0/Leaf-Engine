@@ -7,11 +7,11 @@
 *  Static evaluation utilities.
 */
 
-inline _P_CONSTEXPR int PawnValue   = 100;
-inline _P_CONSTEXPR int KnightValue = 300;
-inline _P_CONSTEXPR int BishopValue = 300;
-inline _P_CONSTEXPR int RookValue   = 500;
-inline _P_CONSTEXPR int QueenValue  = 900;
+inline constexpr int PawnValue   = 100;
+inline constexpr int KnightValue = 300;
+inline constexpr int BishopValue = 300;
+inline constexpr int RookValue   = 500;
+inline constexpr int QueenValue  = 900;
 
 class StaticEval {
 public:
