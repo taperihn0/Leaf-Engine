@@ -53,8 +53,8 @@ Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const 
 template <>
 template <>
 Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
-	Square	   origin = Move32b::Null, 
-			   target = Move32b::Null;
+	Square	   origin = Square::None,
+			   target = Square::None;
 	char	   chpromo = '\0';
 	const bool capture = str.find('x') != std::string::npos or str.find('X') != std::string::npos,
 			   promotion = str.find('=') != std::string::npos,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UtilsCommon.hpp"
+#include "Sets.hpp"
 
 #define _COLOR_RED         "\033[0;31m"
 #define _COLOR_BRIGHT_RED  "\033[0;91m"
@@ -9,10 +10,10 @@
 #define _COLOR_GREEN       "\033[0;32m"
 #define _COLOR_RESET       "\033[0m"
 
-#define _TESTCASE(lcnt, cmp, expc, f, ...)																		 \
-{																												 \
-	::Utils::_testcase_assertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", lcnt, (int)__LINE__, __VA_ARGS__); \
-}																												 \
+#define _TESTCASE(cmp, expc, f, ...)																		 \
+{																										  \
+	::Utils::_testcaseAssertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", (int)__LINE__, __VA_ARGS__); \
+}																										  \
 
 namespace Utils {
 
@@ -33,45 +34,38 @@ bool samesign(const T& a, const T& b) {
 		   or (a == 0ll and b == 0ll);
 }
 
-static size_t _test_counter = 0;
+_INTERNAL size_t _TestCounter = 0;
 
 template <typename T>
 using _cmp_func_t = bool(*)(const T&, const T&);
 
 template <typename Func, typename T, typename... Args>
-bool _testcase_assertion(Func f, 
+bool _testcaseAssertion(Func f, 
 						 T expected, 
 						 _cmp_func_t<T> cmp, 
 						 std::string_view cmpnamestr, 
 						 std::string_view fcallstr, 
 						 int testline, 
-						 int fileline, 
 						 Args&&... args) {
 
 	T fres = f(std::forward<Args>(args)...);
 	bool succes = cmp(fres, expected);
 	if (!succes) std::cout << _COLOR_RED;
+
 	std::cout << "["
-		<< "TESTNUM: "    << std::setw(3) << _test_counter
+		<< "TESTNUM: "    << std::setw(3) << _TestCounter
 		<< ", TESTLINE: " << std::setw(3) << testline 
-		<< ", FILELINE: " << std::setw(3) << fileline 
 		<< "] $ "
 		<< (succes ? _COLOR_GREEN "TESTCASE PASSED" _COLOR_RESET : _COLOR_BRIGHT_RED "TESTCASE FAILED" _COLOR_RED)
 		<< ": " << fcallstr
 		<< ", " << cmpnamestr << "(" << fres << ", " << expected << ") = " << (succes ? "TRUE" : "FALSE")
 		<< _COLOR_RESET << std::endl;
-	_test_counter++;
+
+	_TestCounter++;
 	return succes;
 }
 
-inline size_t nextToken(std::string& line, size_t first) {
-	size_t last = first;
-	while (last < line.size() and line[last] != ';')
-		last++;
-	return last;
-}
-
-static bool seeTests() {
+_INTERNAL bool seeTests() {
 	std::ifstream file("src/assets/sets/seeset.epd");
 	ASSERT(file.is_open(), "Could not open file src/assets/sets/seeset.epd");
 
@@ -86,6 +80,13 @@ static bool seeTests() {
 	
 	std::cout << _COLOR_BRIGHT_BLUE "####### SEE TESTING #######\n" _COLOR_RESET;
 
+	static auto next_token = [&](const std::string& line, size_t first) -> size_t {
+		size_t last = first;
+		while (last < line.size() and line[last] != ';')
+			last++;
+		return last;
+	};
+
 	for (int lcnt = 0; std::getline(file, line); lcnt++) {
 		size_t ind = 0;
 		Move32b move = Move32b::Null;
@@ -95,7 +96,7 @@ static bool seeTests() {
 			size_t first = ind;
 			while (line[first] == ';' or line[first] == ' ') first++;
 
-			ind = nextToken(line, first);
+			ind = next_token(line, first);
 			std::string token = line.substr(first, ind - first);
 
 			switch (i) {
@@ -120,27 +121,18 @@ static bool seeTests() {
 		 const Piece::enumType piece = move.getPiece();
 		 const Piece::enumType target = pos.pieceOn(dst, pos.getOppositeTurn());
 
-		_TESTCASE(lcnt, equal, expected, _StaticExchangeEval_unittest<true>, pos, move.getOrigin(), 
+		_TESTCASE(equal, expected, _StaticExchangeEval_unittest<true>, pos, move.getOrigin(), 
 				  dst, target, piece);
-		_TESTCASE(lcnt, samesign, expected, _StaticExchangeEval_unittest<false>, pos, move.getOrigin(),
+		_TESTCASE(samesign, expected, _StaticExchangeEval_unittest<false>, pos, move.getOrigin(),
 				  dst, target, piece);
-
 	}
 
 	return true;
 }
 
-static bool ccrOneHourTest() {
-	std::ifstream file("src/assets/sets/ccronehour.epd");
-	ASSERT(file.is_open(), "Failed to open file src/assets/sets/ccronehour.epd");
-
-	// MODIFY TO CHANGE SEARCHING DEPTH
-	static constexpr int search_depth = 16;
-	static_assert(1 <= search_depth and search_depth < MaxDepth);
-
-	// MODIFY TO CHANGE NUMBER OF POSITION
-	static constexpr int pos_limit = 25;
-	static_assert(1 <= pos_limit and pos_limit <= 25);
+_INTERNAL bool ccrOneHourTest() {
+	static constexpr int SearchDepth = 16;
+	static_assert(1 <= SearchDepth and SearchDepth < MaxDepth);
 
 	Position pos;
 	std::string line;
@@ -148,40 +140,50 @@ static bool ccrOneHourTest() {
 
 	FullInfoRecord tmpgame;
 	SearchLimits limits;
-	limits.depth = search_depth;
+	limits.depth = SearchDepth;
 
 	std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
 
 	Search search(TranspositionTable(1_MB));
 
+	static auto next_token = [&](const std::string& line, size_t first) -> size_t {
+		size_t last = first;
+		while (last < line.size() and line[last] != ';')
+			last++;
+		return last;
+	};
+
 	Timer timer;
 	timer.go();
 
-	for (int lcnt = 0; lcnt < pos_limit and std::getline(file, line); lcnt++) {
-		size_t next = nextToken(line, 0);
+	int lcnt = 0;
+	for (const auto& full_fen : CcrOneHourSets) {
+		size_t next = next_token(full_fen, 0);
 
-		std::string fen = line.substr(0, next);
+		std::string fen = full_fen.substr(0, next);
 		pos.setByFEN(fen);
 		
-		std::string opt = line.substr(next, line.size());
+		std::string opt = full_fen.substr(next, full_fen.size());
 		size_t ind = opt.find("bm");
 
-		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';
+		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
 
 		if (ind != std::string::npos) {
 			ind += 3;
-			size_t last = nextToken(opt, ind);
+			size_t last = next_token(opt, ind);
 			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-			_TESTCASE(lcnt, equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+			_TESTCASE(equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
 		}
 		else {
 			ind = opt.find("am");
 			ASSERT(ind != std::string::npos, "Invalid line");
 			ind += 3;
-			size_t last = nextToken(opt, ind);
+			size_t last = next_token(opt, ind);
 			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-			_TESTCASE(lcnt, nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+			_TESTCASE(nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
 		}
+
+		++lcnt;
 	}
 
 	time_ms_t duration_ms = timer.duration();
@@ -190,7 +192,69 @@ static bool ccrOneHourTest() {
 	return true;
 }
 
-static bool packedPositionTests() {
+_INTERNAL bool nullMoveTest() {
+	static constexpr int SearchDepth = 12;
+	static_assert(1 <= SearchDepth and SearchDepth < MaxDepth);
+
+	Position pos;
+	std::string line;
+	Move32b move;
+
+	FullInfoRecord tmpgame;
+	SearchLimits limits;
+	limits.depth = SearchDepth;
+
+	std::cout << _COLOR_BRIGHT_BLUE "\n####### NULL MOVE TESTING #######\n" _COLOR_RESET;
+
+	Search search(TranspositionTable(1_MB));
+
+	static auto next_token = [&](const std::string& line, size_t first) -> size_t {
+		size_t last = first;
+		while (last < line.size() and line[last] != ';')
+			last++;
+		return last;
+	};
+
+	Timer timer;
+	timer.go();
+
+	int lcnt = 0;
+	for (const auto& full_fen : NullMoveSets) {
+		size_t next = next_token(full_fen, 0);
+
+		std::string fen = full_fen.substr(0, next);
+		pos.setByFEN(fen);
+
+		std::string opt = full_fen.substr(next, full_fen.size());
+		size_t ind = opt.find("bm");
+
+		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
+
+		if (ind != std::string::npos) {
+			ind += 3;
+			size_t last = next_token(opt, ind);
+			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			_TESTCASE(equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+		}
+		else {
+			ind = opt.find("am");
+			ASSERT(ind != std::string::npos, "Invalid line");
+			ind += 3;
+			size_t last = next_token(opt, ind);
+			move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
+			_TESTCASE(nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+		}
+
+		++lcnt;
+	}
+
+	time_ms_t duration_ms = timer.duration();
+
+	std::cout << "TEST DURATION: " << duration_ms << "ms" << std::endl;
+	return true;
+}
+
+_INTERNAL bool packedPositionTests() {
 	std::ifstream file("src/assets/openingsPositions/crafty_2500_new.epd");
 	std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::in | std::ios::out | std::ios_base::binary);
 
@@ -258,7 +322,7 @@ static bool packedPositionTests() {
 	return true;
 }
 
-static void parseExtPackedFile(std::istringstream& strm) {
+_INTERNAL void parseExtPackedFile(std::istringstream& strm) {
     std::string filepath;
     strm >> std::skipws >> filepath;
 
@@ -315,7 +379,7 @@ static void parseExtPackedFile(std::istringstream& strm) {
     std::cout << "Successfully packed all positions" << std::endl;
 }
 
-static void parsePackedFile(std::istringstream& strm) {
+_INTERNAL void parsePackedFile(std::istringstream& strm) {
     std::string filepath;
     strm >> std::skipws >> filepath;
 

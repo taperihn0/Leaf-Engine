@@ -106,12 +106,7 @@ std::array<int16_t, 64> StaticEval::_mg_king_tables = {
 
 Score StaticEval::matEval(const Position& pos) {
 	const enumColor turn = pos.getTurn();
-	return 
-		(pos.getQueensBySide(turn).popCount() - pos.getQueensBySide(!turn).popCount()) * 900
-		+ (pos.getRooksBySide(turn).popCount() - pos.getRooksBySide(!turn).popCount()) * 500
-		+ (pos.getBishopsBySide(turn).popCount() - pos.getBishopsBySide(!turn).popCount()) * 300
-		+ (pos.getKnightsBySide(turn).popCount() - pos.getKnightsBySide(!turn).popCount()) * 300
-		+ (pos.getPawnsBySide(turn).popCount() - pos.getPawnsBySide(!turn).popCount()) * 100;
+	return pos.getOnBoardMaterial(turn) - pos.getOnBoardMaterial(!turn);
 }
 
 _INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {

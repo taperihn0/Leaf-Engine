@@ -7,6 +7,12 @@
 *  Static evaluation utilities.
 */
 
+inline _P_CONSTEXPR int PawnValue   = 100;
+inline _P_CONSTEXPR int KnightValue = 300;
+inline _P_CONSTEXPR int BishopValue = 300;
+inline _P_CONSTEXPR int RookValue   = 500;
+inline _P_CONSTEXPR int QueenValue  = 900;
+
 class StaticEval {
 public:
 	static Score evaluateEndgame(const Position& pos);

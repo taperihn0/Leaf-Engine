@@ -117,29 +117,34 @@ void SearchResults::printSearchStats() {
 	const float reduced_search_fail_rate = static_cast<float>(reduced_search_fail_low) / reduced_search_cnt * 100;
 	const float reduced_search_suc_rate = static_cast<float>(reduced_search_fail_high) / reduced_search_cnt * 100;
 
+	null_moves_cnt = null_moves_cnt ? null_moves_cnt : 1;
+
+	const float null_zungzwang_rate = static_cast<float>(null_zungzwang_detected) / null_moves_cnt * 100;
+
 	std::cout << "\n--SEARCH STATISTICS--";
 
 	std::cout
-		<< "\nQUIESCENT NODES:             " << qnodes_cnt		  << ", " << qnodes_rate << '%'
-		<< "\nPV NODES:                    " << pv_nodes_cnt	  << ", " << pvnodes_rate << '%'
-		<< "\nNON PV NODES:                " << npv_nodes_cnt	  << ", " << npvnodes_rate << '%'
-		<< "\nCUT NODES:                   " << cut_nodes_cnt	  << ", " << cutnodes_rate << '%'
-		<< "\nALL NODES:                   " << all_nodes_cnt	  << ", " << allnodes_rate << '%'
+		<< "\nQUIESCENT NODES:             " << qnodes_cnt << ", " << qnodes_rate << '%'
+		<< "\nPV NODES:                    " << pv_nodes_cnt << ", " << pvnodes_rate << '%'
+		<< "\nNON PV NODES:                " << npv_nodes_cnt << ", " << npvnodes_rate << '%'
+		<< "\nCUT NODES:                   " << cut_nodes_cnt << ", " << cutnodes_rate << '%'
+		<< "\nALL NODES:                   " << all_nodes_cnt << ", " << allnodes_rate << '%'
 		<< "\nTT PROBES:                   " << tt_probe_cnt
-		<< "\nTT PROBES IN QSEARCH:        " << qtt_probe_cnt     << ", " << qprobes_rate << '%'
-		<< "\nTT CUTS:                     " << tt_cut_cnt        << ", " << cuts_rate << '%'
-		<< "\nTT CUTS IN QSEARCH:          " << qtt_cut_cnt       << ", " << qcuts_rate << '%'
-		<< "\nHASH-MOVE CUT:               " << ttmove_cut_cnt    << ", " << ttmove_cut_rate << '%'
+		<< "\nTT PROBES IN QSEARCH:        " << qtt_probe_cnt << ", " << qprobes_rate << '%'
+		<< "\nTT CUTS:                     " << tt_cut_cnt << ", " << cuts_rate << '%'
+		<< "\nTT CUTS IN QSEARCH:          " << qtt_cut_cnt << ", " << qcuts_rate << '%'
+		<< "\nHASH-MOVE CUT:               " << ttmove_cut_cnt << ", " << ttmove_cut_rate << '%'
 		<< "\nHASH-MOVE PROBE IN QSEARCH:  " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
-		<< "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt   << ", " << qttmove_cut_rate << '%'
-		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt        << ", " << nmeval_rate << '%'
-		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt         << ", " << qeval_rate << '%'
+		<< "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt << ", " << qttmove_cut_rate << '%'
+		<< "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt << ", " << nmeval_rate << '%'
+		<< "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt << ", " << qeval_rate << '%'
 		<< "\nREPETITION CALLS:            " << rep_call_cnt
 		<< "\nREPETITION CYCLES:           " << rep_cnt
 		<< "\nCUCKOO CYCLES:               " << cuckoo_rep_cnt
 		<< "\nREDUCTION SEARCHES:          " << reduced_search_cnt << ", "
 		<< "\nREDUCTION SEARCH FAIL LOW:   " << reduced_search_fail_low << ", " << reduced_search_fail_rate << '%'
 		<< "\nREDUCTION SEARCH FAIL HIGH:  " << reduced_search_fail_high << ", " << reduced_search_suc_rate << '%'
+		<< "\nZUNGZWANGS DETECTED:         " << null_zungzwang_detected << ", " << null_zungzwang_rate << '%'
 		<< "\n";
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
@@ -771,6 +776,8 @@ Score Search::nmSearch(Position& pos,
 	}
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+	const int total_mat = pos.getOnBoardMaterial();
+	float static_reduction = 0.f;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -779,7 +786,8 @@ Score Search::nmSearch(Position& pos,
 	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
-			depth >= NullDepth) {
+			depth >= NullDepth and
+			total_mat >= NullMatThreshold) {
 
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -791,6 +799,10 @@ Score Search::nmSearch(Position& pos,
 				
 				assert(parent_node->move != Move32b::Null);
 				
+#if defined(_COLLECT_SEARCH_STATS)
+				results.null_moves_cnt++;
+#endif // _COLLECT_SEARCH_STATS
+
 				pos.makeNull(node->state, accum_cache);
 
 				AccumulatorCluster* const curr_cluster = &node->cluster;
@@ -806,35 +818,44 @@ Score Search::nmSearch(Position& pos,
 
 				child_node->is_cut = !node->is_cut;
 
-				const Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
-																	  -beta, -beta + 1, 
-																	  nm_depth, 
-																	  ply + 1);
+				Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
+																-beta, -beta + 1, 
+																nm_depth, 
+																ply + 1);
 				pos.unmakeNull(node->state);
 				next_cluster->prev_cluster = curr_cluster;
 
 				/* Unless Null Move Pruning is not handled properly in the endgame, 
 				*  verification search is just needed to prevent Zugzwang.
 				*/
-				const int piece_cnt = pos.getPiecesCount();
 
-				if (piece_cnt <= 64 and 
-					score >= beta) 
+				if (score >= beta and
+					total_mat <= NullVerifyMatLimit and
+					nm_depth >= 2)
 				{
-					const Score verify = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
-																		  beta - 1, beta, 
-																		  nm_depth, 
-																		  ply);
-					
-					if (verify >= beta) {
-						_tt.write(hash, 
-								  nm_depth, ply, 
-								  TTEntry::UPPERBOUND, 
-								  verify, packed(tt_move), node->eval, 
-								  results);
+					const int verify_depth = nm_depth / 2;
 
-						return verify;
-					}
+					score = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+															 beta - 1, beta,
+															 verify_depth,
+															 ply);
+
+#if defined(_COLLECT_SEARCH_STATS)
+					results.null_zungzwang_detected += score < beta;
+#endif // _COLLECT_SEARCH_STATS
+				}
+
+				if (score >= beta) {
+					_tt.write(hash,
+							  nm_depth, ply,
+							  TTEntry::UPPERBOUND,
+							  score, packed(tt_move), node->eval,
+							  results);
+
+					return score;
+				}
+				else if (score <= -Score::MateBound) {
+					static_reduction = 0;
 				}
 			}
 		}
@@ -913,8 +934,10 @@ Score Search::nmSearch(Position& pos,
 		/* Extensions estimation
 		*/
 
-		const float frac_extension = child_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
-													   : 0.f;
+		float frac_extension = static_extension;
+		
+		frac_extension += child_node->check ? 1.f + node->improving_rate / ImprovingExtensionRate
+										    : 0.f;
 
 		const int extension = std::clamp<int>(std::lroundf(child_node->check), 0, 1);
 
@@ -926,7 +949,7 @@ Score Search::nmSearch(Position& pos,
 		*  about the move.
 		*/
 
-		float frac_reduction = 0.f;
+		float move_reduction = 0.f;
 
 		if (!full_depth_search and 
 			!full_window_search and 
@@ -937,56 +960,56 @@ Score Search::nmSearch(Position& pos,
 
 			if (node->move.isQuiet() and !node->move.isPromotion()) {
 				if constexpr (!IsPv) 
-					frac_reduction += QuietNotPvNodeReduction;
+					move_reduction += QuietNotPvNodeReduction;
 
 				if (node->is_cut) 
-					frac_reduction -= QuietCutNodeReduction;
+					move_reduction -= QuietCutNodeReduction;
 
 				if (node->check) 
-					frac_reduction -= QuietCheckReduction;
+					move_reduction -= QuietCheckReduction;
 
 				if (pc == Piece::PAWN) 
-					frac_reduction -= QuietPawnMoveReduction;
+					move_reduction -= QuietPawnMoveReduction;
 
 				if (!tt_move.isNull() and tt_move.isCapture())
-					frac_reduction += QuietHashCapReduction;
+					move_reduction += QuietHashCapReduction;
 
 				if (!killer.isNull() and node->move == killer) 
-					frac_reduction -= QuietKillerMoveReduction;
+					move_reduction -= QuietKillerMoveReduction;
 
 				if (move_score != UndefMoveScore) 
-					frac_reduction += MoveOrder::getQuietDepthReduction(move_score);
+					move_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
-				frac_reduction -= frac_extension * QuietExtensionReduction;
-				frac_reduction -= node->improving_rate * QuietImprovingReductionRate;
-				frac_reduction /= QuietTotalReductionRate;
+				move_reduction -= frac_extension * QuietExtensionReduction;
+				move_reduction -= node->improving_rate * QuietImprovingReductionRate;
+				move_reduction /= QuietTotalReductionRate;
 			}
 			else {
 				if constexpr (!IsPv)
-					frac_reduction += CaptureNotPvNodeReduction;
+					move_reduction += CaptureNotPvNodeReduction;
 
 				if (node->is_cut)
-					frac_reduction -= CaptureCutNodeReduction;
+					move_reduction -= CaptureCutNodeReduction;
 
 				if (node->check)
-					frac_reduction -= CaptureCheckReduction;
+					move_reduction -= CaptureCheckReduction;
 
 				if (!tt_move.isNull() and tt_move.isCapture())
-					frac_reduction += CaptureHashCapReduction;
+					move_reduction += CaptureHashCapReduction;
 
 				if (!killer.isNull() and node->move == killer)
-					frac_reduction -= CaptureKillerMoveReduction;
+					move_reduction -= CaptureKillerMoveReduction;
 
 				if (move_score != UndefMoveScore and !node->move.isPromotion())
-					frac_reduction += MoveOrder::getCaptureDepthReduction(move_score);
+					move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
-				frac_reduction -= frac_extension * CaptureExtensionReduction;
-				frac_reduction -= node->improving_rate * CaptureImprovingReductionRate;
-				frac_reduction /= CaptureTotalReductionRate;
+				move_reduction -= frac_extension * CaptureExtensionReduction;
+				move_reduction -= node->improving_rate * CaptureImprovingReductionRate;
+				move_reduction /= CaptureTotalReductionRate;
 			}
 		}
 
-		const int reduction = std::clamp<int>(std::lroundf(frac_reduction), 0, depth - 1);
+		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
 		const int reduct_depth = depth - 1 - reduction;
 		
 		child_node->is_cut = !node->is_cut;
@@ -1226,7 +1249,7 @@ Score Search::qSearch(Position& pos,
 		if (node->eval >= beta) 
 			return beta;
 
-		node->score = alpha = node->eval;
+		alpha = node->eval;
 	}
 
 	node->move_picker.clear<QuiescentOrderPolicy>();
@@ -1328,7 +1351,7 @@ Score Search::qSearch(Position& pos,
 
 				results.move_cut_cnt[node->move_index]++;
 #endif // _COLLECT_SEARCH_STATS
-				break;
+				return node->best_score;
 			}
 			
 			alpha = node->score;
@@ -1341,8 +1364,7 @@ Score Search::qSearch(Position& pos,
 		}
 	}
 
-	return node->best_score != -Score::Infinity ? node->best_score 
-												: node->eval;
+	return alpha;
 }
 
 _FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {

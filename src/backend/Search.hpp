@@ -94,6 +94,9 @@ struct SearchResults {
 	ull		  move_reduced_cnt[MaxNodeMoves] = {};
 	ull 	  move_reduced_fail_high_cnt[MaxNodeMoves] = {};
 	float 	  move_reduction_sum[MaxNodeMoves] = {};
+
+	ull		  null_moves_cnt = 0;
+	ull		  null_zungzwang_detected = 0;
 #endif
 };
 
@@ -213,6 +216,8 @@ inline _P_CONSTEXPR int CaptureExtensionReduction = 31;
 inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
 inline _P_CONSTEXPR int CaptureTotalReductionRate = 47;
 inline _P_CONSTEXPR int HalfMovesEvalLimit = 15;
+inline _P_CONSTEXPR int NullMatThreshold = 1000;
+inline _P_CONSTEXPR int NullVerifyMatLimit = 1200;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {

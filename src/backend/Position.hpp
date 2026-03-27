@@ -235,6 +235,9 @@ public:
 		return getOccupied().popCount();
 	}
 
+	int getOnBoardMaterial(enumColor side) const;
+	int getOnBoardMaterial() const;
+
 	// returns true whether square is attacked by any opposide-color piece excluding enemy king
 	bool attacked(Square sq, enumColor side) const;
 

@@ -353,7 +353,7 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
     }
 }
 
-INLINE int  SPSA_Tuning::match(SearchLimits limits,
+_INLINE int  SPSA_Tuning::match(SearchLimits limits,
                                std::istream& engine_os0, std::ostream& engine_is0,
                                std::istream& engine_os1, std::ostream& engine_is1,
                                std::string& info,

@@ -16,11 +16,11 @@ public:
 
     bool operator==(const PackedPosition& p) const;
 
-    INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
+    _INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
 
     bool operator==(const ExtPackedPosition& p) const;
 
-    INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
+    _INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
 
     enum SpecialMasks : uint8_t {
         NO_SPECIAL = 0,
@@ -31,12 +31,12 @@ public:
     };
 
     struct alignas(1) Nibble {
-        INLINE Nibble() 
+        _INLINE Nibble() 
             : lo(0)
             , hi(0)
         {}
 
-        INLINE Nibble(byte b)
+        _INLINE Nibble(byte b)
             : lo(b & 0x0F)
             , hi((b & 0xF0) >> 4) 
         {}
@@ -105,11 +105,11 @@ public:
 
     bool operator==(const ExtPackedPosition& p) const;
 
-    INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
+    _INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
     
     bool operator==(const PackedPosition& sfp) const;
 
-    INLINE bool operator!=(const PackedPosition& sfp) const { return !(*this == sfp); }
+    _INLINE bool operator!=(const PackedPosition& sfp) const { return !(*this == sfp); }
 
     static ExtPackedPosition fromFEN(const std::string& fen);
 
