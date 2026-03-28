@@ -78,6 +78,10 @@ struct FeatureData {
         , side(pc_color)
     {}
 
+    _INLINE bool operator==(const FeatureData& f) const {
+        return sq == f.sq and piece_type == f.piece_type and side == f.side;
+    };
+
     Square          sq;
     Piece::enumType piece_type = Piece::enumType::NONE;
     enumColor       side;

@@ -131,7 +131,7 @@ _INTERNAL bool seeTests() {
 }
 
 _INTERNAL bool ccrOneHourTest() {
-	static constexpr int SearchDepth = 16;
+	static constexpr int SearchDepth = 17;
 	static_assert(1 <= SearchDepth and SearchDepth < MaxDepth);
 
 	Position pos;

@@ -224,6 +224,8 @@ inline _P_CONSTEXPR int MateThreadFracExtensionRate = 4;
 inline _P_CONSTEXPR int MateThreadFracExtensionDiv = 16;
 inline _P_CONSTEXPR int MaxMoveExtensionRate = 17;
 inline _P_CONSTEXPR int MaxMoveExtensionDiv = 16;
+inline _P_CONSTEXPR int NullVerifyDepthMult = 4;
+inline _P_CONSTEXPR int NullVerifyDepthDiv = 16;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {
@@ -307,6 +309,7 @@ private:
 	Score adjustEvalScore(Score eval, Score score);
 
 	int getNullSearchDepth(Score eval, Score beta, int depth);
+	int getNullVerifyDepth(int nm_depth);
 
 	void refreshPVinTT(const Position& pos, 
 					   const PVInfo* root_pv_line, uint16_t pv_len,

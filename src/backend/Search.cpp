@@ -272,24 +272,11 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 
 		int added_features_index[2][2];
 		int removed_features_index[2][2];
-		//bool same_features[2];
 
 		nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
 		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
 			nn::FeatureData feature_data = accum_cache.added_features[i];
-
-			/*bool same = false;
-
-			for (size_t j = 0; j < accum_cache.removed_features_cnt; j++) {
-				if (feature_data == accum_cache.removed_features[j]) {
-					same_features[j] = true;
-					same = true;
-					break;
-				}
-			}
-
-			if (same) continue; */
 
 			added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
 																	feature_data.sq,
@@ -858,7 +845,7 @@ Score Search::nmSearch(Position& pos,
 					nm_depth >= NullVerifyDepth and
 					!score.isMateScore())
 				{
-					const int verify_depth = std::max(std::lroundf(2.f * nm_depth / 8), 1l);
+					const int verify_depth = getNullVerifyDepth(nm_depth);
 
 					score = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
 															 beta - 1, beta,
@@ -1486,6 +1473,11 @@ _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
 	const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
 	assert(8 * depth / NullReduction < depth); // don't return same depth, we could stuck in a loop
 	return std::max<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1);
+}
+
+_FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
+	return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / NullVerifyDepthDiv), 
+					1l);
 }
 
 void Search::refreshPVinTT(const Position& pos, 
