@@ -272,11 +272,24 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 
 		int added_features_index[2][2];
 		int removed_features_index[2][2];
+		//bool same_features[2];
 
 		nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
 		for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
 			nn::FeatureData feature_data = accum_cache.added_features[i];
+
+			/*bool same = false;
+
+			for (size_t j = 0; j < accum_cache.removed_features_cnt; j++) {
+				if (feature_data == accum_cache.removed_features[j]) {
+					same_features[j] = true;
+					same = true;
+					break;
+				}
+			}
+
+			if (same) continue; */
 
 			added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
 																	feature_data.sq,
@@ -307,19 +320,19 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 		assert(prev_accum_cache.isClean());
 
 		accum_cache.accum.update(nn::GlobPackedNetwork,
-								  &prev_accum_cache.accum,
-								  added_features_index[WHITE],
-								  accum_cache.added_features_cnt,
-								  removed_features_index[WHITE],
-								  accum_cache.removed_features_cnt,
-								  WHITE);
+								 &prev_accum_cache.accum,
+								 added_features_index[WHITE],
+								 accum_cache.added_features_cnt,
+								 removed_features_index[WHITE],
+								 accum_cache.removed_features_cnt,
+								 WHITE);
 		accum_cache.accum.update(nn::GlobPackedNetwork,
-								  &prev_accum_cache.accum,
-								  added_features_index[BLACK],
-								  accum_cache.added_features_cnt,
-								  removed_features_index[BLACK],
-								  accum_cache.removed_features_cnt,
-								  BLACK);
+								 &prev_accum_cache.accum,
+								 added_features_index[BLACK],
+								 accum_cache.added_features_cnt,
+								 removed_features_index[BLACK],
+								 accum_cache.removed_features_cnt,
+								 BLACK);
 		accum_cache.markClean();
 	}
 }
@@ -464,7 +477,8 @@ Move32b Search::goIterativeDeepening(Position& pos,
 		assert(!root->pv_line[0].best_move.isNull());
 	}
 
-    if constexpr (InfoLevel == SEARCH_FULL_INFO or InfoLevel == SEARCH_ONLY_BM_INFO) {
+    if constexpr (InfoLevel == SEARCH_FULL_INFO or 
+				  InfoLevel == SEARCH_ONLY_BM_INFO) {
         search_results.printBestMove();
 	}
 	else if constexpr (InfoLevel == SEARCH_SHORT_INFO) {
@@ -776,13 +790,17 @@ Score Search::nmSearch(Position& pos,
 	}
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+
 	bool mate_thread = false;
 
 	_P_STATIC _P_CONSTEXPR 
 	float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
 
+	_P_STATIC _P_CONSTEXPR
+	float MoveCheckExtensionBase = static_cast<float>(MoveCheckExtensionRate) / MoveCheckExtensionDiv;
+
 	_P_STATIC _P_CONSTEXPR 
-	float MateThreadFracExtension = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
+	float MateThreadExtensionBase = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -791,7 +809,8 @@ Score Search::nmSearch(Position& pos,
 	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
-			depth >= NullDepth) {
+			depth >= NullDepth and
+		 	pos.getNonPawnMaterial() > 0) {
 
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -799,8 +818,8 @@ Score Search::nmSearch(Position& pos,
 												  node->side2move, results);
 			}
 
-			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth) >= beta) {
-				
+			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth) >= beta) 
+			{	
 				assert(parent_node->move != Move32b::Null);
 				
 #if defined(_COLLECT_SEARCH_STATS)
@@ -829,14 +848,17 @@ Score Search::nmSearch(Position& pos,
 				pos.unmakeNull(node->state);
 				next_cluster->prev_cluster = curr_cluster;
 
+				const Score nm_score = score;
+
 				/* Unless Null Move Pruning is not handled properly in the endgame, 
 				*  verification search is just needed to prevent Zugzwang.
 				*/
 
 				if (score >= beta and
+					nm_depth >= NullVerifyDepth and
 					!score.isMateScore())
 				{
-					const int verify_depth = nm_depth;
+					const int verify_depth = std::max(std::lroundf(2.f * nm_depth / 8), 1l);
 
 					score = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
 															 beta - 1, beta,
@@ -852,9 +874,9 @@ Score Search::nmSearch(Position& pos,
 					_tt.write(hash,
 							  nm_depth, ply,
 							  TTEntry::UPPERBOUND,
-							  score, packed(tt_move), node->eval,
+							  nm_score, packed(tt_move), node->eval,
 							  results);
-
+					
 					return score;
 				}
 				else if (score <= -Score::MateBound) {
@@ -936,16 +958,16 @@ Score Search::nmSearch(Position& pos,
 		child_node->check = pos.isInCheck(next_side);
 
 		/* Move Extensions -
-		*  include static extension and move info
+		*  include position and move info
 		*/
 
 		float move_extension = 0.f;
 		
 		if (child_node->check)
-			move_extension += 1.f + node->improving_rate / ImprovingExtensionRate;
+			move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
 
 		if (mate_thread)
-			move_extension += MateThreadFracExtension;
+			move_extension += MateThreadExtensionBase + node->improving_rate / ImprovingExtensionMateRate;
 
 		move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
 
@@ -1020,7 +1042,7 @@ Score Search::nmSearch(Position& pos,
 		const int extension = std::lroundf(move_extension);
 		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
 
-		const int reduct_depth = depth - 1 - reduction;
+		const int reduct_depth = std::min(depth - 1 - reduction + extension, depth - 1);
 		
 		child_node->is_cut = !node->is_cut;
 
