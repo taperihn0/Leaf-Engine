@@ -96,6 +96,6 @@
 			"name": "releaseutils",
 			"configurePreset": "releaseutils",
 			"targets": [ "LeafUtils" ]
-		},
+		}
 	]
 }

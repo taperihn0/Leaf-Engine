@@ -217,9 +217,9 @@ inline _P_CONSTEXPR int CaptureImprovingReductionRate = 5;
 inline _P_CONSTEXPR int CaptureTotalReductionRate = 47;
 inline _P_CONSTEXPR int HalfMovesEvalLimit = 15;
 inline _P_CONSTEXPR int NullVerifyDepth = 5;
-inline _P_CONSTEXPR int MateThreadFracExtensionRate = 12;
+inline _P_CONSTEXPR int MateThreadFracExtensionRate = 4;
 inline _P_CONSTEXPR int MateThreadFracExtensionDiv = 16;
-inline _P_CONSTEXPR int MaxMoveExtensionRate = 16;
+inline _P_CONSTEXPR int MaxMoveExtensionRate = 17;
 inline _P_CONSTEXPR int MaxMoveExtensionDiv = 16;
 inline constexpr    int CheckNodeCount = 2048;
 

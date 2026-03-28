@@ -776,9 +776,8 @@ Score Search::nmSearch(Position& pos,
 	}
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
-	const int total_mat = pos.getOnBoardMaterial();
-	float static_extension = 0.f;
-	
+	bool mate_thread = false;
+
 	_P_STATIC _P_CONSTEXPR 
 	float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
 
@@ -792,8 +791,7 @@ Score Search::nmSearch(Position& pos,
 	if constexpr (!Root and NullMove and !IsPv) {
 
 		if (!node->check and 
-			depth >= NullDepth and
-			pos.getNonPawnMaterial() > 0) {
+			depth >= NullDepth) {
 
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -836,10 +834,9 @@ Score Search::nmSearch(Position& pos,
 				*/
 
 				if (score >= beta and
-					nm_depth >= NullVerifyDepth and
 					!score.isMateScore())
 				{
-					const int verify_depth = nm_depth / 2;
+					const int verify_depth = nm_depth;
 
 					score = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
 															 beta - 1, beta,
@@ -861,7 +858,7 @@ Score Search::nmSearch(Position& pos,
 					return score;
 				}
 				else if (score <= -Score::MateBound) {
-					static_extension = MateThreadFracExtension;
+					mate_thread = true;
 				}
 			}
 		}
@@ -902,6 +899,7 @@ Score Search::nmSearch(Position& pos,
 		*  at shallow depths, skip moves that aren't like to rise alpha.
 		*/
 		if (!node->check and
+			!mate_thread and
 			depth <= FutilityDepth and
 			node->moves_searched >= FutilityMoveCount and
 			node->move.isQuiet() and
@@ -941,10 +939,13 @@ Score Search::nmSearch(Position& pos,
 		*  include static extension and move info
 		*/
 
-		float move_extension = static_extension;
+		float move_extension = 0.f;
 		
 		if (child_node->check)
-			move_extension += node->improving_rate / ImprovingExtensionRate;
+			move_extension += 1.f + node->improving_rate / ImprovingExtensionRate;
+
+		if (mate_thread)
+			move_extension += MateThreadFracExtension;
 
 		move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
 
