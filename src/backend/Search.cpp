@@ -793,7 +793,7 @@ Score Search::nmSearch(Position& pos,
 
 		if (!node->check and 
 			depth >= NullDepth and
-			total_mat >= NullMatThreshold) {
+			pos.getNonPawnMaterial() > 0) {
 
 			if (!node->eval.isValid()) {
 				node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -836,8 +836,8 @@ Score Search::nmSearch(Position& pos,
 				*/
 
 				if (score >= beta and
-					total_mat <= NullVerifyMatLimit and
-					nm_depth >= 2)
+					nm_depth >= NullVerifyDepth and
+					!score.isMateScore())
 				{
 					const int verify_depth = nm_depth / 2;
 

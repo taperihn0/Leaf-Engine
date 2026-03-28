@@ -238,6 +238,9 @@ public:
 	int getOnBoardMaterial(enumColor side) const;
 	int getOnBoardMaterial() const;
 
+	int getNonPawnMaterial(enumColor side) const;
+	int getNonPawnMaterial() const;
+
 	// returns true whether square is attacked by any opposide-color piece excluding enemy king
 	bool attacked(Square sq, enumColor side) const;
 

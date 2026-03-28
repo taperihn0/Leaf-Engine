@@ -57,8 +57,7 @@ void TunableParametersMap::createMapping() {
     _addr["CaptureImprovingReductionRate"] = &CaptureImprovingReductionRate;
     _addr["CaptureTotalReductionRate"] = &CaptureTotalReductionRate;
     _addr["HalfMovesEvalLimit"] = &HalfMovesEvalLimit;
-    _addr["NullMatThreshold"] = &NullMatThreshold;
-    _addr["NullVerifyMatLimit"] = &NullVerifyMatLimit;
+    _addr["NullVerifyDepth"] = &NullVerifyDepth;
     _addr["MateThreadFracExtensionRate"] = &MateThreadFracExtensionRate;
     _addr["MateThreadFracExtensionDiv"] = &MateThreadFracExtensionDiv;
     _addr["MaxMoveExtensionRate"] = &MaxMoveExtensionRate;
