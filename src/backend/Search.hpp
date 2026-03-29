@@ -228,11 +228,13 @@ inline _P_CONSTEXPR int NullVerifyDepthMult = 4;
 inline _P_CONSTEXPR int ExtensionDepth = 10;
 inline _P_CONSTEXPR int SingularDepth = 5;
 inline _P_CONSTEXPR int SingularDepthMargin = 3;
-inline _P_CONSTEXPR int SingularExtensionRate = 12;
+inline _P_CONSTEXPR int SingularExtensionRate = 7;
 inline _P_CONSTEXPR int SingularExtensionDiv = 16;
 inline _P_CONSTEXPR int SingularBetaDepthMult = 2;
 inline _P_CONSTEXPR int SingularDepthMult = 128;
 inline _P_CONSTEXPR int SingularDepthBase = 512;
+inline _P_CONSTEXPR int SingularBetaExtensionRate = 2;
+inline constexpr    int SingularBetaExtensionDiv = 32;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {

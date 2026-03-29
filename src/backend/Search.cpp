@@ -788,6 +788,8 @@ Score Search::nmSearch(Position& pos,
 	float MateThreadExtensionBase = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
 	_P_STATIC _P_CONSTEXPR
 	float SingularExtension = static_cast<float>(SingularExtensionRate) / SingularExtensionDiv;
+	_P_STATIC _P_CONSTEXPR
+	float SingularBetaReduction = static_cast<float>(SingularBetaExtensionRate) / SingularBetaExtensionDiv;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -944,9 +946,11 @@ Score Search::nmSearch(Position& pos,
 		child_node->check = pos.isInCheck(next_side);
 
 		float move_extension = 0.f;
+		float move_reduction = 0.f;
 
 		if constexpr (!Root) {
 			if (depth >= SingularDepth and
+				!node->check and
 				node->move == tt_move and
 				!tt_move.isNull() and
 				tt_entry.depth >= depth - SingularDepthMargin and
@@ -954,7 +958,7 @@ Score Search::nmSearch(Position& pos,
 				!tt_entry.score.isMateScore()) 
 			{
 				const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-				const Score singular_beta = std::max<int>(-Score::MateBound / 2, static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
+				const Score singular_beta = std::max<int>(-Score::MateBound - 100, static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
 
 				child_node->is_cut = !node->is_cut;
 
@@ -966,12 +970,14 @@ Score Search::nmSearch(Position& pos,
 					move_extension += SingularExtension;
 				}
 				else if (score >= beta and 
-						!score.isMateScore()) 
-				{
+						!score.isMateScore()) {
 					pos.unmake(node->move, node->state);
 					const Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
 												/ (singular_depth + 1);
 					return reduced_score;
+				}
+				else if (score >= singular_beta) {
+					move_extension -= SingularBetaReduction;
 				}
 			}
 		}
@@ -993,8 +999,6 @@ Score Search::nmSearch(Position& pos,
 		*  consider float reduction based on contextual information
 		*  about the move.
 		*/
-
-		float move_reduction = 0.f;
 
 		if (!full_depth_search and 
 			!full_window_search and 
