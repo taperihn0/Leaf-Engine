@@ -222,10 +222,17 @@ inline _P_CONSTEXPR int MoveCheckExtensionDiv = 16;
 inline _P_CONSTEXPR int ImprovingExtensionMateRate = 12;
 inline _P_CONSTEXPR int MateThreadFracExtensionRate = 4;
 inline _P_CONSTEXPR int MateThreadFracExtensionDiv = 16;
-inline _P_CONSTEXPR int MaxMoveExtensionRate = 17;
+inline _P_CONSTEXPR int MaxMoveExtensionRate = 18;
 inline _P_CONSTEXPR int MaxMoveExtensionDiv = 16;
 inline _P_CONSTEXPR int NullVerifyDepthMult = 4;
-inline _P_CONSTEXPR int NullVerifyDepthDiv = 16;
+inline _P_CONSTEXPR int ExtensionDepth = 10;
+inline _P_CONSTEXPR int SingularDepth = 5;
+inline _P_CONSTEXPR int SingularDepthMargin = 3;
+inline _P_CONSTEXPR int SingularExtensionRate = 12;
+inline _P_CONSTEXPR int SingularExtensionDiv = 16;
+inline _P_CONSTEXPR int SingularBetaDepthMult = 2;
+inline _P_CONSTEXPR int SingularDepthMult = 128;
+inline _P_CONSTEXPR int SingularDepthBase = 512;
 inline constexpr    int CheckNodeCount = 2048;
 
 class Search {

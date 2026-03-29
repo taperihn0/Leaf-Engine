@@ -782,12 +782,12 @@ Score Search::nmSearch(Position& pos,
 
 	_P_STATIC _P_CONSTEXPR 
 	float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
-
 	_P_STATIC _P_CONSTEXPR
 	float MoveCheckExtensionBase = static_cast<float>(MoveCheckExtensionRate) / MoveCheckExtensionDiv;
-
 	_P_STATIC _P_CONSTEXPR 
 	float MateThreadExtensionBase = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
+	_P_STATIC _P_CONSTEXPR
+	float SingularExtension = static_cast<float>(SingularExtensionRate) / SingularExtensionDiv;
 
 	/* Null Move Pruning -
 	*  if we're doing so well even after not making a move, we must be winning here.
@@ -941,20 +941,48 @@ Score Search::nmSearch(Position& pos,
 		node->can_move = true;
 
 		const enumColor next_side = !node->side2move;
-
 		child_node->check = pos.isInCheck(next_side);
 
-		/* Move Extensions -
-		*  include position and move info
-		*/
-
 		float move_extension = 0.f;
-		
-		if (child_node->check)
-			move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
 
-		if (mate_thread)
-			move_extension += MateThreadExtensionBase + node->improving_rate / ImprovingExtensionMateRate;
+		if constexpr (!Root) {
+			if (depth >= SingularDepth and
+				node->move == tt_move and
+				!tt_move.isNull() and
+				tt_entry.depth >= depth - SingularDepthMargin and
+				tt_entry.bound == TTEntry::UPPERBOUND and
+				!tt_entry.score.isMateScore()) 
+			{
+				const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
+				const Score singular_beta = std::max<int>(-Score::MateBound / 2, static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
+
+				child_node->is_cut = !node->is_cut;
+
+				const Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+																 -singular_beta, -singular_beta + 1,
+																 singular_depth,
+																 ply + 1);
+				if (score < singular_beta) {
+					move_extension += SingularExtension;
+				}
+				else if (score >= beta and 
+						!score.isMateScore()) 
+				{
+					pos.unmake(node->move, node->state);
+					const Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
+												/ (singular_depth + 1);
+					return reduced_score;
+				}
+			}
+		}
+		
+		if (depth <= ExtensionDepth) {
+			if (child_node->check)
+				move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
+
+			if (mate_thread)
+				move_extension += MateThreadExtensionBase + node->improving_rate / ImprovingExtensionMateRate;
+		}
 
 		move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
 
@@ -1476,7 +1504,7 @@ _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
 }
 
 _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
-	return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / NullVerifyDepthDiv), 
+	return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 16), 
 					1l);
 }
 
