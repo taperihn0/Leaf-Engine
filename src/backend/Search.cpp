@@ -192,7 +192,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-	std::memset(pv_line, 0, MaxDepth * sizeof(PVInfo));
+	std::memset(pv_line, 0, MaxSelDepth * sizeof(PVInfo));
 	pv_line_len = 0;
 }
 
@@ -516,6 +516,7 @@ Score Search::nmSearch(Position& pos,
 					   int depth, int ply) 
 {
 	assert(0 <= depth and depth <= MaxSelDepth);
+	assert(0 <= ply and ply <= MaxSelDepth);
 	assert(alpha < beta);
 
 	if constexpr (Root) assert(!ply);
@@ -527,6 +528,8 @@ Score Search::nmSearch(Position& pos,
 
 	static constexpr OrderType OrderPolicy = STAGED;
 	static constexpr bool	   IsPv 	   = NmNodeType & PV_NODE;
+
+	assert(IsPv or alpha == beta - 1);
 
 	if constexpr (!Root) {
 
@@ -677,7 +680,7 @@ Score Search::nmSearch(Position& pos,
 				const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
 													      		  	 	 alpha - 1, alpha,
 													      		  	 	 depth - 1,
-													      		  	 	 ply + 1);
+													      		  	 	 ply);
 				
 				if (qscore < alpha) {
 					return qscore;
@@ -939,9 +942,7 @@ Score Search::nmSearch(Position& pos,
 		}
 
 		node->can_move = true;
-
-		const enumColor next_side = !node->side2move;
-		child_node->check = pos.isInCheck(next_side);
+		child_node->check = pos.isInCheck(!node->side2move);
 
 		float move_extension = 0.f;
 
@@ -976,7 +977,7 @@ Score Search::nmSearch(Position& pos,
 			}
 		}
 		
-		if (depth <= ExtensionDepth) {
+		if (depth >= ExtensionDepth) {
 			if (child_node->check)
 				move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
 
@@ -1057,7 +1058,7 @@ Score Search::nmSearch(Position& pos,
 		const int extension = std::lroundf(move_extension);
 		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
 
-		const int reduct_depth = std::min(depth - 1 - reduction + extension, depth - 1);
+		const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 1, depth - 1);
 		
 		child_node->is_cut = !node->is_cut;
 
@@ -1100,7 +1101,7 @@ Score Search::nmSearch(Position& pos,
 			full_depth_search = !do_lmr or node->score > alpha;
 		}
 
-		const int ext_depth = depth - 1 + extension;
+		const int ext_depth = std::min(depth - 1 + extension, MaxDepth - ply);
 
 		if (full_depth_search and !full_window_search) {
 			node->score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
@@ -1206,20 +1207,22 @@ Score Search::nmSearch(Position& pos,
 	return node->best_score;
 }
 
-template <Search::enumNode QNodeType>
+template <Search::enumNode QNodeType, bool Root>
 Score Search::qSearch(Position& pos, 
 					  SearchLimits& limits, SearchResults& results, 
 					  NodeInfo* node, 
 					  Score alpha, Score beta, 
 					  int depth, int ply) 
 {
+	assert(0 <= ply and ply <= MaxSelDepth);
 	assert(alpha < beta);
 
 	static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
 	static constexpr bool	   IsPv = QNodeType & PV_NODE; 
-	static constexpr bool	   Root = false;
 	static constexpr bool	   SeeNonExactScore = false;
-	
+
+	assert(IsPv or alpha == beta - 1);
+
 	node->side2move = pos.getTurn();
 
 	if (isInsufficientMaterial(pos))
@@ -1236,7 +1239,7 @@ Score Search::qSearch(Position& pos,
 
 	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
 	
-	if (ply >= static_cast<int>(MaxSelDepth)) _UNLIKELY {
+	if (ply >= MaxSelDepth) _UNLIKELY {
 		return evaluate<QNodeType>(pos, _tree_stack, 
 								   node, preroot, 
 								   node->side2move, results);
@@ -1254,11 +1257,11 @@ Score Search::qSearch(Position& pos,
 #endif // _COLLECT_SEARCH_STATS
 
 	const uint64_t hash = pos.getZobristKey();
-	const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
+	const uint8_t probe_depth = std::max<uint8_t>(0, depth);
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
-	const bool exact_hit = (!IsPv and tt_hit) or 
-						   (IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
+	const bool exact_hit = (!IsPv and tt_hit) or
+						   ( IsPv and tt_hit and tt_entry.bound == TTEntry::EXACT);
 
 	if (exact_hit and depth <= QProbeDepth) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1282,6 +1285,9 @@ Score Search::qSearch(Position& pos,
 	node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif // _TT_PROBE_QSEARCH
 
+	if constexpr (Root)
+		node->check = pos.isInCheck(node->side2move);
+
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
 	*  then prune all of the branches.
@@ -1292,7 +1298,8 @@ Score Search::qSearch(Position& pos,
 	/* Standing Pat Cutoff -
 	*  when we're already above the beta, we can make a cutoff.
 	*/
-	else if (node->eval > alpha) {
+	else if (!node->check and 
+			  node->eval > alpha) {
 		if (node->eval >= beta) 
 			return node->eval;
 
@@ -1346,19 +1353,21 @@ Score Search::qSearch(Position& pos,
 		/* Static Exchange Evaluation Pruning -
 		*  ignore losing captures, as they aren't likely to rise alpha anyway.
 		*/
-		if (node->move.isCapture() and
-			!node->move.isEnPassant() and 
-			!node->move.isPromotion())
-		{
-			const Square org = node->move.getOrigin();
-			const Square dst = node->move.getTarget();
-			const Piece::enumType vic = node->move.getCaptured(pos);
-			const Piece::enumType piece = node->move.getPiece();
+		if constexpr (!IsPv) {
+			if (node->move.isCapture() and
+				!node->move.isEnPassant() and
+				!node->move.isPromotion())
+			{
+				const Square org = node->move.getOrigin();
+				const Square dst = node->move.getTarget();
+				const Piece::enumType vic = node->move.getCaptured(pos);
+				const Piece::enumType piece = node->move.getPiece();
 
-			const int capt_see_score = pos.StaticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
+				const int capt_see_score = pos.StaticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
 
-			if (capt_see_score < 0)
-				continue;
+				if (capt_see_score < 0)
+					continue;
+			}
 		}
 
 		if (!pos.make(node->move, accum_cache)) {
@@ -1367,6 +1376,7 @@ Score Search::qSearch(Position& pos,
 		}
 
 		child_node->is_cut = !node->is_cut;
+		child_node->check = pos.isInCheck(!node->side2move);
 
 		node->score = -qSearch<QNodeType>(pos, limits, results, child_node,
 										  -beta, -alpha,

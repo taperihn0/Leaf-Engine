@@ -130,7 +130,7 @@ struct NodeInfo {
 	TTEntry::Bound				bound;
     AccumulatorCluster          cluster;
 	bool						cuckoo_check;
-	PVInfo 	       				pv_line[MaxDepth];
+	PVInfo 	       				pv_line[MaxSelDepth];
 	uint16_t 					pv_line_len;
 	bool						is_cut;
 };
@@ -225,7 +225,7 @@ inline _P_CONSTEXPR int MateThreadFracExtensionDiv = 16;
 inline _P_CONSTEXPR int MaxMoveExtensionRate = 18;
 inline _P_CONSTEXPR int MaxMoveExtensionDiv = 16;
 inline _P_CONSTEXPR int NullVerifyDepthMult = 4;
-inline _P_CONSTEXPR int ExtensionDepth = 10;
+inline _P_CONSTEXPR int ExtensionDepth = 1;
 inline _P_CONSTEXPR int SingularDepth = 5;
 inline _P_CONSTEXPR int SingularDepthMargin = 3;
 inline _P_CONSTEXPR int SingularExtensionRate = 12;
@@ -295,7 +295,7 @@ private:
 				   Score alpha, Score beta, 
 				   int depth, int ply);
 
-	template <Search::enumNode QNodeType>
+	template <Search::enumNode QNodeType, bool Root = false>
 	Score qSearch(Position& pos, 
 				  SearchLimits& limits, SearchResults& results, 
 				  NodeInfo* node, 
