@@ -983,7 +983,7 @@ Score Search::nmSearch(Position& pos,
 			}
 		}
 		
-		if (depth >= ExtensionDepth) {
+		if (depth <= ExtensionDepth) {
 			if (child_node->check)
 				move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
 
@@ -1062,8 +1062,9 @@ Score Search::nmSearch(Position& pos,
 		const int extension = std::lroundf(move_extension);
 		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
 
-		const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 1, depth - 1);
-		
+		const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 
+											static_cast<int>(child_node->check), depth - 1);
+
 		child_node->is_cut = !node->is_cut;
 
 		/* Principle Variation Search -
@@ -1105,7 +1106,7 @@ Score Search::nmSearch(Position& pos,
 			full_depth_search = !do_lmr or node->score > alpha;
 		}
 
-		const int ext_depth = std::min(depth - 1 + extension, MaxDepth - ply);
+		const int ext_depth = std::min(depth - 1 + extension, std::max(MaxDepth - ply, 0));
 
 		if (full_depth_search and !full_window_search) {
 			node->score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
@@ -1289,9 +1290,6 @@ Score Search::qSearch(Position& pos,
 	node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif // _TT_PROBE_QSEARCH
 
-	if constexpr (Root)
-		node->check = pos.isInCheck(node->side2move);
-
 	/* Delta Pruning -
 	*  when no move has any chance to raise alpha
 	*  then prune all of the branches.
@@ -1302,8 +1300,7 @@ Score Search::qSearch(Position& pos,
 	/* Standing Pat Cutoff -
 	*  when we're already above the beta, we can make a cutoff.
 	*/
-	else if (!node->check and 
-			  node->eval > alpha) {
+	else if (node->eval > alpha) {
 		if (node->eval >= beta) 
 			return node->eval;
 
@@ -1380,7 +1377,6 @@ Score Search::qSearch(Position& pos,
 		}
 
 		child_node->is_cut = !node->is_cut;
-		child_node->check = pos.isInCheck(!node->side2move);
 
 		node->score = -qSearch<QNodeType>(pos, limits, results, child_node,
 										  -beta, -alpha,
