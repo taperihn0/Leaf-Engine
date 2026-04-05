@@ -959,7 +959,8 @@ Score Search::nmSearch(Position& pos,
 				!tt_entry.score.isMateScore()) 
 			{
 				const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-				const Score singular_beta = std::max<int>(-Score::MateBound - 100, static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
+				const Score singular_beta = std::max<int>(-Score::MateBound + 100, 
+														  static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
 
 				child_node->is_cut = !node->is_cut;
 

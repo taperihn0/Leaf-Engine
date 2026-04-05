@@ -67,6 +67,13 @@ void TunableParametersMap::createMapping() {
     _addr["MaxMoveExtensionDiv"] = &MaxMoveExtensionDiv;
     _addr["NullVerifyDepthMult"] = &NullVerifyDepthMult;
     _addr["ExtensionDepth"] = &ExtensionDepth;
+    _addr["SingularDepth"] = &SingularDepth;
+    _addr["SingularDepthMargin"] = &SingularDepthMargin;
+    _addr["SingularExtensionRate"] = &SingularExtensionRate;
+    _addr["SingularBetaDepthMult"] = &SingularBetaDepthMult;
+    _addr["SingularDepthMult"] = &SingularDepthMult;
+    _addr["SingularDepthBase"] = &SingularDepthBase;
+    _addr["SingularBetaExtensionRate"] = &SingularBetaExtensionRate;
     _addr["KnightCapturedScore"] = &KnightCapturedScore;
     _addr["BishopCapturedScore"] = &BishopCapturedScore;
     _addr["ToKnightPromoScore"]  = &ToKnightPromoScore;
