@@ -1,6 +1,0 @@
-Elo difference: nan +/- nan, LOS: nan %, DrawRatio: nan %
-SPRT: llr 0 (0.0%), lbound -inf, ubound inf
-
-Player: leaf-q-ch
-Player: leaf-s-ext-1
-Finished match
