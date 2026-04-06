@@ -1,3 +1,11 @@
+### feature: tuned Singular Extension
+Score of leaf-sing-tune vs leaf-single-draw: 2202 - 1624 - 174  [0.572] 4000 <br>
+...      leaf-sing-tune playing White: 1122 - 792 - 86  [0.583] 2000 <br>
+...      leaf-sing-tune playing Black: 1080 - 832 - 88  [0.562] 2000 <br>
+...      White vs Black: 1954 - 1872 - 174  [0.510] 4000 <br>
+Elo difference: 50.6 +/- 10.6, LOS: 100.0 %, DrawRatio: 4.3 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: single repetition check
 Score of leaf-single-draw vs leaf-nprobe: 1425 - 1139 - 1275  [0.537] 3839 <br>
 ...      leaf-single-draw playing White: 822 - 497 - 601  [0.585] 1920 <br>

@@ -38,17 +38,15 @@ enum OrderType {
 
 inline _P_CONSTEXPR int MaxQuietsHistoryPow = 13;
 inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
-
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = std::lroundf(13.3373f);
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = std::lroundf(5.07386f);
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = std::lroundf(67.3132f);
-
-inline _P_CONSTEXPR int KnightCapturedScore = std::lroundf(284.071f);
-inline _P_CONSTEXPR int BishopCapturedScore = std::lroundf(318.916f);
-inline _P_CONSTEXPR int ToKnightPromoScore = std::lroundf(120.781f);
-inline _P_CONSTEXPR int ToBishopPromoScore = std::lroundf(70.7067f);
-inline _P_CONSTEXPR int ToRookPromoScore = std::lroundf(150.001f);
-inline _P_CONSTEXPR int ToQueenPromoScore = std::lroundf(900.784f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = round<float>(12.58f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = round<float>(4.62642f);
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = round<float>(67.3132f);
+inline _P_CONSTEXPR int KnightCapturedScore = round<float>(293.355f);
+inline _P_CONSTEXPR int BishopCapturedScore = round<float>(322.652f);
+inline _P_CONSTEXPR int ToKnightPromoScore = round<float>(134.232);
+inline _P_CONSTEXPR int ToBishopPromoScore = round<float>(59.035f);
+inline _P_CONSTEXPR int ToRookPromoScore = round<float>(150.f);
+inline _P_CONSTEXPR int ToQueenPromoScore = round<float>(899.409f);
 
 inline constexpr    int PawnCapturedScore   = 100;
 inline constexpr    int RookCapturedScore   = 500;

@@ -175,6 +175,15 @@ _INLINE constexpr bool isPow2(T x) {
 }
 
 template <typename T>
+_INLINE constexpr T round(T x) {
+	static_assert(std::is_arithmetic_v<T>);
+	
+	if (x >= 0.l)
+        return static_cast<T>(static_cast<int>(x + 0.5f));
+    return static_cast<T>(static_cast<int>(x - 0.5f));
+}
+
+template <typename T>
 _INLINE constexpr uint8_t get2pow(T x) {
 	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
 	assert(x != 0);
