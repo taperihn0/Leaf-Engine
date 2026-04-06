@@ -66,7 +66,7 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
     return std::getline(os, line);
 }
 
-static constexpr uint             IterCount = 7000;
+static constexpr uint             IterCount = 6000;
 static constexpr int              A = IterCount / 10;
 static constexpr double           Alpha = 0.602;
 static constexpr double           Gamma = 0.101;
@@ -99,7 +99,7 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 0.045 * option.rate;
+                        param.r = 0.03 * option.rate;
                         param.c = (param.max - param.min) / 12.;
 
                         return param;

@@ -33,32 +33,33 @@ enum OrderType {
 };
 
 /*
-*	MoveOrder<STAGED>:
-*	 - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
-*	MoveOrder<QUIESCE>:
-*	 - Generates only captures in quiescent node.
+*   Tunable parameters in move ordering.
 */
 
 inline _P_CONSTEXPR int MaxQuietsHistoryPow = 13;
 inline _P_CONSTEXPR int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 
-/*
-*   Tunable parameters in move ordering.
-*/
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = std::lroundf(13.3373f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = std::lroundf(5.07386f);
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = std::lroundf(67.3132f);
 
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = 13;
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = 5;
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = 63;
+inline _P_CONSTEXPR int KnightCapturedScore = std::lroundf(284.071f);
+inline _P_CONSTEXPR int BishopCapturedScore = std::lroundf(318.916f);
+inline _P_CONSTEXPR int ToKnightPromoScore = std::lroundf(120.781f);
+inline _P_CONSTEXPR int ToBishopPromoScore = std::lroundf(70.7067f);
+inline _P_CONSTEXPR int ToRookPromoScore = std::lroundf(150.001f);
+inline _P_CONSTEXPR int ToQueenPromoScore = std::lroundf(900.784f);
 
 inline constexpr    int PawnCapturedScore   = 100;
-inline _P_CONSTEXPR int KnightCapturedScore = 281;
-inline _P_CONSTEXPR int BishopCapturedScore = 322;
 inline constexpr    int RookCapturedScore   = 500;
 inline constexpr    int QueenCapturedScore  = 900;
-inline _P_CONSTEXPR int ToKnightPromoScore  = 127;
-inline _P_CONSTEXPR int ToBishopPromoScore  = 58;
-inline _P_CONSTEXPR int ToRookPromoScore    = 155;
-inline _P_CONSTEXPR int ToQueenPromoScore   = 920;
+
+/*
+*   MoveOrder<STAGED>:
+*    - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
+*   MoveOrder<QUIESCE>:
+*    - Generates only captures in quiescent node.
+*/
 
 class MoveOrder {
 public:
