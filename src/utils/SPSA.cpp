@@ -1,70 +1,13 @@
 #include "SPSA.hpp"
 #include "Process.hpp"
 #include "frontend/UCI.hpp"
+#include "SelfGame.hpp"
 
 #include <sstream>
 #include <atomic>
 #include <mutex>
 
 namespace Utils {
-    
-_FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) {
-    return static_cast<enumLogLabel>(static_cast<uint16_t>(s0) | static_cast<uint16_t>(s1));
-}
-
-_FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERTNOLOG(id < SPSA_Tuning::ThreadLimit);
-    return static_cast<enumLogLabel>(16 << id);
-}
-
-_FORCEINLINE void labelLog(std::ostream& is, uint16_t label, const std::string& str) {
-
-#if !defined(DEBUG)
-    if (label & LOG_DEBUG) 
-        return;
-#endif
-
-    if (label != LOG_NO_LABEL) {
-        std::string labels;
-
-        auto add_label = [&](uint16_t bit, const char* name) {
-            if (label & bit) {
-                if (!labels.empty()) 
-                    labels += "|";
-                labels += name;
-                label &= ~bit;
-            }
-        };
-
-        add_label(LOG_DEBUG,    "DEBUG");
-        add_label(LOG_INFO,     "INFO");
-        add_label(LOG_ENGINE_0, "PLAYER_0");
-        add_label(LOG_ENGINE_1, "PLAYER_1");
-
-        const auto& thread_label = [](uint id) {
-            ASSERTNOLOG(id < SPSA_Tuning::ThreadLimit);
-            return static_cast<enumLogLabel>(16 << id);
-        };
-
-        for (uint id = 0; id < SPSA_Tuning::ThreadLimit; id++) {
-            std::stringstream thr;
-            thr << "THREAD_" << id;
-            add_label(threadLabel(id), thr.str().c_str());
-        }
-
-        is << "[" << labels << "] ";
-    }
-
-    is << str << std::endl;
-}
-
-_FORCEINLINE void log(std::ostream& is, const std::string& str) {
-    labelLog(is, LOG_NO_LABEL, str);
-}
-
-_FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
-    return std::getline(os, line);
-}
 
 static constexpr uint             IterCount = 6000;
 static constexpr int              A = IterCount / 10;
@@ -119,7 +62,8 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
     limits.wtime = limits.btime = 4_s;
     limits.winc = limits.binc = 100_ms;
 
-    _openings.load(std::string(OpeningPath));
+    if (_openings->isEmpty())
+        _openings->load(std::string(OpeningPath));
 
     std::ofstream log_file(spsa_log, std::ios_base::app);
 
@@ -286,7 +230,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         applyOptions(theta_plus, engine_os0, engine_is0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
         applyOptions(theta_minus, engine_os1, engine_is1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
-        std::string res_str;
+        std::shared_ptr<std::string> res_str;
         const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str, id);
 
         if (res == 1) {
@@ -310,7 +254,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                 writeCheckpoint(log_file, params, k);
         }
 
-        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + res_str + ", numeric: " + std::to_string(res));
+        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + *res_str + ", numeric: " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -353,220 +297,33 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
     }
 }
 
-_INLINE int  SPSA_Tuning::match(SearchLimits limits,
+_INLINE int SPSA_Tuning::match(SearchLimits limits,
                                std::istream& engine_os0, std::ostream& engine_is0,
                                std::istream& engine_os1, std::ostream& engine_is1,
-                               std::string& info,
+                               std::shared_ptr<std::string> info,
                                uint id)
 {
-    // Is, os are relative to the engines.
-    // We're writing to os, reading from is.
-    struct EnginePlayer {
-        std::istream* os;
-        std::ostream* is;
+    SelfGame::GameSpecPacket game_packet = {
+        limits,
+        SelfGame::EnginePlayer{ &engine_os0, &engine_is0 },
+        SelfGame::EnginePlayer{ &engine_os1, &engine_is1 },
+        id,
+        info,
+        _openings,
     };
 
-    EnginePlayer player[2];
-
-    // (is0, os0) engine is white player
-    const bool plus_player_white = random<int>(0, 1);
-
-    // mixing sides to move 
-    if (plus_player_white) {
-        player[WHITE] = { &engine_os0, &engine_is0 };
-        player[BLACK] = { &engine_os1, &engine_is1 };
-    } 
-    else {
-        player[WHITE] = { &engine_os1, &engine_is1 };
-        player[BLACK] = { &engine_os0, &engine_is0 };
-    }
-
-    log(*player[WHITE].is, "ucinewgame");
-    log(*player[BLACK].is, "ucinewgame");
-
-    for (enumColor side : { WHITE, BLACK }) {
-        log(*player[side].is, "isready");
-
-        std::string line;
-        while ((readline(*player[side].os, line), line != "readyok"));
-    }
-
-    Timer timer;
-    const bool time_constraint = limits.wtime != 0 and limits.btime != 0;
-
-    const Position& opening = _openings.getPosition();
-    const std::string start_fen = opening.createFEN();
-
-    Game game(opening, time_constraint, limits.wtime, limits.btime);
-    Game::Result game_result;
-
-    uint draw_full_moves = 0;
-
-    const enumLogLabel thread_label = threadLabel(id);
-    enumLogLabel debug_labels[2];
-    
-    debug_labels[0] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_0 | thread_label 
-                                        : LOG_DEBUG | LOG_ENGINE_1 | thread_label;
-    debug_labels[1] = plus_player_white ? LOG_DEBUG | LOG_ENGINE_1 | thread_label 
-                                        : LOG_DEBUG | LOG_ENGINE_0 | thread_label;
-
-    enumLogLabel info_labels[2];
-
-    info_labels[0] = plus_player_white ? LOG_INFO | LOG_ENGINE_0 | thread_label 
-                                       : LOG_INFO | LOG_ENGINE_1 | thread_label;
-    info_labels[1] = plus_player_white ? LOG_INFO | LOG_ENGINE_1 | thread_label 
-                                       : LOG_INFO | LOG_ENGINE_0 | thread_label;
-
-    while (!game.isWin(game_result) and !game.isDraw(game_result)) {
-        Position& pos = game.getPosition();
-        const bool side2move = pos.getTurn();
-        EnginePlayer& curr_player = player[side2move];
-        FullInfoRecord& record = game.getHistoryRecord();
-
-        Score eval = Score::Undef;
-        sentPosition(start_fen, record, 
-                     *curr_player.os, 
-                     *curr_player.is,
-                     info_labels[side2move]); // we're logging positions in any build mode
-
-        timer.go();
-        Move32b move = getPlayerMove(limits, pos, 
-                                     *curr_player.os, 
-                                     *curr_player.is, 
-                                     eval,
-                                     debug_labels[side2move]);
-        time_ms_t think_time = timer.duration();
-
-        if (time_constraint and side2move == WHITE) {
-            limits.wtime -= think_time - limits.winc;
-            limits.wtime += Game::MoveOverhead;
-
-            game.applyMove(move, think_time - limits.winc - Game::MoveOverhead);
-        }
-        else if (time_constraint) {
-            limits.btime -= think_time - limits.binc;
-            limits.btime += Game::MoveOverhead;
-
-            game.applyMove(move, think_time - limits.binc - Game::MoveOverhead);
-        }
-
-        ASSERTNOLOG(eval != Score::Undef);
-
-        if (std::abs(static_cast<int>(eval)) < 90) 
-            draw_full_moves += side2move;
-        else
-            draw_full_moves = 0;
-
-        // Adjucate game as draw
-        if (draw_full_moves > 35) {
-            game_result = Game::DRAW_BY_ADJUCATION;
-            break;
-        }
-    }
-
-    info = toStr(game_result);
+    const SelfGame::PlayerPerspectiveResult game_result = SelfGame().mixedMatch<EnableSelfPlayLog>(game_packet);
 
     //  1. - if player 0 wins
     // -1. - if player 1 wins
+    //  0  - otherwise.    
 
-    if (isWhiteWin(game_result)) {
-        return plus_player_white ? 1 : -1;
-    }
-    else if (isBlackWin(game_result)) {
-        return plus_player_white ? -1 : 1;
-    }
+    if (isZeroPlayerWin(game_result))
+        return 1;
+    else if (isOnePlayerWin(game_result))
+        return -1;
+
     return 0;
-}
-
-void SPSA_Tuning::sentPosition(const std::string& start_fen, 
-                               const FullInfoRecord& record,
-                               std::istream& engine_os, std::ostream& engine_is,
-                               enumLogLabel ret_msg_label) 
-{
-    // Is, os are relative to the engines.
-    // We're writing to os, reading from is.
-
-    const int curr_halfmove_clock = static_cast<int>(record.currentHalfCount());
-
-    std::stringstream cmd;
-    cmd << "position fen " << start_fen;
-
-    if (curr_halfmove_clock > 0)
-        cmd << " moves";
-
-    for (int halfmove_clock = 0;
-         halfmove_clock < curr_halfmove_clock;
-         halfmove_clock++) 
-    {
-        Move32b move = record.getPrevMove(halfmove_clock);
-        cmd << " " << move;
-    }
-
-    const std::string msg = cmd.str();
-    log(engine_is, msg);
-    labelLog(std::cout, ret_msg_label, msg);
-}
-
-Move32b SPSA_Tuning::getPlayerMove(SearchLimits limits,
-                                   const Position& pos,
-                                   std::istream& engine_os, std::ostream& engine_is, 
-                                   Score& score,
-                                   enumLogLabel ret_msg_label) 
-{
-    // is, os streams are relative to the engines.
-    // We're writing to is, reading from os.
-
-    std::stringstream cmd;
-
-    cmd << "go";
-    cmd << " depth " << limits.depth;
-    cmd << " wtime " << limits.wtime 
-        << " btime " << limits.btime 
-        << " winc "  << limits.winc 
-        << " binc "  << limits.binc;
-    
-    log(engine_is, cmd.str());
-    labelLog(std::cout, ret_msg_label, cmd.str());
-
-    std::string line;
-    std::string bestMoveStr;
-
-    while (readline(engine_os, line)) {
-        labelLog(std::cout, ret_msg_label, line);
-
-        if (line.empty()) 
-            continue;
-
-        std::stringstream ss(line);
-        std::string header;
-        ss >> header;
-
-        if (header == "info") {
-            std::string word;
-
-            while (ss >> word) {
-                if (word == "score") {
-                    std::string type;
-                    int value;
-                    ss >> type >> value;
-
-                    if (type == "cp") {
-                        score = static_cast<Score>(value);
-                    } 
-                    else if (type == "mate") {
-                        score = (value >= 0) ? (Score::Mate - value) 
-                                             : (-Score::Mate - value);
-                    }
-                }
-            }
-        } 
-        else if (header == "bestmove") {
-            ss >> bestMoveStr;
-            break;
-        }
-    }
-
-    return Move32b::fromStr<Move32b::Notation::REGULAR>(pos, bestMoveStr);
 }
 
 }

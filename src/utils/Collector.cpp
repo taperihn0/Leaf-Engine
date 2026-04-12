@@ -14,7 +14,7 @@ void incGameCount(DataCollector::CommonThreadData* common) {
     common->common_lock.unlock();
 }
 
-void perThreadGameLoop(DataCollector::PerThreadData& thread) {
+void perThreadGameLoop(DataCollector::PerThreadData& thread) {/*
     ASSERT(thread.output_white_win.is_open(), "Output not opened.");
     ASSERT(thread.output_black_win.is_open(), "Output not opened.");
     ASSERT(thread.output_draw.is_open(),      "Output not opened.");
@@ -111,7 +111,7 @@ void perThreadGameLoop(DataCollector::PerThreadData& thread) {
     std::cout << thread.games_ended << " games played on thread " << std::hex << thread_id << std::dec << " - total of " 
               << thread.total_positions 
               << " positions collected." << std::endl;
-    thread.commons->stdout_lock.unlock();
+    thread.commons->stdout_lock.unlock();*/
 }
 
 void DataCollector::startTournament(size_t games_count, size_t thread_count, SearchLimits limits) {

@@ -87,13 +87,18 @@ void OpeningSuite::load(std::string path) {
     }
 }
 
-const Position& OpeningSuite::getPosition() {
+const Position& OpeningSuite::getRandomPosition() {
     if (_positions.empty()) {
         ASSERT(false, "Openings are not loaded");
     }
 
     size_t random_index = random<size_t>(0, _positions.size() - 1);
     return _positions[random_index];
+}
+
+bool OpeningSuite::isEmpty() const
+{
+    return _positions.empty();
 }
 
 } // namespace Utils

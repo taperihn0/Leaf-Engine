@@ -142,7 +142,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 	return mb_count * 1024 * 1024;
 }
 
-#define ASSERT(s, msg) (void)((s) or releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERT(s, msg) (void)((s) or ::releaseFailedAssertion(__FILE__, msg, __LINE__))
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {

@@ -8,15 +8,63 @@ namespace Utils {
 
 class SelfGame {
 public:
-    SelfGame(size_t tt_size_per_search = 1_MB);
+    SelfGame() = default;
 
-    Game::Result start(SearchLimits limits);
-    Game::Result start(std::vector<ExtPackedPosition>& packed_positions, SearchLimits limits);
+    /* Is, os are relative to the engines.
+    *  We're writing to os, reading from is.
+    */
+    struct EnginePlayer {
+        std::istream* os;
+        std::ostream* is;
+    };
+
+    struct GameSpecPacket {
+        SearchLimits                  limits;
+        EnginePlayer                  engine0;
+        EnginePlayer                  engine1;
+        uint                          thread_id;
+        std::shared_ptr<std::string>  info;
+        std::shared_ptr<OpeningSuite> openings; 
+    };
+
+    enum PlayerPerspectiveResult {
+        GAME_INVALID,
+        PLAYER_ZERO_WIN_BY_MATE,
+        PLAYER_ONE_WIN_BY_MATE,
+        PLAYER_ZERO_WIN_BY_ADJUCATION,
+        PLAYER_ONE_WIN_BY_ADJUCATION,
+        PLAYER_ZERO_WIN_BY_TIMEOUT,
+        PLAYER_ONE_WIN_BY_TIMEOUT,
+        DRAW_BY_HALF_MOVES_LIMIT,
+        DRAW_BY_STALMATE,
+		DRAW_BY_REPETITIONS,
+        DRAW_BY_ADJUCATION
+    };
+
+    /* Before seting up a match between given engines,
+    *  we also mix their sides.
+    */
+    template <bool EnableLog>
+    PlayerPerspectiveResult mixedMatch(GameSpecPacket& packet);
 private:
-    template <bool CollectData>
-    Game::Result setupMatch(SearchLimits limits, std::vector<ExtPackedPosition>* const packed_positions);
+    template <bool EnableLog>
+    void sentPosition(const std::string& start_fen, 
+                      const FullInfoRecord& record,
+                      EnginePlayer player,
+                      enumLogLabel ret_msg_label);
+    
+    template <bool EnableLog>
+    Move32b getPlayerMove(SearchLimits limits, 
+                          const Position& pos,
+                          EnginePlayer player,
+                          Score& score,
+                          enumLogLabel ret_msg_label);
 
-    Search _search_by_side[2];
+    PlayerPerspectiveResult resultToPerspectiveResult(Game::Result result, bool zero_player_white);
 };
+
+bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result);
+bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result);
+bool isDraw(SelfGame::PlayerPerspectiveResult result);
 
 } // namespace Utils

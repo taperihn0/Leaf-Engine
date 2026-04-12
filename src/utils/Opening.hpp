@@ -39,7 +39,9 @@ public:
     OpeningSuite(std::string path);
 
     void load(std::string path);
-    const Position& getPosition();
+    const Position& getRandomPosition();
+
+    bool isEmpty() const;
 private:
     std::vector<Position> _positions;
 };
