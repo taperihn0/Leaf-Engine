@@ -55,7 +55,7 @@ private:
     
     template <bool EnableLog>
     Move32b getPlayerMove(SearchLimits limits, 
-                          const Position& pos,
+                          Position& pos,
                           EnginePlayer player,
                           Score& score,
                           enumLogLabel ret_msg_label);

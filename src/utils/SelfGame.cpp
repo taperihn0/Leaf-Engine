@@ -76,6 +76,12 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
                                                 curr_player,
                                                 eval,
                                                 debug_labels[side2move]);
+
+        if (move.isNull()) {
+            game_result = Game::GAME_INVALID;
+            break;   
+        }
+
         time_ms_t think_time = timer.duration();
 
         if (time_constraint and side2move == WHITE) {
@@ -105,6 +111,10 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
         }
     }
 
+    if (game_result == Game::GAME_INVALID) {
+        labelLog(std::cout, LOG_INFO, "Terminating game");
+    }
+
     *packet.info = toStr(game_result);
     return resultToPerspectiveResult(game_result, zero_player_white);
 }
@@ -115,8 +125,9 @@ void SelfGame::sentPosition(const std::string& start_fen,
                             EnginePlayer player,
                             enumLogLabel ret_msg_label) 
 {
-    // Is, os are relative to the engines.
-    // We're writing to os, reading from is.
+    /* Is, os are relative to the engines.
+    *  We're writing to os, reading from is.
+    */
 
     const int curr_halfmove_clock = static_cast<int>(record.currentHalfCount());
 
@@ -143,13 +154,14 @@ void SelfGame::sentPosition(const std::string& start_fen,
 
 template <bool EnableLog>
 Move32b SelfGame::getPlayerMove(SearchLimits limits,
-                                const Position& pos,
+                                Position& pos,
                                 EnginePlayer player, 
                                 Score& score,
                                 enumLogLabel ret_msg_label) 
 {
-    // is, os streams are relative to the engines.
-    // We're writing to is, reading from os.
+    /* Is, os are relative to the engines.
+    *  We're writing to os, reading from is.
+    */
 
     std::stringstream cmd;
 
@@ -166,7 +178,7 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
         labelLog(std::cout, ret_msg_label, cmd.str());
 
     std::string line;
-    std::string bestMoveStr;
+    std::string best_move_str;
 
     while (readline(*player.os, line)) {
 
@@ -200,17 +212,31 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
             }
         } 
         else if (header == "bestmove") {
-            ss >> bestMoveStr;
+            ss >> best_move_str;
             break;
         }
     }
 
-    return Move32b::fromStr<Move32b::Notation::REGULAR>(pos, bestMoveStr);
+    if (best_move_str.empty()) {
+        labelLog(std::cout, LOG_INFO, "Invalid best move");
+        return Move32b::Null;
+    }
+
+    Move32b best_move = Move32b::fromStr<Move32b::Notation::REGULAR>(pos, best_move_str);
+
+    if (!best_move.isLegal(pos)) {
+        labelLog(std::cout, LOG_INFO, "Invalid best move");
+        return Move32b::Null;
+    }
+
+    return best_move;
 }
 
-_FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResult(Game::Result result, bool zero_player_white)
-{
-    if (isWhiteWin(result)) {
+_FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResult(Game::Result result, bool zero_player_white) {
+    if (result == Game::GAME_INVALID)
+        return GAME_INVALID;
+
+    else if (isWhiteWin(result)) {
         switch (result) {
         case Game::WHITE_WIN_BY_MATE: 
             return zero_player_white ? PLAYER_ZERO_WIN_BY_MATE 
@@ -249,22 +275,19 @@ _FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResu
     return GAME_INVALID;
 }
 
-bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result)
-{
+bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result) {
     return result == SelfGame::PLAYER_ZERO_WIN_BY_MATE ||
            result == SelfGame::PLAYER_ZERO_WIN_BY_ADJUCATION ||
            result == SelfGame::PLAYER_ZERO_WIN_BY_TIMEOUT;
 }
 
-bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result)
-{
+bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result) {
     return result == SelfGame::PLAYER_ONE_WIN_BY_MATE ||
            result == SelfGame::PLAYER_ONE_WIN_BY_ADJUCATION ||
            result == SelfGame::PLAYER_ONE_WIN_BY_TIMEOUT;
 }
 
-bool isDraw(SelfGame::PlayerPerspectiveResult result)
-{
+bool isDraw(SelfGame::PlayerPerspectiveResult result) {
     return result == SelfGame::DRAW_BY_HALF_MOVES_LIMIT ||
            result == SelfGame::DRAW_BY_STALMATE ||
            result == SelfGame::DRAW_BY_REPETITIONS ||

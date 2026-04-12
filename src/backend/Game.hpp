@@ -57,6 +57,7 @@ private:
 class Game {
 public:
     enum Result {
+		GAME_INVALID,
         WHITE_WIN_BY_MATE,
         BLACK_WIN_BY_MATE,
         WHITE_WIN_BY_ADJUCATION,

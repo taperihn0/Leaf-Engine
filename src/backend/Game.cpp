@@ -122,6 +122,8 @@ std::string toStr(Game::Result game_result) {
         return "draw by stealmate";
     case Game::DRAW_BY_ADJUCATION:
         return "draw by adjucation";
+    case Game::GAME_INVALID:
+        return "invalid game";
     default:     
         ASSERT(false, "No other game results");
     }

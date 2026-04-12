@@ -28,7 +28,6 @@ Move32b createMove(const Position& pos, Square origin, Square target, Piece::enu
 	}
 	else res = Move32b::makeSimple(origin, target, capture, piece);
 
-	//assert(res.isPseudoLegal(pos));
 	return res;
 }
 

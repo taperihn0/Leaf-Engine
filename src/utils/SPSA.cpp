@@ -230,7 +230,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         applyOptions(theta_plus, engine_os0, engine_is0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
         applyOptions(theta_minus, engine_os1, engine_is1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
-        std::shared_ptr<std::string> res_str;
+        auto res_str = std::make_shared<std::string>();
         const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str, id);
 
         if (res == 1) {
@@ -287,8 +287,9 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
                                std::istream& engine_os, std::ostream& engine_is,
                                enumLogLabel ret_msg_label) 
 {
+    // Setup option value using "setoption name OPTION value VALUE"
+
     for (const SPSA_PackedParameter& param : tunable_options) {
-        // "setoption name OPTION_STR value OPTION_VALUE"
         std::stringstream cmd;
         cmd << "setoption name " << *param.name << " value " << std::to_string(param.value);
 
@@ -314,9 +315,9 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
 
     const SelfGame::PlayerPerspectiveResult game_result = SelfGame().mixedMatch<EnableSelfPlayLog>(game_packet);
 
-    //  1. - if player 0 wins
-    // -1. - if player 1 wins
-    //  0  - otherwise.    
+    //  1. - if player zero wins
+    // -1. - if player one wins
+    //  0  - otherwise (draw or invalid game)
 
     if (isZeroPlayerWin(game_result))
         return 1;
