@@ -18,15 +18,20 @@ public:
         std::ostream* is;
     };
 
+    struct TrainDataSpec {
+        std::vector<PackedPosition>* positions_buf;
+        std::vector<Score>*          white_scores_buf;
+        std::function<bool(const Position&, int)> train_pos_filter = doNothing<bool, const Position&, int>;
+    };
+
     struct GameSpecPacket {
-        SearchLimits                    limits;
-        EnginePlayer                    engine0;
-        EnginePlayer                    engine1;
-        uint                            thread_id;
-        std::shared_ptr<Game::Result>   result;
-        OpeningManBase*                 openings; 
-        std::shared_ptr<std::vector<PackedPosition>> positions_buf;
-        std::shared_ptr<std::vector<Score>> white_scores_buf;
+        SearchLimits                   limits;
+        EnginePlayer                   engine0;
+        EnginePlayer                   engine1;
+        uint                           thread_id;
+        std::shared_ptr<Game::Result>  result;
+        OpeningManBase*                openings; 
+        std::shared_ptr<TrainDataSpec> train_data_spec;
     };
 
     enum PlayerPerspectiveResult {
@@ -65,7 +70,7 @@ private:
     PlayerPerspectiveResult resultToPerspectiveResult(Game::Result result, bool zero_player_white);
 
     static constexpr int _LowScore = 90;
-    static constexpr int _AdjucateMoveLimit = 35;
+    static constexpr int _AdjucateHalfMoveLimit = 70;
 };
 
 bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result);

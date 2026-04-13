@@ -72,6 +72,7 @@ public:
 
 	Game(const Position& from, bool time_constraint, time_ms_t time_white, time_ms_t time_black);
 
+	void applyMove(Move32b move);
 	void applyMove(Move32b move, time_ms_t think_time);
 
 	// Returns true whether there is a win on the board.

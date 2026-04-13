@@ -18,6 +18,8 @@ public:
                          const std::string& log_dir,
                          SearchLimits limits);
 private:
+    bool filterTrainPosition(Position& pos, Score white_score);
+
     struct CommonThreadData {
         std::atomic<size_t> games_ended;
         size_t              games2play;
@@ -25,6 +27,7 @@ private:
         std::atomic<size_t> total_white_win_count;
         std::atomic<size_t> total_black_win_count;
         std::atomic<size_t> total_draw_count;
+        size_t              total_thread_cnt;
         std::mutex          stdout_lock;
     };
 
@@ -45,7 +48,11 @@ private:
     void perThreadGameLoop(PerThreadData& thread);
 
     static constexpr float _NodesRandomFactor = 0.15f;
+#if defined(DEBUG)
     static constexpr bool _EnableSelfPlayLog = true;
+#else
+    static constexpr bool _EnableSelfPlayLog = false;
+#endif
 };
 
 } // namespace Utils

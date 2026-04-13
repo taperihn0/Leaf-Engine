@@ -260,6 +260,12 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 	if (token == "moves") {
 		while (strm >> std::skipws >> token) {
 			Move32b move = Move32b::fromStr<Move32b::Notation::REGULAR>(_pos, token);
+
+			if (move.isNull() or move.getPieceColor(_pos) != _pos.getTurn()) {
+				std::cout << "Invalid move" << std::endl;
+				break;
+			}
+
 			_game.recordInfo(_pos.getZobristKey(), move);
 			_pos.make(move);
 		}

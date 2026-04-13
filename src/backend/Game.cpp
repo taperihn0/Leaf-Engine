@@ -9,6 +9,11 @@ Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, ti
                _current_pos.isInCheck(_current_pos.getTurn()) }
 {}
 
+void Game::applyMove(Move32b move) {
+    ASSERT(!_time_constraint, "Ignoring think time info");
+    applyMove(move, 0);
+}
+
 void Game::applyMove(Move32b move, time_ms_t think_time) {
     bool side2move = _current_pos.getTurn();
 

@@ -143,6 +143,8 @@ public:
 		return knightAttacks(org).isOccupiedSq(dst);
 	}
 
+	enumColor getPieceColor(const Position& pos) const;
+
 	Piece::enumType getCaptured(const Position& pos) const;
 
 	// use this field only after making a move -

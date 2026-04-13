@@ -30,7 +30,7 @@ private:
     OpeningGenerator() = default;
     static inline const std::string _OpeningFile = "src/assets/sets/crafty_2500_new.epd";
 
-    static constexpr int            _OpeningEvalThreshold = 400;
+    static constexpr int            _OpeningEvalThreshold = 200;
 #if !defined(DEBUG)
     static constexpr int            _RandomPerPos   = 25;
 #else

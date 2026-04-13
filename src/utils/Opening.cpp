@@ -68,7 +68,20 @@ void OpeningGenerator::load() {
 
     last = std::remove_if(_positions.begin(), last, [](GeneratedPosition& genpos) {
         const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, genpos.pos);
-        return std::abs(static_cast<int>(score)) > _OpeningEvalThreshold;
+
+        if (std::abs(static_cast<int>(score)) > _OpeningEvalThreshold)
+            return true;
+
+        else if (genpos.pos.isInCheck(genpos.pos.getTurn()))
+            return true;
+
+        MoveList ml;
+        MoveGen::generateLegalMoves<MoveGen::ALL>(genpos.pos, ml);
+
+        if (!ml.count())
+            return true;
+
+        return false;
     });
 
     _positions.erase(last, _positions.end());

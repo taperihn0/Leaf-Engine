@@ -11,6 +11,11 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <functional>
+
+#if defined(DEBUG)
+#define INSPECT_SELFPLAY_MATCHES
+#endif
 
 namespace Utils {
 
@@ -21,6 +26,9 @@ _INLINE size_t streamBytesLeft(std::istream& input) {
     input.seekg(curr_bytes);
     return end_bytes - curr_bytes;
 }
+
+template <typename Return, typename... Args>
+Return doNothing(Args&&...) { return Return(); };
 
 static int PlatformThreadLimit = []() -> int {
     return std::thread::hardware_concurrency();
@@ -54,48 +62,47 @@ enum enumLogLabel : uint32_t {
 };
 
 _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) {
-    return static_cast<enumLogLabel>(static_cast<uint16_t>(s0) | 
-                                     static_cast<uint16_t>(s1));
+    return static_cast<enumLogLabel>(static_cast<uint32_t>(s0) | 
+                                     static_cast<uint32_t>(s1));
 }
 
 _FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERTNOLOG(id < PlatformThreadLimit);
-    return static_cast<enumLogLabel>(LOG_THREAD_1 + id);
+    ASSERTNOLOG(1 <= id && id <= PlatformThreadLimit);
+    return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
 }
 
-_INLINE void labelLog(std::ostream& is, uint16_t label, const std::string& str) {
-#if !defined(DEBUG)
-    if (label & LOG_DEBUG) 
+_INLINE void labelLog(std::ostream& is, uint32_t label, const std::string& str) {
+    if (label == LOG_NO_LABEL) {
+        is << str << std::endl;
         return;
-#endif
-
-    if (label != LOG_NO_LABEL) {
-        std::string labels;
-
-        auto add_label = [&](uint16_t bit, const char* name) {
-            if (label & bit) {
-                if (!labels.empty()) 
-                    labels += "|";
-                labels += name;
-                label &= ~bit;
-            }
-        };
-
-        add_label(LOG_DEBUG,    "DEBUG");
-        add_label(LOG_INFO,     "INFO");
-        add_label(LOG_ENGINE_0, "PLAYER_0");
-        add_label(LOG_ENGINE_1, "PLAYER_1");
-
-        for (uint id = 0; id < PlatformThreadLimit; id++) {
-            std::stringstream thr;
-            thr << "THREAD_" << id;
-            add_label(threadLabel(id), thr.str().c_str());
-        }
-
-        is << "[" << labels << "] ";
     }
 
-    is << str << std::endl;
+    std::string labels;
+    uint32_t working_label = label; 
+
+    auto add_label = [&](uint32_t bit, const char* name) {
+        if (working_label & bit) {
+            if (!labels.empty()) labels += "|";
+            labels += name;
+            working_label &= ~bit;
+        }
+    };
+
+    add_label(LOG_DEBUG,    "DEBUG");
+    add_label(LOG_INFO,     "INFO");
+    add_label(LOG_ENGINE_0, "PLAYER_0");
+    add_label(LOG_ENGINE_1, "PLAYER_1");
+
+    for (uint id = 1; id <= PlatformThreadLimit; id++) {
+        uint32_t bit = static_cast<uint32_t>(1) << (4 + id - 1);
+        if (working_label & bit) {
+            if (!labels.empty()) labels += "|";
+            labels += "THREAD_" + std::to_string(id);
+            working_label &= ~bit;
+        }
+    }
+
+    is << "[" << labels << "] " << str << std::endl;
 }
 
 _FORCEINLINE void log(std::ostream& is, const std::string& str) {

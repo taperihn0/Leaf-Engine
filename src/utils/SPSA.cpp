@@ -311,7 +311,6 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
         result,
         &_openings,
         nullptr,
-        nullptr
     };
 
     const SelfGame::PlayerPerspectiveResult game_result = SelfGame()

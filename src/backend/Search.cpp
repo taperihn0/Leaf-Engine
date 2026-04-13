@@ -366,7 +366,8 @@ Move32b Search::_findBestMove_unittest(Search& search,
 template <Search::enumInfoLevel InfoLevel>
 Move32b Search::goIterativeDeepening(Position& pos,	
 									 const FullInfoRecord& game, 
-									 SearchLimits& limits) {
+									 SearchLimits& limits) 
+{
 	SearchResults search_results;
 	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
@@ -374,6 +375,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
 	preroot->cluster.accum_cache.markClean();
 	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
 																	 : Move32b::Null;
+	preroot->side2move = !pos.getTurn();
 
 	NodeInfo* root = _tree_stack.getRootNode();
     root->cluster.prev_cluster = &preroot->cluster;
@@ -1628,7 +1630,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 			return false;
 
 		prev_node--;
-
+		
 		if (prev_node->move.isNull() or prev_node->move.isIrreversible())
 			return false;
 

@@ -148,6 +148,12 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 }
 
 template <typename T>
+enumColor MoveData<T>::getPieceColor(const Position& pos) const {
+	const Square org = getOrigin();
+	return pos.getBySide(WHITE) & BitBoard(org) ? WHITE : BLACK;
+}
+
+template <typename T>
 Piece::enumType MoveData<T>::getCaptured(const Position& pos) const {
 	const Square dst = getTarget();
 	return pos.pieceOn(dst, pos.getOppositeTurn());
@@ -289,6 +295,9 @@ bool isCapturePacked(const Position& pos, Move16b move) {
 	const Square dst = move.getTarget();
 	return pos.getOppositePieces().isOccupiedSq(dst);
 }
+
+template enumColor Move16b::getPieceColor(const Position&) const;
+template enumColor Move32b::getPieceColor(const Position&) const;
 
 template Piece::enumType Move16b::getCaptured(const Position&) const;
 template Piece::enumType Move32b::getCaptured(const Position&) const;

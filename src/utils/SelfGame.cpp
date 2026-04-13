@@ -43,7 +43,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
     Game game(opening, time_constraint, limits.wtime, limits.btime);
     Game::Result game_result;
 
-    uint draw_full_moves = 0;
+    uint draw_half_moves = 0;
 
     const enumLogLabel thread_label = threadLabel(packet.thread_id);
     enumLogLabel debug_labels[2];
@@ -61,13 +61,15 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
                                             : LOG_INFO | LOG_ENGINE_0 | thread_label;
     }
 
-    if (packet.positions_buf != nullptr and 
-        !packet.positions_buf->empty())
-        packet.positions_buf->clear();
+    if (packet.train_data_spec != nullptr and
+        packet.train_data_spec->positions_buf != nullptr and 
+        !packet.train_data_spec->positions_buf->empty())
+        packet.train_data_spec->positions_buf->clear();
 
-    if (packet.white_scores_buf != nullptr and
-        !packet.white_scores_buf->empty())
-        packet.white_scores_buf->clear();
+    if (packet.train_data_spec != nullptr and
+        packet.train_data_spec->white_scores_buf != nullptr and
+        !packet.train_data_spec->white_scores_buf->empty())
+        packet.train_data_spec->white_scores_buf->clear();
 
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
@@ -94,14 +96,16 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
 
         time_ms_t think_time = timer.duration();
 
-        if (true) {
-            if (packet.positions_buf != nullptr) {
-                packet.positions_buf->push_back(PackedPosition::packed(pos));
+        if (packet.train_data_spec != nullptr and
+            packet.train_data_spec->train_pos_filter(pos, moves_done)) {
+                
+            if (packet.train_data_spec->positions_buf != nullptr) {
+                packet.train_data_spec->positions_buf->push_back(PackedPosition::packed(pos));
             }
 
-            if (packet.white_scores_buf != nullptr) {
+            if (packet.train_data_spec->white_scores_buf != nullptr) {
                 const Score white_score = pos.getTurn() == WHITE ? score : -score;
-                packet.white_scores_buf->push_back(white_score);
+                packet.train_data_spec->white_scores_buf->push_back(white_score);
             }
         }
 
@@ -117,16 +121,21 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
 
             game.applyMove(move, think_time - limits.binc - Game::MoveOverhead);
         }
+        else if (!time_constraint) {
+            game.applyMove(move);
+        }
+
+        moves_done++;
 
         ASSERTNOLOG(score != Score::Undef);
 
         if (std::abs(static_cast<int>(score)) < _LowScore) 
-            draw_full_moves += side2move;
+            draw_half_moves++;
         else
-            draw_full_moves = 0;
+            draw_half_moves = 0;
 
         // Adjucate game as draw
-        if (draw_full_moves > _AdjucateMoveLimit) {
+        if (draw_half_moves > _AdjucateHalfMoveLimit) {
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
