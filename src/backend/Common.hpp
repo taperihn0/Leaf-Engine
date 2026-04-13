@@ -13,6 +13,7 @@
 #include <random>
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 
 #if defined(_MSC_VER)
 #include <windows.h>
@@ -212,12 +213,18 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 // Target cacheline size is fixed
 #define CACHELINE_SIZE 64
 
-static constexpr int Seed = 1;
+#if defined(BUILD_UTILS)
+static int Seed = []() { return std::random_device{}(); }();
+#else
+static int Seed = 1;
+#endif
+
 static std::mt19937 GlobMersenne(Seed);
 
 template <typename Integer = int>
 _INLINE Integer random(Integer l, Integer r) {
+	static thread_local std::mt19937 mersenne(Seed);
     std::uniform_int_distribution<Integer> dist(l, r);
-    return dist(GlobMersenne);
+    return dist(mersenne);
 }
 

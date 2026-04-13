@@ -104,29 +104,19 @@ public:
     explicit ExtPackedPosition(const PackedPosition& sfp);
 
     bool operator==(const ExtPackedPosition& p) const;
-
     _INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
-    
     bool operator==(const PackedPosition& sfp) const;
-
     _INLINE bool operator!=(const PackedPosition& sfp) const { return !(*this == sfp); }
 
     static ExtPackedPosition fromFEN(const std::string& fen);
-
     static ExtPackedPosition packed(const Position& pos);
-
     static Position unpacked(const ExtPackedPosition& pack);
-
     static bool write(std::ostream& output, const ExtPackedPosition& packed);
-
     static bool read(std::istream& input, ExtPackedPosition& packed);
-
     static std::vector<ExtPackedPosition> fullRead(std::istream& input);
-
     static ExtPackedPosition fromPacked(const PackedPosition& sfp);
 private:
     static uint8_t maskFromPiece(Piece piece, Square sq, const Position& pos);
-
     static void placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part);
 
     static constexpr int    _ClockBufferSize = 3;

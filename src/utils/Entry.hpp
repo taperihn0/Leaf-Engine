@@ -18,7 +18,6 @@ public:
     TrainingDataEntry(const ExtPackedPosition& packed, Score white_score, Result8b result);
 
     static bool write(std::ostream& output, const TrainingDataEntry& entry);
-
     static bool read(std::istream& input, TrainingDataEntry& entry);
 
     PackedPosition getPosition() const;

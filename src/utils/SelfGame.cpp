@@ -35,8 +35,9 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
     SearchLimits limits = packet.limits;
 
     const bool time_constraint = (limits.wtime != 0 and limits.btime != 0);
+    int moves_done = 0;
 
-    const Position& opening = packet.openings->getRandomPosition();
+    const Position& opening = packet.openings->getRandomPosition(moves_done);
     const std::string start_fen = opening.createFEN();
 
     Game game(opening, time_constraint, limits.wtime, limits.btime);
@@ -60,21 +61,30 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
                                             : LOG_INFO | LOG_ENGINE_0 | thread_label;
     }
 
+    if (packet.positions_buf != nullptr and 
+        !packet.positions_buf->empty())
+        packet.positions_buf->clear();
+
+    if (packet.white_scores_buf != nullptr and
+        !packet.white_scores_buf->empty())
+        packet.white_scores_buf->clear();
+
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         const bool side2move = pos.getTurn();
         EnginePlayer& curr_player = player[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
 
-        Score eval = Score::Undef;
         sentPosition<EnableLog>(start_fen, record, 
                                 curr_player,
                                 info_labels[side2move]);
+        
+        Score score = Score::Undef;
 
         timer.go();
         Move32b move = getPlayerMove<EnableLog>(limits, pos, 
                                                 curr_player,
-                                                eval,
+                                                score,
                                                 debug_labels[side2move]);
 
         if (move.isNull()) {
@@ -83,6 +93,17 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
         }
 
         time_ms_t think_time = timer.duration();
+
+        if (true) {
+            if (packet.positions_buf != nullptr) {
+                packet.positions_buf->push_back(PackedPosition::packed(pos));
+            }
+
+            if (packet.white_scores_buf != nullptr) {
+                const Score white_score = pos.getTurn() == WHITE ? score : -score;
+                packet.white_scores_buf->push_back(white_score);
+            }
+        }
 
         if (time_constraint and side2move == WHITE) {
             limits.wtime -= think_time - limits.winc;
@@ -97,25 +118,25 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
             game.applyMove(move, think_time - limits.binc - Game::MoveOverhead);
         }
 
-        ASSERTNOLOG(eval != Score::Undef);
+        ASSERTNOLOG(score != Score::Undef);
 
-        if (std::abs(static_cast<int>(eval)) < 90) 
+        if (std::abs(static_cast<int>(score)) < _LowScore) 
             draw_full_moves += side2move;
         else
             draw_full_moves = 0;
 
         // Adjucate game as draw
-        if (draw_full_moves > 35) {
+        if (draw_full_moves > _AdjucateMoveLimit) {
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
     }
 
     if (game_result == Game::GAME_INVALID) {
-        labelLog(std::cout, LOG_INFO, "Terminating game");
+        labelLog(std::cout, LOG_INFO, "Terminating invalid game");
     }
 
-    *packet.info = toStr(game_result);
+    *packet.result = game_result;
     return resultToPerspectiveResult(game_result, zero_player_white);
 }
 
@@ -166,6 +187,8 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
     std::stringstream cmd;
 
     cmd << "go"
+        << " nodes " << limits.nodes
+        << " qnodes "<< limits.qnodes
         << " depth " << limits.depth
         << " wtime " << limits.wtime
         << " btime " << limits.btime 

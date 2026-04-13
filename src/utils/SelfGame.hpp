@@ -19,12 +19,14 @@ public:
     };
 
     struct GameSpecPacket {
-        SearchLimits                  limits;
-        EnginePlayer                  engine0;
-        EnginePlayer                  engine1;
-        uint                          thread_id;
-        std::shared_ptr<std::string>  info;
-        std::shared_ptr<OpeningSuite> openings; 
+        SearchLimits                    limits;
+        EnginePlayer                    engine0;
+        EnginePlayer                    engine1;
+        uint                            thread_id;
+        std::shared_ptr<Game::Result>   result;
+        OpeningManBase*                 openings; 
+        std::shared_ptr<std::vector<PackedPosition>> positions_buf;
+        std::shared_ptr<std::vector<Score>> white_scores_buf;
     };
 
     enum PlayerPerspectiveResult {
@@ -61,6 +63,9 @@ private:
                           enumLogLabel ret_msg_label);
 
     PlayerPerspectiveResult resultToPerspectiveResult(Game::Result result, bool zero_player_white);
+
+    static constexpr int _LowScore = 90;
+    static constexpr int _AdjucateMoveLimit = 35;
 };
 
 bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result);

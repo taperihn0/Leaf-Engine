@@ -95,7 +95,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
 	SearchLimits limits;
 	limits.depth = MaxDepth;
-    limits.nodes = 0;
+    limits.nodes = limits.qnodes = 0;
 
 #define TERMINATE_READ_IF_EMPTY(str, res) \
     do { if ((str).empty()) return (res); } while(false);

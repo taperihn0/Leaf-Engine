@@ -6,7 +6,6 @@
 #include "Tests.hpp"
 #include "Collector.hpp"
 #include "Opening.hpp"
-#include "Filepath.hpp"
 #include "PostProcess.hpp"
 #include "SPSA.hpp"
 
@@ -23,14 +22,14 @@ public:
 
 	void loop(int argc, const char* argv[]);
 private:
-	void parseSelfPlay(Utils::DataCollector& collector, std::istringstream& strm);
+	void parseSelfPlay(Utils::TournamentCollector& collector, std::istringstream& strm);
 	void parseShowPositions(std::istringstream& strm);
 	void parseMerge(std::istringstream& strm);
 	void parse2TrainEntry(std::istringstream& strm);
 	void parseFilterTrainData(std::istringstream& strm);
 	void parseSPSA(std::istringstream& strm);
 
-	DataCollector _collector;
+	TournamentCollector _collector;
 	SPSA_Tuning   _tuner;
 };
 

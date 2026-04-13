@@ -19,9 +19,7 @@ std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
 void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
-    const auto plat_thread_cnt = std::thread::hardware_concurrency();
-
-    if (thread_count > plat_thread_cnt) {
+    if (thread_count > PlatformThreadLimit) {
         std::cout << "Too many threads requested" << std::endl;
         return;
     }
@@ -62,8 +60,8 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
     limits.wtime = limits.btime = 4_s;
     limits.winc = limits.binc = 100_ms;
 
-    if (_openings->isEmpty())
-        _openings->load(std::string(OpeningPath));
+    if (_openings.isEmpty())
+        _openings.load(std::string(OpeningPath));
 
     std::ofstream log_file(spsa_log, std::ios_base::app);
 
@@ -183,8 +181,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
     uint theta_minus_win_cnt = 0;
     uint draw_cnt = 0;
 
-    ASSERTNOLOG(id < ThreadLimit);
-    const enumLogLabel curr_thread_label = static_cast<enumLogLabel>(16 << (id));
+    ASSERTNOLOG(id < PlatformThreadLimit);
+    const enumLogLabel curr_thread_label = threadLabel(id);
 
     while (true) {
         const uint k = curr_iter.fetch_add(1);
@@ -230,8 +228,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         applyOptions(theta_plus, engine_os0, engine_is0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
         applyOptions(theta_minus, engine_os1, engine_is1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
-        auto res_str = std::make_shared<std::string>();
-        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, res_str, id);
+        auto game_result = std::make_shared<Game::Result>();
+        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, game_result, id);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -254,7 +252,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                 writeCheckpoint(log_file, params, k);
         }
 
-        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + *res_str + ", numeric: " + std::to_string(res));
+        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + toStr(*game_result) + 
+                                                          ", numeric: " + std::to_string(res));
         
         std::stringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -301,7 +300,7 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
 _INLINE int SPSA_Tuning::match(SearchLimits limits,
                                std::istream& engine_os0, std::ostream& engine_is0,
                                std::istream& engine_os1, std::ostream& engine_is1,
-                               std::shared_ptr<std::string> info,
+                               std::shared_ptr<Game::Result> result,
                                uint id)
 {
     SelfGame::GameSpecPacket game_packet = {
@@ -309,11 +308,14 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
         SelfGame::EnginePlayer{ &engine_os0, &engine_is0 },
         SelfGame::EnginePlayer{ &engine_os1, &engine_is1 },
         id,
-        info,
-        _openings,
+        result,
+        &_openings,
+        nullptr,
+        nullptr
     };
 
-    const SelfGame::PlayerPerspectiveResult game_result = SelfGame().mixedMatch<EnableSelfPlayLog>(game_packet);
+    const SelfGame::PlayerPerspectiveResult game_result = SelfGame()
+                                                            .mixedMatch<_EnableSelfPlayLog>(game_packet);
 
     //  1. - if player zero wins
     // -1. - if player one wins

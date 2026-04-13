@@ -56,11 +56,11 @@ private:
     int match(SearchLimits limits,
               std::istream& engine_os0, std::ostream& engine_is0,
               std::istream& engine_os1, std::ostream& engine_is1,
-              std::shared_ptr<std::string> info,
+              std::shared_ptr<Game::Result> result,
               uint id);
 
-    static constexpr bool EnableSelfPlayLog = true;                      
-    std::shared_ptr<OpeningSuite> _openings = std::make_shared<OpeningSuite>();
+    static constexpr bool _EnableSelfPlayLog = true;                      
+    OpeningSuite _openings;
 };
 
 }

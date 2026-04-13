@@ -2,10 +2,29 @@
 #include "backend/StaticEval.hpp"
 #include "backend/MoveGen.hpp"
 #include "backend/Score.hpp"
+#include "NetworkEval.hpp"
 
 namespace Utils {
 
-std::vector<Position> OpeningGenerator::_positions;
+std::vector<OpeningGenerator::GeneratedPosition> OpeningGenerator::_positions;
+
+bool OpeningGenerator::GeneratedPosition::operator==(const OpeningGenerator::GeneratedPosition& p) {
+    return pos == p.pos;
+}
+
+bool OpeningGenerator::GeneratedPosition::operator!=(const OpeningGenerator::GeneratedPosition& p) {
+    return !(*this == p);
+}
+
+OpeningGenerator OpeningGenerator::create() {
+    static bool created = false;
+
+    if (created) {
+        ASSERT(false, "Singleton object already created");
+    }
+
+    return OpeningGenerator();
+}
 
 void OpeningGenerator::load() {
     if (!_positions.empty())
@@ -25,7 +44,7 @@ void OpeningGenerator::load() {
     while (std::getline(openings_file, line)) {
         Position pos_from_fen(line);
 
-        _positions.push_back(pos_from_fen);
+        _positions.push_back(GeneratedPosition{ 0, pos_from_fen });
 
         for (int i = 0; i < _RandomPerPos; i++) {
             Position pos = pos_from_fen;
@@ -40,15 +59,16 @@ void OpeningGenerator::load() {
                 assert(legal);
 
                 if (j >= _MinRandomMoves)
-                    _positions.push_back(pos);
+                    _positions.push_back(GeneratedPosition{ j, pos });
             }
         }
     }
 
     auto last = std::unique(_positions.begin(), _positions.end());
 
-    last = std::remove_if(_positions.begin(), last, [](Position& pos) {
-        return std::abs(static_cast<int>(StaticEval::staticEval(pos))) > _OpeningEvalThreshold;
+    last = std::remove_if(_positions.begin(), last, [](GeneratedPosition& genpos) {
+        const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, genpos.pos);
+        return std::abs(static_cast<int>(score)) > _OpeningEvalThreshold;
     });
 
     _positions.erase(last, _positions.end());
@@ -58,13 +78,18 @@ void OpeningGenerator::load() {
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
 }
 
-const Position& OpeningGenerator::getPosition() {
+const Position& OpeningGenerator::getRandomPosition(int& moves_done) const {
     if (_positions.empty()) {
         ASSERT(false, "Openings are not loaded");
     }
 
     size_t random_index = random<size_t>(0, _positions.size() - 1);
-    return _positions[random_index];
+    moves_done = _positions[random_index].moves_done;
+    return _positions[random_index].pos;
+}
+
+bool OpeningGenerator::isEmpty() const {
+    return _positions.empty();
 }
 
 OpeningSuite::OpeningSuite(std::string path) {
@@ -87,17 +112,17 @@ void OpeningSuite::load(std::string path) {
     }
 }
 
-const Position& OpeningSuite::getRandomPosition() {
+const Position& OpeningSuite::getRandomPosition(int& moves_done) const {
     if (_positions.empty()) {
         ASSERT(false, "Openings are not loaded");
     }
 
     size_t random_index = random<size_t>(0, _positions.size() - 1);
+    moves_done = 0;
     return _positions[random_index];
 }
 
-bool OpeningSuite::isEmpty() const
-{
+bool OpeningSuite::isEmpty() const {
     return _positions.empty();
 }
 

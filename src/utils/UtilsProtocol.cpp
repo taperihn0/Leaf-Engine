@@ -3,7 +3,7 @@
 namespace Utils
 {
 
-void UtilsProtocol::parseSelfPlay(Utils::DataCollector& collector, 
+void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector, 
                                   std::istringstream& strm) {
     std::string token;
 
@@ -26,9 +26,15 @@ void UtilsProtocol::parseSelfPlay(Utils::DataCollector& collector,
     }
 
     strm >> std::skipws >> token;
+    std::string log_dir = token;
+
+    strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
-    collector.startTournament(games_count, thread_cnt, limits);
+    collector.startTournament(games_count, 
+                              thread_cnt, 
+                              log_dir, 
+                              limits);
 }
 
 void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
@@ -60,129 +66,6 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
     }
 
     std::cout.flush();
-}
-
-void UtilsProtocol::parseMerge(std::istringstream& strm) {
-    int collector_thread_count = 0;
-    std::string merge_path;
-
-    strm >> std::skipws >> merge_path >> std::skipws >> collector_thread_count;
-
-    std::ofstream merge_file(merge_path, std::ios::ios_base::binary);
-
-    if (!merge_file) {
-        ASSERT(false, "Failed to open file: " + merge_path);
-        return;
-    }
-
-    std::vector<std::string> input_paths;
-    input_paths.reserve(collector_thread_count * 3);
-
-    for (int thread_num = 0; thread_num < collector_thread_count; thread_num++) {
-        input_paths.push_back(Utils::Filepath::getWhiteWinOutputPath_asTDF(thread_num));
-        input_paths.push_back(Utils::Filepath::getBlackWinOutputPath_asTDF(thread_num));
-        input_paths.push_back(Utils::Filepath::getDrawOutputPath_asTDF(thread_num));
-    }
-
-    Utils::PostProcess::mergeBinaryFiles(input_paths, merge_file);
-}
-
-void UtilsProtocol::parse2TrainEntry(std::istringstream& strm) {
-    int collector_thread_count = 0;
-    strm >> std::skipws >> collector_thread_count;
-
-    for (int thread_num = 0; thread_num < collector_thread_count; thread_num++) {
-        std::string tdf_path = Utils::Filepath::getWhiteWinOutputPath_asTDF(thread_num);
-        std::string pck_path = Utils::Filepath::getWhiteWinOutputPath_asPCK(thread_num);
-
-        std::ifstream pck_input(pck_path, std::ios::ios_base::binary);
-
-        if (!pck_input) {
-            ASSERT(false, "Failed to open file: " + pck_path);
-            return;
-        }
-
-        std::ofstream tdf_output(tdf_path, std::ios::ios_base::binary);
-
-        if (!tdf_output) {
-            ASSERT(false, "Failed to open file: " + tdf_path);
-            return;
-        }
-
-        std::cout << "Converting file: " << pck_path << std::endl;
-
-        bool status =
-            Utils::PostProcess::packedPos2TrainingEntryFile(pck_input,
-                tdf_output,
-                Utils::TrainingDataEntry::WHITE_WIN);
-
-        if (!status) {
-            ASSERT(false, "Failed to convert .pck file to .tdf file: " + tdf_path);
-            return;
-        }
-
-        tdf_path = Utils::Filepath::getBlackWinOutputPath_asTDF(thread_num);
-        pck_path = Utils::Filepath::getBlackWinOutputPath_asPCK(thread_num);
-
-        pck_input.close();
-        pck_input.open(pck_path, std::ios::ios_base::binary);
-
-        if (!pck_input) {
-            ASSERT(false, "Failed to open file: " + pck_path);
-            return;
-        }
-
-        tdf_output.close();
-        tdf_output.open(tdf_path, std::ios::ios_base::binary);
-
-        if (!tdf_output) {
-            ASSERT(false, "Failed to open file: " + tdf_path);
-            return;
-        }
-
-        std::cout << "Converting file: " << pck_path << std::endl;
-
-        status =
-            Utils::PostProcess::packedPos2TrainingEntryFile(pck_input,
-                tdf_output,
-                Utils::TrainingDataEntry::BLACK_WIN);
-
-        if (!status) {
-            ASSERT(false, "Failed to convert .pck file to .tdf file: " + tdf_path);
-            return;
-        }
-
-        tdf_path = Utils::Filepath::getDrawOutputPath_asTDF(thread_num);
-        pck_path = Utils::Filepath::getDrawOutputPath_asPCK(thread_num);
-
-        pck_input.close();
-        pck_input.open(pck_path, std::ios::ios_base::binary);
-
-        if (!pck_input) {
-            ASSERT(false, "Failed to open file: " + pck_path);
-            return;
-        }
-
-        tdf_output.close();
-        tdf_output.open(tdf_path, std::ios::ios_base::binary);
-
-        if (!tdf_output) {
-            ASSERT(false, "Failed to open file: " + tdf_path);
-            return;
-        }
-
-        std::cout << "Converting file: " << pck_path << std::endl;
-
-        status =
-            Utils::PostProcess::packedPos2TrainingEntryFile(pck_input,
-                tdf_output,
-                Utils::TrainingDataEntry::DRAW);
-
-        if (!status) {
-            ASSERT(false, "Failed to convert .pck file to .tdf file: " + tdf_path);
-            return;
-        }
-    }
 }
 
 void UtilsProtocol::parseFilterTrainData(std::istringstream& strm) {
@@ -265,10 +148,8 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 		else if (token == "test_pack_on")          parsePackedFile(strm);
 		else if (token == "test_extpack_on")       parseExtPackedFile(strm);
 		else if (token == "self_play")		       parseSelfPlay(_collector, strm);
-		else if (token == "load_openings")         OpeningGenerator::load();
+		else if (token == "load_openings")         GlobOpeningGenerator.load();
 		else if (token == "view_positions")        parseShowPositions(strm);
-		else if (token == "merge_selfplay_files")  parseMerge(strm);
-		else if (token == "packed_to_train_entry") parse2TrainEntry(strm);
 		else if (token == "filter_train_data")     parseFilterTrainData(strm);
 		else if (token == "spsa")                  parseSPSA(strm);
 
