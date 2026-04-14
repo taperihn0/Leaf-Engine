@@ -8,6 +8,7 @@ logs/spsa_log_mar21_1.txt
 logs/spsa_log_mar21_2.txt
 misc/*.txt
 misc/selfplay/
+misc/selfplay_legacy/
 CMakePresets.json
 
 build/
