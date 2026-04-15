@@ -101,7 +101,7 @@ public:
 
 	bool isQuiet();
 
-	void print() const;
+	void print(std::ostream& os = std::cout) const;
 
 	bool operator==(const Position& pos) const;
 	bool operator!=(const Position& pos) const;

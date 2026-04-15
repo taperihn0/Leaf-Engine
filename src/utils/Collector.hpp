@@ -16,9 +16,12 @@ public:
     void startTournament(size_t games_count, 
                          uint thread_count, 
                          const std::string& log_dir,
+                         const std::string& err_log_dir,
                          SearchLimits limits);
 private:
-    bool filterTrainPosition(Position& pos, Score white_score);
+    bool filterTrainPosition(Position& pos, 
+                             Score white_score, 
+                             size_t total_positions_cnt);
 
     struct CommonThreadData {
         std::atomic<size_t> games_ended;
@@ -28,7 +31,9 @@ private:
         std::atomic<size_t> total_black_win_count;
         std::atomic<size_t> total_draw_count;
         size_t              total_thread_cnt;
+        std::ofstream       err_output;
         std::mutex          stdout_lock;
+        std::mutex          err_output_lock;
     };
 
     struct PerThreadData {
@@ -45,7 +50,9 @@ private:
         std::shared_ptr<CommonThreadData> commons;
     };
 
-    void perThreadGameLoop(PerThreadData& thread);
+    bool threadTournament(PerThreadData& thread, 
+                          enumLogLabel thread_label);
+    void perThread(PerThreadData& thread);
 
     static constexpr float _NodesRandomFactor = 0.15f;
 #if defined(DEBUG)

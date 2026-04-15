@@ -169,28 +169,28 @@ bool Position::isQuiet() {
 	return !MoveGen::isAnyCapture(*this);
 }
 
-void Position::print() const {
-	std::cout << "     A   B   C   D   E   F   G   H";
+void Position::print(std::ostream& os) const {
+	os << "     A   B   C   D   E   F   G   H";
 
 	for (int h = 7; h >= 0; h--) {
-		std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
+		os << "\n   +---+---+---+---+---+---+---+---+\n"
 			<< ' ' << h + 1 << " | ";
 
 		for (int i = 8 * h; i < 8 * (h + 1); i++) {
-			fullPieceOn(i).print();
-			std::cout << " | ";
+			fullPieceOn(i).print(os);
+			os << " | ";
 		}
 
-		std::cout << h + 1;
+		os << h + 1;
 	}
 
-	std::cout << "\n   +---+---+---+---+---+---+---+---+\n"
-			  << "     A   B   C   D   E   F   G   H\n\n"
-			  << "FEN: ";
+	os << "\n   +---+---+---+---+---+---+---+---+\n"
+	   << "     A   B   C   D   E   F   G   H\n\n"
+	   << "FEN: ";
 
 	const std::string fen = createFEN();
 
-	std::cout << fen << '\n';
+	os << fen << '\n';
 }
 
 bool Position::operator==(const Position& pos) const {

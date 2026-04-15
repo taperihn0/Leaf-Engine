@@ -96,7 +96,7 @@ const Position& OpeningGenerator::getRandomPosition(int& moves_done) const {
         ASSERT(false, "Openings are not loaded");
     }
 
-    size_t random_index = random<size_t>(0, _positions.size() - 1);
+    const size_t random_index = random<size_t>(0, _positions.size() - 1);
     moves_done = _positions[random_index].moves_done;
     return _positions[random_index].pos;
 }

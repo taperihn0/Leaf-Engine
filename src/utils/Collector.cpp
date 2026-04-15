@@ -5,6 +5,7 @@
 #include "Entry.hpp"
 #include "PackedNetwork.hpp"
 #include "NetworkEval.hpp"
+#include "StaticEval.hpp"
 
 #include <thread>
 #include <iomanip>
@@ -12,7 +13,9 @@
 namespace Utils
 {
 
-void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& thr_data) {
+bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& thr_data, 
+                                           enumLogLabel thread_label) 
+{
     ASSERT(thr_data.output_white_win.is_open(), "Output not opened.");
     ASSERT(thr_data.output_black_win.is_open(), "Output not opened.");
     ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
@@ -25,8 +28,6 @@ void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& 
     auto& os0 = *engine0.out;
     auto& is1 = *engine1.in;
     auto& os1 = *engine1.out;
-
-    const enumLogLabel thread_label = threadLabel(thr_data.id);
 
     {
         std::string line;
@@ -112,44 +113,80 @@ void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& 
 
         // add noise to search node number (if nodes threshold is used)
         if (nodes_per_search > 0) {
-            thr_data.limits.nodes = random<ll>(nodes_min, nodes_max);
+            game_packet.limits.nodes = random<ll>(nodes_min, nodes_max);
         }
 
         *game_result = Game::GAME_INVALID;
-
         SelfGame().mixedMatch<_EnableSelfPlayLog>(game_packet);
+
+        const size_t total_positions_cnt = positions.size();
+        ASSERTNOLOG(total_positions_cnt == white_scores.size());
+
+        if (*game_result == Game::GAME_INVALID) {
+            const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
+            labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Error: Invalid game");
+            
+            std::ostringstream ss;
+            ss  << " nodes " << game_packet.limits.nodes
+                << " qnodes "<< game_packet.limits.qnodes
+                << " depth " << game_packet.limits.depth
+                << " wtime " << game_packet.limits.wtime
+                << " btime " << game_packet.limits.btime 
+                << " winc "  << game_packet.limits.winc 
+                << " binc "  << game_packet.limits.binc;
+
+            labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
+
+            for (size_t i = 0; i < total_positions_cnt; i++) {
+                PackedPosition::unpacked(positions.at(i)).print(thr_data.commons->err_output);
+                thr_data.commons->err_output << "White-POV Search Score: " 
+                                             << static_cast<int16_t>(white_scores.at(i))
+                                             << '\n';
+            }
+
+            thr_data.commons->err_output << std::endl;
+
+            {
+                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
+                labelLog(std::cout, LOG_INFO | thread_label, "Invalid game occured");
+            }
+
+            return false;
+        }
 
         uint filtered_positions_cnt = 0;
 
-        ASSERTNOLOG(positions.size() == white_scores.size());
+        const TrainingDataEntry::Result8b result8b = isWhiteWin(*game_result) ? TrainingDataEntry::WHITE_WIN :
+                                                     isBlackWin(*game_result) ? TrainingDataEntry::BLACK_WIN :
+                                                                                TrainingDataEntry::DRAW;
 
         for (size_t i = 0; i < positions.size(); i++) {
             PackedPosition& packed_pos = positions.at(i);
             Position unpacked_pos = PackedPosition::unpacked(packed_pos);
             const Score white_score = white_scores.at(i);
 
-            if (!filterTrainPosition(unpacked_pos, white_score))
+            if (!filterTrainPosition(unpacked_pos, white_score, total_positions_cnt))
                 continue;
 
             filtered_positions_cnt++;
 
-            const TrainingDataEntry::Result8b result8b = isWhiteWin(*game_result) ? TrainingDataEntry::WHITE_WIN :
-                                                         isBlackWin(*game_result) ? TrainingDataEntry::BLACK_WIN :
-                                                                                    TrainingDataEntry::DRAW;
             const TrainingDataEntry entry(packed_pos, white_score, result8b);
 
             if (isWhiteWin(*game_result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
+                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
             
             else if (isBlackWin(*game_result) and
                      !TrainingDataEntry::write(thr_data.output_black_win, entry)) {
+                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
             
             else if (isDraw(*game_result) and 
                      !TrainingDataEntry::write(thr_data.output_draw, entry)) {
+                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
         }
@@ -200,10 +237,12 @@ void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& 
 
 #if defined(INSPECT_SELFPLAY_MATCHES)
         if (thr_data.commons->total_thread_cnt == 1) {
+            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
+            
             PackedPosition::unpacked(positions.back()).print();
             labelLog(std::cout, LOG_INFO | thread_label, toStr(*game_result) + ": ");
 
-            for (size_t i = 0; i < std::min<size_t>(80, white_scores.size()); i++)
+            for (size_t i = 0; i < std::min<size_t>(120, white_scores.size()); i++)
                 std::cout << static_cast<int16_t>(white_scores.at(i)) << ' ';
 
             std::cout << std::endl;
@@ -211,6 +250,7 @@ void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& 
             std::cin.get();
         }
         else {
+            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             labelLog(std::cout, LOG_DEBUG | thread_label, 
                      "Self-play game inspection avaible only for 1 thread tournament");
         }
@@ -229,11 +269,28 @@ void TournamentCollector::perThreadGameLoop(TournamentCollector::PerThreadData& 
         const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
         labelLog(std::cout, LOG_INFO | thread_label, ss.str());
     }
+
+    return true;
+}
+
+void TournamentCollector::perThread(TournamentCollector::PerThreadData& thr_data) {
+    const enumLogLabel thread_label = threadLabel(thr_data.id);
+
+    while (!threadTournament(thr_data, thread_label)) {
+        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
+        labelLog(std::cout, LOG_INFO | thread_label, "Restarting tournament and engines on thread");
+    }
+
+    {
+        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
+        labelLog(std::cout, LOG_INFO | thread_label, "Terminating thread");
+    }
 }
 
 void TournamentCollector::startTournament(size_t games_count, 
                                           uint thread_count, 
                                           const std::string& log_dir,
+                                          const std::string& err_log_dir,
                                           SearchLimits limits) 
 {
     if (thread_count > PlatformThreadLimit) {
@@ -251,6 +308,13 @@ void TournamentCollector::startTournament(size_t games_count,
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = thread_count;
 
+    thread_common->err_output.open(err_log_dir, std::ios::app);
+
+    if (!thread_common->err_output) {
+        labelLog(std::cout, LOG_INFO, "Failed to open " + err_log_dir);
+        return;
+    }
+
     if (GlobOpeningGenerator.isEmpty())
         GlobOpeningGenerator.load();
 
@@ -266,17 +330,33 @@ void TournamentCollector::startTournament(size_t games_count,
         {
             std::ostringstream ss;
             ss << log_dir << '/' << getWhiteWinOutputFile(id);
+            
             per_thread_data.output_white_win.open(ss.str(), std::ios::binary | std::ios::app);
+
+            if (!per_thread_data.output_white_win) {
+                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                return;
+            }
         }
         {
             std::ostringstream ss;
             ss << log_dir << '/' << getBlackWinOutputFile(id);
             per_thread_data.output_black_win.open(ss.str(), std::ios::binary | std::ios::app);
+
+            if (!per_thread_data.output_black_win) {
+                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                return;
+            }
         }
         {
             std::ostringstream ss;
             ss << log_dir << '/' << getDrawOutputFile(id);
             per_thread_data.output_draw.open(ss.str(), std::ios::binary | std::ios::app);
+
+            if (!per_thread_data.output_draw) {
+                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                return;
+            }
         }
 
         per_thread_data.limits = limits;
@@ -293,7 +373,7 @@ void TournamentCollector::startTournament(size_t games_count,
 
     for (size_t i = 0; i < thread_count; i++) {
         threads.emplace_back([&](PerThreadData& thread_data) {
-            this->perThreadGameLoop(thread_data);
+            this->perThread(thread_data);
         }, 
         std::ref(thread_private[i]));
     }
@@ -318,15 +398,21 @@ void TournamentCollector::startTournament(size_t games_count,
                 "Total of " + std::to_string(thread_common->total_positions) + " positions collected on all threads");
 }
 
-_FORCEINLINE bool TournamentCollector::filterTrainPosition(Position& pos, Score white_score) {
+_FORCEINLINE bool TournamentCollector::filterTrainPosition(Position& pos, 
+                                                           Score white_score,
+                                                           size_t total_positions_cnt) 
+{
     if (white_score.isMateScore())
         return false;
 
-    else if (std::abs(static_cast<int>(white_score)) > 12000)
+    else if (pos.getPiecesCount() <= 6 and 
+             StaticEval::evaluateEndgame(pos) != Score::Undef)
         return false;
 
-    else if (pos.isInCheck(pos.getTurn()) or
-             pos.isInCheck(!pos.getTurn()))
+    else if (total_positions_cnt < 3)
+        return false;
+
+    else if (std::abs(static_cast<int>(white_score)) > 12000)
         return false;
 
     else if (!pos.isQuiet())

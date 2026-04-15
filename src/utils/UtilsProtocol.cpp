@@ -26,14 +26,18 @@ void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector,
     }
 
     strm >> std::skipws >> token;
-    std::string log_dir = token;
+    const std::string log_dir = token;
+
+    strm >> std::skipws >> token;
+    const std::string err_log_dir = token;
 
     strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
     collector.startTournament(games_count, 
                               thread_cnt, 
-                              log_dir, 
+                              log_dir,
+                              err_log_dir, 
                               limits);
 }
 

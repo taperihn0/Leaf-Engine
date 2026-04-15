@@ -60,6 +60,16 @@ void waitForProcess(EngineProcess& proc) {
     waitpid(proc.pid, nullptr, 0);
 }
 
+bool isAlive(const EngineProcess& proc) {
+    if (proc.pid <= 0)
+        return false;
+
+    if (kill(proc.pid, 0) < 0)
+        return false;
+
+    return true;
+}
+
 #endif
 
 }

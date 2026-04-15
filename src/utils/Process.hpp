@@ -28,5 +28,6 @@ struct EngineProcess {
 
 EngineProcess spawnProcess();
 void waitForProcess(EngineProcess& proc);
+bool isAlive(const EngineProcess& proc);
 
 }

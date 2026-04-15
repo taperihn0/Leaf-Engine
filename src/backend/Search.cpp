@@ -343,7 +343,8 @@ Search::~Search() {
 template <Search::enumInfoLevel InfoLevel>
 Move32b Search::findBestMove(Position& pos, 
 							 const FullInfoRecord& game, 
-							 SearchLimits limits) {
+							 SearchLimits limits) 
+{
 	ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
 	_tt.newGeneration();
@@ -356,9 +357,9 @@ Move32b Search::findBestMove(Position& pos,
 }
 
 Move32b Search::_findBestMove_unittest(Search& search, 
-								   Position& pos, 
-								   const FullInfoRecord& game, 
-								   SearchLimits limits) 
+								   	   Position& pos, 
+								   	   const FullInfoRecord& game, 
+								   	   SearchLimits limits) 
 {
 	return search.findBestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
 }
