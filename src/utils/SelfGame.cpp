@@ -61,15 +61,20 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
                                             : LOG_INFO | LOG_ENGINE_0 | thread_label;
     }
 
-    if (packet.train_data_spec != nullptr and
-        packet.train_data_spec->positions_buf != nullptr and 
-        !packet.train_data_spec->positions_buf->empty())
-        packet.train_data_spec->positions_buf->clear();
+    if (packet.train_data_spec != nullptr) {
+        ASSERTNOLOG(packet.train_data_spec->positions_buf != nullptr and
+                    packet.train_data_spec->white_scores_buf != nullptr and
+                    packet.train_data_spec->moves_buf != nullptr);
 
-    if (packet.train_data_spec != nullptr and
-        packet.train_data_spec->white_scores_buf != nullptr and
-        !packet.train_data_spec->white_scores_buf->empty())
-        packet.train_data_spec->white_scores_buf->clear();
+        if (!packet.train_data_spec->positions_buf->empty())
+            packet.train_data_spec->positions_buf->clear();
+
+        if (!packet.train_data_spec->white_scores_buf->empty())
+            packet.train_data_spec->white_scores_buf->clear();
+
+        if (!packet.train_data_spec->moves_buf->empty())
+            packet.train_data_spec->moves_buf->clear();
+    }
 
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
@@ -94,19 +99,15 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
             break;   
         }
 
-        time_ms_t think_time = timer.duration();
+        const time_ms_t think_time = timer.duration();
 
-        if (packet.train_data_spec != nullptr and
-            packet.train_data_spec->train_pos_filter(pos, moves_done)) {
-                
-            if (packet.train_data_spec->positions_buf != nullptr) {
-                packet.train_data_spec->positions_buf->push_back(PackedPosition::packed(pos));
-            }
+        if (packet.train_data_spec != nullptr) {
+            packet.train_data_spec->positions_buf->push_back(pos);
 
-            if (packet.train_data_spec->white_scores_buf != nullptr) {
-                const Score white_score = pos.getTurn() == WHITE ? score : -score;
-                packet.train_data_spec->white_scores_buf->push_back(white_score);
-            }
+            const Score white_score = pos.getTurn() == WHITE ? score : -score;
+            packet.train_data_spec->white_scores_buf->push_back(white_score);
+            
+            packet.train_data_spec->moves_buf->push_back(move);
         }
 
         if (time_constraint and side2move == WHITE) {

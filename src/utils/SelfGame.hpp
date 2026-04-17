@@ -19,9 +19,9 @@ public:
     };
 
     struct TrainDataSpec {
-        std::vector<PackedPosition>* positions_buf;
-        std::vector<Score>*          white_scores_buf;
-        std::function<bool(const Position&, int)> train_pos_filter = doNothing<bool, const Position&, int>;
+        std::vector<Position>* positions_buf;
+        std::vector<Score>*    white_scores_buf;
+        std::vector<Move32b>*  moves_buf;
     };
 
     struct GameSpecPacket {

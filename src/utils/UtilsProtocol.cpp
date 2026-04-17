@@ -72,39 +72,45 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
     std::cout.flush();
 }
 
-void UtilsProtocol::parseFilterTrainData(std::istringstream& strm) {
-    std::string from_path;
-    std::string to_path;
+void UtilsProtocol::parseVerifyTrainData(std::istringstream& strm) {
+    std::string fp;
 
-    strm >> std::skipws >> from_path >> std::skipws >> to_path;
+    strm >> std::skipws >> fp;
 
-    std::ifstream input(from_path, std::ios_base::binary);
+    std::ifstream input(fp, std::ios_base::binary);
 
     if (!input) {
-        ASSERT(false, "Failed to open file: " + from_path);
+        ASSERT(false, "Failed to open file: " + fp);
         return;
     }
 
-    std::ofstream output(to_path, std::ios_base::binary);
+    auto pos_verify = [](const Position& pos) -> bool {
+        if (!pos.isValid())
+            return false;
 
-    if (!output) {
-        ASSERT(false, "Failed to open file: " + to_path);
-        return;
-    }
+        else if (pos.getPiecesCount() <= 6 and 
+                 StaticEval::evaluateEndgame(pos) != Score::Undef)
+            return false;
+
+        else if (pos.isInCheck(pos.getTurn()))
+            return false;
+
+        return true;
+    };
 
     Utils::TrainingDataEntry entry;
 
-    auto pos_filter = [](const Utils::PackedPosition& pack) -> bool {
-        Position pos = Utils::PackedPosition::unpacked(pack);
-        return !pos.isInCheck(pos.getTurn()) and pos.isQuiet();
-    };
-
     while (Utils::TrainingDataEntry::read(input, entry)) {
-        if (pos_filter(entry.getPosition())) {
-            if (!Utils::TrainingDataEntry::write(output, entry)) {
-                ASSERT(false, "Failed to write to file: " + to_path);
-                return;
-            }
+        const PackedPosition pack = entry.getPosition();
+        const Position pos = PackedPosition::unpacked(pack);
+        
+        if (!pos_verify(pos)) {
+            std::cout << "Verification failed, invalid packed position: \n";
+
+            if (pos.isValid()) pos.print();
+            else pack.print();
+
+            return;
         }
     }
 }
@@ -154,7 +160,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 		else if (token == "self_play")		       parseSelfPlay(_collector, strm);
 		else if (token == "load_openings")         GlobOpeningGenerator.load();
 		else if (token == "view_positions")        parseShowPositions(strm);
-		else if (token == "filter_train_data")     parseFilterTrainData(strm);
+		else if (token == "verify_train_data")     parseVerifyTrainData(strm);
 		else if (token == "spsa")                  parseSPSA(strm);
 
 #if defined(_UCI_DEBUG_UTILS)

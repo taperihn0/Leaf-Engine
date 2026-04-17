@@ -106,9 +106,7 @@ public:
 		return genShift<Shift>() & ExclFile;
 	}
 
-#if defined(DEBUG)
-	void print() const;
-#endif
+	void print(std::ostream& os = std::cout) const;
 
 	void set(uint64_t bb);
 

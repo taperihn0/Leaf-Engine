@@ -1,14 +1,12 @@
 #include "BitBoard.hpp"
 
-#if defined(DEBUG)
-void BitBoard::print() const {
+void BitBoard::print(std::ostream& os) const {
 	for (int h = 7; h >= 0; h--) {
 		for (int i = h * 8; i < (h + 1) * 8; i++)
-			std::cout << static_cast<bool>((1_ui64 << i) & _board);
-		std::cout << '\n';
+			os << static_cast<bool>((1_ui64 << i) & _board);
+		os << '\n';
 	}
 }
-#endif
 
 void BitBoard::set(uint64_t bb) {
 	_board = bb;

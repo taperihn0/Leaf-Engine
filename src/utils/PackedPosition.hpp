@@ -47,6 +47,8 @@ public:
 
     static_assert(sizeof(Nibble) == 1);
 
+    void print(std::ostream& os = std::cout) const;
+
     static PackedPosition fromExt(const ExtPackedPosition& ext_pack);
 
     /* 'write' method is default, optimized writing method.

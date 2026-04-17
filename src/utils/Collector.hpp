@@ -19,8 +19,9 @@ public:
                          const std::string& err_log_dir,
                          SearchLimits limits);
 private:
-    bool filterTrainPosition(Position& pos, 
+    bool filterTrainPosition(const Position& pos, 
                              Score white_score, 
+                             Move32b move,
                              size_t total_positions_cnt);
 
     struct CommonThreadData {

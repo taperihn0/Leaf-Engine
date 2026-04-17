@@ -141,7 +141,11 @@ std::string Position::createFEN() const {
 	return fen.str();
 }
 
-Position::enumStatusFlag Position::isValid() const {
+bool Position::isValid() const {
+    return getErrFlag() == POSITION_NO_ERROR;
+}
+
+Position::enumStatusFlag Position::getErrFlag() const {
     if (_zhash != ZobristHash::generateOnFly(*this))
         return POSITION_HASH_INVALID;
 

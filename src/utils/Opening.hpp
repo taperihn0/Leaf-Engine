@@ -30,14 +30,14 @@ private:
     OpeningGenerator() = default;
     static inline const std::string _OpeningFile = "src/assets/sets/crafty_2500_new.epd";
 
-    static constexpr int            _OpeningEvalThreshold = 200;
+    static constexpr int            _OpeningEvalThreshold = 300;
 #if !defined(DEBUG)
-    static constexpr int            _RandomPerPos   = 25;
+    static constexpr int            _RandomPerPos   = 35;
 #else
     static constexpr int            _RandomPerPos   = 2;
 #endif
     static constexpr int            _MinRandomMoves = 2;
-    static constexpr int            _MaxRandomMoves = 14;
+    static constexpr int            _MaxRandomMoves = 10;
 
     struct GeneratedPosition {
         int moves_done;

@@ -43,6 +43,24 @@ bool PackedPosition::operator==(const ExtPackedPosition& p) const {
     return *this == fromExt(p);
 }
 
+void PackedPosition::print(std::ostream& os) const {
+    os << "Piece count: " << static_cast<int>(_piece_cnt) << '\n';
+    os << "Occupancy:\n";
+
+    _occupancy_mask.print(os);
+    
+    os << "\nNibbles:\n";
+    
+    const size_t piece_bytes = static_cast<size_t>((_piece_cnt + 1) / 2);
+
+    for (size_t j = 0; j < piece_bytes; j++) {
+        os << (_pieces[j].lo & 0x0F) << ' ' 
+           << (_pieces[j].hi & 0xF0) << '\n';
+    }
+
+    os << std::endl;
+}
+
 PackedPosition PackedPosition::fromExt(const ExtPackedPosition& ext_pack) {
     PackedPosition pack;
 

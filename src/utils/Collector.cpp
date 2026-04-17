@@ -52,11 +52,14 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
-    std::vector<PackedPosition> positions;
+    std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
-
+    
     std::vector<Score> white_scores;
     white_scores.reserve(MaxGameMoves);
+    
+    std::vector<Move32b> moves;
+    moves.reserve(MaxGameMoves);
 
     thr_data.games_ended = 0;
     thr_data.total_positions = 0;
@@ -72,9 +75,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     auto train_data_spec = std::make_shared<SelfGame::TrainDataSpec>();
     train_data_spec->positions_buf = &positions;
     train_data_spec->white_scores_buf = &white_scores;
-    train_data_spec->train_pos_filter = [](const Position& pos, int moves_done) -> bool {
-        return moves_done > 8;
-    };
+    train_data_spec->moves_buf = &moves;
 
     auto game_result = std::make_shared<Game::Result>(Game::GAME_INVALID);
 
@@ -117,10 +118,15 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         }
 
         *game_result = Game::GAME_INVALID;
+        positions.clear();
+        white_scores.clear();
+        moves.clear();
+
         SelfGame().mixedMatch<_EnableSelfPlayLog>(game_packet);
 
         const size_t total_positions_cnt = positions.size();
-        ASSERTNOLOG(total_positions_cnt == white_scores.size());
+        ASSERTNOLOG(total_positions_cnt == white_scores.size() and 
+                    total_positions_cnt == moves.size());
 
         if (*game_result == Game::GAME_INVALID) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
@@ -138,8 +144,10 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
 
             for (size_t i = 0; i < total_positions_cnt; i++) {
-                PackedPosition::unpacked(positions.at(i)).print(thr_data.commons->err_output);
-                thr_data.commons->err_output << "White-POV Search Score: " 
+                positions.at(i).print(thr_data.commons->err_output);
+                thr_data.commons->err_output << "Following move: ";
+                moves[i].print(thr_data.commons->err_output);
+                thr_data.commons->err_output << "\nWhite-POV Search Score: " 
                                              << static_cast<int16_t>(white_scores.at(i))
                                              << '\n';
             }
@@ -161,16 +169,17 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
                                                                                 TrainingDataEntry::DRAW;
 
         for (size_t i = 0; i < positions.size(); i++) {
-            PackedPosition& packed_pos = positions.at(i);
-            Position unpacked_pos = PackedPosition::unpacked(packed_pos);
+            Position& pos = positions.at(i);
             const Score white_score = white_scores.at(i);
 
-            if (!filterTrainPosition(unpacked_pos, white_score, total_positions_cnt))
+            assert(moves[i].isLegal(pos));
+
+            if (!filterTrainPosition(pos, white_score, moves[i], total_positions_cnt))
                 continue;
 
             filtered_positions_cnt++;
 
-            const TrainingDataEntry entry(packed_pos, white_score, result8b);
+            const TrainingDataEntry entry(PackedPosition::packed(pos), white_score, result8b);
 
             if (isWhiteWin(*game_result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
@@ -239,7 +248,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         if (thr_data.commons->total_thread_cnt == 1) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             
-            PackedPosition::unpacked(positions.back()).print();
+            positions.back().print();
             labelLog(std::cout, LOG_INFO | thread_label, toStr(*game_result) + ": ");
 
             for (size_t i = 0; i < std::min<size_t>(120, white_scores.size()); i++)
@@ -255,9 +264,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
                      "Self-play game inspection avaible only for 1 thread tournament");
         }
 #endif
-
-        positions.clear();
-        white_scores.clear();
     }
 
     {
@@ -393,13 +399,14 @@ void TournamentCollector::startTournament(size_t games_count,
     labelLog(std::cout, LOG_INFO, ss.str());
 
     labelLog(std::cout, LOG_INFO, 
-                "Total of " + std::to_string(thread_common->games_ended) + " games played on all threads");
+             "Total of " + std::to_string(thread_common->games_ended) + " games played on all threads");
     labelLog(std::cout, LOG_INFO, 
-                "Total of " + std::to_string(thread_common->total_positions) + " positions collected on all threads");
+             "Total of " + std::to_string(thread_common->total_positions) + " positions collected on all threads");
 }
 
-_FORCEINLINE bool TournamentCollector::filterTrainPosition(Position& pos, 
+_FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
                                                            Score white_score,
+                                                           Move32b move,
                                                            size_t total_positions_cnt) 
 {
     if (white_score.isMateScore())
@@ -409,13 +416,10 @@ _FORCEINLINE bool TournamentCollector::filterTrainPosition(Position& pos,
              StaticEval::evaluateEndgame(pos) != Score::Undef)
         return false;
 
-    else if (total_positions_cnt < 3)
+    else if (move.isCapture() or move.isPromotion())
         return false;
 
-    else if (std::abs(static_cast<int>(white_score)) > 12000)
-        return false;
-
-    else if (!pos.isQuiet())
+    else if (pos.isInCheck(pos.getTurn()))
         return false;
 
     return true;
