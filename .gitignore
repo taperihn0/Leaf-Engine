@@ -1,5 +1,3 @@
-# My own scripts
-scripts/
 logs/log.txt
 logs/spsa_log_*.txt
 misc/*.txt
