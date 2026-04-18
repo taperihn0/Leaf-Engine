@@ -147,7 +147,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
-	std::cout << text << '\n' << file << ", line " << line << '\n';
+	std::cout << text << '\n' << file << ", line " << line << std::endl;
 	exit(EXIT_FAILURE);
 	return false;
 }
@@ -213,12 +213,7 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 // Target cacheline size is fixed
 #define CACHELINE_SIZE 64
 
-//#if defined(BUILD_UTILS)
-//static int Seed = []() { return std::random_device{}(); }();
-//#else
 static int GlobSeed = 1;
-//#endif
-
 static std::mt19937 GlobMersenne(GlobSeed);
 
 template <typename Integer = int>

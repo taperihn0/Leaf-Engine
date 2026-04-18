@@ -1,14 +1,12 @@
 # My own scripts
 scripts/
 logs/log.txt
-logs/spsa_log_feb20.txt
-logs/spsa_log_feb26.txt
-logs/spsa_log_mar21.txt
-logs/spsa_log_mar21_1.txt
-logs/spsa_log_mar21_2.txt
+logs/spsa_log_*.txt
 misc/*.txt
 misc/*.key
 misc/selfplay/
+misc/selfplay*/
+misc/selfplay_*
 misc/selfplay_legacy/
 CMakePresets.json
 

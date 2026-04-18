@@ -88,7 +88,7 @@ public:
 protected:
     static constexpr int _MaxPiecesOnBoard = 32;
     static constexpr int _MaxNibbles       = _MaxPiecesOnBoard / 2;
-    static constexpr int _PackedPosBufferSize  = sizeof(BitBoard) + _MaxNibbles;
+    static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + _MaxNibbles;
 
     BitBoard _occupancy_mask;
     Nibble   _pieces[_MaxNibbles];

@@ -144,7 +144,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
 
             for (size_t i = 0; i < total_positions_cnt; i++) {
-                positions.at(i).print(thr_data.commons->err_output);
+                positions[i].print(thr_data.commons->err_output);
                 thr_data.commons->err_output << "Following move: ";
                 moves[i].print(thr_data.commons->err_output);
                 thr_data.commons->err_output << "\nWhite-POV Search Score: " 
@@ -169,8 +169,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
                                                                                 TrainingDataEntry::DRAW;
 
         for (size_t i = 0; i < positions.size(); i++) {
-            Position& pos = positions.at(i);
-            const Score white_score = white_scores.at(i);
+            Position& pos = positions[i];
+            const Score white_score = white_scores[i];
 
             assert(moves[i].isLegal(pos));
 

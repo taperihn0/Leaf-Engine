@@ -251,7 +251,7 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
     }
 
     if (best_move_str.empty()) {
-        labelLog(std::cout, LOG_INFO, "Invalid best move");
+        labelLog(std::cout, LOG_INFO, "Null best move");
         return Move32b::Null;
     }
 
