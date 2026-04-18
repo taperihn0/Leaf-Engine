@@ -113,6 +113,8 @@ void UtilsProtocol::parseVerifyTrainData(std::istringstream& strm) {
             return;
         }
     }
+
+    std::cout << "Verification succeded" << std::endl;
 }
 
 void UtilsProtocol::parseSPSA(std::istringstream& strm) {

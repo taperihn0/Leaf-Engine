@@ -73,7 +73,8 @@
 				"BUILD_UTILS": "ON",
 				"ENABLE_SIMD_SSE4_2": "ON",
 				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}",
-				"ARM_ARCHITECTURE": "OFF"
+				"ARCHITECTURE_EXCLUSIVE": "OFF",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		}
 	],

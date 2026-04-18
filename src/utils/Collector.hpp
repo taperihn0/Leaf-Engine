@@ -55,7 +55,7 @@ private:
                           enumLogLabel thread_label);
     void perThread(PerThreadData& thread);
 
-    static constexpr float _NodesRandomFactor = 0.15f;
+    static constexpr float _NodesRandomFactor = 0.18f;
 #if defined(DEBUG)
     static constexpr bool _EnableSelfPlayLog = true;
 #else

@@ -213,17 +213,18 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 // Target cacheline size is fixed
 #define CACHELINE_SIZE 64
 
-static int GlobSeed = 1;
-static std::mt19937 GlobMersenne(GlobSeed);
+static int GlobFixedSeed = 1;
+static std::mt19937 GlobMersenne(GlobFixedSeed);
+
+#if !defined(BUILD_UTILS)
+static thread_local uint GlobRandomSeed = GlobSeed;
+#else
+static thread_local uint GlobRandomSeed = std::random_device{}();
+#endif
 
 template <typename Integer = int>
 _INLINE Integer random(Integer l, Integer r) {
-#if !defined(BUILD_UTILS)
-	static thread_local int RandomSeed = GlobSeed;
-#else
-	static thread_local int RandomSeed = std::random_device{}();
-#endif
-	static thread_local std::mt19937 mersenne(RandomSeed);
+	static thread_local std::mt19937 mersenne(GlobRandomSeed);
     std::uniform_int_distribution<Integer> dist(l, r);
     return dist(mersenne);
 }

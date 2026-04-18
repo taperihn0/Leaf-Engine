@@ -89,6 +89,10 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         train_data_spec
     };
 
+    const float stddev = _NodesRandomFactor / 2. * nodes_per_search;
+    std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
+    std::mt19937 mt{GlobRandomSeed};
+
     for (size_t i = 0; 
          thr_data.commons->games_ended < thr_data.commons->games2play; 
          i++) 
@@ -114,7 +118,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
         // add noise to search node number (if nodes threshold is used)
         if (nodes_per_search > 0) {
-            game_packet.limits.nodes = random<ll>(nodes_min, nodes_max);
+            game_packet.limits.nodes = std::clamp(std::llroundf(normal_distr(mt)), nodes_min, nodes_max);
         }
 
         *game_result = Game::GAME_INVALID;

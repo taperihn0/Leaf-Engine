@@ -69,6 +69,7 @@ EOF
     EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         log_msg "Crash (Code $EXIT_CODE) in Session $SESSION_NUM."
+        echo "[$(date '+%H:%M:%S')] SCRIPT: Process exited with code $EXIT_CODE" >> "$ERR_FILE"
         log_msg "Restarting in 5s..."
         sleep 5 
     fi
