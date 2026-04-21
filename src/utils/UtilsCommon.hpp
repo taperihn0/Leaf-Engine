@@ -14,7 +14,7 @@
 #include <functional>
 
 #if defined(DEBUG)
-#define INSPECT_SELFPLAY_MATCHES
+//#define INSPECT_SELFPLAY_MATCHES
 #endif
 
 namespace Utils {

@@ -99,7 +99,7 @@ struct AccumulatorCache {
     FeatureData removed_features[2];
     size_t      added_features_cnt   = 0;
     size_t      removed_features_cnt = 0;
-    bool        dirty                 = false;
+    bool        dirty                = false;
 };
 
 } // namespace nn

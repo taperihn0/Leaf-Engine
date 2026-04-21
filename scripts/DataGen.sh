@@ -5,13 +5,13 @@ log_msg() {
 }
 
 if [ "$#" -ne 5 ]; then
-    echo "Usage: $0 <executable_path> <total_games> <games_per_session> <thread_count> <nodes>"
-    echo "Example: $0 ./bin/Utils/Release/LeafUtils 100000 4000 2 8000"
+    echo "Usage: $0 <executable_path> <total_sessions> <games_per_session> <thread_count> <nodes>"
+    echo "Example: $0 ./bin/Utils/Release/LeafUtils 10 4000 2 8000"
     exit 1
 fi
 
 EXECUTABLE=$1
-TOTAL_GAMES=$2
+TOTAL_SESSIONS=$2
 GAMES_PER_SESSION=$3
 THREAD_COUNT=$4
 NODES=$5
@@ -43,17 +43,16 @@ fi
 
 log_msg "Batch tournament"
 echo "Binary:    $EXECUTABLE"
-echo "Target:    $TOTAL_GAMES games"
+echo "Sessions:  $TOTAL_SESSIONS"
 echo "Batch:     $GAMES_PER_SESSION"
 echo "Threads:   $THREAD_COUNT"
 echo "Nodes:     $NODES"
-echo "Storage:    $BASE_DIR/"
+echo "Storage:   $BASE_DIR/"
 echo "----------------------------------------------------"
 
-GAMES_PLAYED=0
 SESSION_NUM=1
 
-while [ $GAMES_PLAYED -lt $TOTAL_GAMES ]; do
+while [ $((SESSION_NUM - 1)) -lt $TOTAL_SESSIONS ]; do
     SESSION_DIR="$BASE_DIR/session$SESSION_NUM"
     ERR_FILE="$SESSION_DIR/err"
 
@@ -74,11 +73,11 @@ EOF
         sleep 5 
     fi
 
-    GAMES_PLAYED=$((GAMES_PLAYED + GAMES_PER_SESSION))
-    ((SESSION_NUM++))
     
-    log_msg "Progress: $GAMES_PLAYED / $TOTAL_GAMES games completed."
+    log_msg "Progress: $SESSION_NUM / $TOTAL_SESSIONS sessions completed."
     echo "----------------------------------------------------"
+    
+    ((SESSION_NUM++))
 done
 
-log_msg "Tournament Complete. Data in: $BASE_DIR"
+log_msg "Tournament finished."

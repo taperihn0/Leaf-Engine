@@ -217,7 +217,7 @@ static int GlobFixedSeed = 1;
 static std::mt19937 GlobMersenne(GlobFixedSeed);
 
 #if !defined(BUILD_UTILS)
-static thread_local uint GlobRandomSeed = GlobSeed;
+static thread_local uint GlobRandomSeed = GlobFixedSeed;
 #else
 static thread_local uint GlobRandomSeed = std::random_device{}();
 #endif

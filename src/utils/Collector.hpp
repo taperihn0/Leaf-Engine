@@ -57,7 +57,7 @@ private:
 
     static constexpr float _NodesRandomFactor = 0.18f;
 #if defined(DEBUG)
-    static constexpr bool _EnableSelfPlayLog = true;
+    static constexpr bool _EnableSelfPlayLog = false;
 #else
     static constexpr bool _EnableSelfPlayLog = false;
 #endif

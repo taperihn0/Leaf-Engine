@@ -81,8 +81,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
     SelfGame::GameSpecPacket game_packet = {
         thr_data.limits,
-        SelfGame::EnginePlayer{ &os0, &is0 },
-        SelfGame::EnginePlayer{ &os1, &is1 },
+        SelfGame::EnginePlayer{ &os0, &is0, &engine0 },
+        SelfGame::EnginePlayer{ &os1, &is1, &engine1 },
         thr_data.id,
         game_result,
         &GlobOpeningGenerator,
@@ -122,6 +122,20 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         }
 
         *game_result = Game::GAME_INVALID;
+
+        if (!isAlive(engine0) or
+            !isAlive(engine1)) {
+            {
+                const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
+                labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Error: Engine disconnected");
+            }
+
+            waitForProcess(engine0);
+            waitForProcess(engine1);
+
+            return false;
+        }
+
         positions.clear();
         white_scores.clear();
         moves.clear();
@@ -280,6 +294,15 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         labelLog(std::cout, LOG_INFO | thread_label, ss.str());
     }
 
+    if (isAlive(engine0))
+        log(is0, "quit");
+    
+    if (isAlive(engine1))
+        log(is1, "quit");
+
+    waitForProcess(engine0);
+    waitForProcess(engine1);
+
     return true;
 }
 
@@ -382,7 +405,7 @@ void TournamentCollector::startTournament(size_t games_count,
     labelLog(std::cout, LOG_INFO, ss.str());
 
     for (size_t i = 0; i < thread_count; i++) {
-        threads.emplace_back([&](PerThreadData& thread_data) {
+        threads.emplace_back([this](PerThreadData& thread_data) {
             this->perThread(thread_data);
         }, 
         std::ref(thread_private[i]));

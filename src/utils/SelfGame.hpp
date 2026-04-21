@@ -6,6 +6,8 @@
 
 namespace Utils {
 
+struct EngineProcess;
+
 class SelfGame {
 public:
     SelfGame() = default;
@@ -14,8 +16,9 @@ public:
     *  We're writing to os, reading from is.
     */
     struct EnginePlayer {
-        std::istream* os;
-        std::ostream* is;
+        std::istream*  os;
+        std::ostream*  is;
+        EngineProcess* proc;
     };
 
     struct TrainDataSpec {

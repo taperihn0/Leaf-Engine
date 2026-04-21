@@ -1182,6 +1182,8 @@ Score Search::nmSearch(Position& pos,
         {
 			if (Root and node->best_move.isNull()) {
 				node->best_move = node->move;
+				node->pv_line[0].best_move = packed(node->best_move);
+				node->pv_line_len = 1;
 			}
 
 			return -Score::Undef;
@@ -1241,18 +1243,15 @@ Score Search::qSearch(Position& pos,
 		return -Score::Undef;
 	}
     
-	if (!limits.anyNodesLeft(results.nodes_cnt) or
-        !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) {
-        return -Score::Undef;
-    }
-
 	const NodeInfo* const preroot = _tree_stack.getPreRootNode();
-	
-	if (ply >= MaxSelDepth) _UNLIKELY {
+
+	if (!limits.anyNodesLeft(results.nodes_cnt) or
+        !limits.anyQuiesceNodesLeft(results.qnodes_cnt) or
+		ply >= MaxSelDepth) {
 		return evaluate<QNodeType>(pos, _tree_stack, 
 								   node, preroot, 
 								   node->side2move, results);
-	}
+    }
 
 #if defined(_TT_PROBE_QSEARCH)
 	TTEntry tt_entry;

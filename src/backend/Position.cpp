@@ -252,7 +252,7 @@ int Position::getNonPawnMaterial() const {
 }
 
 bool Position::make(Move32b& move) {
-	static nn::AccumulatorCache tmp_accum_cache;
+	nn::AccumulatorCache tmp_accum_cache;
 	return make(move, &tmp_accum_cache);
 }
 

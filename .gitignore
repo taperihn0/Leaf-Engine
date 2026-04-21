@@ -6,6 +6,7 @@ misc/selfplay/
 misc/selfplay*/
 misc/selfplay_*
 misc/selfplay_legacy/
+misc/tmp
 CMakePresets.json
 
 build/

@@ -1,13 +1,20 @@
 #include "SelfGame.hpp"
 #include "backend/Time.hpp"
 #include "StaticEval.hpp"
+#include "Process.hpp"
 
 namespace Utils {
 
 template <bool EnableLog>
 SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket& packet) {
-    std::array<EnginePlayer, 2> player;
+    if (!isAlive(*packet.engine0.proc) or
+        !isAlive(*packet.engine1.proc)) {
+        *packet.result = Game::GAME_INVALID;
+        return GAME_INVALID;
+    }
 
+    std::array<EnginePlayer, 2> player;
+    
     // true zero_player_white means (is0, os0) engine is white player
     const bool zero_player_white = random<int>(0, 1);
 
@@ -28,7 +35,10 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
         log(*player[side].is, "isready");
 
         std::string line;
-        while ((readline(*player[side].os, line), line != "readyok"));
+        if (!readline(*player[side].os, line) or line != "readyok") {
+            *packet.result = Game::GAME_INVALID;
+            return GAME_INVALID;
+        }
     }
 
     Timer timer;
@@ -94,7 +104,9 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
                                                 score,
                                                 debug_labels[side2move]);
 
-        if (move.isNull()) {
+        if (move.isNull() or
+            !isAlive(*packet.engine0.proc) or
+            !isAlive(*packet.engine1.proc)) {
             game_result = Game::GAME_INVALID;
             break;   
         }
@@ -140,10 +152,6 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
-    }
-
-    if (game_result == Game::GAME_INVALID) {
-        labelLog(std::cout, LOG_INFO, "Terminating invalid game");
     }
 
     *packet.result = game_result;
