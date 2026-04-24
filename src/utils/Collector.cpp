@@ -21,13 +21,13 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
 
-    auto engine1 = spawnProcess();
-    auto engine0 = spawnProcess();
+    auto engine1 = EngineProcess::spawnProcess();
+    auto engine0 = EngineProcess::spawnProcess();
 
-    auto& is0 = *engine0.in;
-    auto& os0 = *engine0.out;
-    auto& is1 = *engine1.in;
-    auto& os1 = *engine1.out;
+    if (!engine0.isAlive() or !engine1.isAlive()) {
+        labelLog(std::cout, LOG_INFO | thread_label, "Process didn't initialize");
+        return false;
+    }
 
     {
         std::string line;
@@ -39,16 +39,16 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
         const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
 
-        readline(os0, line);
+        readline(*engine0.proc_stdout, line);
         labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
 
-        readline(os1, line);
+        readline(*engine1.proc_stdout, line);
         labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
 
-        log(is0, tt_log.str());
+        log(*engine0.proc_stdin, tt_log.str());
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
-        log(is1, tt_log.str());
+        log(*engine1.proc_stdin, tt_log.str());
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
@@ -81,8 +81,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
     SelfGame::GameSpecPacket game_packet = {
         thr_data.limits,
-        SelfGame::EnginePlayer{ &os0, &is0, &engine0 },
-        SelfGame::EnginePlayer{ &os1, &is1, &engine1 },
         thr_data.id,
         game_result,
         &GlobOpeningGenerator,
@@ -123,15 +121,14 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
         *game_result = Game::GAME_INVALID;
 
-        if (!isAlive(engine0) or
-            !isAlive(engine1)) {
+        if (!engine0.isAlive() or !engine1.isAlive()) {
             {
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
-                labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Error: Engine disconnected");
+                labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Engine disconnected");
             }
 
-            waitForProcess(engine0);
-            waitForProcess(engine1);
+            engine0.waitForProcess();
+            engine1.waitForProcess();
 
             return false;
         }
@@ -140,7 +137,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         white_scores.clear();
         moves.clear();
 
-        SelfGame().mixedMatch<_EnableSelfPlayLog>(game_packet);
+        SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
 
         const size_t total_positions_cnt = positions.size();
         ASSERTNOLOG(total_positions_cnt == white_scores.size() and 
@@ -294,14 +291,14 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         labelLog(std::cout, LOG_INFO | thread_label, ss.str());
     }
 
-    if (isAlive(engine0))
-        log(is0, "quit");
+    if (engine0.isAlive())
+        log(*engine0.proc_stdin, "quit");
     
-    if (isAlive(engine1))
-        log(is1, "quit");
+    if (engine1.isAlive())
+        log(*engine1.proc_stdin, "quit");
 
-    waitForProcess(engine0);
-    waitForProcess(engine1);
+    engine0.waitForProcess();
+    engine1.waitForProcess();
 
     return true;
 }

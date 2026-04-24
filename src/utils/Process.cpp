@@ -16,7 +16,7 @@ void waitForProcess(EngineProcess& proc) {
 
 #else
 
-EngineProcess spawnProcess() {
+EngineProcess EngineProcess::spawnProcess() {
     int out_pipe[2];
     int in_pipe[2];
 
@@ -43,28 +43,28 @@ EngineProcess spawnProcess() {
     else {
         close(in_pipe[0]);
         close(out_pipe[1]);
-        
+
         EngineProcess proc;
 
         proc.pid = pid;
         proc.in_buf = std::make_unique<EngineProcess::filebuf>(in_pipe[1], std::ios::out);
-        proc.in = std::make_unique<std::ostream>(proc.in_buf.get());
+        proc.proc_stdin = std::make_unique<std::ostream>(proc.in_buf.get());
         proc.out_buf = std::make_unique<EngineProcess::filebuf>(out_pipe[0], std::ios::in);
-        proc.out = std::make_unique<std::istream>(proc.out_buf.get());
+        proc.proc_stdout = std::make_unique<std::istream>(proc.out_buf.get());
 
         return proc;
     }
 }
 
-void waitForProcess(EngineProcess& proc) {
-    waitpid(proc.pid, nullptr, 0);
+void EngineProcess::waitForProcess() {
+    waitpid(pid, nullptr, 0);
 }
 
-bool isAlive(const EngineProcess& proc) {
-    if (proc.pid <= 0)
+bool EngineProcess::isAlive() const {
+    if (pid <= 0)
         return false;
 
-    if (kill(proc.pid, 0) < 0)
+    if (kill(pid, 0) < 0)
         return false;
 
     return true;

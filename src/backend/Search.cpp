@@ -374,7 +374,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
 	preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
 	preroot->cluster.accum_cache.markClean();
-	preroot->move = preroot->best_move = game.currentHalfCount() > 0 ? game.getCurrentMove() 
+	preroot->move = preroot->best_move = game.getMoveCount() > 0 ? game.getCurrentMove() 
 																	 : Move32b::Null;
 	preroot->side2move = !pos.getTurn();
 
@@ -1644,7 +1644,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 		return false;
 
 	const int game_rep_depth = 50 - ply;
-	const int curr_halfclock = static_cast<int>(game.currentHalfCount());
+	const int curr_halfclock = static_cast<int>(game.getMoveCount());
 
 	for (int halfclock = curr_halfclock - 1;
 		 halfclock >= 0 and curr_halfclock - halfclock <= game_rep_depth;

@@ -70,10 +70,18 @@ FullInfoRecord& Game::getHistoryRecord() {
     return _pos_record;
 }
 
+const FullInfoRecord& Game::getHistoryRecord() const {
+    return _pos_record;
+}
+
+size_t Game::getMoveCount() const {
+    return getHistoryRecord().getMoveCount();
+}
+
 bool Game::isGameCycle() const {
     uint64_t hash_key = _current_pos.getZobristKey();
 
-    int halfmove_cnt = static_cast<int>(_pos_record.currentHalfCount());
+    int halfmove_cnt = static_cast<int>(_pos_record.getMoveCount());
     int repetition_cnt = 0;
 
     for (int i = 1; i <= halfmove_cnt; i++) {

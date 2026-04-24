@@ -1,3 +1,5 @@
+#pragma once
+
 #include "UtilsCommon.hpp"
 
 #include <memory>
@@ -13,21 +15,24 @@
 namespace Utils {
 
 struct EngineProcess {
-    std::unique_ptr<std::ostream> in;
-    std::unique_ptr<std::istream> out;
+    EngineProcess() = default;
+
+    static EngineProcess spawnProcess();
+    
+    void waitForProcess();
+    bool isAlive() const;
 
 #if defined(_MSC_VER)
 #pragma WARNING("Unimplemented")
 #else
     using filebuf = __gnu_cxx::stdio_filebuf<char>;
-    pid_t                         pid;
-    std::unique_ptr<filebuf>      in_buf;
-    std::unique_ptr<filebuf>      out_buf;
-#endif
-};
 
-EngineProcess spawnProcess();
-void waitForProcess(EngineProcess& proc);
-bool isAlive(const EngineProcess& proc);
+    pid_t                         pid = 0;
+    std::unique_ptr<filebuf>      in_buf = nullptr;
+    std::unique_ptr<filebuf>      out_buf = nullptr;
+#endif
+    std::unique_ptr<std::ostream> proc_stdin = nullptr;
+    std::unique_ptr<std::istream> proc_stdout = nullptr;
+};
 
 }

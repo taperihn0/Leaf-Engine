@@ -24,7 +24,7 @@ public:
 		return getPrevMove(_idx - 1);
 	}
 
-	_INLINE size_t currentHalfCount() const { return _idx; }
+	_INLINE size_t getMoveCount() const { return _idx; }
 	_INLINE void clear() 				   { _idx = 0; }
 private:
 	std::array<Move32b, MaxGameMoves> _move_history;
@@ -36,7 +36,7 @@ public:
 	FullInfoRecord() = default;
 
 	_INLINE void recordInfo(uint64_t key, Move32b move) {
-		size_t curr_idx = currentHalfCount();
+		size_t curr_idx = getMoveCount();
 		assert(curr_idx < MaxGameMoves);
 		_key_history[curr_idx] = key;
 		// MoveRecord takes care of shifting _idx by one
@@ -44,7 +44,7 @@ public:
 	}
 
 	_INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
-		assert(halfmove_cnt < currentHalfCount());
+		assert(halfmove_cnt < getMoveCount());
 		return _key_history[halfmove_cnt];
 	}
 private:
@@ -87,14 +87,15 @@ public:
 	Position& getPosition();
 
 	FullInfoRecord& getHistoryRecord();
+	const FullInfoRecord& getHistoryRecord() const;
+
+	size_t getMoveCount() const;
 
 	static constexpr time_ms_t MoveOverhead = 15_ms;
     static constexpr time_ms_t TimeMargin   = 40_ms;
-
 private:
 	bool isGameCycle() const;
 	bool isStaleMate() const;
-
 	bool isAnyResponse();
 
     struct CachedState {

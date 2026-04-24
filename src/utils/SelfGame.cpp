@@ -6,36 +6,38 @@
 namespace Utils {
 
 template <bool EnableLog>
-SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket& packet) {
-    if (!isAlive(*packet.engine0.proc) or
-        !isAlive(*packet.engine1.proc)) {
+SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0, 
+                                                       EngineProcess& engine1, 
+                                                       GameSpecPacket& packet)
+{
+    if (!engine0.isAlive() or !engine1.isAlive()) {
         *packet.result = Game::GAME_INVALID;
         return GAME_INVALID;
     }
 
-    std::array<EnginePlayer, 2> player;
+    std::array<EngineProcess*, 2> player;
     
     // true zero_player_white means (is0, os0) engine is white player
     const bool zero_player_white = random<int>(0, 1);
 
     // mixing sides to move 
     if (zero_player_white) {
-        player[WHITE] = packet.engine0;
-        player[BLACK] = packet.engine1;
+        player[WHITE] = &engine0;
+        player[BLACK] = &engine1;
     } 
     else {
-        player[WHITE] = packet.engine1;
-        player[BLACK] = packet.engine0;
+        player[WHITE] = &engine1;
+        player[BLACK] = &engine0;
     }
 
-    log(*player[WHITE].is, "ucinewgame");
-    log(*player[BLACK].is, "ucinewgame");
+    log(*player[WHITE]->proc_stdin, "ucinewgame");
+    log(*player[BLACK]->proc_stdin, "ucinewgame");
 
     for (enumColor side : { WHITE, BLACK }) {
-        log(*player[side].is, "isready");
+        log(*player[side]->proc_stdin, "isready");
 
         std::string line;
-        if (!readline(*player[side].os, line) or line != "readyok") {
+        if (!readline(*player[side]->proc_stdout, line) or line != "readyok") {
             *packet.result = Game::GAME_INVALID;
             return GAME_INVALID;
         }
@@ -89,24 +91,24 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
     while (!game.isWin(game_result) and !game.isDraw(game_result)) {
         Position& pos = game.getPosition();
         const bool side2move = pos.getTurn();
-        EnginePlayer& curr_player = player[side2move];
+        EngineProcess* curr_player = player[side2move];
         FullInfoRecord& record = game.getHistoryRecord();
 
         sentPosition<EnableLog>(start_fen, record, 
-                                curr_player,
+                                *curr_player,
                                 info_labels[side2move]);
         
         Score score = Score::Undef;
 
         timer.go();
         Move32b move = getPlayerMove<EnableLog>(limits, pos, 
-                                                curr_player,
+                                                *curr_player,
                                                 score,
                                                 debug_labels[side2move]);
 
         if (move.isNull() or
-            !isAlive(*packet.engine0.proc) or
-            !isAlive(*packet.engine1.proc)) {
+            !engine0.isAlive() or
+            !engine1.isAlive()) {
             game_result = Game::GAME_INVALID;
             break;   
         }
@@ -152,6 +154,10 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
+        else if (game.getMoveCount() >= MaxGameMoves) {
+            game_result = Game::GAME_INVALID;
+            break;
+        }
     }
 
     *packet.result = game_result;
@@ -161,14 +167,14 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(SelfGame::GameSpecPacket&
 template <bool EnableLog>
 void SelfGame::sentPosition(const std::string& start_fen, 
                             const FullInfoRecord& record,
-                            EnginePlayer player,
+                            EngineProcess& player,
                             enumLogLabel ret_msg_label) 
 {
     /* Is, os are relative to the engines.
     *  We're writing to os, reading from is.
     */
 
-    const int curr_halfmove_clock = static_cast<int>(record.currentHalfCount());
+    const int curr_halfmove_clock = static_cast<int>(record.getMoveCount());
 
     std::stringstream cmd;
     cmd << "position fen " << start_fen;
@@ -185,7 +191,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
     }
 
     const std::string msg = cmd.str();
-    log(*player.is, msg);
+    log(*player.proc_stdin, msg);
 
     if constexpr (EnableLog)
         labelLog(std::cout, ret_msg_label, msg);
@@ -194,7 +200,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
 template <bool EnableLog>
 Move32b SelfGame::getPlayerMove(SearchLimits limits,
                                 Position& pos,
-                                EnginePlayer player, 
+                                EngineProcess& player, 
                                 Score& score,
                                 enumLogLabel ret_msg_label) 
 {
@@ -213,7 +219,7 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
         << " winc "  << limits.winc 
         << " binc "  << limits.binc;
     
-    log(*player.is, cmd.str());
+    log(*player.proc_stdin, cmd.str());
 
     if constexpr (EnableLog)
         labelLog(std::cout, ret_msg_label, cmd.str());
@@ -221,7 +227,7 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
     std::string line;
     std::string best_move_str;
 
-    while (readline(*player.os, line)) {
+    while (readline(*player.proc_stdout, line)) {
 
         if constexpr (EnableLog)
             labelLog(std::cout, ret_msg_label, line);
@@ -335,7 +341,11 @@ bool isDraw(SelfGame::PlayerPerspectiveResult result) {
            result == SelfGame::DRAW_BY_ADJUCATION;
 }
 
-template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<false>(GameSpecPacket&);
-template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<true>(GameSpecPacket&);
+template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<false>(EngineProcess&, 
+                                                                       EngineProcess&, 
+                                                                       GameSpecPacket&);
+template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<true>(EngineProcess&, 
+                                                                      EngineProcess&, 
+                                                                      GameSpecPacket&);
 
 } // namespace Utils

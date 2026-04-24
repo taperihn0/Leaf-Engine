@@ -12,15 +12,6 @@ class SelfGame {
 public:
     SelfGame() = default;
 
-    /* Is, os are relative to the engines.
-    *  We're writing to os, reading from is.
-    */
-    struct EnginePlayer {
-        std::istream*  os;
-        std::ostream*  is;
-        EngineProcess* proc;
-    };
-
     struct TrainDataSpec {
         std::vector<Position>* positions_buf;
         std::vector<Score>*    white_scores_buf;
@@ -29,8 +20,6 @@ public:
 
     struct GameSpecPacket {
         SearchLimits                   limits;
-        EnginePlayer                   engine0;
-        EnginePlayer                   engine1;
         uint                           thread_id;
         std::shared_ptr<Game::Result>  result;
         OpeningManBase*                openings; 
@@ -55,18 +44,20 @@ public:
     *  we also mix their sides.
     */
     template <bool EnableLog>
-    PlayerPerspectiveResult mixedMatch(GameSpecPacket& packet);
+    PlayerPerspectiveResult mixedMatch(EngineProcess& engine0, 
+                                       EngineProcess& engine1, 
+                                       GameSpecPacket& packet);
 private:
     template <bool EnableLog>
     void sentPosition(const std::string& start_fen, 
                       const FullInfoRecord& record,
-                      EnginePlayer player,
+                      EngineProcess& player,
                       enumLogLabel ret_msg_label);
     
     template <bool EnableLog>
     Move32b getPlayerMove(SearchLimits limits, 
                           Position& pos,
-                          EnginePlayer player,
+                          EngineProcess& player,
                           Score& score,
                           enumLogLabel ret_msg_label);
 

@@ -2,6 +2,7 @@
 #include "frontend/Options.hpp"
 #include "Opening.hpp"
 #include "UtilsCommon.hpp"
+#include "Process.hpp"
 
 #include <vector>
 #include <fstream>
@@ -40,8 +41,8 @@ private:
               std::vector<SPSA_PackedParameter>& theta_plus,
               std::vector<SPSA_PackedParameter>& theta_minus,
               uint n, SearchLimits limits,
-              std::istream& engine_os0, std::ostream& engine_is0,
-              std::istream& engine_os1, std::ostream& engine_is1,
+              EngineProcess& engine0,
+              EngineProcess& engine1,
               std::ofstream& log_file,
               uint id);
 
@@ -50,12 +51,12 @@ private:
                          uint k);
 
     void applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
-                      std::istream& engine_os, std::ostream& engine_is,
+                      EngineProcess& engine,
                       enumLogLabel ret_msg_label);
 
     int match(SearchLimits limits,
-              std::istream& engine_os0, std::ostream& engine_is0,
-              std::istream& engine_os1, std::ostream& engine_is1,
+              EngineProcess& engine0,
+              EngineProcess& engine1,
               std::shared_ptr<Game::Result> result,
               uint id);
 

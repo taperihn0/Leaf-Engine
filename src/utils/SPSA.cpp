@@ -89,13 +89,18 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
                               SearchLimits limits,
                               uint id) 
 {
-    auto engine1 = spawnProcess();
-    auto engine0 = spawnProcess();
+    auto engine1 = EngineProcess::spawnProcess();
+    auto engine0 = EngineProcess::spawnProcess();
 
-    auto& is0 = *engine0.in;
-    auto& os0 = *engine0.out;
-    auto& is1 = *engine1.in;
-    auto& os1 = *engine1.out;
+    if (!engine0.isAlive() or !engine1.isAlive()) {
+        labelLog(std::cout, LOG_INFO, "Process didn't initialize");
+        return;
+    }
+
+    auto& is0 = *engine0.proc_stdin;
+    auto& os0 = *engine0.proc_stdout;
+    auto& is1 = *engine1.proc_stdin;
+    auto& os1 = *engine1.proc_stdout;
 
     const size_t param_count = theta.size();
 
@@ -152,8 +157,12 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
-    tune(theta, theta_plus, theta_minus, IterCount, limits,
-         os0, is0, os1, is1, log_file, id);
+    tune(theta, theta_plus, theta_minus, 
+         IterCount, 
+         limits,
+         engine0, engine1, 
+         log_file, 
+         id);
 
     {
         std::string msg = "quit";
@@ -161,16 +170,16 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         log(is1, msg);
     }
 
-    waitForProcess(engine0);
-    waitForProcess(engine1);
+    engine0.waitForProcess();
+    engine1.waitForProcess();
 }
 
 void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        std::vector<SPSA_PackedParameter>& theta_plus,
                        std::vector<SPSA_PackedParameter>& theta_minus,
                        uint n, SearchLimits limits,
-                       std::istream& engine_os0, std::ostream& engine_is0,
-                       std::istream& engine_os1, std::ostream& engine_is1,
+                       EngineProcess& engine0,
+                       EngineProcess& engine1,
                        std::ofstream& log_file,
                        uint id)
 {
@@ -225,11 +234,13 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             return packed;
                        });
 
-        applyOptions(theta_plus, engine_os0, engine_is0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
-        applyOptions(theta_minus, engine_os1, engine_is1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
+        applyOptions(theta_plus, engine0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
+        applyOptions(theta_minus, engine1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
         auto game_result = std::make_shared<Game::Result>();
-        const int res = match(limits, engine_os0, engine_is0, engine_os1, engine_is1, game_result, id);
+        const int res = match(limits, 
+                              engine0, engine1, 
+                              game_result, id);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -283,7 +294,7 @@ void SPSA_Tuning::writeCheckpoint(std::ofstream& file,
 }
 
 void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
-                               std::istream& engine_os, std::ostream& engine_is,
+                               EngineProcess& engine,
                                enumLogLabel ret_msg_label) 
 {
     // Setup option value using "setoption name OPTION value VALUE"
@@ -292,29 +303,26 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
         std::stringstream cmd;
         cmd << "setoption name " << *param.name << " value " << std::to_string(param.value);
 
-        log(engine_is, cmd.str());
+        log(*engine.proc_stdin, cmd.str());
         labelLog(std::cout, ret_msg_label, cmd.str());
     }
 }
 
 _INLINE int SPSA_Tuning::match(SearchLimits limits,
-                               std::istream& engine_os0, std::ostream& engine_is0,
-                               std::istream& engine_os1, std::ostream& engine_is1,
+                               EngineProcess& engine0,
+                               EngineProcess& engine1,
                                std::shared_ptr<Game::Result> result,
                                uint id)
 {
     SelfGame::GameSpecPacket game_packet = {
         limits,
-        SelfGame::EnginePlayer{ &engine_os0, &engine_is0 },
-        SelfGame::EnginePlayer{ &engine_os1, &engine_is1 },
         id,
         result,
         &_openings,
         nullptr,
     };
 
-    const SelfGame::PlayerPerspectiveResult game_result = SelfGame()
-                                                            .mixedMatch<_EnableSelfPlayLog>(game_packet);
+    const auto game_result = SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
 
     //  1. - if player zero wins
     // -1. - if player one wins
