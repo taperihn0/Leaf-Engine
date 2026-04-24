@@ -14,7 +14,7 @@
 #include <functional>
 
 #if defined(DEBUG)
-//#define INSPECT_SELFPLAY_MATCHES
+#define INSPECT_SELFPLAY_MATCHES
 #endif
 
 namespace Utils {
@@ -112,6 +112,8 @@ _FORCEINLINE void log(std::ostream& is, const std::string& str) {
 _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
     return std::getline(os, line);
 }
+
+static constexpr int SelfPlaySessionCountLimit = 256;
 
 _INTERNAL std::string getWhiteWinOutputFile(int thread_num) {
     ASSERTNOLOG(thread_num <= PlatformThreadLimit);

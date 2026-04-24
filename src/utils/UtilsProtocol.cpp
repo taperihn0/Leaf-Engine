@@ -72,24 +72,15 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
     std::cout.flush();
 }
 
-void UtilsProtocol::parseVerifyTrainData(std::istringstream& strm) {
-    std::string fp;
+bool verifyTrainData(std::ifstream& input, size_t& verified_cnt) {
+    ASSERTNOLOG(input.is_open());
 
-    strm >> std::skipws >> fp;
-
-    std::ifstream input(fp, std::ios_base::binary);
-
-    if (!input) {
-        ASSERT(false, "Failed to open file: " + fp);
-        return;
-    }
-
-    auto pos_verify = [](const Position& pos) -> bool {
+    static auto pos_verify = [](const Position& pos) -> bool {
         if (!pos.isValid())
             return false;
 
         else if (pos.getPiecesCount() <= 6 and 
-                 StaticEval::evaluateEndgame(pos) != Score::Undef)
+                StaticEval::evaluateEndgame(pos) != Score::Undef)
             return false;
 
         else if (pos.isInCheck(pos.getTurn()))
@@ -99,6 +90,7 @@ void UtilsProtocol::parseVerifyTrainData(std::istringstream& strm) {
     };
 
     Utils::TrainingDataEntry entry;
+    verified_cnt = 0;
 
     while (Utils::TrainingDataEntry::read(input, entry)) {
         const PackedPosition pack = entry.getPosition();
@@ -110,11 +102,85 @@ void UtilsProtocol::parseVerifyTrainData(std::istringstream& strm) {
             if (pos.isValid()) pos.print();
             else pack.print();
 
-            return;
+            std::cout << std::flush;
+            return false;
+        }
+
+        verified_cnt++;
+    }
+
+    std::cout << "Verified " << verified_cnt << " positions" << std::endl;
+    return true;
+}
+
+void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
+    std::string tournament_dir;
+    strm >> std::skipws >> tournament_dir;
+
+    size_t total_verified_positions = 0;
+
+    for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
+        std::string session_fp = "session" + std::to_string(session);
+
+        for (uint id = 1; id <= PlatformThreadLimit; id++) {
+            {
+                std::string fp = tournament_dir + '/' + session_fp + '/' + getWhiteWinOutputFile(id);
+                std::ifstream input(fp, std::ios_base::binary);
+
+                if (input) {
+                    std::cout << "Verificating " << fp << "..." << std::endl;
+                    
+                    size_t verified_cnt = 0;
+
+                    if (!verifyTrainData(input, verified_cnt)) {
+                        std::cout << "Verification failed on file: " << fp << std::endl;
+                        return;
+                    }
+
+                    total_verified_positions += verified_cnt;
+                }
+            }
+
+            {
+                std::string fp = tournament_dir + '/' + session_fp + '/' + getBlackWinOutputFile(id);
+                std::ifstream input(fp, std::ios_base::binary);
+
+                if (input) {
+                    std::cout << "Verificating " << fp << "..." << std::endl;
+                    
+                    size_t verified_cnt = 0;
+
+                    if (!verifyTrainData(input, verified_cnt)) {
+                        std::cout << "Verification failed on file: " << fp << std::endl;
+                        return;
+                    }
+
+                    total_verified_positions += verified_cnt;
+                }
+            }
+
+            {
+                std::string fp = tournament_dir + '/' + session_fp + '/' + getDrawOutputFile(id);
+                std::ifstream input(fp, std::ios_base::binary);
+
+                if (input) {
+                    std::cout << "Verificating " << fp << "..." << std::endl;
+                    
+                    size_t verified_cnt = 0;
+
+                    if (!verifyTrainData(input, verified_cnt)) {
+                        std::cout << "Verification failed on file: " << fp << std::endl;
+                        return;
+                    }
+
+                    total_verified_positions += verified_cnt;
+                }
+            }
         }
     }
 
     std::cout << "Verification succeded" << std::endl;
+    std::cout << "Total of " << total_verified_positions << " positions searched" << std::endl;
 }
 
 void UtilsProtocol::parseSPSA(std::istringstream& strm) {
@@ -162,7 +228,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 		else if (token == "self_play")		       parseSelfPlay(_collector, strm);
 		else if (token == "load_openings")         GlobOpeningGenerator.load();
 		else if (token == "view_positions")        parseShowPositions(strm);
-		else if (token == "verify_train_data")     parseVerifyTrainData(strm);
+		else if (token == "verify_session")        parseVerifySession(strm);
 		else if (token == "spsa")                  parseSPSA(strm);
 
 #if defined(_UCI_DEBUG_UTILS)
