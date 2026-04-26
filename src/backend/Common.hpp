@@ -191,7 +191,7 @@ _INLINE constexpr T round(T x) {
 template <typename T>
 _INLINE constexpr int roundi(T x) {
 	static_assert(std::is_arithmetic_v<T>);
-	return static_cast<int>(round(x));
+	return static_cast<int>(round<T>(x));
 }
 
 template <typename T>
