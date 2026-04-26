@@ -23,6 +23,7 @@ protected:
 	void parseNet(std::istringstream& strm);
 	void parseRewriteNet(std::istringstream& strm); 
 	void parseSetOptions(std::istringstream& strm);
+	void parseBench(std::istringstream& strm);
 	void parseShowOptions();
 
 #if defined(_UCI_DEBUG_UTILS)

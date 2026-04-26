@@ -28,7 +28,6 @@ public:
     bool isEmpty() const override;
 private:
     OpeningGenerator() = default;
-    static inline const std::string _OpeningFile = "src/assets/sets/crafty_2500_new.epd";
 
     static constexpr int            _OpeningEvalThreshold = 300;
 #if !defined(DEBUG)
@@ -62,7 +61,8 @@ public:
     OpeningSuite() = default;
     OpeningSuite(std::string path);
 
-    void load(std::string path);
+    void loadFromFile(std::string path);
+    void loadFromVec(const std::vector<std::string_view>& fens);
     const Position& getRandomPosition(int& moves_done) const override;
     bool isEmpty() const override;
 private:

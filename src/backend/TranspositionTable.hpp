@@ -32,16 +32,14 @@ struct TTEntry {
 	}
 
 	_INLINE uint32_t getHash() const {
-		uint32_t h;
-		std::memcpy(&h, this, sizeof(uint32_t));
-		return h & 0x3FFFF;
+		return (static_cast<uint32_t>(key18) << 16) | key16;
 	}
 
 	uint16_t key16;
 	uint8_t  key18 : 2;
 	uint8_t  generation : 6;
 	Bound	 bound : 2;
-	int8_t   depth : 6;
+	uint8_t  depth : 6;
 	Score	 score;
 	Move16b  move;
     Score    eval;

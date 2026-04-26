@@ -66,11 +66,7 @@ bool _testcaseAssertion(Func f,
 }
 
 _INTERNAL bool seeTests() {
-	std::ifstream file("src/assets/sets/seeset.epd");
-	ASSERT(file.is_open(), "Could not open file src/assets/sets/seeset.epd");
-
 	Position pos;
-	std::string line;
 
 	enum seeTokenNum {
 		FEN_NUM = 0,
@@ -87,17 +83,19 @@ _INTERNAL bool seeTests() {
 		return last;
 	};
 
-	for (int lcnt = 0; std::getline(file, line); lcnt++) {
+	for (uint cnt = 0; cnt < SeeTestSet.size(); cnt++) {
+		const std::string fen = static_cast<std::string>(SeeTestSet.at(cnt));
+
 		size_t ind = 0;
 		Move32b move = Move32b::Null;
 		int expected = 0;
 
 		for (int i = 0; i < 3; i++) {
 			size_t first = ind;
-			while (line[first] == ';' or line[first] == ' ') first++;
+			while (fen[first] == ';' or fen[first] == ' ') first++;
 
-			ind = next_token(line, first);
-			std::string token = line.substr(first, ind - first);
+			ind = next_token(fen, first);
+			std::string token = fen.substr(first, ind - first);
 
 			switch (i) {
 			case FEN_NUM:
@@ -115,7 +113,7 @@ _INTERNAL bool seeTests() {
 		if (move.isEnPassant())
 			continue;
 
-		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << line << '\n';
+		std::cout << "[EPD, AT " << std::setw(3) << cnt << "]: " << fen << '\n';
 
 		 const Square dst = move.getTarget();
 		 const Piece::enumType piece = move.getPiece();
@@ -157,7 +155,8 @@ _INTERNAL bool ccrOneHourTest() {
 	timer.go();
 
 	int lcnt = 0;
-	for (const auto& full_fen : CcrOneHourSets) {
+	for (const auto& sv_fen : CcrOneHourSet) {
+		const std::string full_fen = static_cast<std::string>(sv_fen);
 		size_t next = next_token(full_fen, 0);
 
 		std::string fen = full_fen.substr(0, next);
@@ -219,7 +218,8 @@ _INTERNAL bool nullMoveTest() {
 	timer.go();
 
 	int lcnt = 0;
-	for (const auto& full_fen : NullMoveSets) {
+	for (const auto& sv_fen : NullMoveSet) {
+		const std::string full_fen = static_cast<std::string>(sv_fen);
 		size_t next = next_token(full_fen, 0);
 
 		std::string fen = full_fen.substr(0, next);
@@ -255,14 +255,10 @@ _INTERNAL bool nullMoveTest() {
 }
 
 _INTERNAL bool packedPositionTests() {
-	std::ifstream file("src/assets/openingsPositions/crafty_2500_new.epd");
-	std::fstream tmp_stream("src/assets/tmp/tmp.pck", std::ios::in | std::ios::out | std::ios_base::binary);
+	std::fstream tmp_stream("src/assets/tmp/tmp.pck", 
+							std::ios::in | std::ios::out | std::ios_base::binary);
 
-	if (!file) {
-		ASSERT(false, "Failed to open file: src/assets/openingsPositions/crafty_2500_new.epd");
-		return false;
-	}
-	else if (!tmp_stream) {
+	if (!tmp_stream) {
 		ASSERT(false, "Failed to open file: src/assets/tmp/tmp.pck");
 		return false;
 	}
@@ -270,9 +266,11 @@ _INTERNAL bool packedPositionTests() {
     static constexpr size_t PositionLimit = 400000;
 	std::string line;
 
-	for (size_t i = 0; i < PositionLimit and std::getline(file, line); i++) {
-		Position pos(line);
-		std::cout << i << ": " << line << '\n';
+	for (size_t i = 0; i < CraftyOpenings.size(); i++) {
+		const std::string fen = static_cast<std::string>(CraftyOpenings.at(i));
+		
+		Position pos(fen);
+		std::cout << i << ": " << fen << '\n';
 
 		ExtPackedPosition&& packed = ExtPackedPosition::packed(pos);
 

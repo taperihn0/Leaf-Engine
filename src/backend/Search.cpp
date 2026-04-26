@@ -32,14 +32,18 @@ _INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
     return !qnodes or qnodes_so_far < qnodes;
 }
 
-_INLINE void SearchResults::printBestMove() {
+void SearchResults::clear() {
+	std::memset(this, 0, sizeof(SearchResults));
+}
+
+void SearchResults::printBestMove() {
 	ASSERT(!best_move.isNull(), "Null bestmove");
 	std::cout << "bestmove ";
 	best_move.print();
 	std::cout << '\n';
 }
 
-_INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
+void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << 
@@ -62,9 +66,12 @@ _INLINE void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, c
 #endif
 }
 
-_INLINE void SearchResults::printShort() {
+void SearchResults::printShort() {
 	std::cout << "Total nodes: " << nodes_cnt << '\n';
-	printBestMove();
+
+	if (!best_move.isNull())
+		printBestMove();
+
 #if defined(_COLLECT_SEARCH_STATS)
 	printSearchStats();
 #endif
@@ -345,6 +352,17 @@ Move32b Search::findBestMove(Position& pos,
 							 const FullInfoRecord& game, 
 							 SearchLimits limits) 
 {
+	SearchResults search_results;
+	const Move32b bm = findBestMove(pos, game, limits, search_results);
+	return bm;
+}
+
+template <Search::enumInfoLevel InfoLevel>
+Move32b Search::findBestMove(Position& pos, 
+							 const FullInfoRecord& game, 
+							 SearchLimits limits,
+							 SearchResults& search_results) 
+{
 	ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
 	_tt.newGeneration();
@@ -352,7 +370,7 @@ Move32b Search::findBestMove(Position& pos,
 	limits.timer.go();
 	limits.search_time = TimeMan::searchTime(pos, limits);
 
-	const Move32b bm = goIterativeDeepening<InfoLevel>(pos, game, limits);
+	const Move32b bm = goIterativeDeepening<InfoLevel>(pos, game, limits, search_results);
 	return bm;
 }
 
@@ -367,10 +385,9 @@ Move32b Search::_findBestMove_unittest(Search& search,
 template <Search::enumInfoLevel InfoLevel>
 Move32b Search::goIterativeDeepening(Position& pos,	
 									 const FullInfoRecord& game, 
-									 SearchLimits& limits) 
-{
-	SearchResults search_results;
-	
+									 SearchLimits& limits,
+									 SearchResults& search_results) 
+{	
 	NodeInfo* preroot = _tree_stack.getPreRootNode();
 	preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
 	preroot->cluster.accum_cache.markClean();
@@ -462,14 +479,13 @@ Move32b Search::goIterativeDeepening(Position& pos,
 		
 		if (!prev_best_move.isNull() and !root->best_move.isNull())
 			unstable |= (prev_best_move != root->best_move);
-
-		assert(root->pv_line_len > 0);
-		assert(!root->pv_line[0].best_move.isNull());
 	}
 
     if constexpr (InfoLevel == SEARCH_FULL_INFO or 
 				  InfoLevel == SEARCH_ONLY_BM_INFO) {
-        search_results.printBestMove();
+
+		if (!search_results.best_move.isNull())
+        	search_results.printBestMove();
 	}
 	else if constexpr (InfoLevel == SEARCH_SHORT_INFO) {
         search_results.printShort();
@@ -952,6 +968,13 @@ Score Search::nmSearch(Position& pos,
 		float move_extension = 0.f;
 		float move_reduction = 0.f;
 
+		/* Singular Move Extension -
+		*  when we got some relatively strong move from TT,
+		*  we try to search it with reduced depth.
+		*  When we observe score below beta, we can assume that 
+		*  reducing that move might be dangerous (horizon effect).
+		*  If so, we try to include another extension.
+		*/
 		if constexpr (!Root) {
 			if (depth >= SingularDepth and
 				!node->check and
@@ -1180,10 +1203,12 @@ Score Search::nmSearch(Position& pos,
                  !limits.anyNodesLeft(results.nodes_cnt) or
                  !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
         {
-			if (Root and node->best_move.isNull()) {
-				node->best_move = node->move;
-				node->pv_line[0].best_move = packed(node->best_move);
-				node->pv_line_len = 1;
+			if constexpr (Root) {
+				if (node->best_move.isNull()) {
+					node->best_move = node->move;
+					node->pv_line[0].best_move = packed(node->best_move);
+					node->pv_line_len = 1;
+				}
 			}
 
 			return -Score::Undef;
@@ -1563,6 +1588,9 @@ void Search::refreshPVinTT(const Position& pos,
 		cpy_pos.make(pv_unpack);
 	}
 
+	if (results.best_move.isNull())
+		return;
+
 	// Assert we got PV-move at root - got it directly from previous best move
 
 	const uint64_t key = pos.getZobristKey();
@@ -1767,3 +1795,7 @@ template Move32b Search::findBestMove<Search::SEARCH_FULL_INFO>(Position&, const
 template Move32b Search::findBestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
 template Move32b Search::findBestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
 template Move32b Search::findBestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);

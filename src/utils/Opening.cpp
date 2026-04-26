@@ -3,6 +3,7 @@
 #include "backend/MoveGen.hpp"
 #include "backend/Score.hpp"
 #include "NetworkEval.hpp"
+#include "Sets.hpp"
 
 namespace Utils {
 
@@ -29,20 +30,11 @@ OpeningGenerator OpeningGenerator::create() {
 void OpeningGenerator::load() {
     if (!_positions.empty())
         return;
-    
-    std::ifstream openings_file(_OpeningFile);
-
-    if (!openings_file) {
-        ASSERT(false, "Failed to open " + _OpeningFile);
-        return;
-    }
 
     std::cout << "Loading openings positions..." << std::endl;
-    
-    std::string line;
 
-    while (std::getline(openings_file, line)) {
-        Position pos_from_fen(line);
+    std::for_each(CraftyOpenings.begin(), CraftyOpenings.end(), [&](const std::string_view& fen) {
+        const Position pos_from_fen(fen);
 
         _positions.push_back(GeneratedPosition{ 0, pos_from_fen });
 
@@ -55,14 +47,14 @@ void OpeningGenerator::load() {
                 if (random_move.isNull())
                     break;
 
-                bool legal = pos.make(random_move);
+                const bool legal = pos.make(random_move);
                 assert(legal);
 
                 if (j >= _MinRandomMoves)
                     _positions.push_back(GeneratedPosition{ j, pos });
             }
         }
-    }
+    });
 
     auto last = std::unique(_positions.begin(), _positions.end());
 
@@ -85,7 +77,6 @@ void OpeningGenerator::load() {
     });
 
     _positions.erase(last, _positions.end());
-
     std::shuffle(_positions.begin(), _positions.end(), GlobMersenne);
 
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
@@ -106,10 +97,10 @@ bool OpeningGenerator::isEmpty() const {
 }
 
 OpeningSuite::OpeningSuite(std::string path) {
-    load(path);
+    loadFromFile(path);
 }
 
-void OpeningSuite::load(std::string path) {
+void OpeningSuite::loadFromFile(std::string path) {
     std::ifstream openings_file(path);
 
     if (!openings_file) {
@@ -120,9 +111,16 @@ void OpeningSuite::load(std::string path) {
     std::string line;
 
     while (getline(openings_file, line)) {
-        Position pos_from_line(line);
-        _positions.push_back(pos_from_line);
+        const Position pos_from_line(line);
+        _positions.push_back(std::move(pos_from_line));
     }
+}
+
+void OpeningSuite::loadFromVec(const std::vector<std::string_view>& fens) {
+    std::for_each(fens.begin(), fens.end(), [&](const std::string_view& fen) {
+        const Position pos(fen);
+        _positions.push_back(std::move(pos));
+    });
 }
 
 const Position& OpeningSuite::getRandomPosition(int& moves_done) const {

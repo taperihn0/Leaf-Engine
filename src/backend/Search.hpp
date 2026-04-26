@@ -39,6 +39,8 @@ class Search;
 struct PVInfo;
 
 struct SearchResults {
+	void clear();
+
 	void printBestMove();
 	void print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt);
 	void printShort();
@@ -95,7 +97,7 @@ struct SearchResults {
 	ull 	  move_reduced_fail_high_cnt[MaxNodeMoves] = {};
 	float 	  move_reduction_sum[MaxNodeMoves] = {};
 
-	ull		  null_moves_cnt = 0;
+	ull		  null_moves_cnt 	= 0;
 	ull		  null_zungzwang_detected = 0;
 #endif
 };
@@ -167,72 +169,72 @@ private:
 *   is ignored in debug builds to allow changing parameters when tuning.
 */
 
-inline _P_CONSTEXPR int IidDepth = round<float>(2.47003f);
-inline _P_CONSTEXPR int IidDepthDiv = round<float>(10.1113f);
-inline _P_CONSTEXPR int RfpDepth = round<float>(3.81788f);
-inline _P_CONSTEXPR int RazorDepth = round<float>(2.16913f);
-inline _P_CONSTEXPR int FutilityDepth = round<float>(4.5281f);
-inline _P_CONSTEXPR int LmrDepth = round<float>(3.72648f);
-inline _P_CONSTEXPR int NullReduction = round<float>(28.477f);
-inline _P_CONSTEXPR int LmrMoveCount = round<float>(4.73438f);
-inline _P_CONSTEXPR int RazorMultDelta = round<float>(16.4158f);
-inline _P_CONSTEXPR int RfpMultDelta = round<float>(111.774f);
-inline _P_CONSTEXPR int FutilityMoveCount = round<float>(9.12248f);
-inline _P_CONSTEXPR int FutilityDelta = round<float>(19.411f);
-inline _P_CONSTEXPR int RazorBaseDelta = round<float>(122.113f);
-inline _P_CONSTEXPR int QMaterialDelta = round<float>(1086.4f);
-inline _P_CONSTEXPR int QProbeDepth = round<float>(-2.18116f);
-inline _P_CONSTEXPR int NNEvalScale = round<float>(11.5293f);
-inline _P_CONSTEXPR int ImprovingRate = round<float>(45.9603f);
-inline _P_CONSTEXPR int RfpImprovingSink = round<float>(2.10981f);
-inline _P_CONSTEXPR int NullMargin = round<float>(6.89969f);
-inline _P_CONSTEXPR int NullImprovingSink = round<float>(3.67167f);
-inline _P_CONSTEXPR int DynImprovementDepth = round<float>(9.0707f);
-inline _P_CONSTEXPR int TTEvalCorrRate = round<float>(2.73521f);
-inline _P_CONSTEXPR int NullDiffScale = round<float>(1080.3f);
-inline _P_CONSTEXPR int NullDepth = round<float>(3.48527f);
-inline _P_CONSTEXPR int NextDepthTimeRed = round<float>(5.31268f);
-inline _P_CONSTEXPR int UnstableMatMargin = round<float>(46.6373f);
-inline _P_CONSTEXPR int UnstableMultMargin = round<float>(6.74322f);
-inline _P_CONSTEXPR int MinTimeBranchFactor = round<float>(1.1361f);
-inline _P_CONSTEXPR int MaxTimeBranchFactor = round<float>(4.71125f);
-inline _P_CONSTEXPR int ContemptDiv = round<float>(131.813f);
-inline _P_CONSTEXPR int ImprovingExtensionRate = round<float>(6.17919f);
-inline _P_CONSTEXPR int QuietNotPvNodeReduction = round<float>(13.8642f);
-inline _P_CONSTEXPR int QuietCutNodeReduction = round<float>(2.2681f);
-inline _P_CONSTEXPR int QuietCheckReduction = round<float>(47.5786f);
-inline _P_CONSTEXPR int QuietExtensionReduction = round<float>(48.1537f);
-inline _P_CONSTEXPR int QuietPawnMoveReduction = round<float>(3.64305f);
-inline _P_CONSTEXPR int QuietImprovingReductionRate = round<float>(6.58544f);
-inline _P_CONSTEXPR int QuietHashCapReduction = round<float>(15.7638f);
-inline _P_CONSTEXPR int QuietKillerMoveReduction = round<float>(19.9784f);
-inline _P_CONSTEXPR int QuietTotalReductionRate = round<float>(44.7274f);
-inline _P_CONSTEXPR int CaptureNotPvNodeReduction = round<float>(13.1658f);
-inline _P_CONSTEXPR int CaptureCutNodeReduction = round<float>(15.6317f);
-inline _P_CONSTEXPR int CaptureCheckReduction = round<float>(33.8204f);
-inline _P_CONSTEXPR int CaptureHashCapReduction = round<float>(28.9586f);
-inline _P_CONSTEXPR int CaptureKillerMoveReduction = round<float>(30.7286f);
-inline _P_CONSTEXPR int CaptureExtensionReduction = round<float>(25.1764f);
-inline _P_CONSTEXPR int CaptureImprovingReductionRate = round<float>(3.34965f);
-inline _P_CONSTEXPR int CaptureTotalReductionRate = round<float>(40.0938f);
-inline _P_CONSTEXPR int HalfMovesEvalLimit = round<float>(11.6388f);
-inline _P_CONSTEXPR int NullVerifyDepth = round<float>(4.3009f);
-inline _P_CONSTEXPR int MoveCheckExtensionRate = round<float>(13.5076f);
-inline _P_CONSTEXPR int MoveCheckExtensionDiv = round<float>(15.623f);
-inline _P_CONSTEXPR int ImprovingExtensionMateRate = round<float>(14.1619f);
-inline _P_CONSTEXPR int MateThreadFracExtensionRate = round<float>(10.8101f);
-inline _P_CONSTEXPR int MateThreadFracExtensionDiv = round<float>(17.9312f);
-inline _P_CONSTEXPR int MaxMoveExtensionRate = round<float>(18.529f);
-inline _P_CONSTEXPR int MaxMoveExtensionDiv = round<float>(15.2157f);
-inline _P_CONSTEXPR int NullVerifyDepthMult = round<float>(2.05879f);
-inline _P_CONSTEXPR int ExtensionDepth = round<float>(11.9872f);
-inline _P_CONSTEXPR int SingularDepth = round<float>(6.8324f);
-inline _P_CONSTEXPR int SingularDepthMargin = round<float>(2.93688f);
-inline _P_CONSTEXPR int SingularExtensionRate = round<float>(13.4039f);
-inline _P_CONSTEXPR int SingularBetaDepthMult = round<float>(3.60704f);
-inline _P_CONSTEXPR int SingularDepthMult = round<float>(119.091f);
-inline _P_CONSTEXPR int SingularDepthBase = round<float>(529.819f);
-inline _P_CONSTEXPR int SingularBetaExtensionRate = round<float>(3.3303f);
+inline _P_CONSTEXPR int IidDepth = round<float>(2.71396f);
+inline _P_CONSTEXPR int IidDepthDiv = round<float>(9.55298f);
+inline _P_CONSTEXPR int RfpDepth = round<float>(3.8337f);
+inline _P_CONSTEXPR int RazorDepth = round<float>(2.19616f);
+inline _P_CONSTEXPR int FutilityDepth = round<float>(4.42344f);
+inline _P_CONSTEXPR int LmrDepth = round<float>(3.66373f);
+inline _P_CONSTEXPR int NullReduction = round<float>(27.9257f);
+inline _P_CONSTEXPR int LmrMoveCount = round<float>(5.2673f);
+inline _P_CONSTEXPR int RazorMultDelta = round<float>(16.0559f);
+inline _P_CONSTEXPR int RfpMultDelta = round<float>(110.34f);
+inline _P_CONSTEXPR int FutilityMoveCount = round<float>(9.40972f);
+inline _P_CONSTEXPR int FutilityDelta = round<float>(19.9469f);
+inline _P_CONSTEXPR int RazorBaseDelta = round<float>(110.336f);
+inline _P_CONSTEXPR int QMaterialDelta = round<float>(1096.21f);
+inline _P_CONSTEXPR int QProbeDepth = -round<float>(1.91036f);
+inline _P_CONSTEXPR int NNEvalScale = round<float>(11.2013f);
+inline _P_CONSTEXPR int ImprovingRate = round<float>(45.6534f);
+inline _P_CONSTEXPR int RfpImprovingSink = round<float>(1.88982f);
+inline _P_CONSTEXPR int NullMargin = round<float>(7.19693f);
+inline _P_CONSTEXPR int NullImprovingSink = round<float>(3.55683f);
+inline _P_CONSTEXPR int DynImprovementDepth = round<float>(7.8314f);
+inline _P_CONSTEXPR int TTEvalCorrRate = round<float>(2.71009f);
+inline _P_CONSTEXPR int NullDiffScale = round<float>(1083.65f);
+inline _P_CONSTEXPR int NullDepth = round<float>(3.10287f);
+inline _P_CONSTEXPR int NextDepthTimeRed = round<float>(5.50724f);
+inline _P_CONSTEXPR int UnstableMatMargin = round<float>(38.662f);
+inline _P_CONSTEXPR int UnstableMultMargin = round<float>(6.85276f);
+inline _P_CONSTEXPR int MinTimeBranchFactor = round<float>(1.11326f);
+inline _P_CONSTEXPR int MaxTimeBranchFactor = round<float>(4.68838f);
+inline _P_CONSTEXPR int ContemptDiv = round<float>(126.079f);
+inline _P_CONSTEXPR int ImprovingExtensionRate = round<float>(5.12942f);
+inline _P_CONSTEXPR int QuietNotPvNodeReduction = round<float>(14.0541f);
+inline _P_CONSTEXPR int QuietCutNodeReduction = round<float>(2.06097f);
+inline _P_CONSTEXPR int QuietCheckReduction = round<float>(41.5495f);
+inline _P_CONSTEXPR int QuietExtensionReduction = round<float>(48.0492f);
+inline _P_CONSTEXPR int QuietPawnMoveReduction = round<float>(4.51564f);
+inline _P_CONSTEXPR int QuietImprovingReductionRate = round<float>(6.38783f);
+inline _P_CONSTEXPR int QuietHashCapReduction = round<float>(15.841f);
+inline _P_CONSTEXPR int QuietKillerMoveReduction = round<float>(17.6522f);
+inline _P_CONSTEXPR int QuietTotalReductionRate = round<float>(39.9405f);
+inline _P_CONSTEXPR int CaptureNotPvNodeReduction = round<float>(13.2607f);
+inline _P_CONSTEXPR int CaptureCutNodeReduction = round<float>(17.7044f);
+inline _P_CONSTEXPR int CaptureCheckReduction = round<float>(35.484f);
+inline _P_CONSTEXPR int CaptureHashCapReduction = round<float>(31.3566f);
+inline _P_CONSTEXPR int CaptureKillerMoveReduction = round<float>(30.1209f);
+inline _P_CONSTEXPR int CaptureExtensionReduction = round<float>(23.9629f);
+inline _P_CONSTEXPR int CaptureImprovingReductionRate = round<float>(3.02985f);
+inline _P_CONSTEXPR int CaptureTotalReductionRate = round<float>(40.1615f);
+inline _P_CONSTEXPR int HalfMovesEvalLimit = round<float>(11.9435f);
+inline _P_CONSTEXPR int NullVerifyDepth = round<float>(3.53335f);
+inline _P_CONSTEXPR int MoveCheckExtensionRate = round<float>(12.9377f);
+inline _P_CONSTEXPR int MoveCheckExtensionDiv = round<float>(14.1679f);
+inline _P_CONSTEXPR int ImprovingExtensionMateRate = round<float>(13.4723f);
+inline _P_CONSTEXPR int MateThreadFracExtensionRate = round<float>(10.f);
+inline _P_CONSTEXPR int MateThreadFracExtensionDiv = round<float>(17.9866f);
+inline _P_CONSTEXPR int MaxMoveExtensionRate = round<float>(20.1009f);
+inline _P_CONSTEXPR int MaxMoveExtensionDiv = round<float>(14.6002f);
+inline _P_CONSTEXPR int NullVerifyDepthMult = round<float>(2.24884f);
+inline _P_CONSTEXPR int ExtensionDepth = round<float>(10.7021f);
+inline _P_CONSTEXPR int SingularDepth = round<float>(6.56764f);
+inline _P_CONSTEXPR int SingularDepthMargin = round<float>(3.01553f);
+inline _P_CONSTEXPR int SingularExtensionRate = round<float>(10.429f);
+inline _P_CONSTEXPR int SingularBetaDepthMult = round<float>(3.47528f);
+inline _P_CONSTEXPR int SingularDepthMult = round<float>(119.723f);
+inline _P_CONSTEXPR int SingularDepthBase = round<float>(523.061f);
+inline _P_CONSTEXPR int SingularBetaExtensionRate = round<float>(1.76967f);
 inline constexpr 	int SingularExtensionDiv = 16;
 inline constexpr    int SingularBetaExtensionDiv = 32;
 inline constexpr    int CheckNodeCount = 2048;
@@ -270,6 +272,12 @@ public:
 						 const FullInfoRecord& game, 
 						 SearchLimits limits);
 
+	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
+	Move32b findBestMove(Position& pos, 
+						 const FullInfoRecord& game, 
+						 SearchLimits limits,
+						 SearchResults& search_results);
+
 	static Move32b _findBestMove_unittest(Search& search, 
 									      Position& pos, 
 									      const FullInfoRecord& game, 
@@ -282,7 +290,8 @@ private:
 	template <enumInfoLevel InfoLevel>
 	Move32b goIterativeDeepening(Position& pos, 
 								 const FullInfoRecord& game, 
-								 SearchLimits& limits);
+								 SearchLimits& limits,
+								 SearchResults& search_results);
 
 	template <enumInfoLevel InfoLevel>
 	bool goSearch(Position& pos, 

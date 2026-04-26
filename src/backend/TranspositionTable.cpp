@@ -74,8 +74,8 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 			break;
 		}
 
-		uint8_t age = this->_generation - bucket->entries[i].generation;
-		int16_t relevance = (int16_t)bucket->entries[i].depth - (int16_t)age;
+		const int16_t age = static_cast<int16_t>(this->_generation) - bucket->entries[i].generation;
+		const int16_t relevance = static_cast<int16_t>(bucket->entries[i].depth) - age;
 
 		if (relevance < min_relevance) {
 			min_relevance = relevance;

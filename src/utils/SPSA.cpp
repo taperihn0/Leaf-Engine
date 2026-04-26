@@ -2,6 +2,7 @@
 #include "Process.hpp"
 #include "frontend/UCI.hpp"
 #include "SelfGame.hpp"
+#include "Sets.hpp"
 
 #include <sstream>
 #include <atomic>
@@ -9,11 +10,10 @@
 
 namespace Utils {
 
-static constexpr uint             IterCount = 6000;
-static constexpr int              A = IterCount / 10;
-static constexpr double           Alpha = 0.602;
-static constexpr double           Gamma = 0.101;
-static constexpr std::string_view OpeningPath = "src/assets/sets/Nunn_Openings.epd";
+static constexpr uint   IterCount = 6000;
+static constexpr int    A = IterCount / 10;
+static constexpr double Alpha = 0.602;
+static constexpr double Gamma = 0.101;
 
 std::atomic<int> curr_iter;
 std::mutex       param_mutex;
@@ -61,7 +61,7 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
     limits.winc = limits.binc = 100_ms;
 
     if (_openings.isEmpty())
-        _openings.load(std::string(OpeningPath));
+        _openings.loadFromVec(NunnOpenings);
 
     std::ofstream log_file(spsa_log, std::ios_base::app);
 

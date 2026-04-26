@@ -67,7 +67,7 @@ _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) 
 }
 
 _FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERTNOLOG(1 <= id && id <= PlatformThreadLimit);
+    ASSERTNOLOG(1 <= id && id <= static_cast<uint>(PlatformThreadLimit));
     return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
 }
 
@@ -93,8 +93,9 @@ _INLINE void labelLog(std::ostream& is, uint32_t label, const std::string& str) 
     add_label(LOG_ENGINE_0, "PLAYER_0");
     add_label(LOG_ENGINE_1, "PLAYER_1");
 
-    for (uint id = 1; id <= PlatformThreadLimit; id++) {
-        uint32_t bit = static_cast<uint32_t>(1) << (4 + id - 1);
+    for (int id = 1; id <= PlatformThreadLimit; id++) {
+        uint32_t bit = static_cast<uint32_t>(1) << (3 + id);
+        
         if (working_label & bit) {
             if (!labels.empty()) labels += "|";
             labels += "THREAD_" + std::to_string(id);

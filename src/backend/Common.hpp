@@ -155,7 +155,7 @@ _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view te
 static constexpr int MaxNodeMoves = 128;
 static constexpr int MaxDepth = 96,
 					 MaxSelDepth = 128,
-					 MaxGameMoves = 512;
+					 MaxGameMoves = 1024;
 
 template <typename T>
 _FORCEINLINE constexpr T sq(T x) {

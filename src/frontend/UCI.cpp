@@ -5,6 +5,7 @@
 #include "Accumulator.hpp"
 #include "NetworkEval.hpp"
 #include "Tuning.hpp"
+#include "utils/Sets.hpp"
 
 #include <sstream>
 
@@ -167,7 +168,7 @@ UniversalChessInterface::UniversalChessInterface()
 {}
 
 // ARGUMENTS AREN'T USED FOR NOW
-void UniversalChessInterface::loop(int, const char*[]) {
+void UniversalChessInterface::loop(int argc, const char* argv[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
 
@@ -178,9 +179,13 @@ void UniversalChessInterface::loop(int, const char*[]) {
 	std::cout << "Polish Chess Engine, " << EngineName << " by " << Author << '\n';
 
 	std::string command;
+	int arg_it = 1;
 
 	do {
-		if (!std::getline(std::cin, command))
+		if (arg_it < argc)
+			command = argv[arg_it++];
+
+		else if (!std::getline(std::cin, command))
 			command = "quit";
 
 		std::istringstream strm(command);
@@ -198,6 +203,7 @@ void UniversalChessInterface::loop(int, const char*[]) {
 		else if (token == "rewrite_header") parseRewriteNet(strm);
 		else if (token == "options")		parseShowOptions();
 		else if (token == "setoption")		parseSetOptions(strm);
+		else if (token == "bench")			parseBench(strm);
 
 #if defined(_UCI_DEBUG_UTILS)
 		else if (token == "see")			parseSEE(strm);
@@ -263,6 +269,12 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
 
 			if (move.isNull() or move.getPieceColor(_pos) != _pos.getTurn()) {
 				std::cout << "Invalid move" << std::endl;
+				_game.clear();
+				break;
+			}
+			else if (_game.getMoveCount() >= MaxGameMoves - MaxSelDepth) {
+				std::cout << "Game buffer overflow" << std::endl;
+				_game.clear();
 				break;
 			}
 
@@ -409,6 +421,48 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 	}
 
 #endif
+}
+
+void UniversalChessInterface::parseBench(std::istringstream& strm) {
+	static constexpr int BenchDepth = 5;
+
+	int depth = BenchDepth;
+	strm >> std::skipws >> depth;
+
+	if (depth <= 0 or depth >= MaxDepth) 
+		depth = BenchDepth;
+
+	Timer timer;
+	size_t total_nodes = 0;
+
+	timer.go();
+
+	std::for_each(Utils::BenchmarkSet.begin(), Utils::BenchmarkSet.end(), 
+		[&](const std::string_view& fen) {
+			Position pos(fen);
+
+			SearchLimits limits;
+			limits.depth = depth;
+    		limits.nodes = 0; // no node limit
+    		limits.wtime = limits.btime = 0;
+    		limits.winc  = limits.binc =  0;
+
+			FullInfoRecord tmpgame;
+			SearchResults results;
+
+#if defined(DEBUG)
+			std::cout << "Searching " << fen << "..." << std::endl;
+#endif
+
+			const Move32b bm = _search.findBestMove<Search::SEARCH_NO_INFO>(pos, tmpgame, limits, results);
+			_declUnused(bm);
+
+			total_nodes += results.nodes_cnt;
+		});
+
+	const time_ms_t total_time_ms = timer.duration();
+
+	std::cout << "Searched " << total_nodes << " nodes in " << (total_time_ms / 1000.) << 's' << std::endl;
 }
 
 void UniversalChessInterface::parseShowOptions() {

@@ -1,2 +1,0 @@
-All of the testing sets from seeset.epd are taken directly from https://github.com/lithander/Leorik.
-The author shared them on chess programming blog. Very grateful for that.
