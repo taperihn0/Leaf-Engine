@@ -49,10 +49,10 @@ jobs:
 
     - name: Smoke Test on Linux
       if: runner.os == 'Linux'
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{ github.workspace }}/bin/Leaf/Release
       run: ./Leaf bench
 
     - name: Smoke Test on Windows
       if: runner.os == 'Windows'
-      working-directory: ${{github.workspace}}/build/Release
+      working-directory: ${{ github.workspace }}/bin/Leaf/Release
       run: .\Leaf.exe bench
