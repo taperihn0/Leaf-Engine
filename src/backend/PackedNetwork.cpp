@@ -6,21 +6,46 @@
 #include <fcntl.h>
 #endif
 
+#if defined(USE_EMBEDDED_NEURAL_NET)
+#include "incbin.h"
+
+#undef INCBIN_PREFIX
+#define INCBIN_PREFIX Glob
+#define INCBIN_STYLE INCBIN_STYLE_CAMEL
+
+INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
+
+static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
+static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
+static bool UseEmbeddedNetwork = false;
+#endif
+
 namespace nn {
 
 PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
     PackedNeuralNetwork network;
-    network.loadDefaultNet();
+    
+    if (!network.loadDefaultNet()) {
+        std::cout << "Failed to load default net" << std::endl;
+    }
+
+    if (!network.isValid()) {
+        std::cout << "Failed to initialize net" << std::endl;
+    }
+
     return network;
 }();
 
 PackedNeuralNetwork::PackedNeuralNetwork()
-    : _layer_weights{}
+    : _mem_size(0)
+    , _mem_buf(nullptr)
+    , _layer_weights{}
     , _layer_biases{}
 {}
 
 PackedNeuralNetwork::~PackedNeuralNetwork() {
-    release();
+    if (!UseEmbeddedNetwork) 
+        releaseFileMapping();
 }
 
 PackedNeuralNetwork::PackedNeuralNetwork(PackedNeuralNetwork&& network) noexcept {
@@ -28,7 +53,9 @@ PackedNeuralNetwork::PackedNeuralNetwork(PackedNeuralNetwork&& network) noexcept
 }
 
 PackedNeuralNetwork& PackedNeuralNetwork::operator=(PackedNeuralNetwork&& network) {
-    release();
+    if (!UseEmbeddedNetwork) 
+        releaseFileMapping();
+
     fromRVal(std::move(network));
     return *this;
 }
@@ -52,10 +79,13 @@ bool PackedNeuralNetwork::isValid() const {
 }
 
 bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
-    release();
+    if (!UseEmbeddedNetwork) 
+        releaseFileMapping();
+
+    UseEmbeddedNetwork = false;
+    _mem_size = 0;
 
 #if defined(_MSC_VER)
-
     _fh = CreateFileA(path.data(), GENERIC_READ, FILE_SHARE_READ, 
                       nullptr, OPEN_EXISTING, 
                       FILE_ATTRIBUTE_READONLY | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -86,18 +116,16 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
         return false;
     }
 
-    _file_size = (static_cast<size_t>(high_size) << 32) | low_size;
-    _file_buff = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
+    _mem_size = (static_cast<size_t>(high_size) << 32) | low_size;
+    _mem_buf = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
 
-    if (!_file_buff) {
+    if (!_mem_buf) {
         std::cout << ("Couldn't obtain file buffer for file: " 
                       + static_cast<std::string>(path)) << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
-
 #else
-
     _fd = open(path.data(), O_RDONLY);
     
     if (_fd == -1) {
@@ -112,18 +140,26 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
         return false;
     }
 
-    _file_size = static_cast<size_t>(st.st_size);
-    _file_buff = mmap(nullptr, _file_size, PROT_READ, MAP_PRIVATE, _fd, 0);
+    _mem_size = static_cast<size_t>(st.st_size);
+    _mem_buf = mmap(nullptr, _mem_size, PROT_READ, MAP_PRIVATE, _fd, 0);
 
-    if (_file_buff == MAP_FAILED) {
+    if (_mem_buf == MAP_FAILED) {
         close(_fd);
         std::cout << ("Couldn't mmap() a file: " + static_cast<std::string>(path)) << std::endl;
         return false;
     }
-
 #endif
 
-    _header = *reinterpret_cast<Header*>(_file_buff);
+    return loadFromMemory(_mem_buf);
+}
+
+bool PackedNeuralNetwork::loadFromMemory(const void* m) {
+    if (!m) {
+        std::cout << "Invalid memory address" << std::endl;
+        return false;
+    }
+
+    _header = *reinterpret_cast<const Header*>(m);
 
     if (_header.layer_count != 3) {
         std::cout << "Layer number must be 3" << std::endl;
@@ -132,13 +168,23 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
 
     ASSERTNOLOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
 
-    initLayerWeightsBiases();
-
+    initLayerWeightsBiases(m);
     return true;
-}   
+}
 
 bool PackedNeuralNetwork::loadDefaultNet() {
-    return loadFromFile(DefaultNetworkPath);
+    bool status = false;
+
+#if defined(USE_EMBEDDED_NEURAL_NET)
+    UseEmbeddedNetwork = true;
+    _mem_buf = nullptr;
+    _mem_size = EmbeddedNetworkSize;
+    status = loadFromMemory(EmbeddedNetworkAddr);
+#else
+    status = loadFromFile(DefaultNetworkFile);
+#endif
+
+    return status;
 }
 
 uint PackedNeuralNetwork::getAccumulatorSize() const {
@@ -199,7 +245,7 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
 
     const size_t in_size = static_cast<size_t>(st.st_size);
 
-    std::vector<std::byte> buffer(in_size);
+    std::vector<byte> buffer(in_size);
     ssize_t read_bytes = read(in_fd, buffer.data(), in_size);
     close(in_fd);
 
@@ -229,8 +275,8 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
 #endif
 }
 
-bool PackedNeuralNetwork::initLayerWeightsBiases() {
-    int16_t* it = reinterpret_cast<int16_t*>(_file_buff) + sizeof(Header) / sizeof(int16_t);
+bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
+    const int16_t* it = reinterpret_cast<const int16_t*>(m) + sizeof(Header) / sizeof(int16_t);
     size_t byte_offset = sizeof(Header);
 
     for (uint layer_num = 0; layer_num + 1 < _header.layer_count; layer_num++) {
@@ -240,7 +286,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases() {
         it += weight_cnt;
         byte_offset += weight_cnt * sizeof(int16_t);
 
-        ASSERTNOLOG(byte_offset <= _file_size);
+        ASSERTNOLOG(byte_offset <= _mem_size);
 
         size_t biases_cnt = _header.layer_size[layer_num + 1];
 
@@ -248,24 +294,22 @@ bool PackedNeuralNetwork::initLayerWeightsBiases() {
         it += biases_cnt;
         byte_offset += biases_cnt * sizeof(int16_t);
 
-        ASSERTNOLOG(byte_offset <= _file_size);
+        ASSERTNOLOG(byte_offset <= _mem_size);
     }
 
     return true;
 }
 
 void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
-
 #if defined(_MSC_VER)
-
     _fh = network._fh;
     _maph = network._maph;
-    _file_buff = network._file_buff;
-    _file_size = network._file_size;
+    _mem_buf = network._mem_buf;
+    _mem_size = network._mem_size;
     _header = network._header;
 
-    network._file_buff = nullptr;
-    network._file_size = 0;
+    network._mem_buf = nullptr;
+    network._mem_size = 0;
 
     for (size_t i = 0; i < MaxLayerCount; i++) {
         _layer_weights[i] = network._layer_weights[i];
@@ -273,17 +317,15 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
         network._layer_weights[i] = nullptr;
         network._layer_biases[i] = nullptr;
     }
-
 #else
-
-    _file_buff = network._file_buff;
-    _file_size = network._file_size;
+    _mem_buf = network._mem_buf;
+    _mem_size = network._mem_size;
     _fd = network._fd;
     _header = network._header;
 
     network._fd = -1;
-    network._file_buff = nullptr;
-    network._file_size = 0;
+    network._mem_buf = nullptr;
+    network._mem_size = 0;
 
     for (size_t i = 0; i < MaxLayerCount; i++) {
         _layer_weights[i] = network._layer_weights[i];
@@ -291,27 +333,24 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
         network._layer_weights[i] = nullptr;
         network._layer_biases[i] = nullptr;
     }
-
 #endif
 }
 
-void PackedNeuralNetwork::release() {
+void PackedNeuralNetwork::releaseFileMapping() {
+    if (UseEmbeddedNetwork) 
+        return;
 
 #if defined(_MSC_VER)
-
-    if (_fh != INVALID_HANDLE_VALUE and _maph != INVALID_HANDLE_VALUE and _file_buff) {
-        UnmapViewOfFile(_file_buff);
+    if (_fh != INVALID_HANDLE_VALUE and _maph != INVALID_HANDLE_VALUE and _mem_buf) {
+        UnmapViewOfFile(_mem_buf);
         CloseHandle(_fh);
         CloseHandle(_maph);
     }
-
 #else
-
-    if (_fd != -1 and _file_buff and _file_buff != MAP_FAILED) {
-        munmap(_file_buff, _file_size);
+    if (_fd != -1 and _mem_buf and _mem_buf != MAP_FAILED) {
+        munmap(_mem_buf, _mem_size);
         close(_fd);
     }
-
 #endif
 }
 

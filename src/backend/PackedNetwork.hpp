@@ -4,12 +4,7 @@
 
 namespace nn {
 
-// Just for the easy development
-#if defined(_MSC_VER)
-static constexpr std::string_view DefaultNetworkPath = "C:\\dev\\Leaf-Engine\\src\\assets\\nets\\publius_net128_0_h.bin";
-#else
-static constexpr std::string_view DefaultNetworkPath = "src/assets/nets/publius_net128_0_h.bin";
-#endif
+static constexpr std::string_view DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
@@ -47,8 +42,8 @@ public:
 
     bool isValid() const;
 
-    bool loadFromFile(std::string_view path);
     bool loadDefaultNet();
+    bool loadFromFile(std::string_view path);
 
     uint getAccumulatorSize() const;
     uint getLayerSize(size_t layer_num) const;
@@ -63,25 +58,25 @@ public:
                                   std::string_view out_path,
                                   const Header& header);
 private:
-    bool initLayerWeightsBiases();
+    bool loadFromMemory(const void* m);
+
+    bool initLayerWeightsBiases(const void* m);
     void fromRVal(PackedNeuralNetwork&& network);
 
-    void release();
+    void releaseFileMapping();
 
 #if defined(_MSC_VER)
-    HANDLE  _fh;
-    HANDLE  _maph;
-    size_t  _file_size;
+    HANDLE _fh = INVALID_HANDLE_VALUE;
+    HANDLE _maph = INVALID_HANDLE_VALUE;
 #else
-    size_t  _file_size;
-    int     _fd = -1;
+    int _fd = -1;
 #endif
 
-    void*    _file_buff;
-
-    Header   _header;
-    int16_t* _layer_weights[MaxLayerCount];
-    int16_t* _layer_biases[MaxLayerCount];
+    size_t         _mem_size;
+    void*          _mem_buf;
+    Header         _header;
+    const int16_t* _layer_weights[MaxLayerCount];
+    const int16_t* _layer_biases[MaxLayerCount];
 };
 
 extern PackedNeuralNetwork GlobPackedNetwork;

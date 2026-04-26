@@ -27,9 +27,9 @@
 #endif
 
 #if defined(__GNUC__)
-#	define WARNING(x) message x
+#define WARNING(x) message x
 #else
-#	define WARNING(x) message(x)
+#define WARNING(x) message(x)
 #endif
 
 #if __cplusplus >= 202002L
@@ -58,12 +58,8 @@
 #define _INTERNAL 			inline
 #endif
 
-#define _NORETURN    [[noreturn]]
-#define _UNUSED      [[maybe_unused]]
-
-#if defined(BUILD_UTILS) or defined(DEBUG)
-#define _ENABLE_TUNING
-#endif
+#define _NORETURN [[noreturn]]
+#define _UNUSED   [[maybe_unused]]
 
 #if defined(_CPP_STANDARD_20)
 #define _LIKELY   [[likely]]
@@ -73,12 +69,20 @@
 #define _UNLIKELY
 #endif
 
+#if defined(BUILD_UTILS) or defined(DEBUG)
+#define _ENABLE_TUNING
+#endif
+
 #if defined(_ENABLE_TUNING)
 #define _P_CONSTEXPR
 #define _P_STATIC
 #else
 #define _P_CONSTEXPR constexpr
 #define _P_STATIC    static
+#endif
+
+#if defined(__GNUC__)
+#define USE_EMBEDDED_NEURAL_NET
 #endif
 
 template <typename T>

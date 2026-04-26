@@ -67,7 +67,6 @@ target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src/utils"
 )
 
-# Platform detection
 if (WIN32)
 	target_compile_definitions(Leaf PUBLIC PLATFORM_WINDOWS)
 elseif (APPLE)
@@ -235,3 +234,17 @@ set_target_properties(Leaf PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY 
 	"${CMAKE_SOURCE_DIR}/bin/intermediates/${PROJECT_NAME}/${CMAKE_BUILD_TYPE}"
 )
+
+set(DEFAULT_NEURAL_NET_FILE_NAME "publius_net128_0_h.bin")
+target_compile_definitions(Leaf PUBLIC 
+    DEFAULT_NEURAL_NET_FILE_NAME="${DEFAULT_NEURAL_NET_FILE_NAME}"
+)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+    "${CMAKE_CURRENT_BINARY_DIR}/${DEFAULT_NEURAL_NET_FILE_NAME}"
+    COPYONLY
+)
+
+target_include_directories(Leaf PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+
