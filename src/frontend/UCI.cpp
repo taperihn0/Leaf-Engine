@@ -80,7 +80,6 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(SingularDepthMult, 	   		  90., 180.), 	"SingularDepthMult", 		 1.4),
 		OptionTunableParam(SpinType<double>(SingularDepthBase, 	   		  400., 650.), 	"SingularDepthBase", 		 0.7),
 		OptionTunableParam(SpinType<double>(SingularBetaExtensionRate, 	  1.,   12.), 	"SingularBetaExtensionRate", 2.2),
-		OptionTunableParam(SpinType<double>(MaxQuietsHistoryPow,		  12.,  14.),   "MaxQuietsHistoryPow",  	 1.2),
 		OptionTunableParam(SpinType<double>(QuietMoveScoreReductionRate,  1., 25.),		"QuietMoveScoreReductionRate",  0.25),
 		OptionTunableParam(SpinType<double>(QuietMoveScoreReductionDiv,   1., 15.),		"QuietMoveScoreReductionDiv",   0.34),
 		OptionTunableParam(SpinType<double>(CaptureMoveScoreReductionDiv, 30.,120.),	"CaptureMoveScoreReductionDiv", 1.2),

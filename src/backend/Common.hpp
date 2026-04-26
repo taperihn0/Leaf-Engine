@@ -189,6 +189,12 @@ _INLINE constexpr T round(T x) {
 }
 
 template <typename T>
+_INLINE constexpr int roundi(T x) {
+	static_assert(std::is_arithmetic_v<T>);
+	return static_cast<int>(round(x));
+}
+
+template <typename T>
 _INLINE constexpr uint8_t get2pow(T x) {
 	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
 	assert(x != 0);

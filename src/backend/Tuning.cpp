@@ -80,7 +80,6 @@ void TunableParametersMap::createMapping() {
     _addr["ToBishopPromoScore"]  = &ToBishopPromoScore;
     _addr["ToRookPromoScore"]    = &ToRookPromoScore;
     _addr["ToQueenPromoScore"]   = &ToQueenPromoScore;
-    _addr["MaxQuietsHistoryPow"] = &MaxQuietsHistoryPow;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {

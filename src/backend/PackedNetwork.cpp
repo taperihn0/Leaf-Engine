@@ -17,8 +17,12 @@ INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
 static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
-static bool UseEmbeddedNetwork = false;
+#else
+static const void* EmbeddedNetworkAddr = nullptr;
+static size_t EmbeddedNetworkSize = 0;
 #endif
+
+static bool UseEmbeddedNetwork = false;
 
 namespace nn {
 
