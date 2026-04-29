@@ -1,4 +1,6 @@
 #include "UtilsProtocol.hpp"
+#include "Entry.hpp"
+#include "StaticEval.hpp"
 
 namespace Utils
 {
@@ -109,6 +111,11 @@ bool verifyTrainData(std::ifstream& input, size_t& verified_cnt) {
         verified_cnt++;
     }
 
+    if (streamBytesLeft(input) > 0) {
+        std::cout << "Verification failed, failed to read entire file" << std::endl;
+        return false;
+    }
+    
     std::cout << "Verified " << verified_cnt << " positions" << std::endl;
     return true;
 }
@@ -209,7 +216,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 
 		strm >> std::skipws >> token;
 
-        if (token == "uci")						   parseUCI();
+             if (token == "uci")				   parseUCI();
         else if (token == "ucinewgame") 		   parseNewGame();
         else if (token == "position")			   parsePosition(strm);
         else if (token == "print")				   _pos.print();

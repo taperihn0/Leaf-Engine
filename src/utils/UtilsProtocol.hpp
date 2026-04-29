@@ -6,7 +6,6 @@
 #include "Tests.hpp"
 #include "Collector.hpp"
 #include "Opening.hpp"
-#include "PostProcess.hpp"
 #include "SPSA.hpp"
 
 namespace Utils {
