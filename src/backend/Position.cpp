@@ -386,7 +386,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 		}
 
 		// reset old en passant square state
-		if (_ep_square.isNotNull())
+		if (!_ep_square.isNull())
 			_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 
 		_ep_square = Square::None;
@@ -488,7 +488,7 @@ void Position::makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_ca
 
 	state.ep_sq = _ep_square;
 
-	if (_ep_square.isNotNull())
+	if (!_ep_square.isNull())
 		_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
 
 	_ep_square = Square::None;

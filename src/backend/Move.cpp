@@ -50,6 +50,12 @@ Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const 
 }
 
 template <>
+bool Move16b::isPackedCapture(const Position& pos) const {
+	const Square dst = getTarget();
+	return pos.getOppositePieces().isOccupiedSq(dst);
+}
+
+template <>
 template <>
 Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
 	Square	   origin = Square::None,
@@ -237,7 +243,7 @@ void MoveData<T>::print(std::ostream& os) const {
 #endif
 }
 
-Move32b unpacked(const Position& pos, Move16b move) {
+Move32b unpackedMove(const Position& pos, Move16b move) {
 	if (move.isNull()) 
 		return Move32b::Null;
 
@@ -289,11 +295,6 @@ Move32b unpacked(const Position& pos, Move16b move) {
 		return Move32b::Null;
 
 	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
-}
-
-bool isCapturePacked(const Position& pos, Move16b move) {
-	const Square dst = move.getTarget();
-	return pos.getOppositePieces().isOccupiedSq(dst);
 }
 
 template enumColor Move16b::getPieceColor(const Position&) const;

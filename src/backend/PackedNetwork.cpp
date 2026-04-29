@@ -6,8 +6,8 @@
 #include <fcntl.h>
 #endif
 
-#if defined(USE_EMBEDDED_NEURAL_NET)
-#include "incbin.h"
+#if defined(_USE_EMBEDDED_NEURAL_NET)
+#include "vendor/incbin.h"
 
 #undef INCBIN_PREFIX
 #define INCBIN_PREFIX Glob
@@ -179,7 +179,7 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
 bool PackedNeuralNetwork::loadDefaultNet() {
     bool status = false;
 
-#if defined(USE_EMBEDDED_NEURAL_NET)
+#if defined(_USE_EMBEDDED_NEURAL_NET)
     UseEmbeddedNetwork = true;
     _mem_buf = nullptr;
     _mem_size = EmbeddedNetworkSize;

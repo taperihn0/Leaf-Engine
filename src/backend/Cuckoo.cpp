@@ -45,7 +45,7 @@ void CuckooTables::init() {
 																   ZobristHash::piece_keys[side][piece][to] ^ 
 																   ZobristHash::black_key);
 
-						Move16b move16b = makePackedSimple(from, to);
+						Move16b move16b = Move16b::makePackedSimple(from, to);
 
 						size_t idx = cuckooIndex1(move_hash);
 

@@ -82,14 +82,16 @@
 #endif
 
 #if defined(__GNUC__)
-#define USE_EMBEDDED_NEURAL_NET
+#define _USE_EMBEDDED_NEURAL_NET
 #endif
+
+#define _USE_SYZYGY_TB
 
 template <typename T>
 _INTERNAL void _declUnused(T&&) {}
 
 static constexpr std::string_view EngineName = "Leaf Lite";
-static constexpr std::string_view Author     = "Szymon Belz";
+static constexpr std::string_view Author = "Szymon Belz";
 
 // move format, so far only pure notation supported
 #define _PURE_NOTATION_DISPLAY 

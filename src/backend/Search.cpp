@@ -708,7 +708,7 @@ Score Search::nmSearch(Position& pos,
 		}
 	}
 
-	Move32b ttm32b = unpacked(pos, tt_entry.move);
+	Move32b ttm32b = unpackedMove(pos, tt_entry.move);
 	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
 												: Move32b::Null;
 	
@@ -738,7 +738,7 @@ Score Search::nmSearch(Position& pos,
 
 			_UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
 			
-			ttm32b = unpacked(pos, iid_entry.move);
+			ttm32b = unpackedMove(pos, iid_entry.move);
 			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
 												: Move32b::Null;
 
@@ -885,7 +885,7 @@ Score Search::nmSearch(Position& pos,
 					_tt.write(hash,
 							  nm_depth, ply,
 							  TTEntry::UPPERBOUND,
-							  nm_score, packed(tt_move), node->eval,
+							  nm_score, packedMove(tt_move), node->eval,
 							  results);
 					
 					return score;
@@ -1191,7 +1191,7 @@ Score Search::nmSearch(Position& pos,
 				
 				/* Collect Pv from the child */
 				if constexpr (IsPv) {
-					node->pv_line[0].best_move = packed(node->best_move);
+					node->pv_line[0].best_move = packedMove(node->best_move);
 					node->pv_line[0].score = node->best_score;
 
 					memCopy(node->pv_line + 1, child_node->pv_line, child_node->pv_line_len * sizeof(PVInfo));
@@ -1206,7 +1206,7 @@ Score Search::nmSearch(Position& pos,
 			if constexpr (Root) {
 				if (node->best_move.isNull()) {
 					node->best_move = node->move;
-					node->pv_line[0].best_move = packed(node->best_move);
+					node->pv_line[0].best_move = packedMove(node->best_move);
 					node->pv_line_len = 1;
 				}
 			}
@@ -1223,7 +1223,7 @@ Score Search::nmSearch(Position& pos,
 	}
 
 	if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
-		const Move16b bestmove16b = packed(node->best_move);
+		const Move16b bestmove16b = packedMove(node->best_move);
 
 		_tt.write(hash, 
 				  depth, ply, 
@@ -1343,13 +1343,13 @@ Score Search::qSearch(Position& pos,
 	const Move16b ttm16b = tt_entry.move;
 
 	if ((!IsPv or tt_entry.bound != TTEntry::UPPERBOUND) and 
-		(isCapturePacked(pos, ttm16b) or ttm16b.isQueenPromotion()))
+		(ttm16b.isPackedCapture(pos) or ttm16b.isQueenPromotion()))
 	{
 #if defined(_COLLECT_SEARCH_STATS)
 		results.qttmove_probe_cnt++;
 #endif // _COLLECT_SEARCH_STATS
 
-		const Move32b ttm32b = unpacked(pos, tt_entry.move);
+		const Move32b ttm32b = unpackedMove(pos, tt_entry.move);
 		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
 											: Move32b::Null;
 		node->move_picker.setHashMove(tt_move);
@@ -1584,7 +1584,7 @@ void Search::refreshPVinTT(const Position& pos,
 					  results);
 		}
 		
-		Move32b pv_unpack = unpacked(cpy_pos, pv_move);
+		Move32b pv_unpack = unpackedMove(cpy_pos, pv_move);
 		cpy_pos.make(pv_unpack);
 	}
 
@@ -1594,7 +1594,7 @@ void Search::refreshPVinTT(const Position& pos,
 	// Assert we got PV-move at root - got it directly from previous best move
 
 	const uint64_t key = pos.getZobristKey();
-	const Move16b  root_best_move = packed(results.best_move);
+	const Move16b  root_best_move = packedMove(results.best_move);
 	const int depth = results.depth;
 	const Score score = results.score_cp;
 

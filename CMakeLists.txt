@@ -65,6 +65,7 @@ target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src/backend"
 	"${CMAKE_SOURCE_DIR}/src/frontend"
 	"${CMAKE_SOURCE_DIR}/src/utils"
+	"${CMAKE_SOURCE_DIR}/src/vendor"
 )
 
 if (WIN32)

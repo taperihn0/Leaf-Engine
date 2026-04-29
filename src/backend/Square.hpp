@@ -32,10 +32,15 @@ public:
 	};
 
 	Square() = default;
-	_INLINE constexpr Square(uint_t cpy)
-		: _sq(cpy) { assert(isValid()); }
+	_INLINE constexpr Square(uint_t sq)
+		: _sq(sq) { 
+		assert(isValid()); 
+	}
+	
 	_INLINE constexpr Square(enumSquare sq)
-		: _sq(sq)  { assert(isValid()); }
+		: _sq(sq) { 
+		assert(isValid()); 
+	}
 
 	_INLINE constexpr Square operator=(uint_t sq) {
 		return _sq = sq;
@@ -51,10 +56,6 @@ public:
 
 	_INLINE enumRank getRank() const {
 		return static_cast<enumRank>(_sq / 8);
-	}
-
-	_INLINE bool isNotNull() const {
-		return _sq != None;
 	}
 
 	_INLINE bool isNull() const {

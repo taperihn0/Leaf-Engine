@@ -9,7 +9,10 @@
 
 class Position;
 struct NodeInfo;
-namespace nn { struct AccumulatorCache; }
+
+namespace nn { 
+	struct AccumulatorCache; 
+}
 
 static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static constexpr std::string_view KiwipeteFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -178,6 +181,10 @@ public:
 
 	_INLINE BitBoard getQueens() const {
 		return getQueensBySide(WHITE) | getQueensBySide(BLACK);
+	}
+
+	_INLINE BitBoard getKings() const {
+		return getKingBySide(WHITE) | getKingBySide(BLACK);
 	}
 
 	_INLINE BitBoard getOccupied() const {

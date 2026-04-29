@@ -47,19 +47,27 @@ public:
 							   bool is_capture, 
 							   Piece::enumType piece_t);
 
+	static MoveData makePackedSimple(Square origin, Square target);
+
 	// performer and captured piece in en passant move are de facto known - these are pawns.
 	static MoveData makeEnPassant(Square origin, Square target);
 
 	static MoveData makePromotion(Square origin, 
 								  Square target, 
 								  bool is_capture, 
-								  Piece::enumType to_piece);
+								  Piece::enumType promo_t);
+
+	static MoveData makePackedPromo(Square origin, 
+									Square target, 
+									Piece::enumType promo_t);
 
 	template <Castle Type>
 	static MoveData makeCastling(Square origin, Square target);
 
 	template <MoveData::Notation Notation>
 	static MoveData fromStr(const Position& pos, const std::string& str);
+
+	bool isPackedCapture(const Position& pos) const;
 
 	_INLINE Square getOrigin() const {
 		return _rmove & ORIGIN;
@@ -250,9 +258,9 @@ using Move16b = MoveData<uint16_t>;
 
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makeSimple(Square origin, 
-										   Square target, 
-										   bool is_capture, 
-										   Piece::enumType piece_t) 
+										    Square target, 
+										    bool is_capture, 
+										    Piece::enumType piece_t) 
 {
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
@@ -275,15 +283,15 @@ _INLINE MoveData<T> MoveData<T>::makeEnPassant(Square origin, Square target) {
 
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makePromotion(Square origin, 
-											  Square target, 
-											  bool is_capture, 
-											  Piece::enumType promo_piece_t) 
+											   Square target, 
+											   bool is_capture, 
+											   Piece::enumType promo_t) 
 {
 	static_assert(_IS_SAME_TYPE(T, uint32_t));
 	return MoveData(
 		  (static_cast<uint32_t>(Piece::PAWN) << 19)
 		| (static_cast<uint32_t>(is_capture) << 15)
-		| (static_cast<uint32_t>(promo_piece_t) << 12)
+		| (static_cast<uint32_t>(promo_t) << 12)
 		| (static_cast<uint32_t>(target) << 6)
 		|  static_cast<uint32_t>(origin));
 }
@@ -301,23 +309,26 @@ _INLINE MoveData<T> MoveData<T>::makeCastling(Square origin, Square target) {
 		|  static_cast<uint32_t>(origin));
 }
 
-_INLINE Move16b makePackedSimple(Square origin, 
-								Square target) {
+template <typename T>
+_INLINE MoveData<T> MoveData<T>::makePackedSimple(Square origin, Square target) {
+	static_assert(_IS_SAME_TYPE(T, uint16_t));
 	return Move16b(
 		  (static_cast<uint16_t>(target) << 6)
 		|  static_cast<uint16_t>(origin));
 }
 
-_INLINE Move16b makePackedPromo(Square origin, 
-							   Square target, 
-							   Piece::enumType promo_piece) {
+template <typename T>
+_INLINE MoveData<T> MoveData<T>::makePackedPromo(Square origin, 
+							    				 Square target, 
+							    				 Piece::enumType promo_t) {
+	static_assert(_IS_SAME_TYPE(T, uint16_t));
 	return Move16b(
-		  (static_cast<uint16_t>(promo_piece) << 12)
+		  (static_cast<uint16_t>(promo_t) << 12)
 		| (static_cast<uint16_t>(target) << 6)
 		|  static_cast<uint16_t>(origin));
 }
 
-_INLINE Move16b packed(Move32b move) {
+_INLINE Move16b packedMove(Move32b move) {
 	return Move16b(
 		  (static_cast<uint16_t>(move.getPromoPiece() << 12))
 		| (static_cast<uint16_t>(move.getTarget()) << 6)
@@ -331,9 +342,7 @@ _INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
 	return out;
 }
 
-Move32b unpacked(const Position& pos, Move16b move);
-
-bool isCapturePacked(const Position& pos, Move16b move);
+Move32b unpackedMove(const Position& pos, Move16b move);
 
 // GCC somehow needs that
 #if defined(__GNUC__)

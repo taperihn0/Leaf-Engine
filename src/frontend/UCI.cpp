@@ -6,6 +6,7 @@
 #include "NetworkEval.hpp"
 #include "Tuning.hpp"
 #include "utils/Sets.hpp"
+#include "Tablebase.hpp"
 
 #include <sstream>
 
