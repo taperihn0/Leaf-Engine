@@ -123,7 +123,6 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
 
     const uint tb_ep = pos.getEnPassantSq().isNull() ? 0 : static_cast<Square::uint_t>(pos.getEnPassantSq());
 
-    // One of [TB_LOSS, TB_BLESSED_LOSS, TB_DRAW, TB_CURSED_WIN, TB_WIN, TB_RESULT_FAILED]
     const uint tb_res = tb_probe_root(pos.getWhites(),
                                       pos.getBlacks(),
                                       pos.getKings(),

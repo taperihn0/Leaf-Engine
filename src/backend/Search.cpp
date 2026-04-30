@@ -646,6 +646,12 @@ Score Search::nmSearch(Position& pos,
 		return tt_entry.score;
 	}
 
+#if defined(_USE_SYZYGY_TB)
+	if constexpr (Root) {
+		// TODO
+	}
+#endif
+
 	if (!depth) {
 		return qSearch<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
 								 				  alpha, beta,
@@ -1094,7 +1100,7 @@ Score Search::nmSearch(Position& pos,
 
 		child_node->is_cut = !node->is_cut;
 
-		/* Principle Variation Search -
+		/* Principal Variation Search -
 		*  Search only fist move with full window.
 		*  After that search, every other child node is expected Cut node and
 		*  is being search with Null window.
@@ -1218,7 +1224,7 @@ Score Search::nmSearch(Position& pos,
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		node->bound = TTEntry::EXACT;
-		node->best_score = node->check ? -Score::Mate + ply 
+		node->best_score = node->check ? -getMateScore(ply)
 									   : getDrawScore(node);
 	}
 
