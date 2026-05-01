@@ -19,7 +19,7 @@ std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
 void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
-    if (thread_count > PlatformThreadLimit) {
+    if (thread_count > static_cast<uint>(PlatformThreadLimit)) {
         std::cout << "Too many threads requested" << std::endl;
         return;
     }
@@ -89,8 +89,11 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
                               SearchLimits limits,
                               uint id) 
 {
-    auto engine1 = EngineProcess::spawnProcess();
-    auto engine0 = EngineProcess::spawnProcess();
+    EngineProcess engine0;
+    EngineProcess engine1;
+
+    EngineProcess::spawnProcess(engine0);
+    EngineProcess::spawnProcess(engine1);
 
     if (!engine0.isAlive() or !engine1.isAlive()) {
         labelLog(std::cout, LOG_INFO, "Process didn't initialize");
@@ -190,7 +193,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
     uint theta_minus_win_cnt = 0;
     uint draw_cnt = 0;
 
-    ASSERTNOLOG(id < PlatformThreadLimit);
+    ASSERTNOLOG(id < static_cast<uint>(PlatformThreadLimit));
     const enumLogLabel curr_thread_label = threadLabel(id);
 
     while (true) {

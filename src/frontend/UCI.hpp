@@ -25,6 +25,7 @@ protected:
 	void parseSetOptions(std::istringstream& strm);
 	void parseBench(std::istringstream& strm);
 	void parseShowOptions();
+	void parseSelfPlay();
 
 #if defined(_UCI_DEBUG_UTILS)
 	void parseSEE(std::istringstream& strm);

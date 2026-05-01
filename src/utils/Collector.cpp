@@ -13,6 +13,15 @@
 namespace Utils
 {
 
+void isreadyCheckpoint(EngineProcess& engine, enumLogLabel thread_label) {
+    log(*engine.proc_stdin, "isready");
+
+    std::string line;
+    while (readline(*engine.proc_stdout, line) and line != "readyok") {
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
+    }
+}
+
 bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& thr_data, 
                                            enumLogLabel thread_label) 
 {
@@ -21,8 +30,11 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
 
-    auto engine1 = EngineProcess::spawnProcess();
-    auto engine0 = EngineProcess::spawnProcess();
+    EngineProcess engine0;
+    EngineProcess engine1;
+
+    EngineProcess::spawnProcess(engine0);
+    EngineProcess::spawnProcess(engine1);
 
     if (!engine0.isAlive() or !engine1.isAlive()) {
         labelLog(std::cout, LOG_INFO | thread_label, "Process didn't initialize");
@@ -30,7 +42,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     }
 
     {
-        std::string line;
+        isreadyCheckpoint(engine0, thread_label);
+        isreadyCheckpoint(engine1, thread_label);
 
         static const size_t mb_tt_size = 8;
 
@@ -39,18 +52,15 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
         const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
 
-        readline(*engine0.proc_stdout, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
-
-        readline(*engine1.proc_stdout, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
-
         log(*engine0.proc_stdin, tt_log.str());
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
         log(*engine1.proc_stdin, tt_log.str());
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
+
+    isreadyCheckpoint(engine0, thread_label);
+    isreadyCheckpoint(engine1, thread_label);
 
     std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
@@ -87,7 +97,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         train_data_spec
     };
 
-    const float stddev = _NodesRandomFactor / 2. * nodes_per_search;
+    const float stddev = _NodesRandomFactor / 2.f * nodes_per_search;
     std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
     std::mt19937 mt{GlobRandomSeed};
 
@@ -132,6 +142,9 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
             return false;
         }
+
+        //isreadyCheckpoint(engine0, thread_label);
+        //isreadyCheckpoint(engine1, thread_label);
 
         positions.clear();
         white_scores.clear();
@@ -323,7 +336,7 @@ void TournamentCollector::startTournament(size_t games_count,
                                           const std::string& err_log_dir,
                                           SearchLimits limits) 
 {
-    if (thread_count > PlatformThreadLimit) {
+    if (thread_count > static_cast<uint>(PlatformThreadLimit)) {
         std::cout << "Too many threads requested" << std::endl;
         return;
     }

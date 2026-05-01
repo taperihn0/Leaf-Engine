@@ -129,7 +129,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
     for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
         std::string session_fp = "session" + std::to_string(session);
 
-        for (uint id = 1; id <= PlatformThreadLimit; id++) {
+        for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
             {
                 std::string fp = tournament_dir + '/' + session_fp + '/' + getWhiteWinOutputFile(id);
                 std::ifstream input(fp, std::ios_base::binary);
@@ -202,6 +202,9 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
 	std::ios_base::sync_with_stdio(false);
+
+    if (argc > 1 and std::string(argv[1]) == "--self-play")
+        UniversalChessInterface::parseSelfPlay();
 
 	std::cout << "Utility build of Leaf" << '\n';
 

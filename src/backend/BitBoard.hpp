@@ -122,7 +122,7 @@ public:
 	}
 
 	_INLINE void popBit(Square sq) {
-		assert(sq.isValid() and sq.isNotNull());
+		assert(sq.isValid() and !sq.isNull());
 		_board &= ~(1_ui64 << sq);
 	}
 

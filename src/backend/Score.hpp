@@ -89,11 +89,11 @@ public:
 			   	(_raw > MateBound and _raw <= Mate));
 	}
 
-	_INLINE bool getMateScore(int ply) const {
-		return Mate - ply;
+	static _INLINE Score getMateScore(int ply) {
+		return static_cast<Score>(Mate - ply);
 	}
 
-	_INTERNAL std::string Score::toStr() const {
+	_INTERNAL std::string toStr() const {
 		if (_raw > MateBound)
 			return "mate " + std::to_string((Score::Mate - _raw + 1) / 2);
 		else if (_raw < -MateBound)

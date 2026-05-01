@@ -4,19 +4,99 @@
 namespace Utils {
 
 #if defined(_MSC_VER)
-
-EngineProcess spawnProcess() {
-#pragma WARNING("Unimplemented")
-	return EngineProcess{};
+EngineProcess::~EngineProcess() {
+    if (hthread) CloseHandle(hthread);
+    if (hproc) {
+        CloseHandle(hproc);
+        TerminateProcess(hproc, 0);
+    }
+    if (proc_stdin) proc_stdin->close();
+    if (proc_stdout) proc_stdout->close();
 }
 
-void waitForProcess(EngineProcess& proc) {
-#pragma WARNING("Unimplemented")
+void EngineProcess::spawnProcess(EngineProcess& proc) {
+    HANDLE h_stdin_rd = nullptr;
+    HANDLE h_stdin_wr = nullptr;
+    HANDLE h_stdout_rd = nullptr;
+    HANDLE h_stdout_wr = nullptr;
+
+    SECURITY_ATTRIBUTES sa_attr;
+    sa_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa_attr.bInheritHandle = TRUE;
+    sa_attr.lpSecurityDescriptor = nullptr;
+
+    if (!CreatePipe(&h_stdout_rd, &h_stdout_wr, &sa_attr, 0) or
+        !CreatePipe(&h_stdin_rd, &h_stdin_wr, &sa_attr, 0))
+        ASSERT(false, "Failed to create pipes");
+
+    SetHandleInformation(h_stdout_rd, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(h_stdin_wr, HANDLE_FLAG_INHERIT, 0);
+
+    STARTUPINFO si;
+    ZeroMemory(&si, sizeof(STARTUPINFO));
+
+    si.cb = sizeof(STARTUPINFO);
+    si.hStdError = h_stdout_wr;
+    si.hStdOutput = h_stdout_wr;
+    si.hStdInput = h_stdin_rd;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+
+    char filename[512];
+	const DWORD sz = GetModuleFileNameA(nullptr, filename, sizeof(filename));
+
+    if (!sz) ASSERT(false, "Failed to get module filename");
+
+	const std::string cmdline = "\"" + std::string(filename) + "\" --self-play";
+    std::vector<char> cmdvec(cmdline.begin(), cmdline.end());
+    cmdvec.push_back('\0');
+
+    if (!CreateProcessA(nullptr, cmdvec.data(),
+                        nullptr, nullptr, TRUE, 0, nullptr, nullptr, 
+                        &si, &pi)) {
+        ASSERT(false, "Failed to CreateProcessA");
+    }
+
+    CloseHandle(h_stdout_wr);
+    CloseHandle(h_stdin_rd);
+
+    const int fd_in = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdin_wr), _O_WRONLY);
+    const int fd_out = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdout_rd), _O_RDONLY);
+
+    FILE* fin = _fdopen(fd_in, "w");
+    FILE* fout = _fdopen(fd_out, "r");
+
+    proc.hproc = pi.hProcess;
+    proc.hthread = pi.hThread;
+    proc.proc_stdin = std::make_unique<std::ofstream>(fin);
+    proc.proc_stdout = std::make_unique<std::ifstream>(fout);
 }
 
-#else
+void EngineProcess::waitForProcess() {
+    WaitForSingleObject(hproc, INFINITE);
+}
 
-EngineProcess EngineProcess::spawnProcess() {
+bool EngineProcess::isAlive() const {
+    if (!hproc) 
+        return false;
+
+    DWORD status;
+    if (GetExitCodeProcess(hproc, &status))
+        return status == STILL_ACTIVE;
+
+    return false;
+}
+
+#else // !defined(_MSC_VER)
+EngineProcess::~EngineProcess() {
+    if (isAlive()) kill(pid, SIGTERM);
+    if (proc_stdin) proc_stdin->close();
+    if (proc_stdout) proc_stdout->close();
+}
+
+void EngineProcess::spawnProcess(EngineProcess& proc) {
     int out_pipe[2];
     int in_pipe[2];
 
@@ -43,25 +123,25 @@ EngineProcess EngineProcess::spawnProcess() {
     else {
         close(in_pipe[0]);
         close(out_pipe[1]);
-
-        EngineProcess proc;
+           
+        FILE* fin = fdopen(in_pipe[1], "w");
+        FILE* fout = fdopen(out_pipe[0], "r");
 
         proc.pid = pid;
-        proc.in_buf = std::make_unique<EngineProcess::filebuf>(in_pipe[1], std::ios::out);
-        proc.proc_stdin = std::make_unique<std::ostream>(proc.in_buf.get());
-        proc.out_buf = std::make_unique<EngineProcess::filebuf>(out_pipe[0], std::ios::in);
-        proc.proc_stdout = std::make_unique<std::istream>(proc.out_buf.get());
+        proc.proc_stdin = std::make_unique<std::ofstream>(fin);
+        proc.proc_stdout = std::make_unique<std::ifstream>(fout);
 
         return proc;
     }
 }
 
 void EngineProcess::waitForProcess() {
-    waitpid(pid, nullptr, 0);
+    if (pid > 0)
+        waitpid(pid, nullptr, 0);
 }
 
 bool EngineProcess::isAlive() const {
-    if (pid <= 0)
+    if (!pid)
         return false;
 
     if (kill(pid, 0) < 0)
@@ -69,7 +149,6 @@ bool EngineProcess::isAlive() const {
 
     return true;
 }
-
-#endif
+#endif // _MSC_VER
 
 }

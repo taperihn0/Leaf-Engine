@@ -8,6 +8,11 @@
 #include "utils/Sets.hpp"
 #include "Tablebase.hpp"
 
+#if defined(_MSC_VER)
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 #include <sstream>
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
@@ -172,6 +177,9 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 	// C-style streams aren't used there
 	std::ios_base::sync_with_stdio(false);
 
+	if (argc > 1 and std::string(argv[1]) == "--self-play")
+		parseSelfPlay();
+
 #if defined(_ENABLE_TUNING)
 	GlobParamMapping.createMapping();
 #endif
@@ -304,7 +312,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseIsReady() {
-	std::cout << "readyok\n";
+	std::cout << "readyok" << std::endl;
 }
 
 #if defined(_UCI_DEBUG_UTILS)
@@ -473,5 +481,17 @@ void UniversalChessInterface::parseShowOptions() {
 	for (OptionTunableParam& param : _options.tunable_params) {
 		param.print();
 	}
+#endif
+}
+
+void UniversalChessInterface::parseSelfPlay() {
+#ifdef _MSC_VER
+	if (_setmode(_fileno(stdout), _O_BINARY) == -1 or
+		_setmode(_fileno(stdin), _O_BINARY) == -1) {
+		std::cout << "Failed to set binary IO" << std::endl;
+		return;
+	}
+
+	std::cout << "Toggled binary IO" << std::endl;
 #endif
 }

@@ -32,6 +32,8 @@ option(BUILD_UTILS "Build utils sources" OFF)
 
 message("Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
 
+set(DEFAULT_NEURAL_NET_FILE_NAME "publius_net128_0_h.bin")
+
 if (BUILD_UTILS)
 	add_library(Leaf STATIC ${SOURCES})
 	target_compile_definitions(Leaf PUBLIC BUILD_UTILS)
@@ -236,16 +238,20 @@ set_target_properties(Leaf PROPERTIES
 	"${CMAKE_SOURCE_DIR}/bin/intermediates/${PROJECT_NAME}/${CMAKE_BUILD_TYPE}"
 )
 
-set(DEFAULT_NEURAL_NET_FILE_NAME "publius_net128_0_h.bin")
-target_compile_definitions(Leaf PUBLIC 
-    DEFAULT_NEURAL_NET_FILE_NAME="${DEFAULT_NEURAL_NET_FILE_NAME}"
-)
+target_compile_definitions(Leaf PUBLIC DEFAULT_NEURAL_NET_FILE_NAME="${DEFAULT_NEURAL_NET_FILE_NAME}")
 
-configure_file(
-    "${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
-    "${CMAKE_CURRENT_BINARY_DIR}/${DEFAULT_NEURAL_NET_FILE_NAME}"
-    COPYONLY
-)
+if (NOT BUILD_UTILS)
+	set(UTILS_DESTINATION_PATH "${CMAKE_SOURCE_DIR}/bin/${PROJECT_NAME}/${CMAKE_BUILD_TYPE}")
 
-target_include_directories(Leaf PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+	configure_file(
+		"${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+		"${UTILS_DESTINATION_PATH}/${DEFAULT_NEURAL_NET_FILE_NAME}"
+		COPYONLY
+	)
 
+	configure_file(
+        "${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+        "${UTILS_DESTINATION_PATH}/${CMAKE_BUILD_TYPE}/${DEFAULT_NEURAL_NET_FILE_NAME}"
+        COPYONLY
+    )
+endif()

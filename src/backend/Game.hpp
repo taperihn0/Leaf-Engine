@@ -25,9 +25,9 @@ public:
 	}
 
 	_INLINE size_t getMoveCount() const { return _idx; }
-	_INLINE void clear() 				   { _idx = 0; }
+	_INLINE void clear() 				{ _idx = 0; }
 private:
-	std::array<Move32b, MaxGameMoves> _move_history;
+	std::array<Move32b, MaxGameMoves> _move_history = {};
 	size_t _idx = 0;
 };
 
@@ -48,7 +48,7 @@ public:
 		return _key_history[halfmove_cnt];
 	}
 private:
-	std::array<uint64_t, MaxGameMoves> _key_history;
+	std::array<uint64_t, MaxGameMoves> _key_history = {};
 };
 
 /* Contains full game info - move record, time left and current position of the game.

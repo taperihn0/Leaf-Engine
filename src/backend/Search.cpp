@@ -1224,7 +1224,7 @@ Score Search::nmSearch(Position& pos,
 	// detect checkmate or stealmate
 	if (!node->can_move) {
 		node->bound = TTEntry::EXACT;
-		node->best_score = node->check ? -getMateScore(ply)
+		node->best_score = node->check ? -Score::getMateScore(ply)
 									   : getDrawScore(node);
 	}
 

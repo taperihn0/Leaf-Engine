@@ -17,7 +17,7 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, std::string fen) {
 }
 
 Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
-    ASSERTNOLOG(network.isValid());
+    assert(network.isValid());
 
     Accumulator accumulator;
     accumulator.refresh(network.getLayerBiases(0), network.getLayerWeights(0), pos);
@@ -26,7 +26,7 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
 }
 
 Score NEval::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
-    ASSERTNOLOG(network.isValid());
+    assert(network.isValid());
 
     const int16_t output = layerActivationSingleOutput(acc.getValues(side2move), 
                                                        acc.getValues(!side2move),

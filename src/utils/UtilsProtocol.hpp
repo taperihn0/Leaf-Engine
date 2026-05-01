@@ -23,13 +23,11 @@ public:
 private:
 	void parseSelfPlay(Utils::TournamentCollector& collector, std::istringstream& strm);
 	void parseShowPositions(std::istringstream& strm);
-	void parseMerge(std::istringstream& strm);
-	void parse2TrainEntry(std::istringstream& strm);
 	void parseVerifySession(std::istringstream& strm);
 	void parseSPSA(std::istringstream& strm);
 
 	TournamentCollector _collector;
-	SPSA_Tuning   _tuner;
+	SPSA_Tuning _tuner;
 };
 
 } // namespace Utils

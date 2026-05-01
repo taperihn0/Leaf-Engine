@@ -18,3 +18,14 @@ set_target_properties(LeafUtils PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY 
 	"${CMAKE_SOURCE_DIR}/bin/intermediates/Utils/${CMAKE_BUILD_TYPE}"
 )
+
+
+set(DEFAULT_NEURAL_NET_FILE_NAME "publius_net128_0_h.bin")
+
+set(UTILS_DESTINATION_PATH "${CMAKE_SOURCE_DIR}/bin/Utils/${CMAKE_BUILD_TYPE}")
+
+configure_file(
+	"${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+	"${UTILS_DESTINATION_PATH}/${DEFAULT_NEURAL_NET_FILE_NAME}"
+	COPYONLY
+)

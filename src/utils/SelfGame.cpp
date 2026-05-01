@@ -58,8 +58,8 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     uint draw_half_moves = 0;
 
     const enumLogLabel thread_label = threadLabel(packet.thread_id);
-    enumLogLabel debug_labels[2];
-    enumLogLabel info_labels[2];
+    enumLogLabel debug_labels[2] = { LOG_ENGINE_0, LOG_ENGINE_1 };
+    enumLogLabel info_labels[2] = { LOG_ENGINE_0, LOG_ENGINE_1 };
     
     if constexpr (EnableLog) {
         debug_labels[0] = zero_player_white ? LOG_DEBUG | LOG_ENGINE_0 | thread_label 

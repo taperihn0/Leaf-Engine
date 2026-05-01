@@ -4,35 +4,34 @@
 
 #include <memory>
 
-#if defined(__GNUC__)
+#if defined(_MSC_VER)
+#include <io.h>
+#include <fcntl.h>
+#else
 #include <sys/wait.h>
 #include <cstdio>
 #include <ext/stdio_filebuf.h>
-#else
-#pragma WARNING("Unimplemented")
 #endif
 
 namespace Utils {
 
 struct EngineProcess {
     EngineProcess() = default;
+    ~EngineProcess();
 
-    static EngineProcess spawnProcess();
+    static void spawnProcess(EngineProcess& proc);
     
     void waitForProcess();
     bool isAlive() const;
 
 #if defined(_MSC_VER)
-#pragma WARNING("Unimplemented")
+    HANDLE hproc = nullptr;
+	HANDLE hthread = nullptr;
 #else
-    using filebuf = __gnu_cxx::stdio_filebuf<char>;
-
-    pid_t                         pid = 0;
-    std::unique_ptr<filebuf>      in_buf = nullptr;
-    std::unique_ptr<filebuf>      out_buf = nullptr;
+    pid_t pid = 0;
 #endif
-    std::unique_ptr<std::ostream> proc_stdin = nullptr;
-    std::unique_ptr<std::istream> proc_stdout = nullptr;
+    std::unique_ptr<std::ofstream> proc_stdin = nullptr;
+    std::unique_ptr<std::ifstream> proc_stdout = nullptr;
 };
 
 }
