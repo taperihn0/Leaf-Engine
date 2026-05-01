@@ -13,7 +13,7 @@
 namespace Utils
 {
 
-void isreadyCheckpoint(EngineProcess& engine, enumLogLabel thread_label) {
+void assertIsReady(EngineProcess& engine, enumLogLabel thread_label) {
     log(*engine.proc_stdin, "isready");
 
     std::string line;
@@ -42,8 +42,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     }
 
     {
-        isreadyCheckpoint(engine0, thread_label);
-        isreadyCheckpoint(engine1, thread_label);
+        assertIsReady(engine0, thread_label);
+        assertIsReady(engine1, thread_label);
 
         static const size_t mb_tt_size = 8;
 
@@ -59,8 +59,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
-    isreadyCheckpoint(engine0, thread_label);
-    isreadyCheckpoint(engine1, thread_label);
+    assertIsReady(engine0, thread_label);
+    assertIsReady(engine1, thread_label);
 
     std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
@@ -143,8 +143,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             return false;
         }
 
-        //isreadyCheckpoint(engine0, thread_label);
-        //isreadyCheckpoint(engine1, thread_label);
+        assertIsReady(engine0, thread_label);
+        assertIsReady(engine1, thread_label);
 
         positions.clear();
         white_scores.clear();
