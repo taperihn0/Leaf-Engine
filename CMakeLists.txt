@@ -19,7 +19,10 @@ message("CMake build type: ${CMAKE_BUILD_TYPE}")
 file(GLOB SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_SOURCE_DIR}/src/frontend/*.cpp"
 	"${CMAKE_SOURCE_DIR}/src/backend/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/vendor/tbprobe.c"
 )
+
+set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE CXX)
 
 if (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
@@ -96,6 +99,13 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
 	endif ()
 elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+	include(CheckIPOSupported)
+	check_ipo_supported(RESULT result OUTPUT output)
+
+	if(result)
+		set_target_properties(Leaf PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+	endif()
+
 	if (NOT MSVC)
 		if (ARCHITECTURE_EXCLUSIVE)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -104,6 +114,8 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
 		endif()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+		set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto")
 	else ()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /Oi /Ot /Oy /GL /fp:fast")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")

@@ -13,11 +13,16 @@ namespace Utils
 class TournamentCollector {
 public:
     TournamentCollector() = default;
-    void startTournament(size_t games_count, 
-                         uint thread_count, 
-                         const std::string& log_dir,
-                         const std::string& err_log_dir,
-                         SearchLimits limits);
+
+    struct TournamentPacket {
+        size_t           games_count; 
+        uint             thread_count;
+        std::string_view log_dir;
+        std::string_view err_log_dir;
+        SearchLimits     limits;
+    };
+    
+    void startTournament(const TournamentPacket& packet);
 private:
     bool filterTrainPosition(const Position& pos, 
                              Score white_score, 

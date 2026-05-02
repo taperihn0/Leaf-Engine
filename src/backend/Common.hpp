@@ -81,7 +81,8 @@
 #define _P_STATIC    static
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) and !defined(DEBUG)
+// Loading embedded net do not work for debug builds - why?
 #define _USE_EMBEDDED_NEURAL_NET
 #endif
 

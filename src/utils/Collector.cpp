@@ -33,8 +33,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     EngineProcess engine0;
     EngineProcess engine1;
 
-    EngineProcess::spawnProcess(engine0);
-    EngineProcess::spawnProcess(engine1);
+    EngineProcess::initProc(engine0);
+    EngineProcess::initProc(engine1);
 
     if (!engine0.isAlive() or !engine1.isAlive()) {
         labelLog(std::cout, LOG_INFO | thread_label, "Process didn't initialize");
@@ -330,13 +330,8 @@ void TournamentCollector::perThread(TournamentCollector::PerThreadData& thr_data
     }
 }
 
-void TournamentCollector::startTournament(size_t games_count, 
-                                          uint thread_count, 
-                                          const std::string& log_dir,
-                                          const std::string& err_log_dir,
-                                          SearchLimits limits) 
-{
-    if (thread_count > static_cast<uint>(PlatformThreadLimit)) {
+void TournamentCollector::startTournament(const TournamentPacket& packet) {
+    if (packet.thread_count > static_cast<uint>(PlatformThreadLimit)) {
         std::cout << "Too many threads requested" << std::endl;
         return;
     }
@@ -344,17 +339,17 @@ void TournamentCollector::startTournament(size_t games_count,
     auto thread_common = std::make_shared<CommonThreadData>();
 
     thread_common->games_ended = 0;
-    thread_common->games2play = games_count;
+    thread_common->games2play = packet.games_count;
     thread_common->total_positions = 0;
     thread_common->total_white_win_count = 0;
     thread_common->total_black_win_count = 0;
     thread_common->total_draw_count = 0;
-    thread_common->total_thread_cnt = thread_count;
+    thread_common->total_thread_cnt = packet.thread_count;
 
-    thread_common->err_output.open(err_log_dir, std::ios::app);
+    thread_common->err_output.open(packet.err_log_dir.data(), std::ios::app);
 
     if (!thread_common->err_output) {
-        labelLog(std::cout, LOG_INFO, "Failed to open " + err_log_dir);
+        labelLog(std::cout, LOG_INFO, "Failed to open " + std::string(packet.err_log_dir));
         return;
     }
 
@@ -364,15 +359,15 @@ void TournamentCollector::startTournament(size_t games_count,
     std::vector<PerThreadData> thread_private;
     std::vector<std::thread> threads;
 
-    thread_private.reserve(thread_count);
-    threads.reserve(thread_count);
+    thread_private.reserve(packet.thread_count);
+    threads.reserve(packet.thread_count);
 
-    for (uint id = 1; id <= thread_count; id++) {
+    for (uint id = 1; id <= packet.thread_count; id++) {
         PerThreadData per_thread_data;
 
         {
             std::ostringstream ss;
-            ss << log_dir << '/' << getWhiteWinOutputFile(id);
+            ss << packet.log_dir << '/' << getWhiteWinOutputFile(id);
             
             per_thread_data.output_white_win.open(ss.str(), std::ios::binary | std::ios::app);
 
@@ -383,7 +378,7 @@ void TournamentCollector::startTournament(size_t games_count,
         }
         {
             std::ostringstream ss;
-            ss << log_dir << '/' << getBlackWinOutputFile(id);
+            ss << packet.log_dir << '/' << getBlackWinOutputFile(id);
             per_thread_data.output_black_win.open(ss.str(), std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_black_win) {
@@ -393,7 +388,7 @@ void TournamentCollector::startTournament(size_t games_count,
         }
         {
             std::ostringstream ss;
-            ss << log_dir << '/' << getDrawOutputFile(id);
+            ss << packet.log_dir << '/' << getDrawOutputFile(id);
             per_thread_data.output_draw.open(ss.str(), std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_draw) {
@@ -402,7 +397,7 @@ void TournamentCollector::startTournament(size_t games_count,
             }
         }
 
-        per_thread_data.limits = limits;
+        per_thread_data.limits = packet.limits;
         per_thread_data.commons = thread_common;
         per_thread_data.id = id;
 
@@ -410,11 +405,11 @@ void TournamentCollector::startTournament(size_t games_count,
     }
 
     std::ostringstream ss;
-    ss << "Starting " << thread_count << " threads";
+    ss << "Starting " << packet.thread_count << " threads";
 
     labelLog(std::cout, LOG_INFO, ss.str());
 
-    for (size_t i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < packet.thread_count; i++) {
         threads.emplace_back([this](PerThreadData& thread_data) {
             this->perThread(thread_data);
         }, 

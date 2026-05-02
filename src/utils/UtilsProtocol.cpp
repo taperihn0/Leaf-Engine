@@ -8,11 +8,9 @@ namespace Utils
 void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector, 
                                   std::istringstream& strm) {
     std::string token;
-
     strm >> std::skipws >> token;
 
-    int games_count = std::stoi(token);
-
+    const int games_count = std::stoi(token);
     if (games_count <= 0) {
         std::cout << "Invalid games count" << std::endl;
         return;
@@ -20,8 +18,7 @@ void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector,
 
     strm >> std::skipws >> token;
 
-    int thread_cnt = std::stoi(token);
-
+    const int thread_cnt = std::stoi(token);
     if (thread_cnt <= 0) {
         std::cout << "Invalid thread number" << std::endl;
         return;
@@ -36,11 +33,15 @@ void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector,
     strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
-    collector.startTournament(games_count, 
-                              thread_cnt, 
-                              log_dir,
-                              err_log_dir, 
-                              limits);
+    const TournamentCollector::TournamentPacket packet = {
+        static_cast<size_t>(games_count),
+        static_cast<uint>(thread_cnt),
+        std::string_view(log_dir),
+        std::string_view(err_log_dir),
+        limits,
+    };
+
+    collector.startTournament(packet);
 }
 
 void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
@@ -205,6 +206,8 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 
     if (argc > 1 and std::string(argv[1]) == "--self-play")
         UniversalChessInterface::parseSelfPlay();
+
+    ProcExecArg = argv[0];
 
 	std::cout << "Utility build of Leaf" << '\n';
 

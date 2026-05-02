@@ -1,5 +1,6 @@
 #include "PackedNetwork.hpp"
 
+#include <filesystem>
 #if !defined(_MSC_VER)
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -17,9 +18,6 @@ INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
 static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
-#else
-static const void* EmbeddedNetworkAddr = nullptr;
-static size_t EmbeddedNetworkSize = 0;
 #endif
 
 static bool UseEmbeddedNetwork = false;
@@ -43,6 +41,7 @@ PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
 PackedNeuralNetwork::PackedNeuralNetwork()
     : _mem_size(0)
     , _mem_buf(nullptr)
+    , _bin_path("<empty>")
     , _layer_weights{}
     , _layer_biases{}
 {}
@@ -154,7 +153,13 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
     }
 #endif
 
-    return loadFromMemory(_mem_buf);
+    if (loadFromMemory(_mem_buf)) {
+        _bin_path = path;
+        return true;
+    }
+
+    _bin_path = "<empty>";
+    return false;
 }
 
 bool PackedNeuralNetwork::loadFromMemory(const void* m) {
@@ -172,8 +177,7 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
 
     ASSERTNOLOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
 
-    initLayerWeightsBiases(m);
-    return true;
+    return initLayerWeightsBiases(m);
 }
 
 bool PackedNeuralNetwork::loadDefaultNet() {
@@ -183,9 +187,17 @@ bool PackedNeuralNetwork::loadDefaultNet() {
     UseEmbeddedNetwork = true;
     _mem_buf = nullptr;
     _mem_size = EmbeddedNetworkSize;
+    _bin_path = DefaultNetworkFile;
     status = loadFromMemory(EmbeddedNetworkAddr);
 #else
-    status = loadFromFile(DefaultNetworkFile);
+    if (std::filesystem::exists(DefaultNetworkFile)) {
+        status = loadFromFile(DefaultNetworkFile);
+    }
+    else {
+        std::filesystem::path devpath = DevNetworksDir;
+        devpath /= std::string(DefaultNetworkFile);
+        status = loadFromFile(std::string_view(devpath.c_str()));
+    }
 #endif
 
     return status;
@@ -224,6 +236,10 @@ size_t PackedNeuralNetwork::getLayerWeightsCount(size_t layer_num) const {
 size_t PackedNeuralNetwork::getLayerBiasesCount(size_t layer_num) const {
     ASSERTNOLOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
+}
+
+std::string PackedNeuralNetwork::getFilePath() const {
+    return _bin_path;
 }
 
 bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,

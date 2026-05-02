@@ -15,12 +15,13 @@
 
 namespace Utils {
 
-struct EngineProcess {
+class EngineProcess {
+public:
     EngineProcess() = default;
     ~EngineProcess();
 
-    static void spawnProcess(EngineProcess& proc);
-    
+    static void initProc(EngineProcess& proc);
+
     void waitForProcess();
     bool isAlive() const;
 
@@ -29,9 +30,14 @@ struct EngineProcess {
 	HANDLE hthread = nullptr;
 #else
     pid_t pid = 0;
+private:
+    using filebuf = __gnu_cxx::stdio_filebuf<char>;
+    std::unique_ptr<filebuf> in_buf;
+    std::unique_ptr<filebuf> out_buf;
 #endif
-    std::unique_ptr<std::ofstream> proc_stdin = nullptr;
-    std::unique_ptr<std::ifstream> proc_stdout = nullptr;
+public:
+    std::unique_ptr<std::ostream> proc_stdin = nullptr;
+    std::unique_ptr<std::istream> proc_stdout = nullptr;
 };
 
 }

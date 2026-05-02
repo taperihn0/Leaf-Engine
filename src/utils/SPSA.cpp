@@ -92,8 +92,8 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     EngineProcess engine0;
     EngineProcess engine1;
 
-    EngineProcess::spawnProcess(engine0);
-    EngineProcess::spawnProcess(engine1);
+    EngineProcess::initProc(engine0);
+    EngineProcess::initProc(engine1);
 
     if (!engine0.isAlive() or !engine1.isAlive()) {
         labelLog(std::cout, LOG_INFO, "Process didn't initialize");

@@ -34,6 +34,8 @@ static int PlatformThreadLimit = []() -> int {
     return std::thread::hardware_concurrency();
 }();
 
+inline std::string_view ProcExecArg = "<empty>";
+
 enum enumLogLabel : uint32_t {
     LOG_NO_LABEL  = 0,
 

@@ -1,5 +1,6 @@
 #include "Process.hpp"
 #include "frontend/Setup.hpp"
+#include "backend/PackedNetwork.hpp"
 
 namespace Utils {
 
@@ -10,8 +11,8 @@ EngineProcess::~EngineProcess() {
         CloseHandle(hproc);
         TerminateProcess(hproc, 0);
     }
-    if (proc_stdin) proc_stdin->close();
-    if (proc_stdout) proc_stdout->close();
+    if (proc_stdin) dynamic_cast<std::ifstream*>(proc_stdin.get())->close();
+    if (proc_stdout) dynamic_cast<std::ofstream*>(proc_stdout.get())->close();
 }
 
 void EngineProcess::spawnProcess(EngineProcess& proc) {
@@ -49,7 +50,14 @@ void EngineProcess::spawnProcess(EngineProcess& proc) {
 
     if (!sz) ASSERT(false, "Failed to get module filename");
 
-	const std::string cmdline = "\"" + std::string(filename) + "\" --self-play";
+    const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
+    
+    std::ostringstream ss;
+    ss << '\"' << std::string(filename) << "\" " 
+       << "--self-play "
+       << "export_net " << nn_bin_path << ' ';
+
+	const std::string& cmdline = ss.str();
     std::vector<char> cmdvec(cmdline.begin(), cmdline.end());
     cmdvec.push_back('\0');
 
@@ -92,11 +100,9 @@ bool EngineProcess::isAlive() const {
 #else // !defined(_MSC_VER)
 EngineProcess::~EngineProcess() {
     if (isAlive()) kill(pid, SIGTERM);
-    if (proc_stdin) proc_stdin->close();
-    if (proc_stdout) proc_stdout->close();
 }
 
-void EngineProcess::spawnProcess(EngineProcess& proc) {
+void EngineProcess::initProc(EngineProcess& proc) {
     int out_pipe[2];
     int in_pipe[2];
 
@@ -112,26 +118,33 @@ void EngineProcess::spawnProcess(EngineProcess& proc) {
         
         close(in_pipe[1]);
         close(out_pipe[0]);
-        
-        const char* argv[] = { "LeafClone", nullptr };
 
-        UniversalChessInterface uci;
-        uci.loop(1, argv);
+        if (ProcExecArg == "<empty>") {
+            std::cout << "Unitialized process exec path" << std::endl;
+            return;
+        }
 
-        _exit(0);
+        const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
+
+        std::ostringstream ss;
+        ss << "export_net " << nn_bin_path << ' ';
+
+        if (execl(ProcExecArg.data(), 
+                  ProcExecArg.data(), 
+                  "--self-play",
+                  ss.str().c_str(), 
+                  static_cast<char*>(nullptr)) < 0)
+            return;
     }
     else {
         close(in_pipe[0]);
         close(out_pipe[1]);
-           
-        FILE* fin = fdopen(in_pipe[1], "w");
-        FILE* fout = fdopen(out_pipe[0], "r");
 
         proc.pid = pid;
-        proc.proc_stdin = std::make_unique<std::ofstream>(fin);
-        proc.proc_stdout = std::make_unique<std::ifstream>(fout);
-
-        return proc;
+        proc.in_buf = std::make_unique<EngineProcess::filebuf>(in_pipe[1], std::ios::out);
+        proc.proc_stdin = std::make_unique<std::ostream>(proc.in_buf.get());
+        proc.out_buf = std::make_unique<EngineProcess::filebuf>(out_pipe[0], std::ios::in);
+        proc.proc_stdout = std::make_unique<std::istream>(proc.out_buf.get());
     }
 }
 

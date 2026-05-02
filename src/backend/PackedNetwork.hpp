@@ -5,6 +5,7 @@
 namespace nn {
 
 static constexpr std::string_view DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
+static constexpr std::string_view DevNetworksDir = "src/assets/nets";
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
@@ -54,6 +55,8 @@ public:
     size_t getLayerWeightsCount(size_t layer_num) const;
     size_t getLayerBiasesCount(size_t layer_num) const;
 
+    std::string getFilePath() const;
+
     static bool rewriteWithHeader(std::string_view in_path,
                                   std::string_view out_path,
                                   const Header& header);
@@ -75,6 +78,7 @@ private:
     size_t         _mem_size;
     void*          _mem_buf;
     Header         _header;
+    std::string    _bin_path;
     const int16_t* _layer_weights[MaxLayerCount];
     const int16_t* _layer_biases[MaxLayerCount];
 };
