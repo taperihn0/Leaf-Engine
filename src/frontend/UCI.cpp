@@ -19,6 +19,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		// --- Regular parameters ---
 		OptionHash(SpinType<ll>(1, 1, 512)), 
 		OptionClearHash(),
+		OptionPath(StringType("<empty>")),
 		{ // --- Tunable parameters ---
 		OptionTunableParam(SpinType<double>(IidDepth,					  2.,   5.),    "IidDepth", 		    2.8),
 		OptionTunableParam(SpinType<double>(IidDepthDiv,				  8.,   14.),   "IidDepthDiv", 		    2.8),
@@ -222,7 +223,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 }
 
 std::vector<OptionTunableParam>& UniversalChessInterface::getTunableOptions() {
-	return _options.tunable_params;
+	return _options.tunable_params_opt;
 }
 
 void UniversalChessInterface::parseUCI() {
@@ -402,14 +403,30 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 			
 			const ll val = std::stoi(token);
 
-			_options.hash.set(val);
-			_search.resizeHashTT(_options.hash.getCurrentValue() * 1_MB);
+			_options.hash_opt.set(val);
+			_search.resizeHashTT(_options.hash_opt.getCurrentValue() * 1_MB);
+		}
+	}
+
+	if (option == "SyzygyPath") {
+		strm >> std::skipws >> token;
+		
+		if (token == "value") {
+			strm >> std::skipws >> token;
+
+			if (token.find(';') != std::string::npos) {
+				std::cout << "Multiple paths not supported" << std::endl;
+				return;
+			}
+
+			_options.syzygy_opt.set(token);
+			SyzygyTablebase::get().loadSyzygyFile(token);
 		}
 	}
 
 #if defined(_ENABLE_TUNING)
 
-	for (OptionTunableParam& param : _options.tunable_params) {
+	for (OptionTunableParam& param : _options.tunable_params_opt) {
 		if (option == param.str) {
 			strm >> std::skipws >> token;
 
@@ -474,11 +491,12 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseShowOptions() {
-	_options.hash.print();
-	_options.clear_hash.print();
+	_options.hash_opt.print();
+	_options.clear_hash_opt.print();
+	_options.syzygy_opt.print();
 
 #if defined(_ENABLE_TUNING)
-	for (OptionTunableParam& param : _options.tunable_params) {
+	for (OptionTunableParam& param : _options.tunable_params_opt) {
 		param.print();
 	}
 #endif

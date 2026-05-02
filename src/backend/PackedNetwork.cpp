@@ -1,6 +1,5 @@
 #include "PackedNetwork.hpp"
 
-#include <filesystem>
 #if !defined(_MSC_VER)
 #include <sys/mman.h>
 #include <sys/stat.h>

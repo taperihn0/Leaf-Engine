@@ -33,9 +33,10 @@ protected:
 #endif
 
 	struct Options {
-		OptionHash 					    hash;
-		OptionClearHash 			    clear_hash;
-		std::vector<OptionTunableParam> tunable_params;
+		OptionHash 					    hash_opt;
+		OptionClearHash 			    clear_hash_opt;
+		OptionPath 						syzygy_opt;
+		std::vector<OptionTunableParam> tunable_params_opt;
 	};
 
 	Search         _search;

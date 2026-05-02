@@ -10,6 +10,7 @@ public:
 
     static SyzygyTablebase& get();
     bool loadSyzygyFile(const std::string& fp);
+    bool isReady() const;
 
     enum TbWdlInfo {
         WDL_LOSS,

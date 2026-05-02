@@ -1,7 +1,5 @@
 #include "Tablebase.hpp"
 
-#include <filesystem>
-
 #if defined(_USE_SYZYGY_TB)
 #define TB_NO_THREADS
 #include "vendor/tbprobe.h"
@@ -40,6 +38,10 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
 #endif // _USE_SYZYGY_TB
 }
 
+bool SyzygyTablebase::isReady() const {
+    return _initialized;
+}
+
 bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {  
     if (!_initialized)
         return false;
@@ -75,28 +77,21 @@ bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {
                                      tb_ep,
                                      pos.getTurn());
 
-    switch (tb_wdl) {
-    case TB_LOSS:
-        wdl = WDL_LOSS;
-        break;
-    case TB_BLESSED_LOSS:
-        wdl = WDL_MAYBE_LOSS;
-        break;
-    case TB_DRAW:
-        wdl = WDL_DRAW;
-        break;
-    case TB_CURSED_WIN:
-        wdl = WDL_MAYBE_WIN;
-        break;
-    case TB_WIN:
-        wdl = WDL_WIN;
-        break;
-    default: 
-        wdl = WDL_INVALID;
-        return false;
-    }
+    assert(TB_LOSS == WDL_LOSS and
+           TB_BLESSED_LOSS == WDL_MAYBE_LOSS and
+           TB_DRAW == WDL_DRAW and
+           TB_CURSED_WIN == WDL_MAYBE_WIN and
+           TB_WIN == WDL_WIN);
 
-    return true;
+    if (tb_wdl == TB_LOSS and 
+        tb_wdl == TB_BLESSED_LOSS and 
+        tb_wdl == TB_DRAW and 
+        tb_wdl == TB_CURSED_WIN and 
+        tb_wdl == TB_WIN)
+        wdl = static_cast<TbWdlInfo>(tb_wdl);
+    else wdl = WDL_INVALID;
+
+    return wdl != WDL_INVALID;
 }
 
 bool SyzygyTablebase::probeDtz(const Position& pos, 
@@ -179,28 +174,21 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
     dtz = TB_GET_DTZ(tb_res);
     const uint tb_wdl = TB_GET_WDL(tb_res);
 
-    switch (tb_wdl) {
-    case TB_LOSS:
-        wdl = WDL_LOSS;
-        break;
-    case TB_BLESSED_LOSS:
-        wdl = WDL_MAYBE_LOSS;
-        break;
-    case TB_DRAW:
-        wdl = WDL_DRAW;
-        break;
-    case TB_CURSED_WIN:
-        wdl = WDL_MAYBE_WIN;
-        break;
-    case TB_WIN:
-        wdl = WDL_WIN;
-        break;
-    default: 
-        wdl = WDL_INVALID;
-        return false;
-    }
+    assert(TB_LOSS == WDL_LOSS and
+           TB_BLESSED_LOSS == WDL_MAYBE_LOSS and
+           TB_DRAW == WDL_DRAW and
+           TB_CURSED_WIN == WDL_MAYBE_WIN and
+           TB_WIN == WDL_WIN);
 
-    return false;
+    if (tb_wdl == TB_LOSS and 
+        tb_wdl == TB_BLESSED_LOSS and 
+        tb_wdl == TB_DRAW and 
+        tb_wdl == TB_CURSED_WIN and 
+        tb_wdl == TB_WIN)
+        wdl = static_cast<TbWdlInfo>(tb_wdl);
+    else wdl = WDL_INVALID;
+
+    return true;
 }
 
 SyzygyTablebase::~SyzygyTablebase() {

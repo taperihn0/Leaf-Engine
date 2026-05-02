@@ -10,6 +10,7 @@
 #include "TranspositionTable.hpp"
 #include "Accumulator.hpp"
 #include "Cuckoo.hpp"
+#include "Tablebase.hpp"
 
 struct SearchLimits {
 	bool isTimeLimit();
@@ -150,7 +151,9 @@ public:
 	void init(MoveOrderHistoryTables* history_buffer);
 
 	NodeInfo* getRootNode();
+	const NodeInfo* getRootNode() const;
 	NodeInfo* getPreRootNode();
+	const NodeInfo* getPreRootNode() const;
 	const NodeInfo* getNode(unsigned ply) const;
 
 	const AccumulatorCluster* getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
@@ -237,9 +240,16 @@ inline _P_CONSTEXPR int SingularDepthBase = roundi<float>(523.061f);
 inline _P_CONSTEXPR int SingularBetaExtensionRate = roundi<float>(1.76967f);
 inline _P_CONSTEXPR int TablebaseProbeDepth = 10; // !
 inline _P_CONSTEXPR int TablebasePieceCountLimit = 8; // !
-inline constexpr 	int SingularExtensionDiv = 16;
-inline constexpr    int SingularBetaExtensionDiv = 32;
-inline constexpr    int CheckNodeCount = 2048;
+inline _P_CONSTEXPR int TablebaseWinScore = static_cast<int>(31000); // !
+inline _P_CONSTEXPR int TablebasePieceDiffMult = 10;
+
+/* Static parameters */
+inline _P_CONSTEXPR int  TablebaseLossScore = -TablebaseWinScore;
+inline constexpr 	int  SingularExtensionDiv = 16;
+inline constexpr    int  SingularBetaExtensionDiv = 32;
+inline constexpr    int  CheckNodeCount = 2048;
+inline constexpr 	bool UseSyzygyTablebase = _USE_SYZYGY_TB;
+inline constexpr 	bool UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
 
 class Search {
 public:
@@ -315,8 +325,12 @@ private:
 				  Score alpha, Score beta, 
 				  int depth, int ply);
 	
-	Score getDrawScore(const NodeInfo* node);
-	Score applyContempt(Score score, const NodeInfo* node);
+	Score getDrawScore(const NodeInfo* node) const;
+	Score getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
+							const Position& pos, 
+							const NodeInfo* node, 
+							int ply) const;
+	Score applyContempt(Score score, const NodeInfo* node) const;
 
 	template <enumNode NodeType>
 	Score evaluate(const Position& pos,

@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <filesystem>
 
 #if defined(_MSC_VER)
 #include <windows.h>
@@ -86,7 +87,8 @@
 #define _USE_EMBEDDED_NEURAL_NET
 #endif
 
-#define _USE_SYZYGY_TB
+#define _USE_SYZYGY_TB 1
+#define _USE_SYZYGY_TB_ROOT 1
 
 template <typename T>
 _INTERNAL void _declUnused(T&&) {}

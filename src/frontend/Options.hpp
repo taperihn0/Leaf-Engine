@@ -20,19 +20,27 @@ struct SpinType : public OptionType {
     static_assert(std::is_arithmetic_v<ValType>);
 
     SpinType(ValType def, ValType ma, ValType mi);
-    void setCurrent(ValType val);
+    void setCurrentValue(ValType val);
     void print() const override;
 
     ValType default_value;
-    ValType current_value;
+    ValType curr_value;
     ValType max_value;
     ValType min_value;
 };
 
 struct ButtonType : public OptionType {
-    using type = bool;
     void print() const override;
-    type current_value;
+    bool curr_value;
+};
+
+struct StringType : public OptionType {
+    StringType(std::string def);
+    void print() const override;
+    void setCurrentValue(std::string);
+
+    std::string default_str;
+    std::string curr_str;
 };
 
 // ----- Option class -----
@@ -72,21 +80,30 @@ struct OptionTunableParam : public Option {
     double           rate;
 };
 
+struct OptionPath : public Option {
+    OptionPath(StringType val);
+    void print() const override;
+    void set(std::string fp);
+    std::string getCurrentValue() const;
+
+    StringType value;
+};
+
 // ----- Internal implementation -----
 
 template <typename T>
 _INTERNAL SpinType<T>::SpinType(ValType def, ValType mi, ValType ma)
     : default_value(def)
-    , current_value(0)
+    , curr_value(0)
     , max_value(ma)
     , min_value(mi)
 {
-    setCurrent(def);
+    setCurrentValue(def);
 }
 
 template <typename T>
-_INTERNAL void SpinType<T>::setCurrent(ValType val) {
-    current_value = std::clamp(val, min_value, max_value);
+_INTERNAL void SpinType<T>::setCurrentValue(ValType val) {
+    curr_value = std::clamp(val, min_value, max_value);
 }
 
 template <typename T>
@@ -100,6 +117,20 @@ _INTERNAL void ButtonType::print() const {
     std::cout << " type button" << std::endl;
 }
 
+_INTERNAL StringType::StringType(std::string def)
+    : default_str(def)
+    , curr_str("<empty>")
+{}
+
+_INTERNAL void StringType::print() const {
+    std::cout << " type string" 
+              << " default " << default_str << std::endl;
+}
+
+_INTERNAL void StringType::setCurrentValue(std::string str) {
+    curr_str = str;
+}
+
 // ----- Custom options - implementation -----
 
 #define _OPTION_LITERAL(name) "option name "   name
@@ -110,11 +141,11 @@ _INTERNAL OptionHash::OptionHash(SpinType<ll> val)
 {}
 
 _INTERNAL void OptionHash::set(ll val) {
-    value.setCurrent(val);
+    value.setCurrentValue(val);
 }
 
 _INTERNAL ll OptionHash::getCurrentValue() const {
-    return value.current_value;
+    return value.curr_value;
 }
 
 _INTERNAL void OptionHash::print() const {
@@ -141,11 +172,28 @@ _INTERNAL void OptionTunableParam::print() const {
 }
 
 _INTERNAL void OptionTunableParam::set(double val) {
-    value.setCurrent(val);
+    value.setCurrentValue(val);
 }
 
 _INTERNAL double OptionTunableParam::getCurrentValue() const {
-    return value.current_value;
+    return value.curr_value;
+}
+
+_INTERNAL OptionPath::OptionPath(StringType val)
+    : value(val)
+{}
+
+_INTERNAL void OptionPath::print() const {
+    std::cout << _OPTION_LITERAL("SyzygyPath");
+    value.print();
+}
+
+_INTERNAL void OptionPath::set(std::string fp) {
+    value.setCurrentValue(fp);
+}
+
+_INTERNAL std::string OptionPath::getCurrentValue() const {
+    return value.curr_str;
 }
 
 #undef _OPTION

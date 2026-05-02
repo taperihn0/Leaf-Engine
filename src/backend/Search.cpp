@@ -252,7 +252,15 @@ _INLINE NodeInfo* TreeStack::getRootNode() {
 	return _stack + 1;
 }
 
+_INLINE const NodeInfo* TreeStack::getRootNode() const {
+	return _stack + 1;
+}
+
 _INLINE NodeInfo* TreeStack::getPreRootNode() {
+	return _stack;
+}
+
+_INLINE const NodeInfo* TreeStack::getPreRootNode() const {
 	return _stack;
 }
 
@@ -645,12 +653,52 @@ Score Search::nmSearch(Position& pos,
 #endif // _COLLECT_SEARCH_STATS
 		return tt_entry.score;
 	}
+	
+	if constexpr (UseSyzygyTablebase) {
+		if (SyzygyTablebase::get().isReady() and
+			depth >= TablebaseProbeDepth and
+			pos.getHalfmoveClock() == 0 and
+			!pos.getCastlingByColor(WHITE).isAnyPossible() and 
+			!pos.getCastlingByColor(BLACK).isAnyPossible() and
+			pos.getPiecesCount() <= TablebasePieceCountLimit)
+		{
+			if constexpr (Root and UseSyzygyTablebaseRoot) {
+				SyzygyTablebase::TbWdlInfo wdl;
+				uint dtz;
+				Move16b tb_move;
 
-#if defined(_USE_SYZYGY_TB)
-	if constexpr (Root) {
-		// TODO
+				_declUnused(dtz); // DTZ info is unused
+
+				const bool status = SyzygyTablebase::get().probeDtz(pos, wdl, dtz, tb_move);
+
+				if (status) {
+					assert(tb_move != Move16b::Null and tb_move.isPseudoLegal(pos));
+					assert(wdl != SyzygyTablebase::WDL_INVALID);
+
+					node->best_move = unpackedMove(pos, tb_move);
+					node->pv_line[0].best_move = packedMove(node->best_move);
+					node->pv_line_len = 1;
+
+					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
+					
+					assert(tb_score != Score::Undef);
+					node->best_score = tb_score;
+
+					return node->best_score;
+				}
+			}
+
+			if constexpr (!Root) {
+				SyzygyTablebase::TbWdlInfo wdl;
+				const bool status = SyzygyTablebase::get().probeWdl(pos, wdl);
+
+				if (status) {
+					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
+					return tb_score;
+				}
+			}
+		}
 	}
-#endif
 
 	if (!depth) {
 		return qSearch<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
@@ -1459,11 +1507,31 @@ Score Search::qSearch(Position& pos,
 												: alpha;
 }
 
-_FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) {
+_FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) const {
 	return applyContempt(Score::Draw, node);
 }
 
-_FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) {
+_FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
+											 const Position& pos, 
+											 const NodeInfo* node,
+											 int ply) const 
+{
+	static auto get_win_tb_score = [](const Position& pos, int ply) -> Score {
+		const int pccnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
+		return static_cast<Score>(TablebaseWinScore - ply - TablebasePieceDiffMult * pccnt_diff);
+	};
+
+	switch (wdl) {
+	case SyzygyTablebase::WDL_WIN:  return get_win_tb_score(pos, ply);
+	case SyzygyTablebase::WDL_LOSS: return -get_win_tb_score(pos, ply);
+	case SyzygyTablebase::WDL_DRAW: return getDrawScore(node);
+	default: break;
+	}
+
+	return Score::Undef;
+}
+
+_FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) const {
 	const NodeInfo* const root = _tree_stack.getRootNode();
 	assert(_contempt != Score::Undef);
 	return root->side2move == node->side2move ? score - _contempt
