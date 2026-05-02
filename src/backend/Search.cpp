@@ -128,6 +128,8 @@ void SearchResults::printSearchStats() {
 
 	const float null_zungzwang_rate = static_cast<float>(null_zungzwang_detected) / null_moves_cnt * 100;
 
+	const float syzygy_tb_cuts_rate = static_cast<float>(syzygy_tb_cuts) / syzygy_tb_probe_cnt * 100;
+
 	std::cout << "\n--SEARCH STATISTICS--";
 
 	std::cout
@@ -152,6 +154,7 @@ void SearchResults::printSearchStats() {
 		<< "\nREDUCTION SEARCH FAIL LOW:   " << reduced_search_fail_low << ", " << reduced_search_fail_rate << '%'
 		<< "\nREDUCTION SEARCH FAIL HIGH:  " << reduced_search_fail_high << ", " << reduced_search_suc_rate << '%'
 		<< "\nZUNGZWANGS DETECTED:         " << null_zungzwang_detected << ", " << null_zungzwang_rate << '%'
+		<< "\nSYZYGY TB CUTS:              " << syzygy_tb_probe_cnt << ", " << syzygy_tb_cuts_rate << '%'
 		<< "\n";
 
 	beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
@@ -666,17 +669,24 @@ Score Search::nmSearch(Position& pos,
 				SyzygyTablebase::TbWdlInfo wdl;
 				uint dtz;
 				Move16b tb_move;
-
 				_declUnused(dtz); // DTZ info is unused
 
 				const bool status = SyzygyTablebase::get().probeDtz(pos, wdl, dtz, tb_move);
 
+#if defined(_COLLECT_SEARCH_STATS)
+				results.syzygy_tb_probe_cnt++;
+				results.syzygy_tb_cuts += status;
+#endif // _COLLECT_SEARCH_STATS
+
 				if (status) {
-					assert(tb_move != Move16b::Null and tb_move.isPseudoLegal(pos));
+					assert(tb_move != Move16b::Null);
 					assert(wdl != SyzygyTablebase::WDL_INVALID);
 
-					node->best_move = unpackedMove(pos, tb_move);
-					node->pv_line[0].best_move = packedMove(node->best_move);
+					const Move32b tb_move32 = unpackedMove(pos, tb_move);
+					assert(tb_move32.isPseudoLegal(pos));
+
+					node->best_move = tb_move32;
+					node->pv_line[0].best_move = packedMove(tb_move32);
 					node->pv_line_len = 1;
 
 					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
@@ -692,8 +702,20 @@ Score Search::nmSearch(Position& pos,
 				SyzygyTablebase::TbWdlInfo wdl;
 				const bool status = SyzygyTablebase::get().probeWdl(pos, wdl);
 
+#if defined(_COLLECT_SEARCH_STATS)
+				results.syzygy_tb_probe_cnt++;
+				results.syzygy_tb_cuts += status;
+#endif // _COLLECT_SEARCH_STATS
+
 				if (status) {
 					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
+
+					_tt.write(hash,
+							  EntryMaxDepth, ply,
+							  TTEntry::EXACT,
+							  tb_score, tt_entry.move, tt_entry.eval,
+							  results);
+
 					return tb_score;
 				}
 			}
@@ -1518,7 +1540,7 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 {
 	static auto get_win_tb_score = [](const Position& pos, int ply) -> Score {
 		const int pccnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
-		return static_cast<Score>(TablebaseWinScore - ply - TablebasePieceDiffMult * pccnt_diff);
+		return static_cast<Score>(TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pccnt_diff));
 	};
 
 	switch (wdl) {

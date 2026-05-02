@@ -343,9 +343,3 @@ _INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
 }
 
 Move32b unpackedMove(const Position& pos, Move16b move);
-
-// GCC somehow needs that
-#if defined(__GNUC__)
-template <>
-bool Move32b::isPseudoLegal(const Position& pos) const;
-#endif

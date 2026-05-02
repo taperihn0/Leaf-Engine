@@ -62,7 +62,7 @@ struct SearchResults {
 	ull 	  nodes_per_depth[MaxDepth + 1] = {};
 	time_ms_t time_per_depth[MaxDepth + 1]  = {};
 
-#if defined (_COLLECT_SEARCH_STATS)
+#if defined(_COLLECT_SEARCH_STATS)
 	ull       pv_nodes_cnt		= 0,
 			  npv_nodes_cnt		= 0,
 			  cut_nodes_cnt		= 0,
@@ -100,6 +100,9 @@ struct SearchResults {
 
 	ull		  null_moves_cnt 	= 0;
 	ull		  null_zungzwang_detected = 0;
+
+	ull		  syzygy_tb_probe_cnt = 0;
+	ull		  syzygy_tb_cuts      = 0;
 #endif
 };
 
@@ -241,7 +244,7 @@ inline _P_CONSTEXPR int SingularBetaExtensionRate = roundi<float>(1.76967f);
 inline _P_CONSTEXPR int TablebaseProbeDepth = 10; // !
 inline _P_CONSTEXPR int TablebasePieceCountLimit = 8; // !
 inline _P_CONSTEXPR int TablebaseWinScore = static_cast<int>(31000); // !
-inline _P_CONSTEXPR int TablebasePieceDiffMult = 10;
+inline _P_CONSTEXPR int TablebasePieceDiffMult = 100;
 
 /* Static parameters */
 inline _P_CONSTEXPR int  TablebaseLossScore = -TablebaseWinScore;

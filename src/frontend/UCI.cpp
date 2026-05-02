@@ -420,12 +420,23 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 			}
 
 			_options.syzygy_opt.set(token);
-			SyzygyTablebase::get().loadSyzygyFile(token);
+			const bool status = SyzygyTablebase::get().loadSyzygyFile(token);
+
+#if defined(DEBUG)
+			if (!status) {
+				std::cout << "Failed to load Syzygy Tablebase" << std::endl;
+				return;
+			}
+			else {
+				std::cout << "Loaded Syzygy Tablebase" << std::endl;
+				return;
+			}
+#endif
+			_declUnused(status);
 		}
 	}
 
 #if defined(_ENABLE_TUNING)
-
 	for (OptionTunableParam& param : _options.tunable_params_opt) {
 		if (option == param.str) {
 			strm >> std::skipws >> token;
@@ -444,7 +455,6 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 			}
 		}
 	}
-
 #endif
 }
 

@@ -7,9 +7,10 @@
 class Score;
 struct SearchResults;
 
-static constexpr size_t EntryTargetSize  = 10;
-static constexpr size_t BucketTargetSize = 32;
-static constexpr size_t EntryKeySize     = 18;
+static constexpr size_t  EntryTargetSize  = 10;
+static constexpr size_t  BucketTargetSize = 32;
+static constexpr size_t  EntryKeySize     = 18;
+static constexpr uint8_t EntryMaxDepth   = 64;
 
 struct TTEntry {
 	enum Bound : uint8_t {

@@ -32,5 +32,3 @@ private:
 
     bool _initialized = false;
 };
-
-extern SyzygyTablebase* GlobSyzygyTable;

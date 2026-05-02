@@ -15,6 +15,7 @@ src/assets/lichess/*
 src/utils/tmp
 src/assets/tmp/*
 src/assets/sets
+src/assets/tb
 
 src/bullet-trainer
 

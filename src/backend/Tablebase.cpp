@@ -5,8 +5,6 @@
 #include "vendor/tbprobe.h"
 #endif
 
-SyzygyTablebase* GlobSyzygyTable = &SyzygyTablebase::get();
-
 SyzygyTablebase& SyzygyTablebase::get() {
     static SyzygyTablebase SyzygyTable;
     return SyzygyTable;
@@ -19,7 +17,7 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
         return false;
     }
     else if (!std::filesystem::exists(fp)) {
-        std::cout << "Invalid Syzygy path - file not found" << std::endl;
+        std::cout << "Invalid Syzygy path - directory not found" << std::endl;
         return false;
     }
 
@@ -75,7 +73,7 @@ bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {
                                      pos.getHalfmoveClock(),
                                      tb_castling,
                                      tb_ep,
-                                     pos.getTurn());
+                                     pos.getTurn() == WHITE);
 
     assert(TB_LOSS == WDL_LOSS and
            TB_BLESSED_LOSS == WDL_MAYBE_LOSS and
@@ -83,10 +81,10 @@ bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {
            TB_CURSED_WIN == WDL_MAYBE_WIN and
            TB_WIN == WDL_WIN);
 
-    if (tb_wdl == TB_LOSS and 
-        tb_wdl == TB_BLESSED_LOSS and 
-        tb_wdl == TB_DRAW and 
-        tb_wdl == TB_CURSED_WIN and 
+    if (tb_wdl == TB_LOSS or 
+        tb_wdl == TB_BLESSED_LOSS or
+        tb_wdl == TB_DRAW or
+        tb_wdl == TB_CURSED_WIN or
         tb_wdl == TB_WIN)
         wdl = static_cast<TbWdlInfo>(tb_wdl);
     else wdl = WDL_INVALID;
@@ -129,7 +127,7 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
                                       pos.getHalfmoveClock(),
                                       tb_castling,
                                       tb_ep,
-                                      pos.getTurn(),
+                                      pos.getTurn() == WHITE,
                                       nullptr);
 
     if (tb_res == TB_RESULT_FAILED) {
@@ -180,10 +178,10 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
            TB_CURSED_WIN == WDL_MAYBE_WIN and
            TB_WIN == WDL_WIN);
 
-    if (tb_wdl == TB_LOSS and 
-        tb_wdl == TB_BLESSED_LOSS and 
-        tb_wdl == TB_DRAW and 
-        tb_wdl == TB_CURSED_WIN and 
+    if (tb_wdl == TB_LOSS or 
+        tb_wdl == TB_BLESSED_LOSS or 
+        tb_wdl == TB_DRAW or 
+        tb_wdl == TB_CURSED_WIN or
         tb_wdl == TB_WIN)
         wdl = static_cast<TbWdlInfo>(tb_wdl);
     else wdl = WDL_INVALID;
