@@ -58,9 +58,10 @@ private:
               EngineProcess& engine0,
               EngineProcess& engine1,
               std::shared_ptr<Game::Result> result,
-              uint id);
+              uint id,
+              enumLogLabel thread_label);
 
-    static constexpr bool _EnableSelfPlayLog = true;                      
+    static constexpr bool _EnableSelfPlayLog = true;
     OpeningSuite _openings;
 };
 

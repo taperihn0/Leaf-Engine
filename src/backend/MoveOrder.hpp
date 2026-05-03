@@ -33,18 +33,23 @@ enum OrderType {
 };
 
 /*
-*   Tunable parameters in move ordering.
+*  Tunable parameters in move ordering.
 */
 
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(12.8824f);
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(4.30811f);
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(73.4038f);
-inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(293.29f);
-inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(320.252f);
-inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(124.011f);
-inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(51.4321f);
-inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(160.891f);
-inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(908.594f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(13.024f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(4.05343f);
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(67.7323f);
+inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(288.204f);
+inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(319.306f);
+inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(127.146f);
+inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(92.816f);
+inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(170.774f);
+inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(925.484f);
+
+/*  Static parameters in move ordering -
+*   These are not tuned.
+*/
+
 inline constexpr    int MaxQuietsHistoryPow = 13;
 inline constexpr    int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
 inline constexpr    int PawnCapturedScore   = 100;

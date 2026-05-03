@@ -13,15 +13,6 @@
 namespace Utils
 {
 
-void assertIsReady(EngineProcess& engine, enumLogLabel thread_label) {
-    log(*engine.proc_stdin, "isready");
-
-    std::string line;
-    while (readline(*engine.proc_stdout, line) and line != "readyok") {
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
-    }
-}
-
 bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& thr_data, 
                                            enumLogLabel thread_label) 
 {
@@ -42,8 +33,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
     }
 
     {
-        assertIsReady(engine0, thread_label);
-        assertIsReady(engine1, thread_label);
+        engine0.syncUntilReady(thread_label);
+        engine1.syncUntilReady(thread_label);
 
         static const size_t mb_tt_size = 8;
 
@@ -59,8 +50,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
-    assertIsReady(engine0, thread_label);
-    assertIsReady(engine1, thread_label);
+    engine0.syncUntilReady(thread_label);
+    engine1.syncUntilReady(thread_label);
 
     std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
@@ -143,8 +134,8 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             return false;
         }
 
-        assertIsReady(engine0, thread_label);
-        assertIsReady(engine1, thread_label);
+        engine0.syncUntilReady(thread_label);
+        engine1.syncUntilReady(thread_label);
 
         positions.clear();
         white_scores.clear();

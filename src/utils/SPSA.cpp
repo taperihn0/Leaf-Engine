@@ -69,7 +69,7 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
 
     std::vector<std::thread> threads;
 
-    for (uint id = 0; id < thread_count; id++) {
+    for (uint id = 1; id <= thread_count; id++) {
         threads.emplace_back([&](std::vector<SPSA_Parameter>& theta, 
                                  std::ofstream& log_file, 
                                  SearchLimits limits,
@@ -116,19 +116,14 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     const enumLogLabel thread_label = threadLabel(id);
 
     {
+        engine0.syncUntilReady(thread_label);
+        engine1.syncUntilReady(thread_label);
+
         std::string line;
 
-        readline(os0, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
-
-        readline(os1, line);
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
-
 #if defined(DEBUG)
-
         log(is0, "options");
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
-
+        
         for (int i = 0; 
              i < param_count and readline(os0, line);
              i++) {
@@ -136,15 +131,13 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         }
 
         log(is1, "options");
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
 
         for (int i = 0; 
              i < param_count and readline(os1, line);
              i++) {
             labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
         }
-
-#endif
+#endif // DEBUG
 
         // set TT sizes
         
@@ -206,7 +199,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         std::vector<SPSA_Parameter> local_params(param_count);
 
         {
-            std::lock_guard<std::mutex> lock(param_mutex);
+            const std::lock_guard<std::mutex> lock(param_mutex);
             local_params = params;
         }
 
@@ -243,7 +236,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         auto game_result = std::make_shared<Game::Result>();
         const int res = match(limits, 
                               engine0, engine1, 
-                              game_result, id);
+                              game_result, id, curr_thread_label);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -254,7 +247,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         else draw_cnt++;
 
         {
-            std::lock_guard<std::mutex> lock(param_mutex);
+            const std::lock_guard<std::mutex> lock(param_mutex);
 
             for (int i = 0; i < param_count; i++) {
                 const double gradient = static_cast<double>(res) / (2. * local_params[i].ck * local_params[i].delta);
@@ -315,7 +308,8 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
                                EngineProcess& engine0,
                                EngineProcess& engine1,
                                std::shared_ptr<Game::Result> result,
-                               uint id)
+                               uint id,
+                               enumLogLabel thread_label)
 {
     SelfGame::GameSpecPacket game_packet = {
         limits,
@@ -324,6 +318,9 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
         &_openings,
         nullptr,
     };
+
+    engine0.syncUntilReady(thread_label);
+    engine1.syncUntilReady(thread_label);
 
     const auto game_result = SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
 

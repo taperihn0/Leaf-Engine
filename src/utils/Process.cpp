@@ -182,4 +182,13 @@ bool EngineProcess::isAlive() const {
 }
 #endif // _MSC_VER
 
+void EngineProcess::syncUntilReady(enumLogLabel thread_label) {
+    log(*proc_stdin, "isready");
+
+    std::string line;
+    while (readline(*proc_stdout, line) and line != "readyok") {
+        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
+    }
+}
+
 }

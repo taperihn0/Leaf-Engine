@@ -22,6 +22,7 @@ public:
 
     static void initProc(EngineProcess& proc);
 
+    void syncUntilReady(enumLogLabel thread_label);
     void waitForProcess();
     bool isAlive() const;
 

@@ -10,7 +10,9 @@
 				"CMAKE_BUILD_TYPE": "Debug",
 				"COLLECT_SEARCH_STATS": "ON",
 				"INCLUDE_TESTS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_SSE4_2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		},
 		{
@@ -22,7 +24,9 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_SSE4_2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		},
 		{
@@ -34,7 +38,9 @@
 				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
 				"COLLECT_SEARCH_STATS": "ON",
 				"INCLUDE_TESTS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_SSE4_2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		},
 		{
@@ -46,7 +52,9 @@
 				"CMAKE_BUILD_TYPE": "Debug",
 				"COLLECT_SEARCH_STATS": "ON",
 				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON"
+				"ENABLE_SIMD_SSE4_2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		},
 		{
@@ -59,7 +67,8 @@
 				"COLLECT_SEARCH_STATS": "ON",
 				"BUILD_UTILS": "ON",
 				"ENABLE_SIMD_SSE4_2": "ON",
-				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}"
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
 			}
 		},
 		{
@@ -71,8 +80,35 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"COLLECT_SEARCH_STATS": "OFF",
 				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
-				"RUNTIME_WORKING_DIRECTORY": "${sourceDir}",
+				"ENABLE_SIMD_SEE4_2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
+			}
+		},
+		{
+			"name": "final",
+			"displayName": "Final",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"INCLUDE_TESTS": "OFF",
+				"ENABLE_SIMD_AVX2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_ARM": "OFF"
+			}
+		},
+		{
+			"name": "finalutils",
+			"displayName": "FinalUtils",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Utils/Release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"BUILD_UTILS": "ON",
+				"ENABLE_SIMD_AVX2": "ON",
 				"ARCHITECTURE_EXCLUSIVE": "ON",
 				"ARCHITECTURE_ARM": "OFF"
 			}
@@ -97,6 +133,16 @@
 		{
 			"name": "releaseutils",
 			"configurePreset": "releaseutils",
+			"targets": [ "LeafUtils" ]
+		},
+		{
+			"name": "final",
+			"configurePreset": "final",
+			"targets": [ "Leaf" ]
+		},
+		{
+			"name": "finalutils",
+			"configurePreset": "finalutils",
 			"targets": [ "LeafUtils" ]
 		}
 	]

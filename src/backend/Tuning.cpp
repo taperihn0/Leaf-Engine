@@ -74,12 +74,17 @@ void TunableParametersMap::createMapping() {
     _addr["SingularDepthMult"] = &SingularDepthMult;
     _addr["SingularDepthBase"] = &SingularDepthBase;
     _addr["SingularBetaExtensionRate"] = &SingularBetaExtensionRate;
+    _addr["TablebaseProbeDepth"] = &TablebaseProbeDepth;
+    _addr["TablebasePieceCountLimit"] = &TablebasePieceCountLimit;
+    _addr["TablebaseWinScore"] = &TablebaseWinScore;
+    _addr["TablebasePieceDiffMult"] = &TablebasePieceDiffMult;
+    _addr["TablebaseScoreScale"] = &TablebaseScoreScale;
     _addr["KnightCapturedScore"] = &KnightCapturedScore;
     _addr["BishopCapturedScore"] = &BishopCapturedScore;
-    _addr["ToKnightPromoScore"]  = &ToKnightPromoScore;
-    _addr["ToBishopPromoScore"]  = &ToBishopPromoScore;
-    _addr["ToRookPromoScore"]    = &ToRookPromoScore;
-    _addr["ToQueenPromoScore"]   = &ToQueenPromoScore;
+    _addr["ToKnightPromoScore"] = &ToKnightPromoScore;
+    _addr["ToBishopPromoScore"] = &ToBishopPromoScore;
+    _addr["ToRookPromoScore"] = &ToRookPromoScore;
+    _addr["ToQueenPromoScore"] = &ToQueenPromoScore;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {
