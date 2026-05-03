@@ -29,15 +29,21 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
     }
 
     _initialized = true;
+    _tb_path = fp;
     return true;
 #else // !defined(_USE_SYZYGY_TB)
     _initialized = false;
+    _tb_path = "<empty>";
     return false;
 #endif // _USE_SYZYGY_TB
 }
 
-bool SyzygyTablebase::isReady() const {
+bool SyzygyTablebase::isLoaded() const {
     return _initialized;
+}
+
+std::string SyzygyTablebase::getFilePath() const {
+    return _tb_path;
 }
 
 bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {  

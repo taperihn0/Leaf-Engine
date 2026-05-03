@@ -244,7 +244,8 @@ inline _P_CONSTEXPR int SingularBetaExtensionRate = roundi<float>(1.76967f);
 inline _P_CONSTEXPR int TablebaseProbeDepth = 10; // !
 inline _P_CONSTEXPR int TablebasePieceCountLimit = 8; // !
 inline _P_CONSTEXPR int TablebaseWinScore = static_cast<int>(31000); // !
-inline _P_CONSTEXPR int TablebasePieceDiffMult = 100;
+inline _P_CONSTEXPR int TablebasePieceDiffMult = 100; // !
+inline _P_CONSTEXPR int TablebaseScoreScale = 16; // !
 
 /* Static parameters */
 inline _P_CONSTEXPR int  TablebaseLossScore = -TablebaseWinScore;

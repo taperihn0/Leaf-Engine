@@ -1,6 +1,7 @@
 #include "Process.hpp"
 #include "frontend/Setup.hpp"
 #include "backend/PackedNetwork.hpp"
+#include "backend/Tablebase.hpp"
 
 namespace Utils {
 
@@ -56,6 +57,13 @@ void EngineProcess::spawnProcess(EngineProcess& proc) {
     ss << '\"' << std::string(filename) << "\" " 
        << "--self-play "
        << "export_net " << nn_bin_path << ' ';
+
+    if (SyzygyTablebase::get().isLoaded()) {
+        const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
+
+        if (syzygy_tb_path != "<empty>")
+            ss << "setoption name SyzygyPath value " << syzygy_tb_path << ' ';
+    }
 
 	const std::string& cmdline = ss.str();
     std::vector<char> cmdvec(cmdline.begin(), cmdline.end());
@@ -124,15 +132,25 @@ void EngineProcess::initProc(EngineProcess& proc) {
             return;
         }
 
-        const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
+        // Derive settings from current process
 
-        std::ostringstream ss;
-        ss << "export_net " << nn_bin_path << ' ';
+        const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
+        const std::string export_nn_arg = "export_net " + nn_bin_path + ' ';
+
+        std::string syzygy_tb_arg;
+
+        if (SyzygyTablebase::get().isLoaded()) {
+            const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
+
+            if (syzygy_tb_path != "<empty>")
+                syzygy_tb_arg = "setoption name SyzygyPath value " + syzygy_tb_path + ' ';
+        }
 
         if (execl(ProcExecArg.data(), 
                   ProcExecArg.data(), 
                   "--self-play",
-                  ss.str().c_str(), 
+                  export_nn_arg.c_str(), 
+                  syzygy_tb_arg.c_str(),
                   static_cast<char*>(nullptr)) < 0)
             return;
     }

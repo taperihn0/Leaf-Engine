@@ -10,7 +10,8 @@ public:
 
     static SyzygyTablebase& get();
     bool loadSyzygyFile(const std::string& fp);
-    bool isReady() const;
+    bool isLoaded() const;
+    std::string getFilePath() const;
 
     enum TbWdlInfo {
         WDL_LOSS,
@@ -30,5 +31,6 @@ private:
     SyzygyTablebase() = default;
     ~SyzygyTablebase();
 
-    bool _initialized = false;
+    bool        _initialized = false;
+    std::string _tb_path = "<empty>";
 };

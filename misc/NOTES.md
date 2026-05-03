@@ -1,3 +1,11 @@
+### feature: Syzygy 3-4-5 man Tablebase
+Score of leaf-syzygy-tb vs leaf-prev: 464 - 324 - 479  [0.555] 1267 <br>
+...      leaf-syzygy-tb playing White: 259 - 137 - 238  [0.596] 634 <br>
+...      leaf-syzygy-tb playing Black: 205 - 187 - 241  [0.514] 633 <br>
+...      White vs Black: 446 - 342 - 479  [0.541] 1267 <br>
+Elo difference: 38.5 +/- 15.1, LOS: 100.0 %, DrawRatio: 37.8 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: tuned Singular Extension
 Score of leaf-sing-tune vs leaf-single-draw: 2202 - 1624 - 174  [0.572] 4000 <br>
 ...      leaf-sing-tune playing White: 1122 - 792 - 86  [0.583] 2000 <br>

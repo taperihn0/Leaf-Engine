@@ -658,7 +658,7 @@ Score Search::nmSearch(Position& pos,
 	}
 	
 	if constexpr (UseSyzygyTablebase) {
-		if (SyzygyTablebase::get().isReady() and
+		if (SyzygyTablebase::get().isLoaded() and
 			depth >= TablebaseProbeDepth and
 			pos.getHalfmoveClock() == 0 and
 			!pos.getCastlingByColor(WHITE).isAnyPossible() and 
@@ -1540,7 +1540,8 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 {
 	static auto get_win_tb_score = [](const Position& pos, int ply) -> Score {
 		const int pccnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
-		return static_cast<Score>(TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pccnt_diff));
+		const int unscaled = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pccnt_diff);
+		return static_cast<Score>(TablebaseScoreScale * unscaled / 16);
 	};
 
 	switch (wdl) {
@@ -1585,7 +1586,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 		const Score eval = StaticEval::evaluateEndgame(pos);
 
 		if (eval != Score::Undef)
-			return applyContempt(eval, node);
+			return eval;
 	}
 
     AccumulatorCluster* curr_accum_cluster = &node->cluster;
@@ -1615,7 +1616,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 	const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
 	const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) / static_cast<float>(HalfMovesEvalLimit);
 
-	const Score res_eval = static_cast<Score>(applyContempt(static_cast<Score>(scaled_eval), node) * clock_reduct);
+	const Score res_eval = static_cast<Score>(static_cast<Score>(scaled_eval) * clock_reduct);
 
 	return res_eval;
 }
