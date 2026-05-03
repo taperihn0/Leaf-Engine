@@ -1,3 +1,11 @@
+### feature: Tuned search parameters for Syzygy probing
+Score of leaf-syzygy-tb-tune vs leaf-syzygy-tb: 848 - 778 - 1171  [0.513] 2797 <br>
+...      leaf-syzygy-tb-tune playing White: 492 - 320 - 587  [0.561] 1399 <br>
+...      leaf-syzygy-tb-tune playing Black: 356 - 458 - 584  [0.464] 1398 <br>
+...      White vs Black: 950 - 676 - 1171  [0.549] 2797 <br>
+Elo difference: 8.7 +/- 9.8, LOS: 95.9 %, DrawRatio: 41.9 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: Syzygy 3-4-5 man Tablebase
 Score of leaf-syzygy-tb vs leaf-prev: 464 - 324 - 479  [0.555] 1267 <br>
 ...      leaf-syzygy-tb playing White: 259 - 137 - 238  [0.596] 634 <br>
