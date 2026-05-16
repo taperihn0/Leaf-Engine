@@ -10,8 +10,7 @@ class Position;
 template <typename T>
 class MoveData {
 public:
-	static_assert(_IS_SAME_TYPE(T, uint16_t) or 
-				  _IS_SAME_TYPE(T, uint32_t));
+	static_assert(is_same<T, uint16_t> or is_same<T, uint32_t>);
 
 	enum class Castle;
 	enum class Notation;
@@ -36,8 +35,8 @@ public:
 	}
 
 	_INLINE constexpr bool operator==(MoveData b) const noexcept {
-		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) 
-			== (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
+		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) == 
+			   (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
 	}
 
 	// simplified make function. Leaves other data fields empty, initializing only
@@ -78,27 +77,27 @@ public:
 	}
 
 	_INLINE bool isCapture() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return _rmove & CAPTURE;
 	}
 
 	_INLINE bool isQuiet() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return !isCapture();
 	}
 
 	_INLINE bool isEnPassant() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return _rmove & EP_CAPTURE;
 	}
 
 	_INLINE bool isShortCastle() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return _rmove & SHORT_CASTLE;
 	}
 
 	_INLINE bool isLongCastle() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return _rmove & LONG_CASTLE;
 	}
 
@@ -121,12 +120,12 @@ public:
 	// use this field only after making a move -
 	// move legality is checked only when attempting to make it
 	_INLINE bool isLegalMoved() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return _rmove & LEGALLY_MOVED;
 	}
 
 	_INLINE bool isIrreversible() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return isCapture() or 
 			   getPiece() == Piece::PAWN or 
 			   isShortCastle() or 
@@ -134,12 +133,12 @@ public:
 	}
 
 	_INLINE Piece::enumType getPiece() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 19);
 	}
 
 	_INLINE bool isKnight() const {
-		if constexpr (_IS_SAME_TYPE(T, uint32_t))
+		if constexpr (is_same<T, uint32_t>)
 			return getPiece() == Piece::KNIGHT;
 		
 		// In 16 bit encoding we don't have explicit piece information, 
@@ -158,7 +157,7 @@ public:
 	// use this field only after making a move -
 	// captured piece is saved only in making a move
 	_INLINE Piece::enumType getCapturedMoved() const {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 22);
 	}
 
@@ -179,17 +178,17 @@ public:
 	}
 
 	_INLINE void setPiece(Piece::enumType piece) {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		_rmove &= ~PERFORMER, _rmove |= static_cast<uint32_t>(piece) << 19;
 	}
 
 	_INLINE void setCaptured(Piece::enumType captured) {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		_rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 22;
 	}
 
 	_INLINE void setLegalMoved(bool legal) {
-		static_assert(_IS_SAME_TYPE(T, uint32_t));
+		static_assert(is_same<T, uint32_t>);
 		_rmove &= ~LEGALLY_MOVED, _rmove |= static_cast<uint32_t>(legal) << 25;
 	}
 
@@ -262,7 +261,7 @@ _INLINE MoveData<T> MoveData<T>::makeSimple(Square origin,
 										    bool is_capture, 
 										    Piece::enumType piece_t) 
 {
-	static_assert(_IS_SAME_TYPE(T, uint32_t));
+	static_assert(is_same<T, uint32_t>);
 	return MoveData(
 		  (static_cast<uint32_t>(piece_t) << 19)
 		| (static_cast<uint32_t>(is_capture) << 15)
@@ -272,7 +271,7 @@ _INLINE MoveData<T> MoveData<T>::makeSimple(Square origin,
 
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makeEnPassant(Square origin, Square target) {
-	static_assert(_IS_SAME_TYPE(T, uint32_t));
+	static_assert(is_same<T, uint32_t>);
 	return MoveData(
 		  (static_cast<uint32_t>(Piece::PAWN) << 19)
 		| EP_CAPTURE
@@ -287,7 +286,7 @@ _INLINE MoveData<T> MoveData<T>::makePromotion(Square origin,
 											   bool is_capture, 
 											   Piece::enumType promo_t) 
 {
-	static_assert(_IS_SAME_TYPE(T, uint32_t));
+	static_assert(is_same<T, uint32_t>);
 	return MoveData(
 		  (static_cast<uint32_t>(Piece::PAWN) << 19)
 		| (static_cast<uint32_t>(is_capture) << 15)
@@ -299,7 +298,7 @@ _INLINE MoveData<T> MoveData<T>::makePromotion(Square origin,
 template <typename T>
 template <typename MoveData<T>::Castle Type>
 _INLINE MoveData<T> MoveData<T>::makeCastling(Square origin, Square target) {
-	static_assert(_IS_SAME_TYPE(T, uint32_t));
+	static_assert(is_same<T, uint32_t>);
 	static constexpr uint32_t Field = Type == Castle::SHORT ? SHORT_CASTLE : LONG_CASTLE;
 
 	return MoveData(
@@ -311,7 +310,7 @@ _INLINE MoveData<T> MoveData<T>::makeCastling(Square origin, Square target) {
 
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makePackedSimple(Square origin, Square target) {
-	static_assert(_IS_SAME_TYPE(T, uint16_t));
+	static_assert(is_same<T, uint16_t>);
 	return Move16b(
 		  (static_cast<uint16_t>(target) << 6)
 		|  static_cast<uint16_t>(origin));
@@ -321,7 +320,7 @@ template <typename T>
 _INLINE MoveData<T> MoveData<T>::makePackedPromo(Square origin, 
 							    				 Square target, 
 							    				 Piece::enumType promo_t) {
-	static_assert(_IS_SAME_TYPE(T, uint16_t));
+	static_assert(is_same<T, uint16_t>);
 	return Move16b(
 		  (static_cast<uint16_t>(promo_t) << 12)
 		| (static_cast<uint16_t>(target) << 6)

@@ -5,7 +5,6 @@
 #include "backend/Hash.hpp"
 
 _INTERNAL void setupInternals() {
-    ZobristHash::fillKeys();
-	SlidersMagics::initAttackTables<Piece::BISHOP>();
-	SlidersMagics::initAttackTables<Piece::ROOK>();
+	SlidersAttacks::initAttackTables<Piece::BISHOP>();
+	SlidersAttacks::initAttackTables<Piece::ROOK>();
 }

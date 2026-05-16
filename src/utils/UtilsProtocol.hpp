@@ -25,7 +25,8 @@ private:
 	void parseShowPositions(std::istringstream& strm);
 	void parseVerifySession(std::istringstream& strm);
 	void parseSPSA(std::istringstream& strm);
-
+	void parsePerft();
+	
 	TournamentCollector _collector;
 	SPSA_Tuning _tuner;
 };

@@ -32,8 +32,6 @@ void TunableParametersMap::createMapping() {
     _addr["NextDepthTimeRed"] = &NextDepthTimeRed;
     _addr["UnstableMatMargin"] = &UnstableMatMargin;
     _addr["UnstableMultMargin"] = &UnstableMultMargin;
-    _addr["MinTimeBranchFactor"] = &MinTimeBranchFactor;
-    _addr["MaxTimeBranchFactor"] = &MaxTimeBranchFactor;
     _addr["ContemptDiv"] = &ContemptDiv;
     _addr["ImprovingExtensionRate"] = &ImprovingExtensionRate;
     _addr["QuietNotPvNodeReduction"] = &QuietNotPvNodeReduction;

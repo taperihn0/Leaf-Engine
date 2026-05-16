@@ -14,7 +14,7 @@
 #error "No proper draw value handling"
 #endif
 
-static constexpr int16_t UndefMoveScore = std::numeric_limits<int16_t>::min();
+static constexpr int16_t UndefMoveScore = minof<int16_t>();
 
 _INLINE bool SearchLimits::isTimeLimit() {
 	return search_time;
@@ -444,8 +444,8 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
 			// avoid strange instabilities in shallow depths
 			ef_branch_factor = std::clamp(ef_branch_factor, 
-										  static_cast<double>(MinTimeBranchFactor), 
-										  static_cast<double>(MaxTimeBranchFactor)); 
+										  MinTimeBranchFactor, 
+										  MaxTimeBranchFactor); 
 
 			const time_ms_t approx_search_time = static_cast<time_ms_t>(search_results.time_per_depth[d - 1] * 
 																		ef_branch_factor);
@@ -1880,7 +1880,7 @@ bool Search::isInsufficientMaterial(const Position& pos) {
 		// check colors matching
 
 		const BitBoard bishops = pos.getBishops();
-		const BitBoard white_square_bishops = bishops & BitBoard::White_Squares;
+		const BitBoard white_square_bishops = bishops & BitBoard::WhiteSquares;
 
 		return white_square_bishops == bishops or white_square_bishops.isEmpty();
 	}

@@ -83,7 +83,7 @@
 #endif
 
 #if defined(__GNUC__) and !defined(DEBUG)
-// Loading embedded net do not work for debug builds - why?
+// Loading embedded net do not work for debug builds
 #define _USE_EMBEDDED_NEURAL_NET
 #endif
 
@@ -111,14 +111,12 @@ static constexpr std::string_view Author = "Szymon Belz";
 #endif
 
 using uint = unsigned int;
-using byte = unsigned char;
+using byte = uint8_t;
 using ll   = long long;
 using ull  = unsigned long long;
 
 template <typename T1, typename T2>
-inline constexpr bool _isSameType() {
-	return std::is_same_v<T1, T2>;
-};
+constexpr bool is_same = std::is_same_v<T1, T2>;
 
 template <typename T>
 constexpr bool is_integral = std::is_integral_v<T>;
@@ -130,7 +128,7 @@ template <typename T>
 constexpr bool is_numeric = (is_real<T> or is_integral<T>);
 
 // keep this macro for compatibility with some blocks of code
-#define _IS_SAME_TYPE(t1, t2) _isSameType<t1, t2>()
+#define _IS_SAME_TYPE(t1, t2) (_isSameType<t1, t2>())
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
 	return static_cast<uint8_t>(a);
@@ -152,7 +150,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 	return mb_count * 1024 * 1024;
 }
 
-#define ASSERT(s, msg) (void)((s) or ::releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERT(s, msg) static_cast<void>((s) or ::releaseFailedAssertion(__FILE__, msg, __LINE__))
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
@@ -162,46 +160,44 @@ _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view te
 }
 
 static constexpr int MaxNodeMoves = 128;
-static constexpr int MaxDepth = 96,
-					 MaxSelDepth = 128,
-					 MaxGameMoves = 1024;
+static constexpr int MaxDepth 	  = 96;
+static constexpr int MaxSelDepth  = 128;
+static constexpr int MaxGameMoves = 1024;
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 _FORCEINLINE constexpr T sq(T x) {
-	static_assert(std::is_integral_v<T>);
 	return x * x;
 }
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _FORCEINLINE constexpr T abs(T x) {
-	static_assert(is_numeric<T>);
 	return x < 0 ? -x : x;
 }
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<
+						std::is_integral_v<T> and std::is_unsigned_v<T>
+					  >
+>
 _INLINE constexpr bool isPow2(T x) {
-	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
 	return (x & (x - 1)) == 0;
 }
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 _INLINE constexpr T round(T x) {
-	static_assert(std::is_arithmetic_v<T>);
-	
-	if (x >= 0.l)
-        return static_cast<T>(static_cast<int>(x + 0.5f));
-    return static_cast<T>(static_cast<int>(x - 0.5f));
+	if (x >= 0.l) return static_cast<T>(static_cast<ull>(x + 0.5f));
+    return static_cast<T>(static_cast<ull>(x - 0.5f));
 }
 
-template <typename T>
+template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 _INLINE constexpr int roundi(T x) {
-	static_assert(std::is_arithmetic_v<T>);
 	return static_cast<int>(round<T>(x));
 }
 
-template <typename T>
-_INLINE constexpr uint8_t get2pow(T x) {
-	static_assert(std::is_integral_v<T> and std::is_unsigned_v<T>);
+template <typename T, typename = std::enable_if_t<
+						std::is_integral_v<T> and std::is_unsigned_v<T>
+					  >
+>
+_INLINE constexpr uint8_t getExp2(T x) {
 	assert(x != 0);
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
@@ -213,19 +209,17 @@ _INLINE constexpr uint8_t get2pow(T x) {
 #endif
 }
 
-_INLINE bool isValidNumber(const std::string& str) {
-	return str.find_first_not_of("1234567890", 0) == std::string::npos;
+template <typename T, typename = std::enable_if_t<is_numeric<T>>>
+_INLINE constexpr T minof() {
+	return std::numeric_limits<T>::min();
 }
 
-_INLINE bool isSigned(const std::string& str) {
-	return !str.empty() and str[0] == '-';
+template <typename T, typename = std::enable_if_t<is_numeric<T>>>
+_INLINE constexpr T maxof() {
+	return std::numeric_limits<T>::max();
 }
 
-_INLINE bool isValidUnsigned(const std::string& str) {
-    return !isSigned(str) and isValidNumber(str);
-}
-
-// Target cacheline size is fixed
+// Target cacheline size is fixed and that is 64 bytes
 #define CACHELINE_SIZE 64
 
 static int GlobFixedSeed = 1;
@@ -237,10 +231,19 @@ static thread_local uint GlobRandomSeed = GlobFixedSeed;
 static thread_local uint GlobRandomSeed = std::random_device{}();
 #endif
 
-template <typename Integer = int>
-_INLINE Integer random(Integer l, Integer r) {
+template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
+_INLINE T random(T l, T r) {
 	static thread_local std::mt19937 mersenne(GlobRandomSeed);
-    std::uniform_int_distribution<Integer> dist(l, r);
+    std::uniform_int_distribution<T> dist(l, r);
     return dist(mersenne);
 }
 
+template <typename T, size_t N, size_t M>
+using array2d = std::array<
+					std::array<T, M>, 
+				N>;
+
+template <typename T, size_t N, size_t M, size_t S>
+using array3d = std::array<
+					array2d<T, M, S>, 
+				N>;

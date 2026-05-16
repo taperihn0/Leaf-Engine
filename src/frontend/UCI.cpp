@@ -12,8 +12,19 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
-
 #include <sstream>
+
+_INLINE bool isValidNumber(const std::string& str) {
+	return str.find_first_not_of("1234567890", 0) == std::string::npos;
+}
+
+_INLINE bool isSigned(const std::string& str) {
+	return !str.empty() and str[0] == '-';
+}
+
+_INLINE bool isValidUnsigned(const std::string& str) {
+    return !isSigned(str) and isValidNumber(str);
+}
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
 		// --- Regular parameters ---

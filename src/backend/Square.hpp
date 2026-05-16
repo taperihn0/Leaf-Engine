@@ -3,10 +3,6 @@
 #include "Common.hpp"
 #include "Color.hpp"
 
-enum class File : uint8_t {
-	A = 0, B, C, D, E, F, G, H
-};
-
 class Square {
 public:
 	using uint_t = uint8_t;
@@ -24,11 +20,25 @@ public:
 	};
 
 	enum enumFile : uint_t {
-		a = 0, b, c, d, e, f, g, h
+		FILE_A = 0, 
+		FILE_B, 
+		FILE_C, 
+		FILE_D, 
+		FILE_E, 
+		FILE_F, 
+		FILE_G, 
+		FILE_H
 	};
 	
 	enum enumRank : uint_t {
-		r1 = 0, r2, r3, r4, r5, r6, r7, r8s
+		RANK_1 = 0, 
+		RANK_2, 
+		RANK_3, 
+		RANK_4, 
+		RANK_5, 
+		RANK_6, 
+		RANK_7, 
+		RANK_8
 	};
 
 	Square() = default;

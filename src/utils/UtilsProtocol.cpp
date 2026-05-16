@@ -114,7 +114,7 @@ bool verifyTrainData(std::ifstream& input, size_t& verified_cnt) {
     }
 
     if (streamBytesLeft(input) > 0) {
-        std::cout << "Verification failed, failed to read entire file" << std::endl;
+        std::cout << "Verification failed, cannot read entire file" << std::endl;
         return false;
     }
     
@@ -202,6 +202,50 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
     _tuner.start(thread_count, spsa_log_path);
 }
 
+void UtilsProtocol::parsePerft() {
+    bool status = true;
+
+    for (const auto& test : PerftStandard) {
+        std::istringstream ss(static_cast<std::string>(test));
+        
+        std::string fen;
+        std::string token;
+
+        for (int i = 0; i < 6; i++) {
+		    ss >> std::skipws >> token;
+		    fen += ' ' + token;
+        }
+
+		Position pos(fen);
+
+        while (ss >> std::skipws >> token) {
+            const auto depth = std::stoi(token.substr(1));
+            
+            if (depth > 5) break;
+
+            ss >> std::skipws >> token;
+            const auto nodes = std::stoull(token);
+
+            const auto perft_nodes = pos.perft(depth);
+
+            if (nodes != perft_nodes) {
+                std::cout << "Invalid node count for fen: " << fen << std::endl;
+                std::cout << "Got " << perft_nodes << ", but target is " << nodes << ' '
+                          << "at depth " << depth << std::endl;
+                status = false;
+                break;
+            }
+
+            std::cout << std::flush;
+        }
+    }
+
+    if (status)
+        std::cout << "Perft suit test passed" << std::endl;
+    else
+        std::cout << "Perft suit test failed" << std::endl;
+}
+
 void UtilsProtocol::loop(int argc, const char* argv[]) {
 	std::ios_base::sync_with_stdio(false);
 
@@ -243,6 +287,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 		else if (token == "test_see")		       seeTests();
 		else if (token == "test_pack_on")          parsePackedFile(strm);
 		else if (token == "test_extpack_on")       parseExtPackedFile(strm);
+        else if (token == "test_perft")            parsePerft();
 		else if (token == "self_play")		       parseSelfPlay(_collector, strm);
 		else if (token == "load_openings")         GlobOpeningGenerator.load();
 		else if (token == "view_positions")        parseShowPositions(strm);

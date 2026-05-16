@@ -17,7 +17,7 @@ TranspositionTable::TranspositionTable(size_t mb_size) {
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
 	_buckets_cnt = mb_size / sizeof(TTBucket);
-	_buckets_pow_2 = get2pow(_buckets_cnt);
+	_buckets_pow_2 = getExp2(_buckets_cnt);
 	clear();
 }
 
@@ -40,7 +40,7 @@ void TranspositionTable::resize(size_t size_mb) {
 	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(size_mb, sizeof(TTBucket)));
 	ASSERT(_mem != nullptr, "Failed to allocate memory");
 	_buckets_cnt = size_mb / sizeof(TTBucket);
-	_buckets_pow_2 = get2pow(_buckets_cnt);
+	_buckets_pow_2 = getExp2(_buckets_cnt);
 	_generation = 0;
 	_hits = 0;
 }
@@ -59,13 +59,13 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 	_declUnused(results);
 	_declUnused(node_ply); // unused for now
 
-	assert(get2pow(_buckets_cnt) == _buckets_pow_2);
+	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
 	TTBucket* bucket = _mem + (node_key64 & (_buckets_cnt - 1));
 
 	const uint32_t keyhi = static_cast<uint32_t>((node_key64 >> _buckets_pow_2) & 0x3FFFF);
 
-	int16_t min_relevance = std::numeric_limits<int16_t>::max();
+	int16_t min_relevance = maxof<int16_t>();
 	size_t ind = 0;
 
 	for (size_t i = 0; i < TTBucket::InternalEntriesCnt; i++) {
@@ -113,7 +113,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 							   Score alpha, Score beta,
 							   uint8_t node_depth) const 
 {
-	assert(get2pow(_buckets_cnt) == _buckets_pow_2);
+	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
 	const TTBucket* bucket = _mem + (key64 & (_buckets_cnt - 1));
 
@@ -164,7 +164,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 }
 
 void TranspositionTable::prefetchBucket(uint64_t key64) const {
-	assert(get2pow(_buckets_cnt) == _buckets_pow_2);
+	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 	prefetch(reinterpret_cast<const void*>(_mem + (key64 & (_buckets_cnt - 1))));
 }
 

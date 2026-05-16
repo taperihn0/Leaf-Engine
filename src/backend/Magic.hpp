@@ -4,52 +4,63 @@
 #include "BitBoard.hpp"
 #include "Piece.hpp"
 
-// class containing magic bitboards for bishops and rooks,
-// encapsulating hashing function for sliding pieces.
-// Resources need to be initializated by calling initAttackTables function.
-class SlidersMagics {
+/* Class containing magic bitboards for bishops and rooks,
+*  encapsulating hashing function for sliding pieces.
+*  Resources need to be initializated by calling initAttackTables function.
+*/
+class SlidersAttacks {
 public:
-    static _INLINE constexpr int mIndexHash(BitBoard magic_bb, BitBoard relv_occ, int relv_bits) {
-        return static_cast<int>((relv_occ * magic_bb) >> (64 - relv_bits));
-    }
+	SlidersAttacks() = delete;
 
-    static _INLINE BitBoard bishopAttacks(Square sq, BitBoard occ) {
-        return _mbishop_att[sq][mIndexHash(_magics_bishop[sq], _m_occupancy_bishop[sq] & occ, _m_bits_bishop[sq])];
-    }
+	static _FORCEINLINE constexpr uint16_t mIndexHash(BitBoard magic_bb, 
+													  BitBoard relv_occ, 
+													  uint8_t relv_bits) 
+	{
+		return static_cast<int>((relv_occ * magic_bb) >> (64 - relv_bits));
+	}
 
-    static _INLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
-        return _mrook_att[sq][mIndexHash(_magics_rook[sq], _m_occupancy_rook[sq] & occ, _m_bits_rook[sq])];
-    }
+	static _FORCEINLINE BitBoard bishopAttacks(Square sq, BitBoard occ) {
+		return _mbishop_att[static_cast<int8_t>(sq)][mIndexHash(
+														_magics_bishop[sq], 
+														_m_occupancy_bishop[sq] & occ, 
+														_m_bits_bishop[sq])];
+	}
 
-    static _INLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
-        return rookAttacks(sq, occ) | bishopAttacks(sq, occ);
-    }
+	static _FORCEINLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
+		return _mrook_att[static_cast<int8_t>(sq)][mIndexHash(
+													_magics_rook[sq], 
+													_m_occupancy_rook[sq] & occ, 
+													_m_bits_rook[sq])];
+	}
 
-    // initialize look-up tables for bishop and rook
-    template <Piece::enumType Piece>
-    static void initAttackTables();
+	static _FORCEINLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
+		return rookAttacks(sq, occ) | bishopAttacks(sq, occ);
+	}
+
+	// initialize look-up tables for bishop and rook
+	template <Piece::enumType Piece>
+	static void initAttackTables();
 private:
-    static BitBoard indexToSubset(uint64_t i, BitBoard relv_occ, int relv_bits);
+	static BitBoard indexToSubset(uint64_t i, BitBoard relv_occ, uint8_t relv_bits);
+	static uint64_t generateBishopAttacks(Square sq, BitBoard relv_occ);
+	static uint64_t generateRookAttacks(Square sq, BitBoard relv_occ);
 
-    static uint64_t generateBishopAttacks(Square sq, BitBoard relv_occ);
-    static uint64_t generateRookAttacks(Square sq, BitBoard relv_occ);
+	// magic bitboards for bishop and rook
+	static const std::array<uint64_t, 64> _magics_bishop, 
+										  _magics_rook;
 
-    // magic bitboards for bishop and rook
-	static std::array<uint64_t, 64> _magics_bishop, 
-                                    _magics_rook;
+	// look-up tables of rook and bishop attacks in Plain Magic Bitboards implementation
+	// 4096 = 2 ^ 12 - maximum number of occupancy subsets for rook (rook at [a1, h8])
+	// 512 = 2 ^ 9 - maximum number of occupancy subsets for bishop (bishop at board center [d4, d5, e4, e5])
+	static array2d<uint64_t, 64, 4096> _mrook_att;
+	static array2d<uint64_t, 64, 512>  _mbishop_att;
 
-    // look-up tables of rook and bishop attacks in Plain Magic Bitboards implementation
-    // 4096 = 2 ^ 12 - maximum number of occupancy subsets for rook (rook at [a1, h8])
-    // 512 = 2 ^ 9 - maximum number of occupancy subsets for bishop (bishop at board center [d4, d5, e4, e5])
-    static std::array<std::array<uint64_t, 4096>, 64> _mrook_att;
-    static std::array<std::array<uint64_t, 512>, 64>  _mbishop_att;
+	// relevant occupancy pre-computed masks
+	static const std::array<uint64_t, 64> _m_occupancy_bishop, 
+										  _m_occupancy_rook;
 
-    // relevant occupancy pre-computed masks
-    static std::array<uint64_t, 64> _m_occupancy_bishop, 
-                                    _m_occupancy_rook;
-
-    // relevant occupancy bits count for bishop and rook - later used in hash function
-    // while shifting product number
-    static std::array<int, 64> _m_bits_bishop, 
-                               _m_bits_rook;
+	// relevant occupancy bits count for bishop and rook - later used in hash function
+	// while shifting product number
+	static const std::array<uint8_t, 64> _m_bits_bishop, 
+								   		 _m_bits_rook;
 };

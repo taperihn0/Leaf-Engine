@@ -4,48 +4,51 @@
 #include "Square.hpp"
 #include "Color.hpp"
 
-// Distict type to wrap raw bitboard type
 class BitBoard {
 public:
-	BitBoard() = default;
-	constexpr BitBoard(const BitBoard&) = default;
-	constexpr BitBoard(BitBoard&&) = default;
+	_INLINE BitBoard() = default;
+	_INLINE constexpr BitBoard(const BitBoard&) = default;
+	_INLINE constexpr BitBoard(BitBoard&&) = default;
 
-	_INLINE constexpr BitBoard(uint64_t raw_init)
-		: _board(raw_init) {}
+	_INLINE constexpr BitBoard& operator=(const BitBoard&) = default;
+	_INLINE constexpr BitBoard& operator=(BitBoard&&) = default;
 
-	_INLINE constexpr BitBoard(Square sq)
+	_INLINE constexpr BitBoard(uint64_t b)
+		: _board(b) {}
+
+	_INLINE explicit constexpr BitBoard(Square sq)
 		: _board(1_ui64 << sq) {}
 
-	_INLINE constexpr BitBoard(Square::enumSquare sq)
+	_INLINE explicit constexpr BitBoard(Square::enumSquare sq)
 		: _board(1_ui64 << sq) {}
 
 	_INLINE constexpr operator uint64_t() const {
 		return _board;
 	}
 
-	_INLINE constexpr BitBoard operator=(const BitBoard& cpy) {
-		return _board = cpy._board;
+	_INLINE constexpr BitBoard& operator|=(BitBoard bb) {
+		_board |= bb._board;
+		return *this;
 	}
 
-	_INLINE constexpr BitBoard operator|=(BitBoard bb) {
-		return _board |= bb._board;
+	_INLINE constexpr BitBoard& operator&=(BitBoard bb) {
+		_board &= bb._board;
+		return *this;
 	}
 
-	_INLINE constexpr BitBoard operator&=(BitBoard bb) {
-		return _board &= bb._board;
+	_INLINE constexpr BitBoard& operator^=(BitBoard bb) {
+		_board ^= bb._board;
+		return *this;
 	}
 
-	_INLINE constexpr BitBoard operator^=(BitBoard bb) {
-		return _board ^= bb._board;
+	_INLINE constexpr BitBoard& operator>>=(int shift) {
+		_board >>= shift;
+		return *this;
 	}
 
-	_INLINE constexpr BitBoard operator>>=(int shift) {
-		return _board >>= shift;
-	}
-
-	_INLINE constexpr BitBoard operator<<=(int shift) {
-		return _board <<= shift;
+	_INLINE constexpr BitBoard& operator<<=(int shift) {
+		_board <<= shift;
+		return *this;
 	}
 
 	_INLINE constexpr BitBoard operator|(BitBoard bb) const {
@@ -85,7 +88,7 @@ public:
 	}
 
 	_INLINE constexpr BitBoard operator-() const {
-		return static_cast<uint64_t>(-_board);
+		return static_cast<BitBoard>(-_board);
 	}
 
 	template <int Shift>
@@ -102,17 +105,20 @@ public:
 	template <int Shift>
 	_INLINE BitBoard pawnsAttack() const {
 		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
-		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? Not_H_File : Not_A_File;
+		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? NotHFile 
+																	   : NotAFile;
 		return genShift<Shift>() & ExclFile;
 	}
 
 	void print(std::ostream& os = std::cout) const;
 
-	void set(uint64_t bb);
-
 	int popCount() const;
 	int bitScanForward() const;
 	int bitScanReverse() const;
+
+	_INLINE void set(uint64_t bb) {
+		_board = bb;
+	}
 
 	// bit scan forward but with LS1B reset
 	_INLINE int dropForward() {
@@ -156,12 +162,12 @@ public:
 
 	template <int Rank>
 	static _INLINE constexpr BitBoard rank() {
-		static_assert(1 <= Rank and Rank <= 8, "Invalid rank");
+		static_assert(1 <= Rank and Rank <= 8);
 		return BitBoard(0xff_ui64 << ((Rank - 1) * 8));
 	}
 
 	static _INLINE constexpr BitBoard rank(int rank) {
-		ASSERT(1 <= rank and rank <= 8, "Invalid rank");
+		assert(1 <= rank and rank <= 8);
 		return BitBoard(0xff_ui64 << ((rank - 1) * 8));
 	}
 
@@ -169,14 +175,14 @@ public:
 		return side == WHITE ? rank<8>() : rank<1>();
 	}
 
-	template <File TFile>
+	template <Square::enumFile File>
 	static _INLINE constexpr BitBoard file() {
-		return BitBoard(A_File << static_cast<int>(TFile));
+		return BitBoard(AFile << static_cast<int>(File));
 	}
 
 	static _INLINE constexpr BitBoard file(int file) {
 		ASSERT(1 <= file and file <= 8, "Invalid file");
-		return BitBoard(A_File << file);
+		return BitBoard(AFile << file);
 	}
 
 	_INLINE constexpr bool isEmpty() const {
@@ -187,45 +193,122 @@ public:
 		return !isEmpty() and isPow2(_board);
 	}
 
-	// crucial uint64_t constants
-	static constexpr uint64_t Universe      = 0xffffffffffffffff_ui64,
-							  A_File	    = 0x0101010101010101_ui64,
-							  B_File	    = 0x0202020202020202_ui64,
-							  G_File	    = 0x4040404040404040_ui64,
-							  H_File	    = 0x8080808080808080_ui64,
-							  White_Squares = 0x55aa55aa55aa55aa_ui64,
-							  Black_Squares = ~White_Squares,
-							  Not_A_File    = ~A_File,
-						      Not_B_File    = ~B_File,
-						      Not_G_File    = ~G_File,
-						      Not_H_File    = ~H_File,
-						      Not_AB_File   = Not_A_File & Not_B_File,
-						      Not_GH_File   = Not_G_File & Not_H_File;
+	static constexpr uint64_t Universe     = 0xffffffffffffffff_ui64;
+	static constexpr uint64_t AFile	       = 0x0101010101010101_ui64;
+	static constexpr uint64_t BFile	       = 0x0202020202020202_ui64;
+	static constexpr uint64_t GFile	       = 0x4040404040404040_ui64;
+	static constexpr uint64_t HFile	   	   = 0x8080808080808080_ui64;
+	static constexpr uint64_t WhiteSquares = 0x55aa55aa55aa55aa_ui64;
+	static constexpr uint64_t BlackSquares = ~WhiteSquares;
+	static constexpr uint64_t NotAFile     = ~AFile;
+	static constexpr uint64_t NotBFile     = ~BFile;
+	static constexpr uint64_t NotGFile     = ~GFile;
+	static constexpr uint64_t NotHFile     = ~HFile;
+	static constexpr uint64_t NotABFiles   = NotAFile & NotBFile;
+	static constexpr uint64_t NotGHFiles   = NotGFile & NotHFile;
 private:
 	uint64_t _board;
 };
 
 static_assert(sizeof(BitBoard) == 8);
 
-// Rectangular lookup for in-between routines
-struct RectangularTable {
-	using tab64x64_t = std::array<std::array<BitBoard, 64>, 64>;
+_INLINE int BitBoard::popCount() const {
+#if defined(__INTEL_COMPILER) or defined(_MSC_VER)
+	return static_cast<int>(_mm_popcnt_u64(_board));
+#elif defined(__GNUC__)
+	return __builtin_popcountll(_board);
+#else
+	uint64_t bb = _board;
+	int c;
+	for (c = 0; bb; bb &= bb - 1, c++);
+	return c;
+#endif
+}
 
-	RectangularTable() { init(); }
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
+_INLINE int BitBoard::bitScanForward() const {
+	assert(_board != 0_ui64);
+	unsigned long s;
+	_BitScanForward64(&s, _board);
+	return static_cast<int>(s);
+}
 
-	BitBoard inBetweenOnFly(Square org, Square dst);
-	void init();
+_INLINE int BitBoard::bitScanReverse() const {
+	assert(_board != 0_ui64);
+	unsigned long s;
+	_BitScanReverse64(&s, _board);
+	return static_cast<int>(s);
+}
 
-	tab64x64_t t64;
+#elif defined(__GNUC__)
+_INLINE int BitBoard::bitScanForward() const {
+	assert(_board != 0_ui64);
+	return __builtin_ctzll(_board);
+}
+
+_INLINE int BitBoard::bitScanReverse() const {
+	assert(_board != 0_ui64);
+	return __builtin_clzll(_board);
+}
+#else
+
+// credits to:
+//  https://www.chessprogramming.org/BitScan
+
+static constexpr int Index64[64] = {
+	0, 47,  1, 56, 48, 27,  2, 60,
+   57, 49, 41, 37, 28, 16,  3, 61,
+   54, 58, 35, 52, 50, 42, 21, 44,
+   38, 32, 29, 23, 17, 11,  4, 62,
+   46, 55, 26, 59, 40, 36, 15, 53,
+   34, 51, 20, 43, 31, 22, 10, 45,
+   25, 39, 14, 33, 19, 30,  9, 24,
+   13, 18,  8, 12,  7,  6,  5, 63
 };
 
-inline const RectangularTable rectangular;
+_INLINE int BitBoard::bitScanForward() const {
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
+	assert(_board != 0);
+	return Index64[((_board ^ (_board - 1)) * debruijn64) >> 58];
+}
 
-// General setwise operations on BitBoard wrapper class *
+_INLINE int BitBoard::bitScanReverse() const {
+	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
+	uint64_t bb = _board;
+	assert(_board != 0_ui64);
+	bb |= bb >> 1;
+	bb |= bb >> 2;
+	bb |= bb >> 4;
+	bb |= bb >> 8;
+	bb |= bb >> 16;
+	bb |= bb >> 32;
+	return Index64[(bb * debruijn64) >> 58];
+}
+#endif
+
+/* Rectangular lookup for in-between routines
+*/
+class RectangularTable {
+public:
+	RectangularTable(const RectangularTable&) = delete;
+	RectangularTable(RectangularTable&&) = delete;
+
+	RectangularTable& operator=(const RectangularTable&) = delete;
+	RectangularTable& operator=(RectangularTable&&) = delete;
+
+	static RectangularTable& get();
+	static BitBoard inBetweenOnFly(Square org, Square dst);
+
+	std::array<std::array<BitBoard, 64>, 64> t64;
+private:
+	RectangularTable();
+};
+
+/* General setwise operations on BitBoard wrapper class - 
+*  one step only and shifting routines
+*/
 
 namespace {
-
-// one step only and shifting routines *
 
 _INLINE BitBoard nortOne(BitBoard bb) {
 	return bb << 8;
@@ -236,70 +319,146 @@ _INLINE BitBoard soutOne(BitBoard bb) {
 }
 
 _INLINE BitBoard westOne(BitBoard bb) {
-	return (bb >> 1) & BitBoard::Not_H_File;
+	return (bb >> 1) & BitBoard::NotHFile;
 }
 
 _INLINE BitBoard eastOne(BitBoard bb) {
-	return (bb << 1) & BitBoard::Not_A_File;
+	return (bb << 1) & BitBoard::NotAFile;
 }
 
 _INLINE BitBoard noEaOne(BitBoard bb) {
-	return (bb << 9) & BitBoard::Not_A_File;
+	return (bb << 9) & BitBoard::NotAFile;
 }
 
 _INLINE BitBoard soEaOne(BitBoard bb) {
-	return (bb >> 7) & BitBoard::Not_A_File;
+	return (bb >> 7) & BitBoard::NotAFile;
 }
 
 _INLINE BitBoard soWeOne(BitBoard bb) {
-	return (bb >> 9) & BitBoard::Not_H_File;
+	return (bb >> 9) & BitBoard::NotHFile;
 }
 
 _INLINE BitBoard noWeOne(BitBoard bb) {
-	return (bb << 7) & BitBoard::Not_H_File;
+	return (bb << 7) & BitBoard::NotHFile;
 }
 
 _INLINE BitBoard noNoEa(BitBoard bb) {
-	return (bb << 17) & BitBoard::Not_A_File;
+	return (bb << 17) & BitBoard::NotAFile;
 }
 
 _INLINE BitBoard noEaEa(BitBoard bb) {
-	return (bb << 10) & BitBoard::Not_AB_File;
+	return (bb << 10) & BitBoard::NotABFiles;
 }
 
 _INLINE BitBoard soEaEa(BitBoard bb) {
-	return (bb >> 6) & BitBoard::Not_AB_File;
+	return (bb >> 6) & BitBoard::NotABFiles;
 }
 
 _INLINE BitBoard soSoEa(BitBoard bb) {
-	return (bb >> 15) & BitBoard::Not_A_File;
+	return (bb >> 15) & BitBoard::NotAFile;
 }
 
 _INLINE BitBoard soSoWe(BitBoard bb) {
-	return (bb >> 17) & BitBoard::Not_H_File;
+	return (bb >> 17) & BitBoard::NotHFile;
 }
 
 _INLINE BitBoard soWeWe(BitBoard bb) {
-	return (bb >> 10) & BitBoard::Not_GH_File;
+	return (bb >> 10) & BitBoard::NotGHFiles;
 }
 
 _INLINE BitBoard noWeWe(BitBoard bb) {
-	return (bb << 6) & BitBoard::Not_GH_File;
+	return (bb << 6) & BitBoard::NotGHFiles;
 }
 
 _INLINE BitBoard noNoWe(BitBoard bb) {
-	return (bb << 15) & BitBoard::Not_H_File;
+	return (bb << 15) & BitBoard::NotHFile;
+}
+
+BitBoard nortRay(Square sq) {
+	return 0x0101010101010100_ui64 << sq;
+}
+
+BitBoard soutRay(Square sq) {
+	return 0x0080808080808080_ui64 >> (sq ^ 63);
+}
+
+BitBoard westRay(Square sq) {
+	return (1_ui64 << sq) - (1_ui64 << (sq & 56));
+}
+
+BitBoard eastRay(Square sq) {
+	return 2 * ((1_ui64 << (sq | 7)) - (1_ui64 << sq));
+}
+
+BitBoard noEaRay(Square sq) {
+	static constexpr BitBoard NotAFile = BitBoard::NotAFile,
+							  NotABFile = NotAFile & (NotAFile << 9),
+							  NotABCDFile = NotABFile & (NotABFile << 18);
+
+	BitBoard bb(sq);
+	bb |= (bb << 9) & NotAFile;
+	bb |= (bb << 18) & NotABFile;
+	bb |= (bb << 36) & NotABCDFile;
+	return bb & ~BitBoard(sq);
+}
+
+BitBoard soEaRay(Square sq) {
+	static constexpr BitBoard NotAFile = BitBoard::NotAFile,
+							  NotABFile = NotAFile & (NotAFile >> 7),
+							  NotABCDFile = NotABFile & (NotABFile >> 14);
+
+	BitBoard bb(sq);
+	bb |= (bb >> 7) & NotAFile;
+	bb |= (bb >> 14) & NotABFile;
+	bb |= (bb >> 28) & NotABCDFile;
+	return bb ^ BitBoard(sq);
+}
+
+BitBoard soWeRay(Square sq) {
+	static constexpr BitBoard NotHFile = BitBoard::NotHFile,
+							  NotGHFile = NotHFile & (NotHFile >> 9),
+							  NotEFGHFile = NotGHFile & (NotGHFile >> 18);
+
+	BitBoard bb(sq);
+	bb |= (bb >> 9) & NotHFile;
+	bb |= (bb >> 18) & NotGHFile;
+	bb |= (bb >> 36) & NotEFGHFile;
+	return bb ^ BitBoard(sq);
+}
+
+BitBoard noWeRay(Square sq) {
+	static constexpr BitBoard NotHFile = BitBoard::NotHFile,
+							  NotGHFile = NotHFile & (NotHFile << 7),
+							  NotEFGHFile = NotGHFile & (NotGHFile << 14);
+
+	BitBoard bb(sq);
+	bb |= (bb << 7) & NotHFile;
+	bb |= (bb << 14) & NotGHFile;
+	bb |= (bb << 28) & NotEFGHFile;
+	return bb ^ BitBoard(sq);
+}
+
+BitBoard rayAttacksBishop(Square sq) {
+	return noEaRay(sq) | soEaRay(sq) | soWeRay(sq) | noWeRay(sq);
+}
+
+BitBoard rayAttacksRook(Square sq) {
+	return nortRay(sq) | soutRay(sq) | westRay(sq) | eastRay(sq);
+}
+
+BitBoard rayAttacksQueen(Square sq) {
+	return rayAttacksBishop(sq) | rayAttacksRook(sq);
 }
 
 _FORCEINLINE BitBoard inBetween(Square org, Square dst) {
 	assert(org.isValid() and dst.isValid());
-	return rectangular.t64[org][dst];
+	return RectangularTable::get().t64[org][dst];
 }
 
 // InBetween but without 'org' and 'dst' squares.
 _FORCEINLINE BitBoard onlyBetween(Square org, Square dst) {
 	assert(org.isValid() and dst.isValid());
-	return rectangular.t64[org][dst] & ~(BitBoard(org) | BitBoard(dst));
+	return RectangularTable::get().t64[org][dst] & ~(BitBoard(org) | BitBoard(dst));
 }
 
 } // namespace

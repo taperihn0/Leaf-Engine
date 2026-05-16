@@ -66,7 +66,7 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 
     // Assert that we won't overflow in int16 range.
 #if defined(_NN_VERIFY_SCRELU_OVERFLOW)
-    static constexpr int Int16Max = std::numeric_limits<int16_t>::max();
+    static constexpr int Int16Max = maxof<int16_t>();
     static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {

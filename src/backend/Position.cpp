@@ -146,7 +146,7 @@ bool Position::isValid() const {
 }
 
 Position::enumStatusFlag Position::getErrFlag() const {
-    if (_zhash != ZobristHash::generateOnFly(*this))
+    if (_zhash != ZHash::generateOnFly(*this))
         return POSITION_HASH_INVALID;
 
     else if (getBySide(WHITE) != getBySideOnFly(WHITE)
@@ -284,7 +284,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
 			_piece_bb[!_turn][Piece::PAWN].popBit(cap_sq);
 			_occupied[!_turn].popBit(cap_sq);
-			_zhash ^= ZobristHash::piece_keys[!_turn][Piece::PAWN][cap_sq];
+			_zhash ^= ZHashMasks->piece_keys[!_turn][Piece::PAWN][cap_sq];
 
 			accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(cap_sq, Piece::PAWN, !_turn);
 		}
@@ -296,7 +296,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
 			_piece_bb[!_turn][captured].popBit(dst);
 			_occupied[!_turn].popBit(dst);
-			_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
+			_zhash ^= ZHashMasks->piece_keys[!_turn][captured][dst];
 
 			accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst, captured, !_turn);
 
@@ -304,11 +304,11 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
 
 			if (_castling_rights[!_turn].isShortPossible() and dst == RightCornerOpponent) {
-				_zhash ^= ZobristHash::short_castle_keys[!_turn];
+				_zhash ^= ZHashMasks->short_castle_keys[!_turn];
 				_castling_rights[!_turn].setKingSide(false);
 			}
 			else if (_castling_rights[!_turn].isLongPossible() and dst == LeftCornerOpponent) {
-				_zhash ^= ZobristHash::long_castle_keys[!_turn];
+				_zhash ^= ZHashMasks->long_castle_keys[!_turn];
 				_castling_rights[!_turn].setQueenSide(false);
 			}
 		}
@@ -322,8 +322,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 		_piece_bb[_turn][promo_piece_t].setBit(dst);
 		_occupied[_turn].moveBit(org, dst);
 
-		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
-		_zhash ^= ZobristHash::piece_keys[_turn][promo_piece_t][dst];
+		_zhash ^= ZHashMasks->piece_keys[_turn][piece_t][org];
+		_zhash ^= ZHashMasks->piece_keys[_turn][promo_piece_t][dst];
 
 		accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _turn);
 		accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, promo_piece_t, _turn);
@@ -332,8 +332,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 		_piece_bb[_turn][piece_t].moveBit(org, dst);
 		_occupied[_turn].moveBit(org, dst);
 
-		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
-		_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
+		_zhash ^= ZHashMasks->piece_keys[_turn][piece_t][org];
+		_zhash ^= ZHashMasks->piece_keys[_turn][piece_t][dst];
 
 		accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _turn);
 		accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, piece_t, _turn);
@@ -344,8 +344,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst + 1, dst - 1);
 			_occupied[_turn].moveBit(dst + 1, dst - 1);
 
-			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
-			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 1];
+			_zhash ^= ZHashMasks->piece_keys[_turn][Piece::ROOK][dst + 1];
+			_zhash ^= ZHashMasks->piece_keys[_turn][Piece::ROOK][dst - 1];
 
 			accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst + 1, Piece::ROOK, _turn);
 			accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst - 1, Piece::ROOK, _turn);
@@ -354,8 +354,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 			_piece_bb[_turn][Piece::ROOK].moveBit(dst - 2, dst + 1);
 			_occupied[_turn].moveBit(dst - 2, dst + 1);
 
-			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst - 2];
-			_zhash ^= ZobristHash::piece_keys[_turn][Piece::ROOK][dst + 1];
+			_zhash ^= ZHashMasks->piece_keys[_turn][Piece::ROOK][dst - 2];
+			_zhash ^= ZHashMasks->piece_keys[_turn][Piece::ROOK][dst + 1];
 
 			accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst - 2, Piece::ROOK, _turn);
 			accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst + 1, Piece::ROOK, _turn);
@@ -376,27 +376,27 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 					 LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
 
 		if (_castling_rights[_turn].isShortPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))) {
-			_zhash ^= ZobristHash::short_castle_keys[_turn];
+			_zhash ^= ZHashMasks->short_castle_keys[_turn];
 			_castling_rights[_turn].setKingSide(false);
 		}
 
 		if (_castling_rights[_turn].isLongPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))) {
-			_zhash ^= ZobristHash::long_castle_keys[_turn];
+			_zhash ^= ZHashMasks->long_castle_keys[_turn];
 			_castling_rights[_turn].setQueenSide(false);
 		}
 
 		// reset old en passant square state
 		if (!_ep_square.isNull())
-			_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
+			_zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
 
 		_ep_square = Square::None;
 
 		if (double_pawn_push) {
 			_ep_square = dst - dir;
-			_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
+			_zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
 		}
 
-		_zhash ^= ZobristHash::black_key;
+		_zhash ^= ZHashMasks->black_key;
 
 		_halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
 	}
@@ -484,12 +484,12 @@ void Position::makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_ca
 	state.hash_key = _zhash;
 
 	_turn = !_turn;
-	_zhash ^= ZobristHash::black_key;
+	_zhash ^= ZHashMasks->black_key;
 
 	state.ep_sq = _ep_square;
 
 	if (!_ep_square.isNull())
-		_zhash ^= ZobristHash::ep_file_keys[_ep_square.getFile()];
+		_zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
 
 	_ep_square = Square::None;
 
@@ -514,14 +514,14 @@ uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
 						  dst = move.getTarget();
 	const Piece::enumType piece_t = move.getPiece();
 
-	uint64_t new_zhash = static_cast<uint64_t>(_zhash) ^ ZobristHash::black_key;
+	uint64_t new_zhash = static_cast<uint64_t>(_zhash) ^ ZHashMasks->black_key;
 
-	new_zhash ^= ZobristHash::piece_keys[_turn][piece_t][org];
-	new_zhash ^= ZobristHash::piece_keys[_turn][piece_t][dst];
+	new_zhash ^= ZHashMasks->piece_keys[_turn][piece_t][org];
+	new_zhash ^= ZHashMasks->piece_keys[_turn][piece_t][dst];
 
 	if (move.isCapture() and !move.isEnPassant()) {
 		const Piece::enumType captured = pieceOn(dst, !_turn);
-		new_zhash ^= ZobristHash::piece_keys[!_turn][captured][dst];
+		new_zhash ^= ZHashMasks->piece_keys[!_turn][captured][dst];
 	}
 
 	return new_zhash;
@@ -548,7 +548,7 @@ uint64_t Position::perft(unsigned depth) {
 		Move32b move = move_list.getMove(i);
 
 		if (make(move)) {
-			assert(_zhash == ZobristHash::generateOnFly(*this));
+			assert(_zhash == ZHashMasks->generateOnFly(*this));
 
 			child_nodes = perft<false>(depth - 1);
 			nodes += child_nodes;
@@ -628,7 +628,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 	else 
 		_fullmove_count = probe_clock;
 
-    _zhash = ZobristHash::generateOnFly(*this);
+    _zhash = ZHash::generateOnFly(*this);
 }
 
 _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {

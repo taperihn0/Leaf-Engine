@@ -4,192 +4,132 @@
 #include "BitBoard.hpp"
 #include "Magic.hpp"
 
-// static and pre-computed attack masks for double-sided pawns, knights as also kings.
+/* Static and pre-computed attack masks for double-sided pawns, knights as also kings.
+*/
 struct StaticAttackTables {
 	StaticAttackTables() 
-		: for_pawns{}
-		, for_knights{}
-		, for_kings{}
-	{ init(); }
+		: pawns_attacks_mask{}
+		, knights_attacks_mask{}
+		, kings_attacks_mask{} { 
+
+		for (enumColor col : { WHITE, BLACK }) {
+			for (int sq = 0; sq < 64; sq++) {
+				pawns_attacks_mask[col][sq] = col == WHITE 
+					? whitePawnAttacksOnFly(sq)
+					: blackPawnAttacksOnFly(sq);
+			}
+		}
+
+		for (int sq = 0; sq < 64; sq++) {
+			knights_attacks_mask[sq] = knightAttacksOnFly(sq);
+			kings_attacks_mask[sq] = kingAttacksOnFly(sq);
+		}
+	}
 
 	BitBoard whitePawnAttacksOnFly(Square sq) {
-		BitBoard bit(sq);
+		const BitBoard bit(sq);
 		return noEaOne(bit) | noWeOne(bit);
 	}
 
 	BitBoard blackPawnAttacksOnFly(Square sq) {
-		BitBoard bit(sq);
+		const BitBoard bit(sq);
 		return soEaOne(bit) | soWeOne(bit);
 	}
 
 	BitBoard knightAttacksOnFly(Square sq) {
-		BitBoard bit(sq);
-		return noNoEa(bit) | noEaEa(bit) | soEaEa(bit)
-			| soSoEa(bit) | soSoWe(bit) | soWeWe(bit)
-			| noWeWe(bit) | noNoWe(bit);
+		const BitBoard bit(sq);
+		return noNoEa(bit) | noEaEa(bit) 
+			 | soEaEa(bit) | soSoEa(bit) 
+			 | soSoWe(bit) | soWeWe(bit)
+			 | noWeWe(bit) | noNoWe(bit);
 	}
 
 	BitBoard kingAttacksOnFly(Square sq) {
-		BitBoard bit(sq);
-		return nortOne(bit) | noEaOne(bit) | eastOne(bit)
-			| soEaOne(bit) | soutOne(bit) | soWeOne(bit)
-			| westOne(bit) | noWeOne(bit);
+		const BitBoard bit(sq);
+		return nortOne(bit) | noEaOne(bit) 
+			 | eastOne(bit) | soEaOne(bit) 
+			 | soutOne(bit) | soWeOne(bit)
+			 | westOne(bit) | noWeOne(bit);
 	}
 
-	// generate attack masks for each square
-	void init() {
-		for (enumColor col : { WHITE, BLACK })
-			for (int sq = 0; sq < 64; sq++)
-				for_pawns[col][sq] = col == WHITE ? whitePawnAttacksOnFly(sq)
-												  : blackPawnAttacksOnFly(sq);
-
-		for (int sq = 0; sq < 64; sq++) {
-			for_knights[sq] = knightAttacksOnFly(sq);
-			for_kings[sq] = kingAttacksOnFly(sq);
-		}
-	}
-
-	std::array<std::array<BitBoard, 64>, 2> for_pawns;
-	std::array<BitBoard, 64> 				for_knights, 
-							 				for_kings;
+	array2d<BitBoard, 2, 64> pawns_attacks_mask;
+	std::array<BitBoard, 64> knights_attacks_mask, 
+							 kings_attacks_mask;
 };
 
-inline const StaticAttackTables attack_tables;
+inline const StaticAttackTables StaticAttacks;
 
 namespace {
 
-_INLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
+_FORCEINLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
 	assert(sq.isValid() and !sq.isNull());
-	return attack_tables.for_pawns[col_type][sq];
+	return StaticAttacks.pawns_attacks_mask[col_type][sq];
 }
 
-_INLINE BitBoard knightAttacks(Square sq) {
+_FORCEINLINE BitBoard knightAttacks(Square sq) {
 	assert(sq.isValid() and !sq.isNull());
-	return attack_tables.for_knights[sq];
+	return StaticAttacks.knights_attacks_mask[sq];
 }
 
-_INLINE BitBoard kingAttacks(Square sq) {
+_FORCEINLINE BitBoard kingAttacks(Square sq) {
 	assert(sq.isValid() and !sq.isNull());
-	return attack_tables.for_kings[sq];
+	return StaticAttacks.kings_attacks_mask[sq];
 }
 
-BitBoard nortRay(Square sq) {
-	return 0x0101010101010100_ui64 << sq;
-}
-
-BitBoard soutRay(Square sq) {
-	return 0x0080808080808080_ui64 >> (sq ^ 63);
-}
-
-BitBoard westRay(Square sq) {
-	return (1_ui64 << sq) - (1_ui64 << (sq & 56));
-}
-
-BitBoard eastRay(Square sq) {
-	return 2 * ((1_ui64 << (sq | 7)) - (1_ui64 << sq));
-}
-
-BitBoard noEaRay(Square sq) {
-	static constexpr BitBoard excl_a = BitBoard::Not_A_File,
-							  excl_ab = excl_a & (excl_a << 9),
-							  excl_abcd = excl_ab & (excl_ab << 18);
-
-	BitBoard bb(sq);
-	bb |= (bb << 9) & excl_a;
-	bb |= (bb << 18) & excl_ab;
-	bb |= (bb << 36) & excl_abcd;
-	return bb & ~BitBoard(sq);
-}
-
-BitBoard soEaRay(Square sq) {
-	static constexpr BitBoard excl_a = BitBoard::Not_A_File,
-							  excl_ab = excl_a & (excl_a >> 7),
-							  excl_abcd = excl_ab & (excl_ab >> 14);
-
-	BitBoard bb(sq);
-	bb |= (bb >> 7) & excl_a;
-	bb |= (bb >> 14) & excl_ab;
-	bb |= (bb >> 28) & excl_abcd;
-	return bb ^ BitBoard(sq);
-}
-
-BitBoard soWeRay(Square sq) {
-	static constexpr BitBoard excl_h = BitBoard::Not_H_File,
-							  excl_gh = excl_h & (excl_h >> 9),
-							  excl_efgh = excl_gh & (excl_gh >> 18);
-
-	BitBoard bb(sq);
-	bb |= (bb >> 9) & excl_h;
-	bb |= (bb >> 18) & excl_gh;
-	bb |= (bb >> 36) & excl_efgh;
-	return bb ^ BitBoard(sq);
-}
-
-BitBoard noWeRay(Square sq) {
-	static constexpr BitBoard excl_h = BitBoard::Not_H_File,
-							  excl_gh = excl_h & (excl_h << 7),
-							  excl_efgh = excl_gh & (excl_gh << 14);
-
-	BitBoard bb(sq);
-	bb |= (bb << 7) & excl_h;
-	bb |= (bb << 14) & excl_gh;
-	bb |= (bb << 28) & excl_efgh;
-	return bb ^ BitBoard(sq);
-}
-
-BitBoard rayAttacksBishop(Square sq) {
-	return noEaRay(sq) | soEaRay(sq) | soWeRay(sq) | noWeRay(sq);
-}
-
-BitBoard rayAttacksRook(Square sq) {
-	return nortRay(sq) | soutRay(sq) | westRay(sq) | eastRay(sq);
-}
-
-BitBoard rayAttacksQueen(Square sq) {
-	return rayAttacksBishop(sq) | rayAttacksRook(sq);
-}
-
-// generalized template
 template <Piece::enumType Piece>
 _INLINE BitBoard attacks(Square sq, BitBoard occ) {
-	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE, "Unsupported piecetype in attacks func template");
+	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE, 
+		"Unsupported piecetype in attacks func template");
 
 	if constexpr (Piece == Piece::KNIGHT)
 		return knightAttacks(sq);
 	else if constexpr (Piece == Piece::BISHOP)
-		return SlidersMagics::bishopAttacks(sq, occ);
+		return SlidersAttacks::bishopAttacks(sq, occ);
 	else if constexpr (Piece == Piece::ROOK)
-		return SlidersMagics::rookAttacks(sq, occ);
+		return SlidersAttacks::rookAttacks(sq, occ);
 	else if constexpr (Piece == Piece::QUEEN)
-		return SlidersMagics::queenAttacks(sq, occ);
+		return SlidersAttacks::queenAttacks(sq, occ);
 
 	return kingAttacks(sq);
 }
 
-_INLINE BitBoard attacks(Piece::enumType piece, Square sq, BitBoard occ) {
-	if (piece == Piece::KNIGHT)
+_INLINE BitBoard attacks(Piece::enumType piece, 
+						 Square sq, 
+						 BitBoard occ) 
+{
+	switch (piece) {
+	case Piece::KNIGHT:
 		return knightAttacks(sq);
-	else if (piece == Piece::BISHOP)
-		return SlidersMagics::bishopAttacks(sq, occ);
-	else if (piece == Piece::ROOK)
-		return SlidersMagics::rookAttacks(sq, occ);
-	else if (piece == Piece::QUEEN)
-		return SlidersMagics::queenAttacks(sq, occ);
+	case Piece::BISHOP:
+		return SlidersAttacks::bishopAttacks(sq, occ);
+	case Piece::ROOK:
+		return SlidersAttacks::rookAttacks(sq, occ);
+	case Piece::QUEEN:
+		return SlidersAttacks::queenAttacks(sq, occ);
+	default: break;
+	}
 
 	return kingAttacks(sq);
 }
 
-_INLINE BitBoard attacksIncludePawns(Piece::enumType piece, Square sq, BitBoard occ, enumColor col) {
-	if (piece == Piece::PAWN)
+_INLINE BitBoard attacksIncludePawns(Piece::enumType piece, 
+									 Square sq, 
+									 BitBoard occ, 
+									 enumColor col) 
+{
+	switch (piece) {
+	case Piece::PAWN:
 		return pawnAttacks(sq, col);
-	else if (piece == Piece::KNIGHT)
+	case Piece::KNIGHT:
 		return knightAttacks(sq);
-	else if (piece == Piece::BISHOP)
-		return SlidersMagics::bishopAttacks(sq, occ);
-	else if (piece == Piece::ROOK)
-		return SlidersMagics::rookAttacks(sq, occ);
-	else if (piece == Piece::QUEEN)
-		return SlidersMagics::queenAttacks(sq, occ);
+	case Piece::BISHOP:
+		return SlidersAttacks::bishopAttacks(sq, occ);
+	case Piece::ROOK:
+		return SlidersAttacks::rookAttacks(sq, occ);
+	case Piece::QUEEN:
+		return SlidersAttacks::queenAttacks(sq, occ);
+	default: break;
+	}
 
 	return kingAttacks(sq);
 }

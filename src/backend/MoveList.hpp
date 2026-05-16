@@ -19,8 +19,8 @@ public:
 
 	using entryscore_t = Entry::movescore_t;
 
-	static_assert(_IS_SAME_TYPE(entryscore_t, int32_t) or
-				  _IS_SAME_TYPE(entryscore_t, int16_t));
+	static_assert(is_same<entryscore_t, int32_t> or
+				  is_same<entryscore_t, int16_t>);
 
 	MoveList() = default;
 

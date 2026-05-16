@@ -202,8 +202,6 @@ inline _P_CONSTEXPR int NullDepth = roundi<float>(3.74987f);
 inline _P_CONSTEXPR int NextDepthTimeRed = roundi<float>(5.45503f);
 inline _P_CONSTEXPR int UnstableMatMargin = roundi<float>(48.8672f);
 inline _P_CONSTEXPR int UnstableMultMargin = roundi<float>(6.65979f);
-inline _P_CONSTEXPR int MinTimeBranchFactor = roundi<float>(1.04267f);
-inline _P_CONSTEXPR int MaxTimeBranchFactor = roundi<float>(4.98837f);
 inline _P_CONSTEXPR int ContemptDiv = roundi<float>(109.099f);
 inline _P_CONSTEXPR int ImprovingExtensionRate = roundi<float>(4.27361f);
 inline _P_CONSTEXPR int QuietNotPvNodeReduction = roundi<float>(15.9851f);
@@ -251,11 +249,13 @@ inline _P_CONSTEXPR int TablebaseScoreScale = roundi<float>(16.9363f);
 *  These are not tuned.
 */
 
-inline constexpr int  SingularExtensionDiv = 16;
-inline constexpr int  SingularBetaExtensionDiv = 32;
-inline constexpr int  CheckNodeCount = 2048;
-inline constexpr bool UseSyzygyTablebase = _USE_SYZYGY_TB;
-inline constexpr bool UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
+inline constexpr int    SingularExtensionDiv = 16;
+inline constexpr int    SingularBetaExtensionDiv = 32;
+inline constexpr int    CheckNodeCount = 2048;
+inline constexpr bool   UseSyzygyTablebase = _USE_SYZYGY_TB;
+inline constexpr bool   UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
+inline constexpr double MinTimeBranchFactor = 1.;
+inline constexpr double MaxTimeBranchFactor = 5.;
 
 class Search {
 public:

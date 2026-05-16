@@ -5,8 +5,8 @@ namespace Utils
 
 template <typename PositionFormat>
 std::vector<PositionFormat> fullReadOf(std::istream& input) {
-    static_assert(_IS_SAME_TYPE(PositionFormat, PackedPosition) or
-                  _IS_SAME_TYPE(PositionFormat, ExtPackedPosition));
+    static_assert(is_same<PositionFormat, PackedPosition> or
+                  is_same<PositionFormat, ExtPackedPosition>);
 
     std::vector<PositionFormat> res;
 
@@ -216,7 +216,7 @@ Piece PackedPosition::pieceFromMask(uint8_t mask, PackedPosition::SpecialMasks& 
     switch (mask) {
     case EN_PASSANT_PAWN:
         flags = EN_PASSANT_PAWN;
-        piece.set(sq.getRank() == Square::r4 ? WHITE : BLACK, Piece::PAWN);
+        piece.set(sq.getRank() == Square::RANK_4 ? WHITE : BLACK, Piece::PAWN);
         break;
     case WHITE_ROOK_WITH_CASTLING:
         flags = WHITE_ROOK_WITH_CASTLING;
@@ -330,7 +330,8 @@ uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position&
     
     enumColor color = piece.color();
 
-    if (piece.type() == Piece::PAWN and (sq.getRank() == Square::r4 or sq.getRank() == Square::r5)
+    if (piece.type() == Piece::PAWN and 
+        (sq.getRank() == Square::RANK_4 or sq.getRank() == Square::RANK_5)
         and Square(sq + (color ? 8 : -8)) == pos.getEnPassantSq()) {
         mask = EN_PASSANT_PAWN;
         return mask;
@@ -342,9 +343,9 @@ uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position&
     else if (piece.type() == Piece::ROOK) {
         Square::enumFile rook_file = sq.getFile();
 
-        if (rook_file == Square::h and pos.getCastlingByColor(color).isShortPossible())
+        if (rook_file == Square::FILE_H and pos.getCastlingByColor(color).isShortPossible())
             mask = ROOK_WITH_CASTLING(color);
-        else if (rook_file == Square::a and pos.getCastlingByColor(color).isLongPossible())
+        else if (rook_file == Square::FILE_A and pos.getCastlingByColor(color).isLongPossible())
             mask = ROOK_WITH_CASTLING(color);
         else mask = piece.value() + 6 * color;
 
@@ -374,9 +375,9 @@ void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupi
 		case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
 			Square::enumFile file = square.getFile();
 
-			if (file == Square::a) 
+			if (file == Square::FILE_A) 
 				pos._castling_rights[color].setQueenSide(true);
-			else if (file == Square::h)
+			else if (file == Square::FILE_H)
 				pos._castling_rights[color].setKingSide(true);
 			else
 				assert(false);
@@ -420,7 +421,7 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
 	pos._king_sq[WHITE] = pos.getKingBySide(WHITE).bitScanForward();
 	pos._king_sq[BLACK] = pos.getKingBySide(BLACK).bitScanForward();
 
-	pos._zhash = ZobristHash::generateOnFly(pos);
+	pos._zhash = ZHash::generateOnFly(pos);
 
 	return pos;
 }

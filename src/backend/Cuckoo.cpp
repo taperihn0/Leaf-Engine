@@ -6,7 +6,7 @@
 
 CuckooTables::CuckooTables() {
 	_cuckoo_entry_buff = new _CuckooEntry[_CuckooTableSize];
-	memset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
+	std::memset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
 }
 
 CuckooTables::~CuckooTables() {
@@ -41,9 +41,9 @@ void CuckooTables::init() {
 					}
 
 					if (attacks.isOccupiedSq(to)) {
-						uint32_t move_hash = static_cast<uint32_t>(ZobristHash::piece_keys[side][piece][from] ^ 
-																   ZobristHash::piece_keys[side][piece][to] ^ 
-																   ZobristHash::black_key);
+						uint32_t move_hash = static_cast<uint32_t>(ZHashMasks->piece_keys[side][piece][from] ^ 
+																   ZHashMasks->piece_keys[side][piece][to] ^ 
+																   ZHashMasks->black_key);
 
 						Move16b move16b = Move16b::makePackedSimple(from, to);
 

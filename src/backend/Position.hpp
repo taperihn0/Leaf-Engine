@@ -310,7 +310,7 @@ private:
 	std::array<Square, 2> 				   _king_sq;
 	Turn 								   _turn;
 	Square 	    						   _ep_square;
-	ZobristHash 						   _zhash;
+	ZHash 						   _zhash;
 	uint8_t     						   _halfmove_count;
 	uint16_t    						   _fullmove_count;
 };
@@ -452,8 +452,8 @@ _INLINE bool Position::attacked(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
 	return (knightAttacks(sq) & getKnightsBySide(!side)) or
 		(pawnAttacks(sq, side) & getPawnsBySide(!side)) or
-		(SlidersMagics::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
-		(SlidersMagics::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
+		(SlidersAttacks::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
+		(SlidersAttacks::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
 }
 
 _INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
@@ -482,12 +482,12 @@ _INLINE bool Position::isInDoubleCheck(enumColor side) const {
 
 	uint8_t att_count = 0;
 
-	if (SlidersMagics::bishopAttacks(king_sq, occupied) & getBishopsQueensBySide(!side))
+	if (SlidersAttacks::bishopAttacks(king_sq, occupied) & getBishopsQueensBySide(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
 
-	if (SlidersMagics::rookAttacks(king_sq, occupied) & getRooksQueensBySide(!side))
+	if (SlidersAttacks::rookAttacks(king_sq, occupied) & getRooksQueensBySide(!side))
 		att_count++;
 
 	if (att_count >= 2) return true;
@@ -513,11 +513,11 @@ _INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked)
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::bishopAttacks(sq, occupied) & getBishopsQueensBySide(!attacked);
+	bb = SlidersAttacks::bishopAttacks(sq, occupied) & getBishopsQueensBySide(!attacked);
 	if (bb)
 		return bb;
 
-	bb = SlidersMagics::rookAttacks(sq, occupied) & getRooksQueensBySide(!attacked);
+	bb = SlidersAttacks::rookAttacks(sq, occupied) & getRooksQueensBySide(!attacked);
 	if (bb)
 		return bb;
 

@@ -105,7 +105,7 @@ public:
 	static constexpr int_t Draw		  = 0,
 						   Mate		  = 32000,
 						   MateBound  = Mate - MaxDepth,
-						   Infinity   = std::numeric_limits<int_t>::max(),
+						   Infinity   = maxof<int_t>(),
 						   Undef      = 32500;
 private:
 	int_t				   _raw;

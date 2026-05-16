@@ -3,7 +3,8 @@
 #include "Common.hpp"
 
 enum enumColor : bool {
-	WHITE = 0, BLACK
+	WHITE = 0, 
+	BLACK
 };
 
 _INLINE constexpr enumColor operator!(enumColor opp) {
@@ -29,14 +30,13 @@ public:
 		return !_col;
 	}
 
-	void fromChar(char c) {
+	_INLINE void fromChar(char c) {
 		_col = c == 'w' ? WHITE : BLACK;
 	}
 
-	void print() const {
-		std::cout << (_col == WHITE ? 'w' : 'b');
+	void print(std::ostream& os = std::cout) const {
+		os << (_col == WHITE ? 'w' : 'b');
 	}
-
 private:
 	enumColor _col;
 };

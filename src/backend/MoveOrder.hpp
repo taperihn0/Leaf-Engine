@@ -114,8 +114,8 @@ private:
 		PICK_QUIETS,
 	};
 
-	static_assert(_IS_SAME_TYPE(MoveList::entryscore_t, int16_t) or
-				  _IS_SAME_TYPE(MoveList::entryscore_t, int32_t));
+	static_assert(is_same<MoveList::entryscore_t, int16_t> or
+				  is_same<MoveList::entryscore_t, int32_t>);
 
 	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
 
