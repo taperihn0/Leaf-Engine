@@ -134,8 +134,8 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 	if constexpr (isCapture) return;
 	if (check) return;
 
-	static constexpr Square ShortCastleDst = Side == WHITE ? Square::g1 : Square::g8,
-							LongCastleDst = Side == WHITE ? Square::c1 : Square::c8;
+	static constexpr Square ShortCastleDst = Side == WHITE ? Square::SQ_G1 : Square::SQ_G8,
+							LongCastleDst = Side == WHITE ? Square::SQ_C1 : Square::SQ_C8;
 
 	const CastlingRights own_castling_state = pos.getCastlingByColor(Side);
 

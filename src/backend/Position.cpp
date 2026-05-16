@@ -9,7 +9,9 @@
 #include <sstream>
 
 CastlingRights::CastlingRights(bool kinit, bool qinit) 
-	: _kingside(kinit), _queenside(qinit) {}
+	: _kingside(kinit)
+	, _queenside(qinit) 
+{}
 
 void CastlingRights::printByColor(enumColor col_type) const {
 	std::string msg;
@@ -84,7 +86,7 @@ std::string Position::createFEN() const {
             int sq = y * 8 + x;
             bool found = false;
 
-            for (enumColor col : {WHITE, BLACK}) {
+            for (enumColor col : { WHITE, BLACK }) {
                 for (int p_type = 0; p_type < 6; ++p_type) {
                     if (_piece_bb[col][p_type].isOccupiedSq(sq)) {
                         if (empty_count > 0) {
@@ -153,10 +155,10 @@ Position::enumStatusFlag Position::getErrFlag() const {
           or getBySide(BLACK) != getBySideOnFly(BLACK))
         return POSITION_OCC_INVALID;
 
-    else if ((getCastlingByColor(WHITE).isLongPossible()  and !getRooksBySide(WHITE).isOccupiedSq(Square::a1))
-          or (getCastlingByColor(WHITE).isShortPossible() and !getRooksBySide(WHITE).isOccupiedSq(Square::h1))
-          or (getCastlingByColor(BLACK).isLongPossible()  and !getRooksBySide(BLACK).isOccupiedSq(Square::a8))
-          or (getCastlingByColor(BLACK).isShortPossible() and !getRooksBySide(BLACK).isOccupiedSq(Square::h8)))
+    else if ((getCastlingByColor(WHITE).isLongPossible()  and !getRooksBySide(WHITE).isOccupiedSq(Square::SQ_A1))
+          or (getCastlingByColor(WHITE).isShortPossible() and !getRooksBySide(WHITE).isOccupiedSq(Square::SQ_H1))
+          or (getCastlingByColor(BLACK).isLongPossible()  and !getRooksBySide(BLACK).isOccupiedSq(Square::SQ_A8))
+          or (getCastlingByColor(BLACK).isShortPossible() and !getRooksBySide(BLACK).isOccupiedSq(Square::SQ_H8)))
         return POSITION_CASTLING_INVALID;
 
     else if (_king_sq[WHITE] != getKingBySide(WHITE).bitScanForward()
@@ -300,14 +302,14 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
 			accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst, captured, !_turn);
 
-			const Square RightCornerOpponent = _turn == BLACK ? Square::h1 : Square::h8,
-						 LeftCornerOpponent = _turn == BLACK ? Square::a1 : Square::a8;
+			const Square right_corner_opp = _turn == BLACK ? Square::SQ_H1 : Square::SQ_H8,
+						 left_corner_opp = _turn == BLACK ? Square::SQ_A1 : Square::SQ_A8;
 
-			if (_castling_rights[!_turn].isShortPossible() and dst == RightCornerOpponent) {
+			if (_castling_rights[!_turn].isShortPossible() and dst == right_corner_opp) {
 				_zhash ^= ZHashMasks->short_castle_keys[!_turn];
 				_castling_rights[!_turn].setKingSide(false);
 			}
-			else if (_castling_rights[!_turn].isLongPossible() and dst == LeftCornerOpponent) {
+			else if (_castling_rights[!_turn].isLongPossible() and dst == left_corner_opp) {
 				_zhash ^= ZHashMasks->long_castle_keys[!_turn];
 				_castling_rights[!_turn].setQueenSide(false);
 			}
@@ -372,15 +374,17 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 	// Just leave castling flags untouched since the move is pseudo-legal.
 	// It will be ignored anyway in the search.
 	if (legal) {
-		const Square RightCorner = _turn == WHITE ? Square::h1 : Square::h8,
-					 LeftCorner = _turn == WHITE ? Square::a1 : Square::a8;
+		const Square right_corner = _turn == WHITE ? Square::SQ_H1 : Square::SQ_H8,
+					 left_corner = _turn == WHITE ? Square::SQ_A1 : Square::SQ_A8;
 
-		if (_castling_rights[_turn].isShortPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(RightCorner))) {
+		if (_castling_rights[_turn].isShortPossible() and 
+			(piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(right_corner))) {
 			_zhash ^= ZHashMasks->short_castle_keys[_turn];
 			_castling_rights[_turn].setKingSide(false);
 		}
 
-		if (_castling_rights[_turn].isLongPossible() and (piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(LeftCorner))) {
+		if (_castling_rights[_turn].isLongPossible() and 
+			(piece_t == Piece::KING or getRooksBySide(_turn).isEmptySq(left_corner))) {
 			_zhash ^= ZHashMasks->long_castle_keys[_turn];
 			_castling_rights[_turn].setQueenSide(false);
 		}

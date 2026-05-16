@@ -70,13 +70,13 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
 	if (short_castle) {
 		ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
-		origin = pos.getTurn() == WHITE ? Square::e1 : Square::e8;
-		target = pos.getTurn() == WHITE ? Square::g1 : Square::g8;
+		origin = pos.getTurn() == WHITE ? Square::SQ_E1 : Square::SQ_E8;
+		target = pos.getTurn() == WHITE ? Square::SQ_G1 : Square::SQ_G8;
 	}
 	else if (long_castle) {
 		ASSERT(pos.getOwnCastling().isLongPossible(), "Invalid castling move");
-		origin = pos.getTurn() == WHITE ? Square::e1 : Square::e8;
-		target = pos.getTurn() == WHITE ? Square::c1 : Square::c8;
+		origin = pos.getTurn() == WHITE ? Square::SQ_E1 : Square::SQ_E8;
+		target = pos.getTurn() == WHITE ? Square::SQ_C1 : Square::SQ_C8;
 	}
 	else if (promotion) {
 		ASSERT(last >= 3, "Invalid move format");

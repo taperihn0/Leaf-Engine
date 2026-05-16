@@ -99,11 +99,11 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 
 #else
 
-    for (size_t i = 0; i < NetworkAccumulatorSize; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         output += screlu(s2m_accumulator[i], 0, NetworkWeightQuant) 
                 * weights[i];
         output += screlu(ns2m_accumulator[i], 0, NetworkWeightQuant) 
-                * weights[NetworkAccumulatorSize + i];
+                * weights[NetworkAccumulatorSizePerSide + i];
     }
 
 #endif
