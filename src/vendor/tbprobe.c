@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <assert.h>
 #ifdef __cplusplus
 #include <atomic>

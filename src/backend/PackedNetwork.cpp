@@ -195,7 +195,7 @@ bool PackedNeuralNetwork::loadDefaultNet() {
     else {
         std::filesystem::path devpath = DevNetworksDir;
         devpath /= std::string(DefaultNetworkFile);
-        status = loadFromFile(std::string_view(devpath.c_str()));
+        status = loadFromFile(std::string_view(devpath.string()));
     }
 #endif
 

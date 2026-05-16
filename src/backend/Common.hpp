@@ -185,7 +185,7 @@ _INLINE constexpr bool isPow2(T x) {
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 _INLINE constexpr T round(T x) {
 	if (x >= 0.l) return static_cast<T>(static_cast<ull>(x + 0.5f));
-    return static_cast<T>(static_cast<ull>(x - 0.5f));
+    return static_cast<T>(static_cast<ll>(x - 0.5f));
 }
 
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
