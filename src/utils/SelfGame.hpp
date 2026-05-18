@@ -6,7 +6,7 @@
 
 namespace Utils {
 
-struct EngineProcess;
+class EngineProcess;
 
 class SelfGame {
 public:

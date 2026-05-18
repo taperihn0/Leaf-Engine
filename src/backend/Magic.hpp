@@ -12,7 +12,7 @@ class SlidersAttacks {
 public:
 	SlidersAttacks() = delete;
 
-	static _FORCEINLINE constexpr uint16_t mIndexHash(BitBoard magic_bb, 
+	static _FORCEINLINE constexpr uint16_t mIndexHash(BitBoard magic_bb,
 													  BitBoard relv_occ, 
 													  uint8_t relv_bits) 
 	{
@@ -28,9 +28,9 @@ public:
 
 	static _FORCEINLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
 		return _mrook_att[static_cast<int8_t>(sq)][mIndexHash(
-													_magics_rook[sq], 
-													_m_occupancy_rook[sq] & occ, 
-													_m_bits_rook[sq])];
+			_magics_rook[sq],
+			_m_occupancy_rook[sq] & occ,
+			_m_bits_rook[sq])];
 	}
 
 	static _FORCEINLINE BitBoard queenAttacks(Square sq, BitBoard occ) {

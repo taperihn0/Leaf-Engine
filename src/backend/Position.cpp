@@ -552,7 +552,7 @@ uint64_t Position::perft(unsigned depth) {
 		Move32b move = move_list.getMove(i);
 
 		if (make(move)) {
-			assert(_zhash == ZHashMasks->generateOnFly(*this));
+			assert(_zhash == ZHash::generateOnFly(*this));
 
 			child_nodes = perft<false>(depth - 1);
 			nodes += child_nodes;

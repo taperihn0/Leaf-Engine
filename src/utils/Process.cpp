@@ -12,11 +12,9 @@ EngineProcess::~EngineProcess() {
         CloseHandle(hproc);
         TerminateProcess(hproc, 0);
     }
-    if (proc_stdin) dynamic_cast<std::ifstream*>(proc_stdin.get())->close();
-    if (proc_stdout) dynamic_cast<std::ofstream*>(proc_stdout.get())->close();
 }
 
-void EngineProcess::spawnProcess(EngineProcess& proc) {
+void EngineProcess::initProc(EngineProcess& proc) {
     HANDLE h_stdin_rd = nullptr;
     HANDLE h_stdin_wr = nullptr;
     HANDLE h_stdout_rd = nullptr;

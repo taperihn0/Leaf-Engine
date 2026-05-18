@@ -1165,8 +1165,7 @@ Score Search::nmSearch(Position& pos,
 		const int extension = std::lroundf(move_extension);
 		const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
 
-		const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 
-											static_cast<int>(child_node->check), depth - 1);
+		const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 0, depth - 1);
 
 		child_node->is_cut = !node->is_cut;
 
