@@ -62,8 +62,8 @@ struct SearchResults {
 	size_t	  tt_entries		= 0;
 	Move32b   best_move			= Move32b::Null;
 	time_ms_t duration			= 0;
-	ull 	  nodes_per_depth[MaxDepth + 1] = {};
-	time_ms_t time_per_depth[MaxDepth + 1]  = {};
+	array1d<ull, MaxDepth + 1> nodes_per_depth = {};
+	array1d<time_ms_t, MaxDepth + 1> time_per_depth  = {};
 
 #if defined(_COLLECT_SEARCH_STATS)
 	ull       pv_nodes_cnt		= 0,
@@ -83,7 +83,7 @@ struct SearchResults {
 	ull		  beta_cut_cnt		= 0;
 	ull		  qbeta_cut_cnt		= 0;
 
-	ull		  move_cut_cnt[MaxNodeMoves] = {};
+	array1d<ull, MaxNodeMoves> move_cut_cnt = {};
 
 	ull 	  nmeval_cnt 		= 0;
 	ull 	  qeval_cnt 		= 0;
@@ -97,9 +97,9 @@ struct SearchResults {
 			  reduced_search_fail_high = 0,
 			  reduced_search_fail_low = 0;
 
-	ull		  move_reduced_cnt[MaxNodeMoves] = {};
-	ull 	  move_reduced_fail_high_cnt[MaxNodeMoves] = {};
-	float 	  move_reduction_sum[MaxNodeMoves] = {};
+	array1d<ull, MaxNodeMoves>	 move_reduced_cnt = {};
+	array1d<ull, MaxNodeMoves>   move_reduced_fail_high_cnt = {};
+	array1d<float, MaxNodeMoves> move_reduction_sum = {};
 
 	ull		  null_moves_cnt 	= 0;
 	ull		  null_zungzwang_detected = 0;
@@ -281,7 +281,6 @@ public:
 
 	Search() = default;
 	Search(TranspositionTable&& tt);
-	~Search();
 
 	Search(Search&&)			 = delete;
 	Search(Search&)				 = delete;
@@ -375,12 +374,16 @@ private:
 	TreeStack 		   		_tree_stack;
 	CuckooTables			_cuckoo_tables;
 	TranspositionTable 		_tt;
-	// Each Search instance should have own history buffer with tables 
-	// for very MoveOrder in TreeStack.
-	// Also, Search class in responsible for allocation and deallocation.
-	MoveOrderHistoryTables* _history_buff;
 
-	Score::int_t 			_contempt = Score::Undef;
+	/* Each Search instance should have own history buffer with tables 
+	*  for very MoveOrder in TreeStack.
+	*  Also, Search class in responsible for allocation and deallocation.
+	*/
+	using MoveOrderHistoryTablesPtr = std::unique_ptr<MoveOrderHistoryTables, 
+													  AlignedDeleter<MoveOrderHistoryTables>
+													 >;
+	MoveOrderHistoryTablesPtr _history_buff;
+	Score::int_t 			  _contempt = Score::Undef;
 };
 
 _INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {

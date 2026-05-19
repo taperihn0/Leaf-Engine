@@ -353,12 +353,8 @@ Search::Search(TranspositionTable&& tt)
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
 
-	_tree_stack.init(_history_buff);
+	_tree_stack.init(_history_buff.get());
 	_cuckoo_tables.init();
-}
-
-Search::~Search() {
-	alignedFree(_history_buff);
 }
 
 template <Search::enumInfoLevel InfoLevel>
