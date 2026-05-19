@@ -83,10 +83,12 @@ public:
 		return _moves[random_idx].move;
 	}
 
-	template <typename Entry_Callable_Bool>
-	_INLINE bool any(Entry_Callable_Bool pred) const {
-		static_assert(std::is_invocable_v<Entry_Callable_Bool, Entry>);
-
+	template <typename Pred, 
+			  typename = std::enable_if_t<std::is_invocable_v<
+											std::remove_reference_t<Pred>, Entry>
+										 >
+	>
+	_INLINE bool any(Pred&& pred) const {
 		for (size_t i = 0; i < _idx; i++) {
             if (pred(_moves[i]))
                 return true;
@@ -95,10 +97,12 @@ public:
 		return false;
 	}
 
-    template <typename Entry_Callable_Bool>
-    _INLINE MoveList& remove(Entry_Callable_Bool pred) {
-        static_assert(std::is_invocable_v<Entry_Callable_Bool, Entry>);
-
+	template <typename Pred, 
+			  typename = std::enable_if_t<std::is_invocable_v<
+											std::remove_reference_t<Pred>, Entry>
+										 >
+	>
+    _INLINE MoveList& remove(Pred&& pred) {
         auto last = std::remove_if(_moves.begin(), 
                                    std::next(_moves.begin(), _idx), 
                                    pred);

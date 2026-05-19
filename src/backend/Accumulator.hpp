@@ -98,12 +98,12 @@ struct AccumulatorCache {
     _INLINE void markDirty()     { dirty = true;  }
     void clearBuffers();
 
-    Accumulator                accum;
+    Accumulator             accum;
     array1d<FeatureData, 2> added_features;
     array1d<FeatureData, 2> removed_features;
-    size_t                     added_features_cnt   = 0;
-    size_t                     removed_features_cnt = 0;
-    bool                       dirty                = false;
+    size_t                  added_features_cnt   = 0;
+    size_t                  removed_features_cnt = 0;
+    bool                    dirty                = false;
 };
 
 } // namespace nn

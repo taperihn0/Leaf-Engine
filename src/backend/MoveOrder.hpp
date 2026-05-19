@@ -122,8 +122,8 @@ private:
 	MoveOrderHistoryTables* _tables;
 
 	enumStage _stage       = enumStage::NONE;
-	size_t _iterator       = 0;
-	size_t _quiets_ind	   = 0;
+	size_t    _iterator    = 0;
+	size_t    _quiets_ind  = 0;
 
 	Move32b	 _hash_move	   = Move32b::Null;
 	Move32b	 _killer_move  = Move32b::Null;
