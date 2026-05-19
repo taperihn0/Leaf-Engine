@@ -7,7 +7,7 @@
 
 class MoveRecord {
 public:
-	MoveRecord() = default;
+	_INLINE MoveRecord() = default;
 
 	_INLINE void recordMove(Move32b move) {
 		assert(_idx < MaxGameMoves);
@@ -27,13 +27,13 @@ public:
 	_INLINE size_t getMoveCount() const { return _idx; }
 	_INLINE void clear() 				{ _idx = 0; }
 private:
-	std::array<Move32b, MaxGameMoves> _move_history = {};
+	array1d<Move32b, MaxGameMoves> _move_history = {};
 	size_t _idx = 0;
 };
 
 class FullInfoRecord : public MoveRecord {
 public:
-	FullInfoRecord() = default;
+	_INLINE FullInfoRecord() = default;
 
 	_INLINE void recordInfo(uint64_t key, Move32b move) {
 		size_t curr_idx = getMoveCount();
@@ -48,7 +48,7 @@ public:
 		return _key_history[halfmove_cnt];
 	}
 private:
-	std::array<uint64_t, MaxGameMoves> _key_history = {};
+	array1d<uint64_t, MaxGameMoves> _key_history = {};
 };
 
 /* Contains full game info - move record, time left and current position of the game.

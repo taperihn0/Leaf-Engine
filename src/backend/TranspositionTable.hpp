@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Score.hpp"
 #include "Move.hpp"
+#include "Memory.hpp"
 
 class Score;
 struct SearchResults;
@@ -10,7 +11,7 @@ struct SearchResults;
 static constexpr size_t  EntryTargetSize  = 10;
 static constexpr size_t  BucketTargetSize = 32;
 static constexpr size_t  EntryKeySize     = 18;
-static constexpr uint8_t EntryMaxDepth   = 64;
+static constexpr uint8_t EntryMaxDepth    = 64;
 
 struct TTEntry {
 	enum Bound : uint8_t {
@@ -60,7 +61,6 @@ class TranspositionTable {
 public:
 	TranspositionTable(size_t mb_size = 1_MB);
 	TranspositionTable(TranspositionTable&& tt);
-	~TranspositionTable();
 
 	TranspositionTable(const TranspositionTable&) = delete;
 	TranspositionTable& operator=(const TranspositionTable&) = delete;
@@ -91,9 +91,10 @@ public:
 	void newGeneration();
 	void clearHashfull();
 private:
-	TTBucket* _mem;
-	size_t    _buckets_cnt;
-	uint8_t   _buckets_pow_2;
-	uint8_t   _generation;
-	ull       _hits;
+	using uniq_ptr_buf = std::unique_ptr<TTBucket, AlignedDeleter<TTBucket>>;
+	uniq_ptr_buf _mem;
+	size_t    	 _buckets_cnt;
+	uint8_t   	 _buckets_pow_2;
+	uint8_t   	 _generation;
+	ull       	 _hits;
 };

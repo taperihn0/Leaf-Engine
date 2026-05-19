@@ -26,7 +26,7 @@ private:
 	static Score queensStaticEval(const Position& pos, enumColor side);
 	static Score kingsStaticEval(const Position& pos, enumColor side);
 
-	static std::array<int16_t, 64>
+	static array1d<int16_t, 64>
 		_mg_pawn_tables, 
 		_mg_knight_tables, 
 		_mg_bishop_tables, 

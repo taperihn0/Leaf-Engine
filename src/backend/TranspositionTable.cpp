@@ -12,33 +12,32 @@ TTEntry::TTEntry()
 	, eval(Score::Undef)
 {}
 
-TranspositionTable::TranspositionTable(size_t mb_size) {
+TranspositionTable::TranspositionTable(size_t mb_size)
+	: _mem(reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)))) 
+{
 	ASSERT(isPow2(mb_size), "Transposition table must be size of 2 power");
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(mb_size, sizeof(TTBucket)));
-	ASSERT(_mem != nullptr, "Failed to allocate memory");
+	ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
 	_buckets_cnt = mb_size / sizeof(TTBucket);
 	_buckets_pow_2 = getExp2(_buckets_cnt);
 	clear();
 }
 
 TranspositionTable::TranspositionTable(TranspositionTable&& tt) {
-	_mem = tt._mem;
+	_mem = std::move(tt._mem);
 	_buckets_cnt = tt._buckets_cnt;
 	_buckets_pow_2 = tt._buckets_pow_2;
 	_generation = tt._generation;
 	_hits = tt._hits;
-	std::memset(reinterpret_cast<void*>(&tt), 0, sizeof(tt));
-}
-
-TranspositionTable::~TranspositionTable() { 
-	alignedFree(_mem);
 }
 
 void TranspositionTable::resize(size_t size_mb) {
 	ASSERT(isPow2(size_mb), "Transposition table must be size of 2 power");
-	alignedFree(_mem);
-	_mem = reinterpret_cast<TTBucket*>(alignedMalloc(size_mb, sizeof(TTBucket)));
-	ASSERT(_mem != nullptr, "Failed to allocate memory");
+
+	_mem = uniq_ptr_buf(
+		reinterpret_cast<TTBucket*>(alignedMalloc(size_mb, sizeof(TTBucket)))
+	);
+	
+	ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
 	_buckets_cnt = size_mb / sizeof(TTBucket);
 	_buckets_pow_2 = getExp2(_buckets_cnt);
 	_generation = 0;
@@ -46,7 +45,7 @@ void TranspositionTable::resize(size_t size_mb) {
 }
 
 void TranspositionTable::clear() {
-	alignedMemset(_mem, 0, _buckets_cnt * sizeof(TTBucket));
+	alignedMemset(_mem.get(), 0, _buckets_cnt * sizeof(TTBucket));
 	_generation = 0;
 	_hits = 0;
 }
@@ -61,7 +60,7 @@ void TranspositionTable::write(uint64_t node_key64, uint8_t node_depth,
 
 	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
-	TTBucket* bucket = _mem + (node_key64 & (_buckets_cnt - 1));
+	TTBucket* bucket = _mem.get() + (node_key64 & (_buckets_cnt - 1));
 
 	const uint32_t keyhi = static_cast<uint32_t>((node_key64 >> _buckets_pow_2) & 0x3FFFF);
 
@@ -115,7 +114,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 {
 	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
-	const TTBucket* bucket = _mem + (key64 & (_buckets_cnt - 1));
+	const TTBucket* bucket = _mem.get() + (key64 & (_buckets_cnt - 1));
 
 	const uint32_t keyhi = static_cast<uint32_t>((key64 >> _buckets_pow_2) & 0x3FFFF);
 
@@ -165,7 +164,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 
 void TranspositionTable::prefetchBucket(uint64_t key64) const {
 	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
-	prefetch(reinterpret_cast<const void*>(_mem + (key64 & (_buckets_cnt - 1))));
+	prefetch(reinterpret_cast<const void*>(_mem.get() + (key64 & (_buckets_cnt - 1))));
 }
 
 #if defined(DEBUG)

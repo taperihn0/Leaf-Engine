@@ -33,7 +33,7 @@ _INLINE bool SearchLimits::anyQuiesceNodesLeft(ull qnodes_so_far) {
 }
 
 void SearchResults::clear() {
-	std::memset(this, 0, sizeof(SearchResults));
+	memSet(this, 0, sizeof(SearchResults));
 }
 
 void SearchResults::printBestMove() {
@@ -43,7 +43,10 @@ void SearchResults::printBestMove() {
 	std::cout << '\n';
 }
 
-void SearchResults::print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt) {
+void SearchResults::print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+						  uint16_t pv_len, 
+						  const TranspositionTable& tt) 
+{
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
 	std::cout << 
@@ -77,9 +80,9 @@ void SearchResults::printShort() {
 #endif
 }
 
-void SearchResults::printPV(const PVInfo* root_pv_line, uint16_t pv_len) {
-	assert(root_pv_line);
-
+void SearchResults::printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+							uint16_t pv_len) 
+{
 	for (uint16_t i = 0; i < pv_len; i++) {
 		const Move16b m16 = root_pv_line[i].best_move;
 		m16.print();
@@ -202,7 +205,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-	std::memset(pv_line, 0, MaxSelDepth * sizeof(PVInfo));
+	memSet(pv_line.data(), 0, pv_line.size());
 	pv_line_len = 0;
 }
 
@@ -1269,7 +1272,10 @@ Score Search::nmSearch(Position& pos,
 					node->pv_line[0].best_move = packedMove(node->best_move);
 					node->pv_line[0].score = node->best_score;
 
-					memCopy(node->pv_line + 1, child_node->pv_line, child_node->pv_line_len * sizeof(PVInfo));
+					memCopy(node->pv_line.data() + 1, 
+							child_node->pv_line.data(), 
+							child_node->pv_line_len * sizeof(PVInfo));
+
 					node->pv_line_len = child_node->pv_line_len + 1;
 				}
 			}
@@ -1643,10 +1649,10 @@ _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
 }
 
 void Search::refreshPVinTT(const Position& pos, 
-						   const PVInfo* root_pv_line, uint16_t pv_len,
-						   SearchResults& results) {
-	assert(root_pv_line != nullptr);
-
+						   const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+						   uint16_t pv_len,
+						   SearchResults& results) 
+{
 	if (results.depth <= 1)
 		return;
 

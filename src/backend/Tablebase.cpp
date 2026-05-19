@@ -33,7 +33,7 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
     return true;
 #else // !defined(_USE_SYZYGY_TB)
     _initialized = false;
-    _tb_path = "<empty>";
+    _tb_path = std::nullopt;
     return false;
 #endif // _USE_SYZYGY_TB
 }
@@ -43,7 +43,7 @@ bool SyzygyTablebase::isLoaded() const {
 }
 
 std::string SyzygyTablebase::getFilePath() const {
-    return _tb_path;
+    return _tb_path.value_or("<empty>");
 }
 
 bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {  

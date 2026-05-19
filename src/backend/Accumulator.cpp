@@ -3,17 +3,10 @@
 
 namespace nn {
 
-Accumulator::Accumulator(const PackedNeuralNetwork& network, 
-                         const Position& pos) {
-    refresh(network, pos);
-}
-
-bool Accumulator::operator==(const Accumulator& accum) const {
-    return !std::memcmp(_values, accum._values, sizeof(_values));
-}
-
 template <enumColor Perspective>
-int Accumulator::featureIndex(Square sq, Piece::enumType piece_type, enumColor side) 
+int Accumulator::featureIndex(Square sq, 
+                              Piece::enumType piece_type, 
+                              enumColor side) 
 {
     if constexpr (Perspective == BLACK) {
         return static_cast<int>(!side) * 64 * 6 
@@ -50,7 +43,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     assert(biases != nullptr);
     assert(weights != nullptr);
 
-    int side_active_features[2][32];
+    array2d<int, 2, 32> side_active_features;
 
     size_t active_features_cnt = 0;
 
@@ -59,7 +52,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
             BitBoard bb = pos.get(piece_type, side);
 
             while (bb) {
-                Square sq = static_cast<Square>(bb.dropForward());
+                const Square sq = static_cast<Square>(bb.dropForward());
                 
                 side_active_features[WHITE][active_features_cnt] = featureIndex<WHITE>(sq, piece_type, side);
                 side_active_features[BLACK][active_features_cnt++] = featureIndex<BLACK>(sq, piece_type, side);
@@ -68,8 +61,9 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
         }
     }
 
-    for (enumColor persp : { WHITE, BLACK })
-        refresh(biases, weights, persp, side_active_features[persp], active_features_cnt);
+    for (enumColor persp : { WHITE, BLACK }) {
+        refresh(biases, weights, persp, side_active_features[persp].data(), active_features_cnt);
+    }
 }
 
 void Accumulator::refresh(const int16_t* _RESTRICT biases, 
@@ -82,14 +76,14 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     assert(weights != nullptr);
     assert(side_active_features != nullptr);
 
-#if defined(_NN_USE_AVX512) || defined(_NN_USE_AVX2) || defined(_NN_USE_SSE2)
+#if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side];
+    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side].data();
     const _max_platf_register_i_t* const _RESTRICT biases_base = (_max_platf_register_i_t*)biases;
     const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
 
@@ -109,7 +103,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
         }
     }
     
-#else
+#else // Do not use SIMD Extensions
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = biases[i];
@@ -124,7 +118,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
         }
     }
 
-#endif
+#endif // Do not use SIMD Extensions
 }
 
 void Accumulator::update(const PackedNeuralNetwork& network,
@@ -159,15 +153,15 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     assert(removed_features != nullptr);
     assert(this != prev_acc);
 
-#if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2)
+#if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
 
     static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side];
-    const _max_platf_register_i_t* const _RESTRICT prev_values_base = (_max_platf_register_i_t*)prev_acc->_values[side];
+    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side].data();
+    const _max_platf_register_i_t* const _RESTRICT prev_values_base = (_max_platf_register_i_t*)prev_acc->_values[side].data();
     const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
 
     assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
@@ -196,7 +190,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
         }
     }
 
-#else
+#else // Do not use SIMD Extensions
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = prev_acc->_values[side][i];
@@ -220,14 +214,14 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
         }
     }
 
-#endif
+#endif // Do not use SIMD Extensions
 }
 
 void Accumulator::clear(enumColor side) {
-    alignedMemset(_values[side], 0, NetworkAccumulatorSizePerSide);
+    alignedMemset(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
 }
 
-const int16_t* Accumulator::getValues(enumColor side) const {
+const array1d<int16_t, NetworkHiddenLayerSize>& Accumulator::getValues(enumColor side) const {
     return _values[side];
 }
 
@@ -237,22 +231,6 @@ bool Accumulator::verify(const Accumulator& accum, const Position& pos) {
     return accum == ref_accum;
 }
 #endif
-
-bool AccumulatorCache::isDirty() const {
-    return dirty;
-}
-
-bool AccumulatorCache::isClean() const {
-    return !dirty;
-}
-
-void AccumulatorCache::markClean() {
-    dirty = false;
-}
-
-void AccumulatorCache::markDirty() {
-    dirty = true;
-}
 
 void AccumulatorCache::clearBuffers() {
     added_features_cnt = 0;

@@ -64,7 +64,7 @@ public:
 		return _col;
 	}
 
-	static constexpr std::array<enumType, 6> PieceTypeList = { 
+	static constexpr array1d<enumType, 6> PieceTypeList = { 
 		Piece::PAWN, 
 		Piece::KNIGHT, 
 		Piece::BISHOP, 

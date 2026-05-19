@@ -23,7 +23,7 @@ std::vector<PositionFormat> fullReadOf(std::istream& input) {
 }
 
 PackedPosition::PackedPosition() {
-    std::memset(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
+    memSet(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
 }
 
 PackedPosition::PackedPosition(const Position& pos) {

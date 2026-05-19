@@ -3,11 +3,6 @@
 
 #include <random>
 
-_INLINE uint64_t sparseRandom() {
-	return random<uint64_t>(1, maxof<uint64_t>())
-		 & random<uint64_t>(1, maxof<uint64_t>());
-}
-
 ZobristMasks& ZobristMasks::get() {
 	static ZobristMasks ZKeys;
 	return ZKeys;
@@ -18,23 +13,27 @@ ZobristMasks::ZobristMasks() {
 }
 
 void ZobristMasks::fillKeys() {
+	static auto get_sparse_random_u64 = []() {
+		return sparseRandom<uint64_t>(1, maxof<uint64_t>());
+	};
+
 	for (int sq = 0; sq < 64; sq++) {
 		for (enumColor col : { WHITE, BLACK }) {
 			for (auto piece_t : Piece::PieceTypeList) {
-				piece_keys[col][piece_t][sq] = sparseRandom();
+				piece_keys[col][piece_t][sq] = get_sparse_random_u64();
 			}
 		}
 	}
 
-	black_key = sparseRandom();
+	black_key = get_sparse_random_u64();
 
 	for (int file = 0; file < 8; file++) {
-		ep_file_keys[file] = sparseRandom();
+		ep_file_keys[file] = get_sparse_random_u64();
 	}
 
 	for (enumColor col : { WHITE, BLACK }) {
-		short_castle_keys[col] = sparseRandom();
-		long_castle_keys[col] = sparseRandom();
+		short_castle_keys[col] = get_sparse_random_u64();
+		long_castle_keys[col] = get_sparse_random_u64();
 	}
 }
 
@@ -52,18 +51,20 @@ ZHash ZHash::generateOnFly(const Position& pos) {
 		key ^= ZHashMasks->black_key;
 
 	const Square ep_sq = pos.getEnPassantSq();
-
 	assert(ep_sq.isValid());
+
 	if (!ep_sq.isNull())
 		key ^= ZHashMasks->ep_file_keys[ep_sq.getFile()];
 
 	if (pos.getCastlingByColor(WHITE).isShortPossible())
 		key ^= ZHashMasks->short_castle_keys[WHITE];
+
 	if (pos.getCastlingByColor(BLACK).isShortPossible())
 		key ^= ZHashMasks->short_castle_keys[BLACK];
 
 	if (pos.getCastlingByColor(WHITE).isLongPossible())
 		key ^= ZHashMasks->long_castle_keys[WHITE];
+
 	if (pos.getCastlingByColor(BLACK).isLongPossible())
 		key ^= ZHashMasks->long_castle_keys[BLACK];
 

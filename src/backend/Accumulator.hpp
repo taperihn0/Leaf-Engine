@@ -9,15 +9,18 @@ static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
 class alignas(CACHELINE_SIZE) Accumulator {
 public:
-    Accumulator() = default;
+    _INLINE Accumulator() = default;
+    _INLINE Accumulator(const PackedNeuralNetwork& network, 
+                        const Position& pos) 
+    { refresh(network, pos); }
+
     Accumulator(const Accumulator&) = delete;
-    // just refresh the accumulator with the given 'network' and 'pos'
-    Accumulator(const PackedNeuralNetwork& network, 
-                const Position& pos);
+    Accumulator(Accumulator&&) = delete;
 
     Accumulator& operator=(const Accumulator&) = delete;
+    Accumulator& operator=(Accumulator&&) = delete;
 
-    bool operator==(const Accumulator& accum) const ;
+    _INLINE bool operator==(const Accumulator& accum) const { return _values == accum._values; }
     _INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
@@ -60,18 +63,18 @@ public:
 
     void clear(enumColor side);
 
-    const int16_t* getValues(enumColor side) const;
+    const array1d<int16_t, NetworkHiddenLayerSize>& getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
 #endif
 
 private:
-    int16_t _values[2][NetworkHiddenLayerSize];
+    array2d<int16_t, 2, NetworkHiddenLayerSize> _values;
 };
 
 struct FeatureData {
-    FeatureData() = default;
+    _INLINE FeatureData() = default;
     _INLINE FeatureData(Square pc_sq, Piece::enumType pc_type, enumColor pc_color)
         : sq(pc_sq)
         , piece_type(pc_type)
@@ -88,18 +91,19 @@ struct FeatureData {
 };
 
 struct AccumulatorCache {
-    bool isDirty() const;
-    bool isClean() const;
-    void markClean();
-    void markDirty();
+    _INLINE AccumulatorCache() = default;
+    _INLINE bool isDirty() const { return dirty;  }
+    _INLINE bool isClean() const { return !dirty; }
+    _INLINE void markClean()     { dirty = false; }
+    _INLINE void markDirty()     { dirty = true;  }
     void clearBuffers();
 
-    Accumulator accum;
-    FeatureData added_features[2];
-    FeatureData removed_features[2];
-    size_t      added_features_cnt   = 0;
-    size_t      removed_features_cnt = 0;
-    bool        dirty                = false;
+    Accumulator                accum;
+    array1d<FeatureData, 2> added_features;
+    array1d<FeatureData, 2> removed_features;
+    size_t                     added_features_cnt   = 0;
+    size_t                     removed_features_cnt = 0;
+    bool                       dirty                = false;
 };
 
 } // namespace nn

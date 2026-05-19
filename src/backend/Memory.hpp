@@ -17,6 +17,19 @@ static _FORCEINLINE void prefetch(const void* addr) {
 #endif // _ENABLE_PREFETCH
 }
 
+_INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
+	byte* d = reinterpret_cast<byte*>(dst);
+	const byte* s = reinterpret_cast<const byte*>(src);
+	std::copy_n(s, cnt, d);
+	return dst;
+}
+
+_INLINE void memSet(void* dst, int ch, size_t cnt) {
+	std::fill(reinterpret_cast<byte*>(dst), 
+			  reinterpret_cast<byte*>(dst) + cnt, 
+			  ch);
+}
+
 _INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 	byte* d = reinterpret_cast<byte*>(dst);
 
@@ -46,16 +59,9 @@ _INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
 
 #else
 	_declUnused(d);
-	std::memset(dst, ch, cnt);
+	memSet(dst, ch, cnt);
 #endif
 
-	return dst;
-}
-
-_INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
-	byte* d = reinterpret_cast<byte*>(dst);
-	const byte* s = reinterpret_cast<const byte*>(src);
-	std::copy_n(s, cnt, d);
 	return dst;
 }
 
@@ -77,4 +83,9 @@ _INLINE void alignedFree(void* block) {
 	std::free(block);
 #endif
 }
+
+template <typename T>
+struct AlignedDeleter {
+	void operator()(T* p) const { alignedFree(p); }
+};
 

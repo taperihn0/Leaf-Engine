@@ -3,11 +3,11 @@
 
 namespace nn {
 
-_INLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
+_FORCEINLINE int16_t crelu(int16_t value, int16_t mi, int16_t ma) {
     return std::clamp(value, mi, ma);
 }
 
-_INLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
+_FORCEINLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
     const int32_t c = static_cast<int32_t>(crelu(value, mi, ma));
     return c * c;
 }
@@ -28,8 +28,8 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
 Score NEval::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
     assert(network.isValid());
 
-    const int16_t output = layerActivationSingleOutput(acc.getValues(side2move), 
-                                                       acc.getValues(!side2move),
+    const int16_t output = layerActivationSingleOutput(acc.getValues(side2move).data(),
+                                                       acc.getValues(!side2move).data(),
                                                        network);
     return static_cast<Score>(output);
 }

@@ -22,7 +22,7 @@ public:
 	static_assert(is_same<entryscore_t, int32_t> or
 				  is_same<entryscore_t, int16_t>);
 
-	MoveList() = default;
+	_INLINE MoveList() = default;
 
 	_INLINE void sort(size_t first, size_t end) {
 		std::sort(_moves.data() + first, _moves.data() + end, _greater_score);
@@ -60,9 +60,10 @@ public:
 	}
 
 	_INLINE bool contains(Move32b m) const {
-		return std::find_if(_moves.data(), _moves.data() + _idx, [m](Entry e) { 
-            return e.move == m; 
-        }) != _moves.data() + _idx;
+		return std::find_if(_moves.data(), _moves.data() + _idx, 
+			[m](Entry e) { 
+            	return e.move == m; 
+        	}) != _moves.data() + _idx;
 	}
 
 	_INLINE void clear() { _idx = 0; }
@@ -114,8 +115,8 @@ private:
 		return a.score > b.score;
 	};
 
-	size_t						_idx = 0;
-	std::array<Entry, _MaxSize> _moves = {};
+	size_t					 _idx = 0;
+	array1d<Entry, _MaxSize> _moves = {};
 };
 
 inline void MoveList::selectSort(size_t first_ind) {

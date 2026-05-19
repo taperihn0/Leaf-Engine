@@ -6,6 +6,7 @@
 #include "Hash.hpp"
 #include "Color.hpp"
 #include "Move.hpp"
+#include "Memory.hpp"
 
 class Position;
 struct NodeInfo;
@@ -293,26 +294,26 @@ public:
 	IrreversibleState getIrreversibleState() const;
 
 	struct IrreversibleState {
-		Square 						  ep_sq;
-		uint8_t 					  halfmove_count;
-		std::array<CastlingRights, 2> castling_rights;
+		Square 					   ep_sq;
+		uint8_t 				   halfmove_count;
+		array1d<CastlingRights, 2> castling_rights;
 		// It is not really required to store previous hash key,
 		// since it can be recomputed. But keep it here for simplicity and efficiency.
-		uint64_t 					  hash_key;
+		uint64_t 				   hash_key;
 	};
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
 
-	std::array<std::array<BitBoard, 6>, 2> _piece_bb;
-	std::array<BitBoard, 2> 			   _occupied;
-	std::array<CastlingRights, 2> 		   _castling_rights;
-	std::array<Square, 2> 				   _king_sq;
-	Turn 								   _turn;
-	Square 	    						   _ep_square;
-	ZHash 						   _zhash;
-	uint8_t     						   _halfmove_count;
-	uint16_t    						   _fullmove_count;
+	array1d<array1d<BitBoard, 6>, 2> _piece_bb;
+	array1d<BitBoard, 2> 			 _occupied;
+	array1d<CastlingRights, 2> 		 _castling_rights;
+	array1d<Square, 2> 				 _king_sq;
+	Turn 							 _turn;
+	Square 	    					 _ep_square;
+	ZHash 						   	 _zhash;
+	uint8_t     					 _halfmove_count;
+	uint16_t    					 _fullmove_count;
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
@@ -413,8 +414,8 @@ _INLINE Position::IrreversibleState Position::getIrreversibleState() const {
 }
 
 _INLINE void Position::clearPieces() {
-	std::memset(reinterpret_cast<void*>(_piece_bb.data()), 0, 2 * 6 * sizeof(BitBoard));
-	std::memset(reinterpret_cast<void*>(_occupied.data()), 0, 2 * sizeof(BitBoard));
+	memSet(reinterpret_cast<void*>(_piece_bb.data()), 0, 2 * 6 * sizeof(BitBoard));
+	memSet(reinterpret_cast<void*>(_occupied.data()), 0, 2 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>

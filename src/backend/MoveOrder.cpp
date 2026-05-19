@@ -2,12 +2,8 @@
 #include "Position.hpp"
 #include "Search.hpp"
 
-MoveOrderHistoryTables::MoveOrderHistoryTables() {
-	clearQuietsHistory();
-}
-
 MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) 
-: _tables(history_tables) {}
+	: _tables(history_tables) {}
 
 /* 
 *	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
@@ -154,7 +150,7 @@ _INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
 													  : true;
 }
 
-static std::array<const int16_t*, 5> CaptureScore = {
+static array1d<const int16_t*, 5> CaptureScore = {
 	reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
 	reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
 	reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
@@ -162,7 +158,7 @@ static std::array<const int16_t*, 5> CaptureScore = {
 	reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
 };
 
-static std::array<const int16_t*, 5> PromotionScore = {
+static array1d<const int16_t*, 5> PromotionScore = {
 	nullptr,    					// pawn placeholder 
 	reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
 	reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 

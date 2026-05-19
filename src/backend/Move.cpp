@@ -46,7 +46,9 @@ Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const 
 						  long_castle = piece == Piece::KING and origin - target == 2;
 	const Piece::enumType promo_piece = promotion ? Piece::typeFromChar(str[4]) : Piece::NONE;
 
-	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
+	return createMove(pos, origin, target, piece, 
+					 capture, ep_capture, promotion, 
+					 short_castle, long_castle, promo_piece);
 }
 
 template <>
@@ -96,13 +98,13 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 			if (pos.getTurn() == WHITE ? target.getRank() == 3 : target.getRank() == 4) {
 				Piece::enumType ddp = pos.pieceOn(
 					pos.getTurn() == WHITE ?
-						Square(static_cast<int>(target) - 16)
-						: Square(static_cast<int>(target) + 16), pos.getTurn());
+						Square(static_cast<int>(target) - 16) : 
+						Square(static_cast<int>(target) + 16), pos.getTurn());
 
 				Piece::enumType dp = pos.pieceOn(
 					pos.getTurn() == WHITE ?
-						Square(static_cast<int>(target) - 8)
-						: Square(static_cast<int>(target) + 8), pos.getTurn());
+						Square(static_cast<int>(target) - 8) : 
+						Square(static_cast<int>(target) + 8), pos.getTurn());
 
 				if (ddp == Piece::PAWN and dp == Piece::NONE) {
 					origin = pos.getTurn() == WHITE ? Square(static_cast<int>(target) - 16)
@@ -183,29 +185,29 @@ bool Move32b::isPseudoLegal(const Position& pos) const {
 		if (isShortCastle()) {
 			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
 
-			return   own_castling_state.isShortPossible()
-				and (own_castling_state.notThroughPieces_Short(pos.getOccupied(), pos.getTurn()))
-				and !pos.isInCheck(pos.getTurn())
-				and (own_castling_state.notThroughCheck_Short(pos, pos.getTurn()));
+			return own_castling_state.isShortPossible() and
+				  (own_castling_state.notThroughPieces_Short(pos.getOccupied(), pos.getTurn())) and
+				  !pos.isInCheck(pos.getTurn()) and
+				  (own_castling_state.notThroughCheck_Short(pos, pos.getTurn()));
 		}
 		else if (isLongCastle()) {
 			const CastlingRights own_castling_state = pos.getCastlingByColor(pos.getTurn());
 
-			return	 own_castling_state.isLongPossible()
-				and (own_castling_state.notThroughPieces_Long(pos.getOccupied(), pos.getTurn()))
-				and !pos.isInCheck(pos.getTurn())
-				and (own_castling_state.notThroughCheck_Long(pos, pos.getTurn()));
+			return own_castling_state.isLongPossible() and
+				  (own_castling_state.notThroughPieces_Long(pos.getOccupied(), pos.getTurn())) and
+				  !pos.isInCheck(pos.getTurn()) and
+				  (own_castling_state.notThroughCheck_Long(pos, pos.getTurn()));
 		}
 	}
 	else if (isEnPassant()) {
-		return  pos.pieceOn(org, pos.getTurn()) == Piece::PAWN
-			and pos.getEnPassantSq() == dst;
+		return pos.pieceOn(org, pos.getTurn()) == Piece::PAWN and
+			   pos.getEnPassantSq() == dst;
 	}
 
-	return	 p == pos.pieceOn(org, pos.getTurn())
-		and (!isCapture() or d != Piece::NONE)
-		and (!isQuiet() or (d == Piece::NONE and pos.pieceOn(dst, pos.getTurn()) == Piece::NONE))
-		and (p == Piece::KNIGHT or !(onlyBetween(org, dst) & pos.getOccupied()));
+	return p == pos.pieceOn(org, pos.getTurn()) and
+		  (!isCapture() or d != Piece::NONE) and
+		  (!isQuiet() or (d == Piece::NONE and pos.pieceOn(dst, pos.getTurn()) == Piece::NONE)) and
+		  (p == Piece::KNIGHT or !(onlyBetween(org, dst) & pos.getOccupied()));
 }
 
 template <>
@@ -294,7 +296,9 @@ Move32b unpackedMove(const Position& pos, Move16b move) {
 		(onlyBetween(origin, target) & pos.getOccupied()))
 		return Move32b::Null;
 
-	return createMove(pos, origin, target, piece, capture, ep_capture, promotion, short_castle, long_castle, promo_piece);
+	return createMove(pos, origin, target, piece, 
+					  capture, ep_capture, promotion, 
+					  short_castle, long_castle, promo_piece);
 }
 
 template enumColor Move16b::getPieceColor(const Position&) const;

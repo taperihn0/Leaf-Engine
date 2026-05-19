@@ -31,10 +31,10 @@ public:
 #pragma pack(push, 1)
     // Add activaction function info
     struct Header {
-        uint32_t layer_size[MaxLayerCount];
-        uint16_t layer_count;
-        byte     dual_hl;
-        byte     _padding[13];
+        uint32_t          layer_size[MaxLayerCount];
+        uint16_t          layer_count;
+        byte              dual_hl;
+        array1d<byte, 13> _padding;
     };
 #pragma pack(pop)
 
@@ -75,12 +75,12 @@ private:
     int _fd = -1;
 #endif
 
-    size_t         _mem_size;
-    void*          _mem_buf;
-    Header         _header;
-    std::string    _bin_path;
-    const int16_t* _layer_weights[MaxLayerCount];
-    const int16_t* _layer_biases[MaxLayerCount];
+    size_t                                 _mem_size;
+    void*                                  _mem_buf;
+    Header                                 _header;
+    std::optional<std::string>             _bin_path;
+    array1d<const int16_t*, MaxLayerCount> _layer_weights;
+    array1d<const int16_t*, MaxLayerCount> _layer_biases;
 };
 
 extern PackedNeuralNetwork GlobPackedNetwork;

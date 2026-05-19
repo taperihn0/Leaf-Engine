@@ -5,7 +5,6 @@
 class CuckooTables {
 public:
 	CuckooTables();
-	~CuckooTables();
 
 	void init();
 
@@ -45,7 +44,7 @@ private:
 		Move16b  move16;
 	};
 
-	_CuckooEntry* _cuckoo_entry_buff;
+	std::unique_ptr<_CuckooEntry[]> _cuckoo_entry_buff;
 };
 
 

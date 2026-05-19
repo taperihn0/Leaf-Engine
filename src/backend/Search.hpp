@@ -43,9 +43,12 @@ struct SearchResults {
 	void clear();
 
 	void printBestMove();
-	void print(const PVInfo* root_pv_line, uint16_t pv_len, const TranspositionTable& tt);
+	void print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+			   uint16_t pv_len, 
+			   const TranspositionTable& tt);
 	void printShort();
-	void printPV(const PVInfo* root_pv_line, uint16_t pv_len);
+	void printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+				 uint16_t pv_len);
 
 #if defined (_COLLECT_SEARCH_STATS)
 	void printSearchStats();
@@ -120,25 +123,25 @@ struct PVInfo {
 struct NodeInfo {
 	void clear();
 
-	enumColor					side2move;
-	MoveOrder					move_picker;
-	Position::IrreversibleState state;
-	Move32b						move;
-	Move32b						best_move;
-	Score						score;
-	Score						eval;
-	float 						improving_rate;
-	bool						can_move;
-	Score						best_score;
-	bool						check;
-	uint8_t						moves_searched;
-	uint8_t						move_index;
-	TTEntry::Bound				bound;
-    AccumulatorCluster          cluster;
-	bool						cuckoo_check;
-	PVInfo 	       				pv_line[MaxSelDepth];
-	uint16_t 					pv_line_len;
-	bool						is_cut;
+	enumColor					 side2move;
+	MoveOrder					 move_picker;
+	Position::IrreversibleState  state;
+	Move32b						 move;
+	Move32b						 best_move;
+	Score						 score;
+	Score						 eval;
+	float 						 improving_rate;
+	bool						 can_move;
+	Score						 best_score;
+	bool						 check;
+	uint8_t						 moves_searched;
+	uint8_t						 move_index;
+	TTEntry::Bound				 bound;
+    AccumulatorCluster           cluster;
+	bool						 cuckoo_check;
+	array1d<PVInfo, MaxSelDepth> pv_line;
+	uint16_t 					 pv_line_len;
+	bool						 is_cut;
 };
 
 class TreeStack {
@@ -352,7 +355,8 @@ private:
 	int getNullVerifyDepth(int nm_depth);
 
 	void refreshPVinTT(const Position& pos, 
-					   const PVInfo* root_pv_line, uint16_t pv_len,
+					   const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+					   uint16_t pv_len,
 					   SearchResults& results);
 
 	template <bool IsPV>

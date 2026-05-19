@@ -15,6 +15,7 @@
 #include <cmath>
 #include <ctime>
 #include <filesystem>
+#include <optional>
 
 #if defined(_MSC_VER)
 #include <windows.h>
@@ -238,12 +239,20 @@ _INLINE T random(T l, T r) {
     return dist(mersenne);
 }
 
+template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
+_INLINE T sparseRandom(T l, T r) {
+	return random<T>(l, r) & random<T>(l, r);
+}
+
+template <typename T, size_t N>
+using array1d = std::array<T, N>;
+
 template <typename T, size_t N, size_t M>
-using array2d = std::array<
-					std::array<T, M>, 
+using array2d = array1d<
+					array1d<T, M>, 
 				N>;
 
 template <typename T, size_t N, size_t M, size_t S>
-using array3d = std::array<
+using array3d = array1d<
 					array2d<T, M, S>, 
 				N>;

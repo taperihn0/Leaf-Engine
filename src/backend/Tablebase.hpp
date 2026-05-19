@@ -31,6 +31,6 @@ private:
     SyzygyTablebase() = default;
     ~SyzygyTablebase();
 
-    bool        _initialized = false;
-    std::string _tb_path = "<empty>";
+    bool                       _initialized = false;
+    std::optional<std::string> _tb_path = std::nullopt;
 };

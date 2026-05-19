@@ -40,7 +40,7 @@ PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
 PackedNeuralNetwork::PackedNeuralNetwork()
     : _mem_size(0)
     , _mem_buf(nullptr)
-    , _bin_path("<empty>")
+    , _bin_path(std::nullopt)
     , _layer_weights{}
     , _layer_biases{}
 {}
@@ -157,7 +157,7 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
         return true;
     }
 
-    _bin_path = "<empty>";
+    _bin_path = std::nullopt;
     return false;
 }
 
@@ -238,7 +238,7 @@ size_t PackedNeuralNetwork::getLayerBiasesCount(size_t layer_num) const {
 }
 
 std::string PackedNeuralNetwork::getFilePath() const {
-    return _bin_path;
+    return _bin_path.value_or("<empty>");
 }
 
 bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,

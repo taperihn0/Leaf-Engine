@@ -18,7 +18,7 @@ public:
 	{
 		return static_cast<int>((relv_occ * magic_bb) >> (64 - relv_bits));
 	}
-
+	
 	static _FORCEINLINE BitBoard bishopAttacks(Square sq, BitBoard occ) {
 		return _mbishop_att[static_cast<int8_t>(sq)][mIndexHash(
 														_magics_bishop[sq], 
@@ -28,9 +28,9 @@ public:
 
 	static _FORCEINLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
 		return _mrook_att[static_cast<int8_t>(sq)][mIndexHash(
-			_magics_rook[sq],
-			_m_occupancy_rook[sq] & occ,
-			_m_bits_rook[sq])];
+														_magics_rook[sq],
+														_m_occupancy_rook[sq] & occ,
+														_m_bits_rook[sq])];
 	}
 
 	static _FORCEINLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
@@ -46,8 +46,8 @@ private:
 	static uint64_t generateRookAttacks(Square sq, BitBoard relv_occ);
 
 	// magic bitboards for bishop and rook
-	static const std::array<uint64_t, 64> _magics_bishop, 
-										  _magics_rook;
+	static const array1d<uint64_t, 64> _magics_bishop, 
+									   _magics_rook;
 
 	// look-up tables of rook and bishop attacks in Plain Magic Bitboards implementation
 	// 4096 = 2 ^ 12 - maximum number of occupancy subsets for rook (rook at [a1, h8])
@@ -56,11 +56,11 @@ private:
 	static array2d<uint64_t, 64, 512>  _mbishop_att;
 
 	// relevant occupancy pre-computed masks
-	static const std::array<uint64_t, 64> _m_occupancy_bishop, 
-										  _m_occupancy_rook;
+	static const array1d<uint64_t, 64> _m_occupancy_bishop, 
+									   _m_occupancy_rook;
 
 	// relevant occupancy bits count for bishop and rook - later used in hash function
 	// while shifting product number
-	static const std::array<uint8_t, 64> _m_bits_bishop, 
-								   		 _m_bits_rook;
+	static const array1d<uint8_t, 64> _m_bits_bishop, 
+								   	  _m_bits_rook;
 };

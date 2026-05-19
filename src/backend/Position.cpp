@@ -21,8 +21,8 @@ void CastlingRights::printByColor(enumColor col_type) const {
 }
 
 Position::Position() {
-	std::memset(reinterpret_cast<void*>(_piece_bb[0].data()), 0, sizeof(_piece_bb[0]));
-	std::memset(reinterpret_cast<void*>(_piece_bb[1].data()), 0, sizeof(_piece_bb[1]));
+	std::fill(_piece_bb[0].begin(), _piece_bb[0].end(), 0);
+	std::fill(_piece_bb[1].begin(), _piece_bb[1].end(), 0);
 	_occupied[0] = 0_ui64;
 	_occupied[1] = 0_ui64;
 	_zhash = 0_ui64;
@@ -640,7 +640,7 @@ _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, 
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
-static constexpr std::array<int, 7> SeePieceValue = {
+static constexpr array1d<int, 7> SeePieceValue = {
 	100, 300, 300, 500, 900, 10000, 0
 };
 

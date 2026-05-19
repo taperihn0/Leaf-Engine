@@ -4,13 +4,9 @@
 #include "Attacks.hpp"
 #include "Hash.hpp"
 
-CuckooTables::CuckooTables() {
-	_cuckoo_entry_buff = new _CuckooEntry[_CuckooTableSize];
-	std::memset(_cuckoo_entry_buff, 0, sizeof(_CuckooEntry) * _CuckooTableSize);
-}
-
-CuckooTables::~CuckooTables() {
-	delete[] _cuckoo_entry_buff;
+CuckooTables::CuckooTables()
+	: _cuckoo_entry_buff(new _CuckooEntry[_CuckooTableSize]) { 
+	memSet(_cuckoo_entry_buff.get(), 0, sizeof(_CuckooEntry) * _CuckooTableSize);
 }
 
 void CuckooTables::init() {

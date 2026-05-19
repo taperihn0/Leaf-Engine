@@ -17,13 +17,13 @@ class MoveOrder;
 class MoveOrderHistoryTables {
 public:
 	friend class MoveOrder;
+	MoveOrderHistoryTables() { clearQuietsHistory(); }
 
-	MoveOrderHistoryTables(); 
-
-	void clearQuietsHistory();
-	// ...
+	_INLINE void clearQuietsHistory() {
+		memSet(_quiets_history.data(), 0, sizeof(_quiets_history));
+	}
 private:
-	int16_t _quiets_history[2][6][64];
+	array3d<int16_t, 2, 6, 64> _quiets_history;
 	// ...
 };
 
@@ -50,11 +50,11 @@ inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(925.484f);
 *   These are not tuned.
 */
 
-inline constexpr    int MaxQuietsHistoryPow = 13;
-inline constexpr    int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
-inline constexpr    int PawnCapturedScore   = 100;
-inline constexpr    int RookCapturedScore   = 500;
-inline constexpr    int QueenCapturedScore  = 900;
+inline constexpr int MaxQuietsHistoryPow = 13;
+inline constexpr int MaxQuietsHistory    = 1 << MaxQuietsHistoryPow;
+inline constexpr int PawnCapturedScore   = 100;
+inline constexpr int RookCapturedScore   = 500;
+inline constexpr int QueenCapturedScore  = 900;
 
 /*
 *   MoveOrder<STAGED>:
@@ -131,10 +131,6 @@ private:
 
 	MoveList _move_list;
 };
-
-_INLINE void MoveOrderHistoryTables::clearQuietsHistory() {
-	alignedMemset(_quiets_history, 0, sizeof(_quiets_history));
-}
 
 _INLINE void MoveOrder::setHistoryBuffer(MoveOrderHistoryTables* history_tables) {
 	_tables = history_tables;
