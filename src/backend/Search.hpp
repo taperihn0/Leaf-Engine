@@ -147,14 +147,13 @@ struct NodeInfo {
 class TreeStack {
 public:
 	TreeStack();
-	~TreeStack();
 
-	TreeStack(TreeStack&&)			 = delete;
-	TreeStack(TreeStack&)			 = delete;
-	TreeStack operator=(TreeStack&)  = delete;
-	TreeStack operator=(TreeStack&&) = delete;
+	TreeStack(const TreeStack&)			  = delete;
+	TreeStack(TreeStack&&) 				  = delete;
+	TreeStack operator=(const TreeStack&) = delete;
+	TreeStack operator=(TreeStack&&) 	  = delete;
 
-	void init(MoveOrderHistoryTables* history_buffer);
+	void clear(MoveOrderHistoryTables* history_buffer);
 
 	NodeInfo* getRootNode();
 	const NodeInfo* getRootNode() const;
@@ -169,7 +168,7 @@ public:
 								 AccumulatorCluster* const accum_cluster);
 private:
 	static constexpr size_t _Count = MaxSelDepth;
-	NodeInfo* _stack;
+	std::unique_ptr<NodeInfo, AlignedDeleter<NodeInfo>> _stack;
 };
 
 /*
@@ -266,6 +265,11 @@ inline constexpr bool   UseSyzygyTablebase = _USE_SYZYGY_TB;
 inline constexpr bool   UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
 inline constexpr double MinTimeBranchFactor = 1.;
 inline constexpr double MaxTimeBranchFactor = 5.;
+inline _P_CONSTEXPR int TablebaseLowestWinScore = TablebaseScoreScale 
+												 * (TablebaseWinScore 
+													- MaxSelDepth 
+													- 15 * TablebasePieceDiffMult) 
+												 / 16;
 
 class Search {
 public:
@@ -346,6 +350,7 @@ private:
 							const Position& pos, 
 							const NodeInfo* node, 
 							int ply) const;
+	bool isTablebaseScore(Score score) const;
 	Score applyContempt(Score score, const NodeInfo* node) const;
 
 	template <enumNode NodeType>

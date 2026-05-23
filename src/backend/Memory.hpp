@@ -86,6 +86,6 @@ _INLINE void alignedFree(void* block) {
 
 template <typename T>
 struct AlignedDeleter {
-	void operator()(T* p) const { alignedFree(p); }
+	void operator()(T* p) const { alignedFree(reinterpret_cast<void*>(p)); }
 };
 

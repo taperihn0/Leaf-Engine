@@ -225,49 +225,47 @@ void Search::resizeHashTT(size_t tt_size_mb) {
 void Search::registerNewGame() {
 	clearHashTT();
 	_history_buff->clearQuietsHistory();
+	_tree_stack.clear(_history_buff.get());
 }
 
-TreeStack::TreeStack() {
-	_stack = reinterpret_cast<NodeInfo*>(alignedMalloc(sizeof(NodeInfo) * _Count, CACHELINE_SIZE));
+TreeStack::TreeStack()
+	: _stack(reinterpret_cast<NodeInfo*>(alignedMalloc(sizeof(NodeInfo) * _Count, CACHELINE_SIZE))) 
+{
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::init(MoveOrderHistoryTables* history_buffer) {
+void TreeStack::clear(MoveOrderHistoryTables* history_buffer) {
 	ASSERTNOLOG(history_buffer);
 
 	for (int i = 0; i < static_cast<int>(_Count); i++) {
-        NodeInfo* const node = &_stack[i];
+        NodeInfo& node = _stack.get()[i];
 
-		node->clear();
-		node->move_picker.setHistoryBuffer(history_buffer);
-        node->cluster.prev_cluster = i - 1 >= 0 ? &(node - 1)->cluster : nullptr;
-        node->cluster.next_cluster = i + 1 < static_cast<int>(_Count) ? &(node + 1)->cluster : nullptr;
+		node.clear();
+		node.move_picker.setHistoryBuffer(history_buffer);
+        node.cluster.prev_cluster = i - 1 >= 0 ? &_stack.get()[i - 1].cluster : nullptr;
+        node.cluster.next_cluster = i + 1 < static_cast<int>(_Count) ? &_stack.get()[i + 1].cluster : nullptr;
 	}
-}
-
-TreeStack::~TreeStack() {
-	alignedFree(_stack);
 }
 
 _INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
 	assert(ply < _Count);
-	return _stack + ply + 1;
+	return _stack.get() + ply + 1;
 }
 
 _INLINE NodeInfo* TreeStack::getRootNode() {
-	return _stack + 1;
+	return _stack.get() + 1;
 }
 
 _INLINE const NodeInfo* TreeStack::getRootNode() const {
-	return _stack + 1;
+	return _stack.get() + 1;
 }
 
 _INLINE NodeInfo* TreeStack::getPreRootNode() {
-	return _stack;
+	return _stack.get();
 }
 
 _INLINE const NodeInfo* TreeStack::getPreRootNode() const {
-	return _stack;
+	return _stack.get();
 }
 
 _INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
@@ -352,8 +350,6 @@ Search::Search(TranspositionTable&& tt)
 {
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();
-
-	_tree_stack.init(_history_buff.get());
 	_cuckoo_tables.init();
 }
 
@@ -472,12 +468,15 @@ Move32b Search::goIterativeDeepening(Position& pos,
 							 - std::min(d, AspirationMaxDepthInfl) * AspirationDepthRate 
 							 + unstable * AspirationUnstableFactor;
 
-		Score alpha = d >= AspirationSearchDepth ? 
-						std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, -Score::Mate) : 
-						-Score::Mate;
-		Score beta = d >= AspirationSearchDepth ? 
-						std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, +Score::Mate) : 
-						+Score::Mate; 
+		Score alpha = -Score::Mate;
+		Score beta = +Score::Mate;
+
+		if (d >= AspirationSearchDepth and 
+			!prev_best_score.isMateScore() and
+		 	!isTablebaseScore(prev_best_score)) {
+			alpha = std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, -Score::Mate);
+			beta  = std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, +Score::Mate);
+		}
 
 		bool terminate = false;
 
@@ -1043,7 +1042,7 @@ Score Search::nmSearch(Position& pos,
 	{
 		const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
 		_tt.prefetchBucket(next_hash);
-
+		
 		/* Futility Pruning -
 		*  at shallow depths, skip moves that aren't like to rise alpha.
 		*/
@@ -1051,6 +1050,7 @@ Score Search::nmSearch(Position& pos,
 			!mate_thread and
 			depth <= FutilityDepth and
 			node->moves_searched >= FutilityMoveCount and
+			node->can_move and
 			node->move.isQuiet() and
 			!node->move.isQueenPromotion())
 		{
@@ -1298,6 +1298,7 @@ Score Search::nmSearch(Position& pos,
 					results.beta_cut_cnt++;
 					results.move_cut_cnt[node->move_index]++;
 #endif // _COLLECT_SEARCH_STATS
+
 					break;
 				}
 
@@ -1320,17 +1321,22 @@ Score Search::nmSearch(Position& pos,
 		else if (!limits.isTimeLeft() or
                  !limits.anyNodesLeft(results.nodes_cnt) or
                  !limits.anyQuiesceNodesLeft(results.qnodes_cnt))
-        {
-			if constexpr (Root) {
-				if (node->best_move.isNull()) {
-					node->best_move = node->move;
-					node->pv_line[0].best_move = packedMove(node->best_move);
-					node->pv_line_len = 1;
-				}
-			}
+		break;
+	}
 
-			return -Score::Undef;
+	if (!limits.isTimeLeft() or
+        !limits.anyNodesLeft(results.nodes_cnt) or
+        !limits.anyQuiesceNodesLeft(results.qnodes_cnt)) 
+	{
+		if constexpr (Root) {
+			if (node->best_move.isNull()) {
+				node->best_move = node->move;
+				node->pv_line[0].best_move = packedMove(node->best_move);
+				node->pv_line_len = 1;
+			}
 		}
+
+		return -Score::Undef;
 	}
 	
 	// detect checkmate or stealmate
@@ -1580,7 +1586,7 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 											 const NodeInfo* node,
 											 int ply) const 
 {
-	static auto get_win_tb_score = [](const Position& pos, int ply) -> Score {
+	static auto get_win_tb_score = [](const Position& pos, int ply) -> Score  _LAMBDA_FORCEINLINE {
 		const int pccnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
 		const int unscaled = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pccnt_diff);
 		return static_cast<Score>(TablebaseScoreScale * unscaled / 16);
@@ -1594,6 +1600,11 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 	}
 
 	return Score::Undef;
+}
+
+_FORCEINLINE bool Search::isTablebaseScore(Score score) const {
+	return score.isValid() and 
+		   abs<Score::int_t>(static_cast<Score::int_t>(score)) >= TablebaseLowestWinScore;
 }
 
 _FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) const {
@@ -1653,7 +1664,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 	const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale;
 
 	// Assert we won't overflow into mate score
-	assert(std::abs(scaled_eval) < Score::MateBound - 100);
+	assert(abs<int>(scaled_eval) < Score::MateBound - 100);
 
 	const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
 	const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) / static_cast<float>(HalfMovesEvalLimit);

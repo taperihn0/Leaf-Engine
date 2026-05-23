@@ -19,6 +19,10 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 {
 	static_assert(!Root or Type == STAGED);
 	assert(_tables != nullptr);
+
+	if constexpr (Root) {
+		_killer_move = Move32b::Null;
+	}
 	
 	switch (_stage) {
 	// GCC requires that, without that case it reports warning [-Wswitch]
@@ -91,7 +95,7 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 
 		const enumColor side = pos.getTurn();
 
-		scoreQuiets(_quiets_ind, side);
+		scoreQuiets(_iterator, side);
 
 		return nextFromList(next_move, move_score);
 	}
@@ -139,15 +143,16 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
 }
 
 _INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
-	if (_iterator >= _move_list.count()) 
-		return false;
+	while (_iterator < _move_list.count()) {
+		_move_list.selectSort(_iterator);
+		move = _move_list.getMove(_iterator);
+		score = _move_list.getScore(_iterator++);
 
-	_move_list.selectSort(_iterator);
-	move = _move_list.getMove(_iterator);
-	score = _move_list.getScore(_iterator++);
+		if (move != _hash_move and move != _killer_move)
+			return true;
+	}
 
-	return move == _hash_move or move == _killer_move ? nextFromList(move, score) 
-													  : true;
+	return false;
 }
 
 static array1d<const int16_t*, 5> CaptureScore = {
