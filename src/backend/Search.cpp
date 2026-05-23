@@ -468,12 +468,57 @@ Move32b Search::goIterativeDeepening(Position& pos,
 		// Inject previous PV line to hash table
 		refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
 
-		const bool terminate = !goSearch<InfoLevel>(pos, game, limits, search_results);
-		
-		search_results.best_move = root->best_move;
+		int aspiration_win = AspirationFirstWindow 
+							 - std::min(d, AspirationMaxDepthInfl) * AspirationDepthRate 
+							 + unstable * AspirationUnstableFactor;
 
-		if (terminate) 
+		Score alpha = d >= AspirationSearchDepth ? 
+						std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, -Score::Mate) : 
+						-Score::Mate;
+		Score beta = d >= AspirationSearchDepth ? 
+						std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, +Score::Mate) : 
+						+Score::Mate; 
+
+		bool terminate = false;
+
+		assert(AspirationCount > 0);
+
+		for (int i = 1; i <= AspirationCount; i++) {
+			terminate = !goSearch<InfoLevel>(pos, game, limits, search_results, 
+											 alpha, beta);
+
+			if (terminate)
+				break;
+			else if ((root->best_score > alpha and root->best_score < beta) or
+					 root->best_score.isMateScore()) 
+				break;
+
+			if (i + 1 >= AspirationCount) {
+				alpha = -Score::Mate;
+				beta = +Score::Mate;
+				continue;
+			}
+			
+			aspiration_win *= AspirationWidenRate;
+			
+			if (root->best_score <= alpha) {
+				alpha = std::max<int>(static_cast<int>(alpha) - aspiration_win,
+									  -Score::Mate);
+			}
+			else {
+				beta = std::min<int>(static_cast<int>(beta) + aspiration_win,
+									 +Score::Mate);
+			}
+		}
+
+		if (terminate)
 			break;
+
+		if constexpr (InfoLevel == SEARCH_FULL_INFO) {
+			search_results.print(root->pv_line, root->pv_line_len, _tt);
+		}
+
+		search_results.best_move = root->best_move;
 
 		search_results.nodes_per_depth[d] = search_results.nodes_cnt - prev_total_node_cnt;
 		search_results.time_per_depth[d]  = search_results.duration  - prev_total_duration;
@@ -507,12 +552,13 @@ Move32b Search::goIterativeDeepening(Position& pos,
 template <Search::enumInfoLevel InfoLevel>
 bool Search::goSearch(Position& pos, 
 					  const FullInfoRecord& game, 
-					  SearchLimits& limits, SearchResults& results) 
+					  SearchLimits& limits, SearchResults& results,
+					  Score alpha, Score beta) 
 {
 	NodeInfo* root = _tree_stack.getRootNode();
 
 	const Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
-									   					     -Score::Mate, +Score::Mate, 
+									   					     alpha, beta, 
 									   					     results.depth, 
 									   					     0);
 
@@ -528,11 +574,6 @@ bool Search::goSearch(Position& pos,
     }
 
 	results.duration = limits.timer.duration();
-
-	if constexpr (InfoLevel == SEARCH_FULL_INFO) {
-		results.print(root->pv_line, root->pv_line_len, _tt);
-	}
-
 	return true;
 }
 

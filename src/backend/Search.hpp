@@ -247,6 +247,13 @@ inline _P_CONSTEXPR int TablebasePieceCountLimit = roundi<float>(7.68515f);
 inline _P_CONSTEXPR int TablebaseWinScore = roundi<float>(30978.5f);
 inline _P_CONSTEXPR int TablebasePieceDiffMult = roundi<float>(103.785f);
 inline _P_CONSTEXPR int TablebaseScoreScale = roundi<float>(16.9363f);
+inline _P_CONSTEXPR int AspirationSearchDepth = 4;
+inline _P_CONSTEXPR int AspirationFirstWindow = 85;
+inline _P_CONSTEXPR int AspirationUnstableFactor = 150;
+inline _P_CONSTEXPR int AspirationDepthRate = 3;
+inline _P_CONSTEXPR int AspirationMaxDepthInfl = 8;
+inline _P_CONSTEXPR int AspirationCount = 3;
+inline _P_CONSTEXPR int AspirationWidenRate = 4;
 
 /* Static parameters -
 *  These are not tuned.
@@ -316,7 +323,8 @@ private:
 	template <enumInfoLevel InfoLevel>
 	bool goSearch(Position& pos, 
 				  const FullInfoRecord& game, 
-				  SearchLimits& limits, SearchResults& results);
+				  SearchLimits& limits, SearchResults& results,
+				  Score alpha, Score beta);
 
 	template <enumNode NmNodeType, bool NullMove, bool Root = false>
 	Score nmSearch(Position& pos, 
