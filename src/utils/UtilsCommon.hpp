@@ -12,6 +12,7 @@
 #include <sstream>
 #include <thread>
 #include <functional>
+#include <mutex>
 
 #if defined(DEBUG)
 #define INSPECT_SELFPLAY_MATCHES
@@ -74,6 +75,9 @@ _FORCEINLINE enumLogLabel threadLabel(uint id) {
 }
 
 _INLINE void labelLog(std::ostream& is, uint32_t label, const std::string& str) {
+    static std::mutex StdoutMutex;
+    const std::lock_guard<std::mutex> lock(StdoutMutex);
+
     if (label == LOG_NO_LABEL) {
         is << str << std::endl;
         return;

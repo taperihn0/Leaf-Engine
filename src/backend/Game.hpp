@@ -7,7 +7,7 @@
 
 class MoveRecord {
 public:
-	_INLINE MoveRecord() = default;
+	MoveRecord() = default;
 
 	_INLINE void recordMove(Move32b move) {
 		assert(_idx < MaxGameMoves);

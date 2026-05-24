@@ -83,6 +83,15 @@ void TunableParametersMap::createMapping() {
     _addr["ToBishopPromoScore"] = &ToBishopPromoScore;
     _addr["ToRookPromoScore"] = &ToRookPromoScore;
     _addr["ToQueenPromoScore"] = &ToQueenPromoScore;
+    _addr["AspirationSearchDepth"] = &AspirationSearchDepth;
+    _addr["AspirationFirstWindow"] = &AspirationFirstWindow;
+    _addr["AspirationUnstableFactor"] = &AspirationUnstableFactor;
+    _addr["AspirationDepthRate"] = &AspirationDepthRate;
+    _addr["AspirationMaxDepthInfl"] = &AspirationMaxDepthInfl;
+    _addr["AspirationWindowScoreDiv"] = &AspirationWindowScoreDiv;
+    _addr["AspirationMaxWindow"] = &AspirationMaxWindow;
+    _addr["AspirationCount"] = &AspirationCount;
+    _addr["AspirationWidenRate"] = &AspirationWidenRate;
 };
 
 void* TunableParametersMap::getAddressOf(std::string str) {

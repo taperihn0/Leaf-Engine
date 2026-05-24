@@ -249,10 +249,12 @@ inline _P_CONSTEXPR int TablebaseScoreScale = roundi<float>(16.9363f);
 inline _P_CONSTEXPR int AspirationSearchDepth = 4;
 inline _P_CONSTEXPR int AspirationFirstWindow = 85;
 inline _P_CONSTEXPR int AspirationUnstableFactor = 150;
-inline _P_CONSTEXPR int AspirationDepthRate = 3;
-inline _P_CONSTEXPR int AspirationMaxDepthInfl = 8;
+inline _P_CONSTEXPR int AspirationDepthRate = 1;
+inline _P_CONSTEXPR int AspirationMaxDepthInfl = 6;
+inline _P_CONSTEXPR int AspirationWindowScoreDiv = 5200;
+inline _P_CONSTEXPR int AspirationMaxWindow = 700;
 inline _P_CONSTEXPR int AspirationCount = 3;
-inline _P_CONSTEXPR int AspirationWidenRate = 4;
+inline _P_CONSTEXPR int AspirationWidenRate = 12;
 
 /* Static parameters -
 *  These are not tuned.
@@ -265,11 +267,6 @@ inline constexpr bool   UseSyzygyTablebase = _USE_SYZYGY_TB;
 inline constexpr bool   UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
 inline constexpr double MinTimeBranchFactor = 1.;
 inline constexpr double MaxTimeBranchFactor = 5.;
-inline _P_CONSTEXPR int TablebaseLowestWinScore = TablebaseScoreScale 
-												 * (TablebaseWinScore 
-													- MaxSelDepth 
-													- 15 * TablebasePieceDiffMult) 
-												 / 16;
 
 class Search {
 public:

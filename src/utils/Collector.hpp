@@ -38,7 +38,6 @@ private:
         std::atomic<size_t> total_draw_count;
         size_t              total_thread_cnt;
         std::ofstream       err_output;
-        std::mutex          stdout_lock;
         std::mutex          err_output_lock;
     };
 

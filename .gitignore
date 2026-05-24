@@ -8,6 +8,7 @@ misc/selfplay_*
 misc/selfplay_legacy/
 misc/tmp
 misc/log
+misc/fuckups
 CMakePresets.json
 
 build/

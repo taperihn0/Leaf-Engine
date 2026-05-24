@@ -1,3 +1,11 @@
+### feature: Aspiration Window first attempt
+Score of leaf-final-asp vs leaf-final-last: 1244 - 1217 - 1539  [0.503] 4000 <br>
+...      leaf-final-asp playing White: 701 - 538 - 761  [0.541] 2000 <br>
+...      leaf-final-asp playing Black: 543 - 679 - 778  [0.466] 2000 <br>
+...      White vs Black: 1380 - 1081 - 1539  [0.537] 4000 <br>
+Elo difference: 2.3 +/- 8.4, LOS: 70.7 %, DrawRatio: 38.5 % <br>
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf <br>
+
 ### feature: Tuned search parameters for Syzygy probing
 Score of leaf-syzygy-tb-tune vs leaf-syzygy-tb: 848 - 778 - 1171  [0.513] 2797 <br>
 ...      leaf-syzygy-tb-tune playing White: 492 - 320 - 587  [0.561] 1399 <br>

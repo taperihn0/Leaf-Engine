@@ -418,7 +418,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
 		/* We approximate how much time we need for 
 		*  next search. This is done via Efective Branch Factor (EBF)
-		*  estimator. We also consider unstability of the search in order
+		*  estimation. We also consider unstability of the search in order
 		*  to setup a rational breaking system when we got too little time
 		*  for deeper search.
 		*/
@@ -471,16 +471,24 @@ Move32b Search::goIterativeDeepening(Position& pos,
 		Score alpha = -Score::Mate;
 		Score beta = +Score::Mate;
 
-		if (d >= AspirationSearchDepth and 
-			!prev_best_score.isMateScore() and
-		 	!isTablebaseScore(prev_best_score)) {
-			alpha = std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, -Score::Mate);
-			beta  = std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, +Score::Mate);
+		if (!prev_best_score.isMateScore() and
+		 	!isTablebaseScore(prev_best_score)) 
+		{
+			const Score::int_t prev_best_score_abs = abs<Score::int_t>(static_cast<Score::int_t>(prev_best_score));
+			aspiration_win += sq(prev_best_score_abs) / AspirationWindowScoreDiv;
+
+			if (d >= AspirationSearchDepth)	{
+				alpha = std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, 
+									  -Score::Mate);
+				beta  = std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, 
+									  +Score::Mate);
+			}
 		}
 
 		bool terminate = false;
 
 		assert(AspirationCount > 0);
+		assert(aspiration_win > 0);
 
 		for (int i = 1; i <= AspirationCount; i++) {
 			terminate = !goSearch<InfoLevel>(pos, game, limits, search_results, 
@@ -491,15 +499,16 @@ Move32b Search::goIterativeDeepening(Position& pos,
 			else if ((root->best_score > alpha and root->best_score < beta) or
 					 root->best_score.isMateScore()) 
 				break;
+			
+			aspiration_win = round<int>(AspirationWidenRate / 4.f * aspiration_win);
 
-			if (i + 1 >= AspirationCount) {
+			if (i + 1 >= AspirationCount or
+				aspiration_win >= AspirationMaxWindow) {
 				alpha = -Score::Mate;
 				beta = +Score::Mate;
 				continue;
 			}
-			
-			aspiration_win *= AspirationWidenRate;
-			
+
 			if (root->best_score <= alpha) {
 				alpha = std::max<int>(static_cast<int>(alpha) - aspiration_win,
 									  -Score::Mate);
@@ -1603,6 +1612,12 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 }
 
 _FORCEINLINE bool Search::isTablebaseScore(Score score) const {
+	const _P_STATIC _P_CONSTEXPR int TablebaseLowestWinScore = 
+													TablebaseScoreScale 
+												 	 * (TablebaseWinScore 
+														- MaxSelDepth 
+														- 15 * TablebasePieceDiffMult) 
+												 	 / 16;
 	return score.isValid() and 
 		   abs<Score::int_t>(static_cast<Score::int_t>(score)) >= TablebaseLowestWinScore;
 }

@@ -41,8 +41,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         std::ostringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
 
-        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
-
         log(*engine0.proc_stdin, tt_log.str());
         labelLog(std::cout, LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
@@ -102,16 +100,12 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
                << thr_data.white_win_count << ' '
                << thr_data.black_win_count << ' '
                << thr_data.draw_count;
-
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             labelLog(std::cout, LOG_INFO | thread_label, ss.str());
         }
 
         {
             std::ostringstream ss;
             ss << "Starting game " << i << "...";
-
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             labelLog(std::cout, LOG_INFO | thread_label, ss.str());
         }
 
@@ -172,12 +166,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             }
 
             thr_data.commons->err_output << std::endl;
-
-            {
-                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
-                labelLog(std::cout, LOG_INFO | thread_label, "Invalid game occured");
-            }
-
+            labelLog(std::cout, LOG_INFO | thread_label, "Invalid game occured");
             return false;
         }
 
@@ -202,19 +191,16 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 
             if (isWhiteWin(*game_result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
-                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
             
             else if (isBlackWin(*game_result) and
                      !TrainingDataEntry::write(thr_data.output_black_win, entry)) {
-                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
             
             else if (isDraw(*game_result) and 
                      !TrainingDataEntry::write(thr_data.output_draw, entry)) {
-                const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
                 labelLog(std::cout, LOG_INFO | thread_label, "Failed to write entry");
             }
         }
@@ -226,7 +212,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             std::ostringstream ss;
             ss << toStr(*game_result) << " - collected " << filtered_positions_cnt << " positions";
 
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             labelLog(std::cout, LOG_INFO | thread_label, ss.str());
         }
 
@@ -251,17 +236,14 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         thr_data.games_ended++;
         thr_data.commons->games_ended.fetch_add(1);
 
-        {
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
-            labelLog(std::cout, LOG_INFO | thread_label, 
-                     "Total of " + std::to_string(thr_data.games_ended) + " games played on thread");
-            labelLog(std::cout, LOG_INFO | thread_label, 
-                     "Total of " + std::to_string(thr_data.total_positions) + " positions collected on thread");
-            labelLog(std::cout, LOG_INFO, 
-                     "Total of " + std::to_string(thr_data.commons->games_ended) + " games played on all threads");
-            labelLog(std::cout, LOG_INFO, 
-                     "Total of " + std::to_string(thr_data.commons->total_positions) + " positions collected on all threads");
-        }
+        labelLog(std::cout, LOG_INFO | thread_label, 
+                    "Total of " + std::to_string(thr_data.games_ended) + " games played on thread");
+        labelLog(std::cout, LOG_INFO | thread_label, 
+                    "Total of " + std::to_string(thr_data.total_positions) + " positions collected on thread");
+        labelLog(std::cout, LOG_INFO, 
+                    "Total of " + std::to_string(thr_data.commons->games_ended) + " games played on all threads");
+        labelLog(std::cout, LOG_INFO, 
+                    "Total of " + std::to_string(thr_data.commons->total_positions) + " positions collected on all threads");
 
 #if defined(INSPECT_SELFPLAY_MATCHES)
         if (thr_data.commons->total_thread_cnt == 1) {
@@ -290,8 +272,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
         ss << thr_data.games_ended << " games played - total of " 
            << thr_data.total_positions 
            << " positions collected.";
-
-        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
         labelLog(std::cout, LOG_INFO | thread_label, ss.str());
     }
 
@@ -311,14 +291,10 @@ void TournamentCollector::perThread(TournamentCollector::PerThreadData& thr_data
     const enumLogLabel thread_label = threadLabel(thr_data.id);
 
     while (!threadTournament(thr_data, thread_label)) {
-        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
         labelLog(std::cout, LOG_INFO | thread_label, "Restarting tournament and engines on thread");
     }
 
-    {
-        const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
-        labelLog(std::cout, LOG_INFO | thread_label, "Terminating thread");
-    }
+    labelLog(std::cout, LOG_INFO | thread_label, "Terminating thread");
 }
 
 void TournamentCollector::startTournament(const TournamentPacket& packet) {
