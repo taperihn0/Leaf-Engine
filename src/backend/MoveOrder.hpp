@@ -20,7 +20,7 @@ public:
 	MoveOrderHistoryTables() { clearQuietsHistory(); }
 
 	_INLINE void clearQuietsHistory() {
-		memSet(_quiets_history.data(), 0, sizeof(_quiets_history));
+		memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
 	}
 private:
 	array3d<int16_t, 2, 6, 64> _quiets_history;

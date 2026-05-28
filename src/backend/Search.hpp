@@ -45,7 +45,7 @@ struct SearchResults {
 	void printBestMove();
 	void print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 			   uint16_t pv_len, 
-			   const TranspositionTable& tt);
+			   const tt::TranspositionTable& tt);
 	void printShort();
 	void printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 				 uint16_t pv_len);
@@ -136,7 +136,7 @@ struct NodeInfo {
 	bool						 check;
 	uint8_t						 moves_searched;
 	uint8_t						 move_index;
-	TTEntry::Bound				 bound;
+	tt::Bound				 	 bound;
     AccumulatorCluster           cluster;
 	bool						 cuckoo_check;
 	array1d<PVInfo, MaxSelDepth> pv_line;
@@ -288,7 +288,7 @@ public:
     };
 
 	Search() = default;
-	Search(TranspositionTable&& tt);
+	Search(tt::TranspositionTable&& tt);
 
 	Search(Search&&)			 = delete;
 	Search(Search&)				 = delete;
@@ -383,7 +383,7 @@ private:
 
 	TreeStack 		   		_tree_stack;
 	CuckooTables			_cuckoo_tables;
-	TranspositionTable 		_tt;
+	tt::TranspositionTable 		_tt;
 
 	/* Each Search instance should have own history buffer with tables 
 	*  for very MoveOrder in TreeStack.

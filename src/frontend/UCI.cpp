@@ -28,7 +28,7 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
 		// --- Regular parameters ---
-		OptionHash(SpinType<ll>(1, 1, 512)), 
+		OptionHash(SpinType<ll>(tt::DefaultTTSizeMb, 1, 512)), 
 		OptionClearHash(),
 		OptionPath(StringType("<empty>")),
 		{ // --- Tunable parameters ---
@@ -59,8 +59,6 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
 		OptionTunableParam(SpinType<double>(NextDepthTimeRed ,			  4.,   8.), 	"NextDepthTimeRed",     2.2),
 		OptionTunableParam(SpinType<double>(UnstableMatMargin,			  10.,  80.), 	"UnstableMatMargin",    2.),
 		OptionTunableParam(SpinType<double>(UnstableMultMargin,			  4.,   12.), 	"UnstableMultMargin",   2.5),
-		OptionTunableParam(SpinType<double>(MinTimeBranchFactor,		  1.,   2.), 	"MinTimeBranchFactor",  1.9),
-		OptionTunableParam(SpinType<double>(MaxTimeBranchFactor,		  3.,   5.), 	"MaxTimeBranchFactor",  1.9),
 		OptionTunableParam(SpinType<double>(ContemptDiv,				  30.,  160.),  "ContemptDiv",          1.7),
 		OptionTunableParam(SpinType<double>(ImprovingExtensionRate,		  2., 10.),		"ImprovingExtensionRate", 	    2.6),
 		OptionTunableParam(SpinType<double>(QuietNotPvNodeReduction,      1., 20.),		"QuietNotPvNodeReduction",      2.3),
@@ -194,7 +192,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _search(TranspositionTable(1_MB))
+	: _search(tt::TranspositionTable(tt::DefaultTTSizeMb))
 	, _pos(StartposFEN)
 {}
 

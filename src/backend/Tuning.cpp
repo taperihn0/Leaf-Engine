@@ -100,7 +100,7 @@ void* TunableParametersMap::getAddressOf(std::string str) {
     try {
         base = _addr.at(str);
     } catch (std::out_of_range&) {
-        ASSERT(false, "Invalid parameter option");
+        ASSERT(false, "Invalid parameter option: " + str);
         return nullptr;
     }
 

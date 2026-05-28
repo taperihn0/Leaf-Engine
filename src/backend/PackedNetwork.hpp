@@ -31,10 +31,10 @@ public:
 #pragma pack(push, 1)
     // Add activaction function info
     struct Header {
-        uint32_t          layer_size[MaxLayerCount];
-        uint16_t          layer_count;
-        byte              dual_hl;
-        array1d<byte, 13> _padding;
+        uint32_t               layer_size[MaxLayerCount];
+        uint16_t               layer_count;
+        bool                   dual_hl;
+        array1d<std::byte, 13> _padding;
     };
 #pragma pack(pop)
 

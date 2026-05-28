@@ -77,14 +77,14 @@ PackedPosition PackedPosition::fromExt(const ExtPackedPosition& ext_pack) {
 bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
     assert(output);
 
-    byte mem[_PackedPosBufferSize];
+    std::byte mem[_PackedPosBufferSize];
     *reinterpret_cast<BitBoard*>(mem) = pos._occupancy_mask;
 
     size_t piece_bytes = static_cast<size_t>((pos._piece_cnt + 1) / 2);
     size_t j = 0;
 
     for (; j < piece_bytes; j++) {
-        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pos._pieces[j]);
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pos._pieces[j]);
     }
 
     output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard));
@@ -94,11 +94,11 @@ bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
 bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos) {
     assert(output);
 
-    byte mem[_PackedPosBufferSize];
+    std::byte mem[_PackedPosBufferSize];
     *reinterpret_cast<BitBoard*>(mem) = pos._occupancy_mask;
 
     for (size_t j = 0; j < _MaxNibbles; j++) {
-        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pos._pieces[j]);
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pos._pieces[j]);
     }
 
     output.write(reinterpret_cast<const char*>(mem), _PackedPosBufferSize);
@@ -429,17 +429,17 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
 bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pack) {
     assert(output);
 
-    byte mem[_PackedBufferSize];
+    std::byte mem[_PackedBufferSize];
     *reinterpret_cast<BitBoard*>(mem) = pack._occupancy_mask;
     
     size_t piece_bytes = static_cast<size_t>((pack._piece_cnt + 1) / 2);
     size_t j = 0;
 
     for (; j < piece_bytes; j++) {
-        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const byte*>(&pack._pieces[j]);
+        mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pack._pieces[j]);
     }
 
-    mem[j + sizeof(BitBoard)] = pack._clock_data.halfmove;
+    mem[j + sizeof(BitBoard)] = std::byte(pack._clock_data.halfmove);
     *reinterpret_cast<uint16_t*>(mem + j + sizeof(BitBoard) + 1) = pack._clock_data.fullmove;
 
     output.write(reinterpret_cast<const char*>(mem), j + sizeof(BitBoard) + 3);
@@ -468,16 +468,16 @@ bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes + _ClockBufferSize);
 
-    byte details_mem[_MaxNibbles + _ClockBufferSize];
+    std::byte details_mem[_MaxNibbles + _ClockBufferSize];
     input.read(reinterpret_cast<char*>(details_mem), piece_bytes + _ClockBufferSize);
 
     size_t i = 0;
 
     for (; i < piece_bytes; i++) {
-        packed._pieces[i] = static_cast<Nibble>(details_mem[i]);
+        packed._pieces[i] = static_cast<Nibble>(std::to_integer<uint8_t>(details_mem[i]));
     }
 
-    packed._clock_data.halfmove = details_mem[i];
+    packed._clock_data.halfmove = std::to_integer<uint8_t>(details_mem[i]);
     packed._clock_data.fullmove = *reinterpret_cast<uint16_t*>(details_mem + i + 1);
 
     return input.good();

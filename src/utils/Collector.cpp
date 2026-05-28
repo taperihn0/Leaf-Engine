@@ -246,9 +246,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
                     "Total of " + std::to_string(thr_data.commons->total_positions) + " positions collected on all threads");
 
 #if defined(INSPECT_SELFPLAY_MATCHES)
-        if (thr_data.commons->total_thread_cnt == 1) {
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
-            
+        if (thr_data.commons->total_thread_cnt == 1) {            
             positions.back().print();
             labelLog(std::cout, LOG_INFO | thread_label, toStr(*game_result) + ": ");
 
@@ -260,7 +258,6 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
             std::cin.get();
         }
         else {
-            const std::lock_guard<std::mutex> lock(thr_data.commons->stdout_lock);
             labelLog(std::cout, LOG_DEBUG | thread_label, 
                      "Self-play game inspection avaible only for 1 thread tournament");
         }

@@ -24,11 +24,11 @@ public:
 private:
 #pragma pack(push, 1)
     struct PackedPosInfo {
-        Score    white_score;
-        Result8b result;
-        Square   king_sq;
-        Square   opp_king_sq;
-        byte     extra[3];
+        Score     white_score;
+        Result8b  result;
+        Square    king_sq;
+        Square    opp_king_sq;
+        std::byte extra[3];
     };
 #pragma pack(pop)
 

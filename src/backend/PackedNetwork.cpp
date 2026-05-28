@@ -264,7 +264,7 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
 
     const size_t in_size = static_cast<size_t>(st.st_size);
 
-    std::vector<byte> buffer(in_size);
+    std::vector<std::byte> buffer(in_size);
     ssize_t read_bytes = read(in_fd, buffer.data(), in_size);
     close(in_fd);
 

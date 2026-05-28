@@ -36,7 +36,7 @@ public:
             , hi(0)
         {}
 
-        _INLINE Nibble(byte b)
+        _INLINE Nibble(uint8_t b)
             : lo(b & 0x0F)
             , hi((b & 0xF0) >> 4) 
         {}
@@ -124,7 +124,7 @@ private:
     static constexpr int    _ClockBufferSize = 3;
     static constexpr size_t _PackedBufferSize = _PackedPosBufferSize + _ClockBufferSize;
 
-    // apart from 16-byte pieces buffer,
+    // apart from 16-std::byte pieces buffer,
     // we also store fullmove count and fullmove count
     // as a so called clock data.
     struct ClockData {

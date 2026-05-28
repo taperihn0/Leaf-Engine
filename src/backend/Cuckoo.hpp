@@ -39,12 +39,12 @@ private:
 	static constexpr uint	_KickThreshold = 216;
 	static constexpr size_t _AccurateCount = 2212;
 
-	struct _CuckooEntry {
+	struct CuckooEntry {
 		uint32_t move_hash;
 		Move16b  move16;
 	};
 
-	std::unique_ptr<_CuckooEntry[]> _cuckoo_entry_buff;
+	std::unique_ptr<CuckooEntry[]> _cuckoo_entry_buff;
 };
 
 

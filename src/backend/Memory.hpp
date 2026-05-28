@@ -3,6 +3,7 @@
 #include "Simd.hpp"
 
 #include <memory>
+#include <cstddef>
 
 // modify it as you wish
 #define _ENABLE_PREFETCH
@@ -18,20 +19,19 @@ static _FORCEINLINE void prefetch(const void* addr) {
 }
 
 _INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
-	byte* d = reinterpret_cast<byte*>(dst);
-	const byte* s = reinterpret_cast<const byte*>(src);
+	std::byte* d = reinterpret_cast<std::byte*>(dst);
+	const std::byte* s = reinterpret_cast<const std::byte*>(src);
 	std::copy_n(s, cnt, d);
 	return dst;
 }
 
-_INLINE void memSet(void* dst, int ch, size_t cnt) {
-	std::fill(reinterpret_cast<byte*>(dst), 
-			  reinterpret_cast<byte*>(dst) + cnt, 
-			  ch);
+_INLINE void memSet(void* dst, uint8_t ch, size_t cnt) {
+    std::byte* d = reinterpret_cast<std::byte*>(dst);
+	std::fill(d, d + cnt, std::byte(ch));
 }
 
-_INLINE void* alignedMemset(void* dst, int ch, size_t cnt) {
-	byte* d = reinterpret_cast<byte*>(dst);
+_INLINE void* alignedMemset(void* dst, uint8_t ch, size_t cnt) {
+	std::byte* d = reinterpret_cast<std::byte*>(dst);
 
 #if defined (LEAF_SIMD_AVX512)
 	ASSERT(cnt % AlignmentBound == 0, "Size must be a multiple of 64");
@@ -86,6 +86,19 @@ _INLINE void alignedFree(void* block) {
 
 template <typename T>
 struct AlignedDeleter {
-	void operator()(T* p) const { alignedFree(reinterpret_cast<void*>(p)); }
+    void operator()(T* p) const { 
+        if (p != nullptr)
+            alignedFree(reinterpret_cast<void*>(p)); 
+    }
 };
+
+template <typename T>
+using AlignedUniquePtr = std::unique_ptr<T, AlignedDeleter<T>>;
+
+template <typename T>
+_NODISCARD AlignedUniquePtr<T> makeAlignedUnique(size_t size) {
+    T* p = reinterpret_cast<T*>(alignedMalloc(size, alignof(T)));
+    return AlignedUniquePtr<T>(p);
+}
+
 

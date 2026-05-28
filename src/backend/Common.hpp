@@ -60,8 +60,9 @@
 #define _INTERNAL 			inline
 #endif
 
-#define _NORETURN [[noreturn]]
-#define _UNUSED   [[maybe_unused]]
+#define _NORETURN  [[noreturn]]
+#define _UNUSED    [[maybe_unused]]
+#define _NODISCARD [[nodiscard]]
 
 #if defined(_CPP_STANDARD_20)
 #define _LIKELY   [[likely]]

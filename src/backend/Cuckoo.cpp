@@ -5,8 +5,8 @@
 #include "Hash.hpp"
 
 CuckooTables::CuckooTables()
-	: _cuckoo_entry_buff(new _CuckooEntry[_CuckooTableSize]) { 
-	memSet(_cuckoo_entry_buff.get(), 0, sizeof(_CuckooEntry) * _CuckooTableSize);
+	: _cuckoo_entry_buff(new CuckooEntry[_CuckooTableSize]) { 
+	memSet(_cuckoo_entry_buff.get(), 0, sizeof(CuckooEntry) * _CuckooTableSize);
 }
 
 void CuckooTables::init() {
