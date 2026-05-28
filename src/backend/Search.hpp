@@ -45,7 +45,7 @@ struct SearchResults {
 	void printBestMove();
 	void print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 			   uint16_t pv_len, 
-			   const tt::TranspositionTable& tt);
+			   const TranspositionTable& tt);
 	void printShort();
 	void printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 				 uint16_t pv_len);
@@ -136,7 +136,7 @@ struct NodeInfo {
 	bool						 check;
 	uint8_t						 moves_searched;
 	uint8_t						 move_index;
-	tt::Bound				 	 bound;
+	TTBound				 	 	 bound;
     AccumulatorCluster           cluster;
 	bool						 cuckoo_check;
 	array1d<PVInfo, MaxSelDepth> pv_line;
@@ -288,7 +288,7 @@ public:
     };
 
 	Search() = default;
-	Search(tt::TranspositionTable&& tt);
+	Search(TranspositionTable&& tt);
 
 	Search(Search&&)			 = delete;
 	Search(Search&)				 = delete;
@@ -383,17 +383,15 @@ private:
 
 	TreeStack 		   		_tree_stack;
 	CuckooTables			_cuckoo_tables;
-	tt::TranspositionTable 		_tt;
+	TranspositionTable 		_tt;
 
 	/* Each Search instance should have own history buffer with tables 
 	*  for very MoveOrder in TreeStack.
 	*  Also, Search class in responsible for allocation and deallocation.
 	*/
-	using MoveOrderHistoryTablesPtr = std::unique_ptr<MoveOrderHistoryTables, 
-													  AlignedDeleter<MoveOrderHistoryTables>
-													 >;
-	MoveOrderHistoryTablesPtr _history_buff;
-	Score::int_t 			  _contempt = Score::Undef;
+	AlignedUniquePtr<MoveOrderHistoryTables> 
+					_history_buff;
+	Score::int_t 	_contempt = Score::Undef;
 };
 
 _INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {

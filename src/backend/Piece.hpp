@@ -18,16 +18,16 @@ public:
 	};
 
 	Piece() = default;
-	explicit Piece(enumType piece_type) 		{ set(WHITE, piece_type); }
+	explicit Piece(enumType piece_type) { set(WHITE, piece_type); }
 	explicit Piece(enumColor col_t, enumType piece_type) { set(col_t, piece_type); }
 
-	static Piece fromChar(enumColor col_t, char c) {
+	_NODISCARD static Piece fromChar(enumColor col_t, char c) {
 		auto id = col_t == WHITE ? _WhitesStr.find_first_of(c)
 							     : _BlacksStr.find_first_of(c);
 		return Piece(col_t, enumType(id));
 	}
 
-	static enumType typeFromChar(char c) {
+	_NODISCARD static enumType typeFromChar(char c) {
 		c = tolower(c);
 		auto id = _BlacksStr.find_first_of(c);
 		return enumType(id);
@@ -52,15 +52,15 @@ public:
 		else os << _BlacksStr[_type];
 	}
 
-	_INLINE Piece::uint_t value() const {
+	_NODISCARD _INLINE Piece::uint_t value() const {
 		return static_cast<Piece::uint_t>(_type);
 	}
 
-	_INLINE enumType type() const {
+	_NODISCARD _INLINE enumType type() const {
 		return _type;
 	}
 
-	_INLINE enumColor color() const {
+	_NODISCARD _INLINE enumColor color() const {
 		return _col;
 	}
 
@@ -85,10 +85,10 @@ _INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
 	return os;
 }
 
-_INLINE constexpr Piece::uint_t value(Piece::enumType p) {
+_NODISCARD _INLINE constexpr Piece::uint_t value(Piece::enumType p) {
 	return static_cast<Piece::uint_t>(p);
 }
 
-_INLINE constexpr bool isSlider(Piece::enumType p) {
+_NODISCARD _INLINE constexpr bool isSlider(Piece::enumType p) {
 	return p >= Piece::BISHOP and p <= Piece::QUEEN;
 }

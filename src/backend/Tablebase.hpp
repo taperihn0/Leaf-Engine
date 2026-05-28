@@ -8,10 +8,10 @@ public:
     SyzygyTablebase(const SyzygyTablebase&) = delete;
     SyzygyTablebase& operator=(const SyzygyTablebase&) = delete;
 
-    static SyzygyTablebase& get();
-    bool loadSyzygyFile(const std::string& fp);
-    bool isLoaded() const;
-    std::string getFilePath() const;
+    _NODISCARD static SyzygyTablebase& get();
+    _NODISCARD bool loadSyzygyFile(const std::string& fp);
+    _NODISCARD bool isLoaded() const;
+    _NODISCARD std::string getFilePath() const;
 
     enum TbWdlInfo {
         WDL_LOSS,

@@ -48,7 +48,7 @@ void SearchResults::printBestMove() {
 
 void SearchResults::print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 						  uint16_t pv_len, 
-						  const tt::TranspositionTable& tt) 
+						  const TranspositionTable& tt) 
 {
 	const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
@@ -200,7 +200,7 @@ void NodeInfo::clear() {
 	check 			 = false;
 	moves_searched 	 = 0;
 	move_index 		 = 0;
-	bound 			 = tt::Bound::NONE;
+	bound 			 = TTBound::NONE;
 	cuckoo_check	 = false;
 	is_cut			 = false;
 
@@ -218,7 +218,7 @@ void Search::clearHashTT() {
 }
 
 void Search::resizeHashTT(size_t tt_size_mb) {
-	if (tt_size_mb > 0 and tt_size_mb != _tt.getEntriesCount() * sizeof(tt::Entry)) {
+	if (tt_size_mb > 0 and tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) {
 		_tt.resize(tt_size_mb);
 		_tt.clear();
 		_tt.clearHashfull();
@@ -346,7 +346,7 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 	}
 }
 
-Search::Search(tt::TranspositionTable&& tt) 
+Search::Search(TranspositionTable&& tt) 
 	: _tt(std::move(tt))
 	, _history_buff(reinterpret_cast<MoveOrderHistoryTables*>(
 				    alignedMalloc(sizeof(MoveOrderHistoryTables), CACHELINE_SIZE))) 
@@ -693,7 +693,7 @@ Score Search::nmSearch(Position& pos,
 	results.tt_probe_cnt++;
 #endif // _COLLECT_SEARCH_STATS
 
-	tt::Entry tt_entry;
+	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
 	tt_entry.move = Move16b::Null;
 	tt_entry.score = Score::Undef;
@@ -762,8 +762,8 @@ Score Search::nmSearch(Position& pos,
 					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
 
 					_tt.write(hash,
-							  tt::EntryMaxDepth, ply,
-							  tt::Bound::EXACT,
+							  EntryMaxDepth, ply,
+							  TTBound::EXACT,
 							  tb_score, tt_entry.move, tt_entry.eval,
 							  results);
 
@@ -858,7 +858,7 @@ Score Search::nmSearch(Position& pos,
 										    4 * depth / IidDepthDiv,
 										    ply);
 
-			tt::Entry iid_entry;
+			TTEntry iid_entry;
 			iid_entry.eval = Score::Undef;
 			iid_entry.move = Move16b::Null;
 			iid_entry.score = Score::Undef;
@@ -1011,7 +1011,7 @@ Score Search::nmSearch(Position& pos,
 				if (score >= beta) {
 					_tt.write(hash,
 							  nm_depth, ply,
-							  tt::Bound::LOWERBOUND,
+							  TTBound::LOWERBOUND,
 							  nm_score, packedMove(tt_move), node->eval,
 							  results);
 					
@@ -1045,7 +1045,7 @@ Score Search::nmSearch(Position& pos,
 	node->best_move  	 = Move32b::Null;
 	node->best_score 	 = -Score::Infinity;
 	node->moves_searched = 0;
-	node->bound 		 = tt::Bound::UPPERBOUND;
+	node->bound 		 = TTBound::UPPERBOUND;
 
 	int16_t move_score = UndefMoveScore;
 	for (node->move_index = 0; 
@@ -1109,7 +1109,7 @@ Score Search::nmSearch(Position& pos,
 				node->move == tt_move and
 				!tt_move.isNull() and
 				tt_entry.depth >= depth - SingularDepthMargin and
-				tt_entry.bound == tt::Bound::LOWERBOUND and
+				tt_entry.bound == TTBound::LOWERBOUND and
 				!tt_entry.score.isMateScore()) 
 			{
 				const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
@@ -1294,7 +1294,7 @@ Score Search::nmSearch(Position& pos,
 
 			if (node->score > alpha) {
 				if (node->score >= beta) {
-					node->bound = tt::Bound::LOWERBOUND;
+					node->bound = TTBound::LOWERBOUND;
 
 					if (node->move.isQuiet() and 
 						!node->move.isQueenPromotion()) 
@@ -1314,7 +1314,7 @@ Score Search::nmSearch(Position& pos,
 					break;
 				}
 
-				node->bound = tt::Bound::EXACT;
+				node->bound = TTBound::EXACT;
 				alpha = node->score;
 				
 				/* Collect Pv from the child */
@@ -1353,7 +1353,7 @@ Score Search::nmSearch(Position& pos,
 	
 	// detect checkmate or stealmate
 	if (!node->can_move) {
-		node->bound = tt::Bound::EXACT;
+		node->bound = TTBound::EXACT;
 		node->best_score = node->check ? -Score::getMateScore(ply)
 									   : getDrawScore(node);
 	}
@@ -1415,7 +1415,7 @@ Score Search::qSearch(Position& pos,
     }
 
 #if defined(_TT_PROBE_QSEARCH)
-	tt::Entry tt_entry;
+	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
 	tt_entry.move = Move16b::Null;
 	tt_entry.score = Score::Undef;
@@ -1430,7 +1430,7 @@ Score Search::qSearch(Position& pos,
 
 	const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
 	const bool exact_hit = (!IsPv and tt_hit) or
-						   ( IsPv and tt_hit and tt_entry.bound == tt::Bound::EXACT);
+						   ( IsPv and tt_hit and tt_entry.bound == TTBound::EXACT);
 
 	if (exact_hit and depth <= QProbeDepth) {
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1478,7 +1478,7 @@ Score Search::qSearch(Position& pos,
 #if defined(_TT_PROBE_QSEARCH)
 	const Move16b ttm16b = tt_entry.move;
 
-	if ((!IsPv or tt_entry.bound != tt::Bound::LOWERBOUND) and 
+	if ((!IsPv or tt_entry.bound != TTBound::LOWERBOUND) and 
 		(ttm16b.isPackedCapture(pos) or ttm16b.isQueenPromotion()))
 	{
 #if defined(_COLLECT_SEARCH_STATS)
@@ -1736,7 +1736,7 @@ void Search::refreshPVinTT(const Position& pos,
 		assert(depth > 0);
 		assert(!pv_move.isNull());
 
-		tt::Entry tt_entry;
+		TTEntry tt_entry;
 		tt_entry.move = Move16b::Null;
 
 		const bool tt_hit = _tt.probe(tt_entry, 
@@ -1747,7 +1747,7 @@ void Search::refreshPVinTT(const Position& pos,
 		if (!tt_hit or pv_move != tt_entry.move) {
 			_tt.write(key,
 					  static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
-					  tt::Bound::EXACT, 
+					  TTBound::EXACT, 
 					  score, pv_move, Score::Undef, 
 					  results);
 		}
@@ -1767,7 +1767,7 @@ void Search::refreshPVinTT(const Position& pos,
 	const Score score = results.score_cp;
 
 	if (!pv_len) {
-		tt::Entry tt_entry;
+		TTEntry tt_entry;
 		tt_entry.move = Move16b::Null;
 
 		const bool tt_hit = _tt.probe(tt_entry,
@@ -1778,7 +1778,7 @@ void Search::refreshPVinTT(const Position& pos,
 		if (!tt_hit or root_best_move != tt_entry.move) {
 			_tt.write(key,
 					  depth, 0,
-					  tt::Bound::EXACT,
+					  TTBound::EXACT,
 					  score, root_best_move, Score::Undef,
 					  results);
 		}
@@ -1787,7 +1787,7 @@ void Search::refreshPVinTT(const Position& pos,
 #if defined(DEBUG)
 
 	// Check if PV-move for root node is actually there
-	tt::Entry tt_entry;
+	Entry tt_entry;
 	tt_entry.move = Move16b::Null;
 
 	_tt.probe(tt_entry,

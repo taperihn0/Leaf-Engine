@@ -7,14 +7,12 @@
 
 struct SearchResults;
 
-namespace tt {
-
 static constexpr size_t  EntryTargetSize  = 10;
 static constexpr size_t  BucketTargetSize = 32;
 static constexpr size_t  EntryKeySize     = 18;
 static constexpr uint8_t EntryMaxDepth    = 64;
 
-enum class Bound : uint8_t {
+enum class TTBound : uint8_t {
     NONE 	   = 0,
     EXACT  	   = 1,
     UPPERBOUND = 2,
@@ -22,11 +20,11 @@ enum class Bound : uint8_t {
     MAX_BOUND  = 3
 };
 
-struct Entry {
-    Entry();
+struct TTEntry {
+    TTEntry();
 
     _NODISCARD _INLINE bool isEmpty() const noexcept { 
-        return depth == 0 and bound == Bound::NONE; 
+        return depth == 0 and bound == TTBound::NONE; 
     }
 
     _INLINE void writeHash(uint32_t keyhi) noexcept {
@@ -41,20 +39,20 @@ struct Entry {
     uint16_t key16;
     uint8_t  key18 : 2;
     uint8_t  generation : 6;
-    Bound	 bound : 2;
+    TTBound	 bound : 2;
     uint8_t  depth : 6;
     Score	 score;
     Move16b  move;
     Score    eval;
 };
 
-static_assert(sizeof(Entry) == EntryTargetSize);
+static_assert(sizeof(TTEntry) == EntryTargetSize);
 
 struct alignas(BucketTargetSize) Bucket {
     static constexpr size_t InternalEntriesCnt = 3;
     static constexpr size_t AlignmentSize = BucketTargetSize - InternalEntriesCnt * EntryTargetSize;
 
-    array1d<Entry, InternalEntriesCnt> entries;
+    array1d<TTEntry, InternalEntriesCnt> entries;
     array1d<std::byte, AlignmentSize> __align;
 };
 
@@ -77,13 +75,13 @@ public:
     void write(uint64_t node_key, 
                uint8_t node_depth, 
                uint8_t node_ply, 
-               Bound node_bound, 
+               TTBound node_bound, 
                Score node_score, 
                Move16b node_move, 
                Score node_eval,
                SearchResults& results);
 
-    bool probe(Entry& out_entry,
+    bool probe(TTEntry& out_entry,
                uint64_t key, 
                Score alpha, Score beta, 
                uint8_t node_depth) const;
@@ -94,8 +92,8 @@ public:
     void printDebug();
 #endif
 
-    size_t getEntriesCount() const;
-    uint16_t getHashfull() const;
+    _NODISCARD size_t getEntriesCount() const;
+    _NODISCARD uint16_t getHashfull() const;
 
     void newGeneration();
     void clearHashfull();
@@ -107,5 +105,3 @@ private:
     uint8_t   	 _generation;
     ull       	 _hits;
 };
-
-} // namespace tt

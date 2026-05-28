@@ -60,23 +60,23 @@ public:
 		return _sq;
 	}
 
-	_INLINE enumFile getFile() const {
+	_NODISCARD _INLINE enumFile getFile() const {
 		return static_cast<enumFile>(_sq & 7);
 	}
 
-	_INLINE enumRank getRank() const {
+	_NODISCARD _INLINE enumRank getRank() const {
 		return static_cast<enumRank>(_sq / 8);
 	}
 
-	_INLINE bool isNull() const {
+	_NODISCARD _INLINE bool isNull() const {
 		return _sq == None;
 	}
 
-	static Square fromChar(char file, char rank) {
+	_NODISCARD static Square fromChar(char file, char rank) {
 		return (file - 'a') + (rank - '1') * 8;
 	}
 
-	_INLINE std::string toStr() const {
+	_NODISCARD _INLINE std::string toStr() const {
 		ASSERT(isValid(), "Invalid square");
 		if (isNull()) return "-";
 		return std::string{ "abcdefgh"[_sq & 7], static_cast<char>(_sq / 8 + '1') };
@@ -86,7 +86,7 @@ public:
 		os << toStr();
 	}
 
-	_INLINE constexpr bool isValid() const {
+	_NODISCARD _INLINE constexpr bool isValid() const {
 		return _sq < 64 or _sq == None;
 	}
 
@@ -96,7 +96,7 @@ private:
 };
 
 // flipping square horizontally - a1 becomes a8 and vice versa.
-static _INLINE Square verticalFlip(Square sq) {
+_NODISCARD static _INLINE Square verticalFlip(Square sq) {
 	return sq ^ 56;
 }
 
@@ -104,7 +104,7 @@ static _INLINE Square verticalFlip(Square sq) {
 *  when 'side' is BLACK, 'sq' is unchanged.
 *  when 'side' is WHITE, 'sq' is flipped vertically.
 */
-static _INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
+_NODISCARD static _INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
 	static array1d<int8_t, 2> ConvertVal = { 56, 0 };
 	return sq ^ ConvertVal[side];
 }

@@ -22,7 +22,7 @@ public:
 	_INLINE explicit constexpr BitBoard(Square::enumSquare sq)
 		: _board(1_ui64 << sq) {}
 
-	_INLINE constexpr operator uint64_t() const {
+	_NODISCARD _INLINE constexpr operator uint64_t() const {
 		return _board;
 	}
 
@@ -51,59 +51,59 @@ public:
 		return *this;
 	}
 
-	_INLINE constexpr BitBoard operator|(BitBoard bb) const {
+	_NODISCARD _INLINE constexpr BitBoard operator|(BitBoard bb) const {
 		return _board | bb._board;
 	}
 
-	_INLINE constexpr BitBoard operator^(BitBoard bb) const {
+	_NODISCARD _INLINE constexpr BitBoard operator^(BitBoard bb) const {
 		return _board ^ bb._board;
 	}
 
-	_INLINE constexpr BitBoard operator^(uint64_t raw) const {
+	_NODISCARD _INLINE constexpr BitBoard operator^(uint64_t raw) const {
 		return _board ^ raw;
 	}
 
-	_INLINE constexpr BitBoard operator&(BitBoard bb) const {
+	_NODISCARD _INLINE constexpr BitBoard operator&(BitBoard bb) const {
 		return _board & bb._board;
 	}
 
-	_INLINE constexpr BitBoard operator&(uint64_t raw) const {
+	_NODISCARD _INLINE constexpr BitBoard operator&(uint64_t raw) const {
 		return _board & raw;
 	}
 
-	_INLINE constexpr BitBoard operator>>(int shift) const {
+	_NODISCARD _INLINE constexpr BitBoard operator>>(int shift) const {
 		return _board >> shift;
 	}
 
-	_INLINE constexpr BitBoard operator<<(int shift) const {
+	_NODISCARD _INLINE constexpr BitBoard operator<<(int shift) const {
 		return _board << shift;
 	}
 
-	_INLINE constexpr BitBoard operator*(BitBoard bb) const {
+	_NODISCARD _INLINE constexpr BitBoard operator*(BitBoard bb) const {
 		return _board * bb._board;
 	}
 
-	_INLINE constexpr BitBoard operator~() const {
+	_NODISCARD _INLINE constexpr BitBoard operator~() const {
 		return ~_board;
 	}
 
-	_INLINE constexpr BitBoard operator-() const {
+	_NODISCARD _INLINE constexpr BitBoard operator-() const {
 		return static_cast<BitBoard>(-_board);
 	}
 
 	template <int Shift>
-	_INLINE BitBoard genShift() const {
+	_NODISCARD _INLINE BitBoard genShift() const {
 		if constexpr (Shift < 0) return _board >> (-Shift);
 		return _board << Shift;
 	}
 
-	_INLINE BitBoard genShift(int shift) const {
+	_NODISCARD _INLINE BitBoard genShift(int shift) const {
 		if (shift < 0) return _board >> (-shift);
 		return _board << shift;
 	}
 
 	template <int Shift>
-	_INLINE BitBoard pawnsAttack() const {
+	_NODISCARD _INLINE BitBoard pawnsAttack() const {
 		static_assert(Shift == 7 or Shift == -7 or Shift == 9 or Shift == -9);
 		static constexpr BitBoard ExclFile = Shift == 7 or Shift == -9 ? NotHFile 
 																	   : NotAFile;
@@ -112,9 +112,9 @@ public:
 
 	void print(std::ostream& os = std::cout) const;
 
-	int popCount() const;
-	int bitScanForward() const;
-	int bitScanReverse() const;
+	_NODISCARD int popCount() const;
+	_NODISCARD int bitScanForward() const;
+	_NODISCARD int bitScanReverse() const;
 
 	_INLINE void set(uint64_t bb) {
 		_board = bb;
@@ -142,11 +142,11 @@ public:
 		return _board & (1_ui64 << shift);
 	}
 
-	_INLINE bool isEmptySq(Square sq) const {
+	_NODISCARD _INLINE bool isEmptySq(Square sq) const {
 		return !getBit(sq);
 	}
 
-	_INLINE bool isOccupiedSq(Square sq) const {
+	_NODISCARD _INLINE bool isOccupiedSq(Square sq) const {
 		return getBit(sq);
 	}
 
@@ -156,40 +156,40 @@ public:
 		setBit(target);
 	}
 
-	_INLINE BitBoard oneBit() const {
+	_NODISCARD _INLINE BitBoard oneBit() const {
 		return _board & -_board;
 	}
 
 	template <int Rank>
-	static _INLINE constexpr BitBoard rank() {
+	_NODISCARD static _INLINE constexpr BitBoard rank() {
 		static_assert(1 <= Rank and Rank <= 8);
 		return BitBoard(0xff_ui64 << ((Rank - 1) * 8));
 	}
 
-	static _INLINE constexpr BitBoard rank(int rank) {
+	_NODISCARD static _INLINE constexpr BitBoard rank(int rank) {
 		assert(1 <= rank and rank <= 8);
 		return BitBoard(0xff_ui64 << ((rank - 1) * 8));
 	}
 
-	static _INLINE constexpr BitBoard promorank(enumColor side) {
+	_NODISCARD static _INLINE constexpr BitBoard promorank(enumColor side) {
 		return side == WHITE ? rank<8>() : rank<1>();
 	}
 
 	template <Square::enumFile File>
-	static _INLINE constexpr BitBoard file() {
+	_NODISCARD static _INLINE constexpr BitBoard file() {
 		return BitBoard(AFile << static_cast<int>(File));
 	}
 
-	static _INLINE constexpr BitBoard file(int file) {
+	_NODISCARD static _INLINE constexpr BitBoard file(int file) {
 		ASSERT(1 <= file and file <= 8, "Invalid file");
 		return BitBoard(AFile << file);
 	}
 
-	_INLINE constexpr bool isEmpty() const {
+	_NODISCARD _INLINE constexpr bool isEmpty() const {
 		return _board == 0_ui64;
 	}
 
-	_INLINE constexpr bool isSingleBit() const {
+	_NODISCARD _INLINE constexpr bool isSingleBit() const {
 		return !isEmpty() and isPow2(_board);
 	}
 

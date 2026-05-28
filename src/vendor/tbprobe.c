@@ -69,8 +69,8 @@ typedef HANDLE map_t;
 #endif
 
 // This must be after the inclusion of Windows headers, because otherwise
-// std::std::byte conflicts with "std::byte" in rpcndr.h . The error occurs if C++
-// standard is at lest 17, as std::std::byte was introduced in C++17.
+// std::byte conflicts with "byte" in rpcndr.h . The error occurs if C++
+// standard is at lest 17, as std::byte was introduced in C++17.
 #ifdef __cplusplus
 using namespace std;
 #endif

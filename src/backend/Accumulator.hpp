@@ -24,13 +24,13 @@ public:
     _INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
-    static int featureIndex(Square sq, 
-                            Piece::enumType piece_type, 
-                            enumColor side);
-    static int featureIndex(enumColor perspective, 
-                            Square sq, 
-                            Piece::enumType piece_type, 
-                            enumColor side);
+    _NODISCARD static int featureIndex(Square sq, 
+                                       Piece::enumType piece_type, 
+                                       enumColor side);
+    _NODISCARD static int featureIndex(enumColor perspective, 
+                                       Square sq, 
+                                       Piece::enumType piece_type, 
+                                       enumColor side);
 
     void refresh(const PackedNeuralNetwork& network,
                  const Position& pos);
@@ -63,7 +63,7 @@ public:
 
     void clear(enumColor side);
 
-    const array1d<int16_t, NetworkHiddenLayerSize>& getValues(enumColor side) const;
+    _NODISCARD const array1d<int16_t, NetworkHiddenLayerSize>& getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
@@ -81,7 +81,7 @@ struct FeatureData {
         , side(pc_color)
     {}
 
-    _INLINE bool operator==(const FeatureData& f) const {
+    _NODISCARD _INLINE bool operator==(const FeatureData& f) const {
         return sq == f.sq and piece_type == f.piece_type and side == f.side;
     };
 
@@ -92,10 +92,10 @@ struct FeatureData {
 
 struct AccumulatorCache {
     _INLINE AccumulatorCache() = default;
-    _INLINE bool isDirty() const { return dirty;  }
-    _INLINE bool isClean() const { return !dirty; }
-    _INLINE void markClean()     { dirty = false; }
-    _INLINE void markDirty()     { dirty = true;  }
+    _NODISCARD _INLINE bool isDirty() const { return dirty;  }
+    _NODISCARD _INLINE bool isClean() const { return !dirty; }
+    _INLINE void markClean() { dirty = false; }
+    _INLINE void markDirty() { dirty = true;  }
     void clearBuffers();
 
     Accumulator             accum;

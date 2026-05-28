@@ -79,21 +79,21 @@ public:
 		return static_cast<float>(_raw);
 	}
 
-	_INLINE bool isValid() const {
+	_NODISCARD _INLINE bool isValid() const {
 		return _raw != Undef and _raw != -Undef;
 	}
 
-	_INLINE bool isMateScore() const {
+	_NODISCARD _INLINE bool isMateScore() const {
 		return isValid() and 
 			   ((_raw >= -Mate and _raw < -MateBound) or 
 			   	(_raw > MateBound and _raw <= Mate));
 	}
 
-	static _INLINE Score getMateScore(int ply) {
+	_NODISCARD static _INLINE Score getMateScore(int ply) {
 		return static_cast<Score>(Mate - ply);
 	}
 
-	_INTERNAL std::string toStr() const {
+	_NODISCARD _INTERNAL std::string toStr() const {
 		if (_raw > MateBound)
 			return "mate " + std::to_string((Score::Mate - _raw + 1) / 2);
 		else if (_raw < -MateBound)
@@ -108,5 +108,5 @@ public:
 						   Infinity   = maxof<int_t>(),
 						   Undef      = 32500;
 private:
-	int_t				   _raw;
+	int_t _raw;
 };

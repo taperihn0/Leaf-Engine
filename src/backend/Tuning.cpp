@@ -94,7 +94,7 @@ void TunableParametersMap::createMapping() {
     _addr["AspirationWidenRate"] = &AspirationWidenRate;
 };
 
-void* TunableParametersMap::getAddressOf(std::string str) {
+void* TunableParametersMap::getAddressOf(const std::string& str) {
     void* base;
 
     try {

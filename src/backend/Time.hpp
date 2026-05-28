@@ -20,14 +20,14 @@ _INLINE constexpr time_ms_t operator"" _s(ull t) {
 class Clock {
 public:
 	Clock() = delete;
-	static timepoint_t timePoint();
-	static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
+	_NODISCARD static timepoint_t timePoint();
+	_NODISCARD static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
 };
 
 class Timer {
 public:
 	void go();
-	time_ms_t duration() const;
+	_NODISCARD time_ms_t duration() const;
 private:
 	timepoint_t _start_tp;
 };
@@ -37,5 +37,5 @@ struct SearchLimits;
 class TimeMan {
 public:
 	TimeMan() = delete;
-	static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
+	_NODISCARD static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
 };

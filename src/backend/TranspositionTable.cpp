@@ -1,13 +1,11 @@
 #include "TranspositionTable.hpp"
 #include "Search.hpp"
 
-namespace tt {
-
-Entry::Entry()
+TTEntry::TTEntry()
 	: key16(0)
 	, key18(0)
 	, generation(0)
-	, bound(Bound::NONE)
+	, bound(TTBound::NONE)
 	, depth(0)
 	, score(Score::Undef)
 	, move(Move16b::Null)
@@ -45,7 +43,7 @@ void TranspositionTable::clear() {
 void TranspositionTable::write(uint64_t node_key64, 
 							   uint8_t node_depth, 
 							   uint8_t node_ply, 
-							   Bound node_bound, 
+							   TTBound node_bound, 
 							   Score node_score, 
 							   Move16b node_move, 
 							   Score node_eval,
@@ -85,7 +83,7 @@ void TranspositionTable::write(uint64_t node_key64,
 
 	if (entry_keyhi == keyhi and
 		bucket->entries[ind].depth > (node_depth * 3) >> 1 and
-		node_bound != Bound::EXACT) 
+		node_bound != TTBound::EXACT) 
 		return;
 
 	if (bucket->entries[ind].isEmpty())
@@ -103,7 +101,7 @@ void TranspositionTable::write(uint64_t node_key64,
 	bucket->entries[ind].generation = this->_generation;
 }
 
-bool TranspositionTable::probe(Entry& out_entry, 
+bool TranspositionTable::probe(TTEntry& out_entry, 
 							   uint64_t key64, 
 							   Score alpha, Score beta,
 							   uint8_t node_depth) const 
@@ -129,7 +127,7 @@ bool TranspositionTable::probe(Entry& out_entry,
 		return false;
 	}
 
-	const Entry* entry = &bucket->entries[ind];
+	const TTEntry* entry = &bucket->entries[ind];
 
 	if (entry->depth < node_depth) {
 		out_entry.move = entry->move;
@@ -138,16 +136,16 @@ bool TranspositionTable::probe(Entry& out_entry,
 	}
 
 	switch (entry->bound) {
-	case Bound::EXACT: {
+	case TTBound::EXACT: {
 		out_entry = *entry;
 		return true;
 	}
-	case Bound::UPPERBOUND: {
+	case TTBound::UPPERBOUND: {
 		out_entry = *entry;
 		out_entry.score = alpha;
 		return alpha >= entry->score;
 	}
-	case Bound::LOWERBOUND: {
+	case TTBound::LOWERBOUND: {
 		out_entry = *entry;
 		out_entry.score = beta;
 		return beta <= entry->score;
@@ -184,5 +182,3 @@ void TranspositionTable::newGeneration() {
 void TranspositionTable::clearHashfull() {
 	_hits = 0;
 }
-
-} // namespace tt

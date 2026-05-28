@@ -20,7 +20,7 @@ public:
 	_INLINE MoveData(T raw)
 		: _rmove(raw) {}
 
-	_INLINE bool isNull() const {
+	_NODISCARD _INLINE bool isNull() const {
 		return _rmove == Null;
 	}
 
@@ -30,101 +30,101 @@ public:
 	}
 
 	// do not consider whether move would be legally moved, since it's not a thing to compare
-	_INLINE constexpr bool operator!=(MoveData b) const noexcept {
+	_NODISCARD _INLINE constexpr bool operator!=(MoveData b) const noexcept {
 		return !(*this == b);
 	}
 
-	_INLINE constexpr bool operator==(MoveData b) const noexcept {
+	_NODISCARD _INLINE constexpr bool operator==(MoveData b) const noexcept {
 		return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) == 
 			   (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
 	}
 
 	// simplified make function. Leaves other data fields empty, initializing only
 	// performer piece, capture flag, target and origin squares fields.
-	static MoveData makeSimple(Square origin, 
+	_NODISCARD static MoveData makeSimple(Square origin, 
 							   Square target, 
 							   bool is_capture, 
 							   Piece::enumType piece_t);
 
-	static MoveData makePackedSimple(Square origin, Square target);
+	_NODISCARD static MoveData makePackedSimple(Square origin, Square target);
 
 	// performer and captured piece in en passant move are de facto known - these are pawns.
-	static MoveData makeEnPassant(Square origin, Square target);
+	_NODISCARD static MoveData makeEnPassant(Square origin, Square target);
 
-	static MoveData makePromotion(Square origin, 
-								  Square target, 
-								  bool is_capture, 
-								  Piece::enumType promo_t);
+	_NODISCARD static MoveData makePromotion(Square origin, 
+								  			 Square target, 
+								  			 bool is_capture, 
+								  			 Piece::enumType promo_t);
 
-	static MoveData makePackedPromo(Square origin, 
-									Square target, 
-									Piece::enumType promo_t);
+	_NODISCARD static MoveData makePackedPromo(Square origin, 
+											   Square target, 
+											   Piece::enumType promo_t);
 
 	template <Castle Type>
-	static MoveData makeCastling(Square origin, Square target);
+	_NODISCARD static MoveData makeCastling(Square origin, Square target);
 
 	template <MoveData::Notation Notation>
-	static MoveData fromStr(const Position& pos, const std::string& str);
+	_NODISCARD static MoveData fromStr(const Position& pos, const std::string& str);
 
-	bool isPackedCapture(const Position& pos) const;
+	_NODISCARD bool isPackedCapture(const Position& pos) const;
 
-	_INLINE Square getOrigin() const {
+	_NODISCARD _INLINE Square getOrigin() const {
 		return _rmove & ORIGIN;
 	}
 
-	_INLINE Square getTarget() const {
+	_NODISCARD _INLINE Square getTarget() const {
 		return (_rmove & TARGET) >> 6;
 	}
 
-	_INLINE bool isCapture() const {
+	_NODISCARD _INLINE bool isCapture() const {
 		static_assert(is_same<T, uint32_t>);
 		return _rmove & CAPTURE;
 	}
 
-	_INLINE bool isQuiet() const {
+	_NODISCARD _INLINE bool isQuiet() const {
 		static_assert(is_same<T, uint32_t>);
 		return !isCapture();
 	}
 
-	_INLINE bool isEnPassant() const {
+	_NODISCARD _INLINE bool isEnPassant() const {
 		static_assert(is_same<T, uint32_t>);
 		return _rmove & EP_CAPTURE;
 	}
 
-	_INLINE bool isShortCastle() const {
+	_NODISCARD _INLINE bool isShortCastle() const {
 		static_assert(is_same<T, uint32_t>);
 		return _rmove & SHORT_CASTLE;
 	}
 
-	_INLINE bool isLongCastle() const {
+	_NODISCARD _INLINE bool isLongCastle() const {
 		static_assert(is_same<T, uint32_t>);
 		return _rmove & LONG_CASTLE;
 	}
 
-	_INLINE bool isPromotion() const {
+	_NODISCARD _INLINE bool isPromotion() const {
 		return _rmove & PROMO_PIECE;
 	}
 
-	_INLINE bool isQueenPromotion() const {
+	_NODISCARD _INLINE bool isQueenPromotion() const {
 		return getPromoPiece() == Piece::QUEEN;
 	}
 
-	_INLINE bool isRookPromotion() const {
+	_NODISCARD _INLINE bool isRookPromotion() const {
 		return getPromoPiece() == Piece::ROOK;
 	}
 
-	_INLINE bool isUnderPromotion() const {
+	_NODISCARD _INLINE bool isUnderPromotion() const {
 		return isPromotion() and !isQueenPromotion();
 	}
 
 	// use this field only after making a move -
 	// move legality is checked only when attempting to make it
-	_INLINE bool isLegalMoved() const {
+	_NODISCARD _INLINE bool isLegalMoved() const {
 		static_assert(is_same<T, uint32_t>);
 		return _rmove & LEGALLY_MOVED;
 	}
 
-	_INLINE bool isIrreversible() const {
+	_NODISCARD _INLINE bool isIrreversible() const {
 		static_assert(is_same<T, uint32_t>);
 		return isCapture() or 
 			   getPiece() == Piece::PAWN or 
@@ -132,12 +132,12 @@ public:
 			   isLongCastle();
 	}
 
-	_INLINE Piece::enumType getPiece() const {
+	_NODISCARD _INLINE Piece::enumType getPiece() const {
 		static_assert(is_same<T, uint32_t>);
 		return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 19);
 	}
 
-	_INLINE bool isKnight() const {
+	_NODISCARD _INLINE bool isKnight() const {
 		if constexpr (is_same<T, uint32_t>)
 			return getPiece() == Piece::KNIGHT;
 		
@@ -150,18 +150,18 @@ public:
 		return knightAttacks(org).isOccupiedSq(dst);
 	}
 
-	enumColor getPieceColor(const Position& pos) const;
+	_NODISCARD enumColor getPieceColor(const Position& pos) const;
 
-	Piece::enumType getCaptured(const Position& pos) const;
+	_NODISCARD Piece::enumType getCaptured(const Position& pos) const;
 
 	// use this field only after making a move -
 	// captured piece is saved only in making a move
-	_INLINE Piece::enumType getCapturedMoved() const {
+	_NODISCARD _INLINE Piece::enumType getCapturedMoved() const {
 		static_assert(is_same<T, uint32_t>);
 		return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 22);
 	}
 
-	_INLINE Piece::enumType getPromoPiece() const {
+	_NODISCARD _INLINE Piece::enumType getPromoPiece() const {
 		return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 12);
 	}
 
@@ -194,14 +194,14 @@ public:
 
 	void print(std::ostream& os = std::cout) const;
 
-	bool isPseudoLegal(const Position& pos) const;
+	_NODISCARD bool isPseudoLegal(const Position& pos) const;
 
 	template <bool onlyQuiets>
-	bool isPseudoLegal_fromList(const Position& pos) const;
+	_NODISCARD bool isPseudoLegal_fromList(const Position& pos) const;
 
 	// That function explicitly use make/unmake on given a position.
 	// That is generally speaking costly, so use it only when really needed.
-	bool isLegal(Position& pos);
+	_NODISCARD bool isLegal(Position& pos);
 
 	enum class Castle {
 		SHORT, LONG
@@ -341,4 +341,4 @@ _INLINE std::ostream& operator<<(std::ostream& out, Move32b b) {
 	return out;
 }
 
-Move32b unpackedMove(const Position& pos, Move16b move);
+_NODISCARD Move32b unpackedMove(const Position& pos, Move16b move);

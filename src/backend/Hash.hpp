@@ -12,7 +12,7 @@ public:
 	ZobristMasks& operator=(const ZobristMasks&) = delete;
 	ZobristMasks& operator=(ZobristMasks&&) = delete;
 
-	static ZobristMasks& get();
+	_NODISCARD static ZobristMasks& get();
 
 	uint64_t 					black_key;
 	array1d<uint64_t, 8> 	ep_file_keys;

@@ -14,17 +14,17 @@ public:
 		_move_history[_idx++] = move;
 	}
 
-	_INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
+	_NODISCARD _INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
 		assert(halfmove_cnt < _idx);
 		return _move_history[halfmove_cnt];
 	}
 
-	_INLINE Move32b getCurrentMove() const {
+	_NODISCARD _INLINE Move32b getCurrentMove() const {
 		ASSERT(_idx > 0, "No moves performed during a game");
 		return getPrevMove(_idx - 1);
 	}
 
-	_INLINE size_t getMoveCount() const { return _idx; }
+	_NODISCARD _INLINE size_t getMoveCount() const { return _idx; }
 	_INLINE void clear() 				{ _idx = 0; }
 private:
 	array1d<Move32b, MaxGameMoves> _move_history = {};
@@ -43,7 +43,7 @@ public:
 		MoveRecord::recordMove(move);
 	}
 
-	_INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
+	_NODISCARD _INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
 		assert(halfmove_cnt < getMoveCount());
 		return _key_history[halfmove_cnt];
 	}
@@ -78,18 +78,18 @@ public:
 	// Returns true whether there is a win on the board.
 	// 'full' parameter contains detailed info.
 	// If there is no win, then full is undefined.
-	bool isWin(Result& full) const;
+	_NODISCARD bool isWin(Result& full) const;
 
 	// Returns true whether there is a draw on the board.
 	// 'full' parameter contains detailed info.
-	bool isDraw(Result& full) const;
+	_NODISCARD bool isDraw(Result& full) const;
 
-	Position& getPosition();
+	_NODISCARD Position& getPosition();
 
-	FullInfoRecord& getHistoryRecord();
-	const FullInfoRecord& getHistoryRecord() const;
+	_NODISCARD FullInfoRecord& getHistoryRecord();
+	_NODISCARD const FullInfoRecord& getHistoryRecord() const;
 
-	size_t getMoveCount() const;
+	_NODISCARD size_t getMoveCount() const;
 
 	static constexpr time_ms_t MoveOverhead = 15_ms;
     static constexpr time_ms_t TimeMargin   = 40_ms;

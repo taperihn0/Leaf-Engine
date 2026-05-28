@@ -170,7 +170,7 @@
 #  define INCBIN_GLOBAL(NAME)    ".globl " INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME "\n"
 #  define INCBIN_INT             ".long "
 #  define INCBIN_MANGLE          "_"
-#  define INCBIN_BYTE            ".std::byte "
+#  define INCBIN_BYTE            ".byte "
 #  define INCBIN_TYPE(...)
 #else
 #  define INCBIN_SECTION         ".section " INCBIN_OUTPUT_SECTION "\n"
@@ -195,7 +195,7 @@
 /* It's safe to use `@' on other architectures */
 #    define INCBIN_TYPE(NAME)    ".type " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME ", @object\n"
 #  endif
-#  define INCBIN_BYTE            ".std::byte "
+#  define INCBIN_BYTE            ".byte "
 #endif
 
 /* List of style types used for symbol names */
@@ -438,8 +438,8 @@
  * @brief Include a textual file into the current translation unit.
  * 
  * This behaves the same as INCBIN except it produces char compatible arrays
- * and implicitly adds a null-terminator std::byte, thus the size of data included
- * by this is one std::byte larger than that of INCBIN.
+ * and implicitly adds a null-terminator byte, thus the size of data included
+ * by this is one byte larger than that of INCBIN.
  *
  * Includes a textual file into the current translation unit, producing three
  * symbols for objects that encode the data and size respectively.

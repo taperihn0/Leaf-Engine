@@ -65,7 +65,7 @@ _INLINE void* alignedMemset(void* dst, uint8_t ch, size_t cnt) {
 	return dst;
 }
 
-_INLINE void* alignedMalloc(size_t size, size_t alignment) {
+_NODISCARD _INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined (_MSC_VER)
 	void* m = _aligned_malloc(size, alignment);
 #else

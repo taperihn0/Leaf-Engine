@@ -28,7 +28,7 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
 		// --- Regular parameters ---
-		OptionHash(SpinType<ll>(tt::DefaultTTSizeMb, 1, 512)), 
+		OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)), 
 		OptionClearHash(),
 		OptionPath(StringType("<empty>")),
 		{ // --- Tunable parameters ---
@@ -192,7 +192,7 @@ SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm,
 }
 
 UniversalChessInterface::UniversalChessInterface()
-	: _search(tt::TranspositionTable(tt::DefaultTTSizeMb))
+	: _search(TranspositionTable(DefaultTTSizeMb))
 	, _pos(StartposFEN)
 {}
 
