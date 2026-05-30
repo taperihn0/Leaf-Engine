@@ -503,7 +503,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
 					 root->best_score.isMateScore()) 
 				break;
 			
-			aspiration_win = round<int>(AspirationWidenRate / 4.f * aspiration_win);
+			aspiration_win = roundi<float>(AspirationWidenRate / 4.f * aspiration_win);
 
 			if (i + 1 >= AspirationCount or
 				aspiration_win >= AspirationMaxWindow) {
@@ -708,6 +708,12 @@ Score Search::nmSearch(Position& pos,
 		return tt_entry.score;
 	}
 	
+	/* Syzygy tablebase probing -
+	*  We probe the tablebase only at high depth, 
+	*  when there is a chance to cut off bigger branch.
+	*  We need to have zeroed halfmove clock and no castling rights.
+	*  Probing is disabled while in root.
+	*/
 	if constexpr (UseSyzygyTablebase) {
 		if (SyzygyTablebase::get().isLoaded() and
 			depth >= TablebaseProbeDepth and
@@ -918,7 +924,9 @@ Score Search::nmSearch(Position& pos,
 												  node->side2move, results);
 			}
 
-			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / RfpImprovingSink + 1.) * RfpMultDelta * depth) >= beta) {
+			const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
+
+			if (node->eval - static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth) >= beta) {
 				const Score reduced_eval = (node->eval + beta) / 2;
 				return reduced_eval;
 			}
@@ -956,7 +964,9 @@ Score Search::nmSearch(Position& pos,
 												  node->side2move, results);
 			}
 
-			if (node->eval - static_cast<Score::int_t>((-node->improving_rate / NullImprovingSink + 1.) * NullMargin * depth) >= beta) 
+			const double nmp_improving_scale = -node->improving_rate / NullImprovingSink + 1.; // TODO: float
+
+			if (node->eval - static_cast<Score::int_t>(nmp_improving_scale * NullMargin * depth) >= beta) 
 			{	
 				assert(parent_node->move != Move32b::Null);
 				
@@ -1615,6 +1625,9 @@ _FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 }
 
 _FORCEINLINE bool Search::isTablebaseScore(Score score) const {
+	/* We are calculating TablebaseLowestWinScore dynamically to
+	*  match current TablebaseScoreScale which may vary while tuning.
+	*/ 
 	const _P_STATIC _P_CONSTEXPR int TablebaseLowestWinScore = 
 													TablebaseScoreScale 
 												 	 * (TablebaseWinScore 
@@ -1679,7 +1692,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 #endif
 
 	const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
-	const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale;
+	const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale; // TODO: float precision, then round
 
 	// Assert we won't overflow into mate score
 	assert(abs<int>(scaled_eval) < Score::MateBound - 100);
