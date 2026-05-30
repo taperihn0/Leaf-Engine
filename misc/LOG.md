@@ -1,5 +1,5 @@
-### feature: Tuned Aspiration Window
-*SIDE NOTE: Testing performed on 1s+40ms time control with Hash size of 1mb. Parameters tuning done via Parallel SPSA tuning under 4s+100ms time control with Hash set to 32mb.*
+### [commit:ba566a3] feature: Tuned Aspiration Window
+*SIDE NOTE: Testing performed on 1s+40ms time control with Hash size of 1mb with Syzygy TB enabled. Parameters tuning done via Parallel SPSA tuning under 4s+100ms time control with Hash set to 32mb.*
 ```
 Score of leaf-tuned-asp vs leaf-final-asp: 1625 - 1450 - 1925  [0.517] 5000 
 ...      leaf-tuned-asp playing White: 939 - 616 - 945  [0.565] 2500 
@@ -9,7 +9,8 @@ Elo difference: 12.2 +/- 7.5, LOS: 99.9 %, DrawRatio: 38.5 %
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf
 ```
 
-### feature: Aspiration Window first attempt
+### [commit:bc8c254] feature: Aspiration Window first attempt
+*SIDE NOTE: Testing performed on 1s+40ms time control with Hash size of 1mb.*
 ```
 Score of leaf-final-asp vs leaf-final-last: 1244 - 1217 - 1539  [0.503] 4000 
 ...      leaf-final-asp playing White: 701 - 538 - 761  [0.541] 2000 
@@ -19,7 +20,7 @@ Elo difference: 2.3 +/- 8.4, LOS: 70.7 %, DrawRatio: 38.5 %
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf 
 ```
 
-### feature: Tuned search parameters for Syzygy probing
+### [commit:1d62259] feature: Tuned search parameters for Syzygy probing
 ```
 Score of leaf-syzygy-tb-tune vs leaf-syzygy-tb: 848 - 778 - 1171  [0.513] 2797 
 ...      leaf-syzygy-tb-tune playing White: 492 - 320 - 587  [0.561] 1399 

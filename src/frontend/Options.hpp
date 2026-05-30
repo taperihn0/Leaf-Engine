@@ -81,12 +81,13 @@ struct OptionTunableParam : public Option {
 };
 
 struct OptionPath : public Option {
-    OptionPath(StringType val);
+    OptionPath(const std::string& str, StringType val);
     void print() const override;
     void set(std::string fp);
     std::string getCurrentValue() const;
 
-    StringType value;
+    StringType  value;
+    std::string name;
 };
 
 // ----- Internal implementation -----
@@ -179,12 +180,13 @@ _INTERNAL double OptionTunableParam::getCurrentValue() const {
     return value.curr_value;
 }
 
-_INTERNAL OptionPath::OptionPath(StringType val)
+_INTERNAL OptionPath::OptionPath(const std::string& str, StringType val)
     : value(val)
+    , name(str)
 {}
 
 _INTERNAL void OptionPath::print() const {
-    std::cout << _OPTION_LITERAL("SyzygyPath");
+    std::cout << _OPTION_STR(name);
     value.print();
 }
 

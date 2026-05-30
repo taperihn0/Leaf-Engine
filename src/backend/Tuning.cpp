@@ -76,13 +76,6 @@ void TunableParametersMap::createMapping() {
     _addr["TablebasePieceCountLimit"] = &TablebasePieceCountLimit;
     _addr["TablebaseWinScore"] = &TablebaseWinScore;
     _addr["TablebasePieceDiffMult"] = &TablebasePieceDiffMult;
-    _addr["TablebaseScoreScale"] = &TablebaseScoreScale;
-    _addr["KnightCapturedScore"] = &KnightCapturedScore;
-    _addr["BishopCapturedScore"] = &BishopCapturedScore;
-    _addr["ToKnightPromoScore"] = &ToKnightPromoScore;
-    _addr["ToBishopPromoScore"] = &ToBishopPromoScore;
-    _addr["ToRookPromoScore"] = &ToRookPromoScore;
-    _addr["ToQueenPromoScore"] = &ToQueenPromoScore;
     _addr["AspirationSearchDepth"] = &AspirationSearchDepth;
     _addr["AspirationFirstWindow"] = &AspirationFirstWindow;
     _addr["AspirationUnstableFactor"] = &AspirationUnstableFactor;
@@ -92,6 +85,13 @@ void TunableParametersMap::createMapping() {
     _addr["AspirationMaxWindow"] = &AspirationMaxWindow;
     _addr["AspirationCount"] = &AspirationCount;
     _addr["AspirationWidenRate"] = &AspirationWidenRate;
+    _addr["TablebaseScoreScale"] = &TablebaseScoreScale;
+    _addr["KnightCapturedScore"] = &KnightCapturedScore;
+    _addr["BishopCapturedScore"] = &BishopCapturedScore;
+    _addr["ToKnightPromoScore"] = &ToKnightPromoScore;
+    _addr["ToBishopPromoScore"] = &ToBishopPromoScore;
+    _addr["ToRookPromoScore"] = &ToRookPromoScore;
+    _addr["ToQueenPromoScore"] = &ToQueenPromoScore;
 };
 
 void* TunableParametersMap::getAddressOf(const std::string& str) {

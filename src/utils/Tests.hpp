@@ -266,8 +266,8 @@ _INTERNAL bool packedPositionTests() {
     static constexpr size_t PositionLimit = 400000;
 	std::string line;
 
-	for (size_t i = 0; i < CraftyOpenings.size(); i++) {
-		const std::string fen = static_cast<std::string>(CraftyOpenings.at(i));
+	for (size_t i = 0; i < getCraftyOpenings().size(); i++) {
+		const std::string fen = static_cast<std::string>(getCraftyOpenings().at(i));
 		
 		Position pos(fen);
 		std::cout << i << ": " << fen << '\n';

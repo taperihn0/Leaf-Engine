@@ -33,7 +33,7 @@ void OpeningGenerator::load() {
 
     std::cout << "Loading openings positions..." << std::endl;
 
-    std::for_each(CraftyOpenings.begin(), CraftyOpenings.end(), [&](const std::string_view& fen) {
+    std::for_each(getCraftyOpenings().begin(), getCraftyOpenings().end(), [&](const std::string_view& fen) {
         const Position pos_from_fen(fen);
 
         _positions.push_back(GeneratedPosition{ 0, pos_from_fen });

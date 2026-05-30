@@ -20,7 +20,7 @@ protected:
 	void parsePosition(std::istringstream& strm);
 	void parseGo(std::istringstream& strm);
 	void parseIsReady();
-	void parseNet(std::istringstream& strm);
+	bool parseNeuralNet(std::istringstream& strm);
 	void parseRewriteNet(std::istringstream& strm); 
 	void parseSetOptions(std::istringstream& strm);
 	void parseBench(std::istringstream& strm);
@@ -36,6 +36,7 @@ protected:
 		OptionHash 					    hash_opt;
 		OptionClearHash 			    clear_hash_opt;
 		OptionPath 						syzygy_opt;
+		OptionPath 						neural_net_opt;
 		std::vector<OptionTunableParam> tunable_params_opt;
 	};
 

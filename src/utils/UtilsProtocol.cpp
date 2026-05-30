@@ -277,7 +277,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "print")				   _pos.print();
         else if (token == "go")					   parseGo(strm);
         else if (token == "isready")			   parseIsReady();
-        else if (token == "export_net") 		   parseNet(strm);
+        else if (token == "export_net") 		   parseNeuralNet(strm);
         else if (token == "rewrite_header")		   parseRewriteNet(strm);
         else if (token == "options")			   parseShowOptions();
         else if (token == "setoption")			   parseSetOptions(strm);
