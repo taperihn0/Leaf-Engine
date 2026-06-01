@@ -34,7 +34,7 @@ static constexpr std::string_view DefaultNeuralNetOptionPath = nn::DefaultNetwor
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
         // --- Regular parameters ---
-        OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)), 
+        OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)),
         OptionClearHash(),
         OptionPath("SyzygyPath",    StringType("<empty>")),
         OptionPath("NeuralNetPath", StringType(static_cast<std::string>(DefaultNeuralNetOptionPath))),

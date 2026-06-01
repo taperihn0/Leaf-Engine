@@ -1800,7 +1800,7 @@ void Search::refreshPVinTT(const Position& pos,
 #if defined(DEBUG)
 
 	// Check if PV-move for root node is actually there
-	Entry tt_entry;
+	TTEntry tt_entry;
 	tt_entry.move = Move16b::Null;
 
 	_tt.probe(tt_entry,
