@@ -172,9 +172,9 @@ private:
 };
 
 /*
-*   Tunable parameters in internal search.
-*	_P_CONSTEXPR macro expands to constexpr in release builds, but it 
-*   is ignored in debug builds to allow changing parameters when tuning.
+*   Tunable parameters in Search.
+*	_P_CONSTEXPR macro expands to constexpr when _ENABLE_TUNING macro is not defined.
+*   On _ENABLE_TUNING defined tuning mode is turned on and _P_CONSTEXPR and _P_STATIC are empty.
 */
 
 inline _P_CONSTEXPR int IidDepth = roundi<float>(3.36813f);

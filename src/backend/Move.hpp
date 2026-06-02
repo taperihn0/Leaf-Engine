@@ -311,7 +311,7 @@ _INLINE MoveData<T> MoveData<T>::makeCastling(Square origin, Square target) {
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makePackedSimple(Square origin, Square target) {
 	static_assert(is_same<T, uint16_t>);
-	return Move16b(
+	return MoveData(
 		  (static_cast<uint16_t>(target) << 6)
 		|  static_cast<uint16_t>(origin));
 }
@@ -321,7 +321,7 @@ _INLINE MoveData<T> MoveData<T>::makePackedPromo(Square origin,
 							    				 Square target, 
 							    				 Piece::enumType promo_t) {
 	static_assert(is_same<T, uint16_t>);
-	return Move16b(
+	return MoveData(
 		  (static_cast<uint16_t>(promo_t) << 12)
 		| (static_cast<uint16_t>(target) << 6)
 		|  static_cast<uint16_t>(origin));
