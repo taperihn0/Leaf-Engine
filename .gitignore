@@ -9,15 +9,18 @@ misc/selfplay_legacy/
 misc/tmp
 misc/log
 misc/fuckups
+workspaces
 CMakePresets.json
 
 build/
 
 src/assets/lichess/*
-src/utils/tmp
+src/assets/books/UHO_Lichess_4852_v1.epd
 src/assets/tmp/*
 src/assets/sets
 src/assets/tb
+
+**/tmp
 
 src/bullet-trainer
 
