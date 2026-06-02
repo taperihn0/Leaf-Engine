@@ -28,9 +28,9 @@ public:
     static void generateLegalMoves(Position& pos, MoveList& move_list);
 
 	template <enumMode GenType>
-	static Move32b getRandomLegalMove(Position& pos);
+	_NODISCARD static Move32b getRandomLegalMove(Position& pos);
 
-	static bool isAnyCapture(Position& pos);
+	_NODISCARD static bool isAnyCapture(Position& pos);
 };
 
 // helpful alias for MoveGenerator class

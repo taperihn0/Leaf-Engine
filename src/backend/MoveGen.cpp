@@ -3,10 +3,13 @@
 
 template <MoveGen::enumMode GenType, bool Capture>
 inline void generatePromotions(Square origin, Square target, MoveList& move_list) {
-	if constexpr (GenType == MoveGen::CAPTURES or GenType == MoveGen::TACTICALS)
+	if constexpr (GenType == MoveGen::CAPTURES or 
+				  GenType == MoveGen::TACTICALS)
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::QUEEN));
 
-	if constexpr (Capture or GenType == MoveGen::QUIETS or GenType == MoveGen::TACTICALS) {
+	if constexpr (Capture or 
+				  GenType == MoveGen::QUIETS or 
+				  GenType == MoveGen::TACTICALS) {
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::KNIGHT));
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::BISHOP));
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::ROOK));
@@ -15,11 +18,15 @@ inline void generatePromotions(Square origin, Square target, MoveList& move_list
 
 template <MoveGen::enumMode GenType, enumColor Side>
 void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard enemies) {
-	static constexpr int      NortWest = 7, NortEast = 9, SoutWest = -9, SoutEast = -7;
+	static constexpr int      NortWest = 7, 
+							  NortEast = 9, 
+							  SoutWest = -9, 
+							  SoutEast = -7;
 	static constexpr int      WestDiag = Side == WHITE ? NortWest : SoutWest,
 							  EastDiag = Side == WHITE ? NortEast : SoutEast;
 	static constexpr bool     Captures = true;
-	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() : BitBoard::rank<1>();
+	static constexpr BitBoard BackRank = Side == WHITE ? BitBoard::rank<8>() 
+													   : BitBoard::rank<1>();
 	
 	const BitBoard pawns = pos.get<Piece::PAWN, Side>();
 	BitBoard att;

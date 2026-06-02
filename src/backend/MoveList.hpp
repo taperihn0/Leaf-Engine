@@ -35,7 +35,7 @@ public:
 						  _greater_score);
 	}
 
-	_INLINE void push(Move32b&& new_move) {
+	_INLINE void push(Move32b new_move) {
 		assert(_idx < _MaxSize);
 		_moves[_idx++].move = new_move;
 	}
