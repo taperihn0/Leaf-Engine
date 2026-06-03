@@ -64,10 +64,9 @@
 #define _UNUSED       [[maybe_unused]]
 #define _MAYBE_UNUSED [[maybe_unused]]
 #define _NODISCARD 	  [[nodiscard]]
-
 #if defined(_CPP_STANDARD_20)
-#define _LIKELY   [[likely]]
-#define _UNLIKELY [[unlikely]]
+#define _LIKELY   	  [[likely]]
+#define _UNLIKELY 	  [[unlikely]]
 #else
 #define _LIKELY
 #define _UNLIKELY
@@ -85,11 +84,14 @@
 #define _P_STATIC    static
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) and defined(LEAF_ARCHITECTURE_X86)
 #define _GNU_TARGET_BMI2_AVX2 [[gnu::target("bmi2", "avx2")]]
 #else
 #define _GNU_TARGET_BMI2_AVX2
 #endif
+
+// Target cacheline size is fixed and that is 64 bytes
+#define CACHELINE_SIZE 64
 
 #if defined(__GNUC__) and !defined(DEBUG)
 // Loading embedded net do not work for debug builds
@@ -103,7 +105,7 @@ template <typename T>
 _INTERNAL void _declUnused(T&&) {}
 
 static constexpr std::string_view EngineName = "Leaf Lite";
-static constexpr std::string_view Author = "Szymon Belz";
+static constexpr std::string_view EngineAuthor = "Szymon Belz";
 
 // move format, so far only pure notation supported
 #define _PURE_NOTATION_DISPLAY 
@@ -227,9 +229,6 @@ template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _INLINE constexpr T maxof() {
 	return std::numeric_limits<T>::max();
 }
-
-// Target cacheline size is fixed and that is 64 bytes
-#define CACHELINE_SIZE 64
 
 static int GlobFixedSeed = 1;
 static std::mt19937 GlobMersenne(GlobFixedSeed);

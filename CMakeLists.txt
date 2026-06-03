@@ -95,6 +95,12 @@ if (ARCHITECTURE_ARM AND EXTENSION_BMI2)
 	message(WARNING "EXTENSION_BMI2 is not implemented on ARM architecture. Ignoring.")
 endif ()
 
+if (ARCHITECTURE_ARM)
+	target_compile_definitions(Leaf PUBLIC LEAF_ARCHITECTURE_ARM)
+else ()
+	target_compile_definitions(Leaf PUBLIC LEAF_ARCHITECTURE_X86)
+endif ()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og -O0")

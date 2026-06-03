@@ -214,7 +214,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
     GlobParamMapping.createMapping();
 #endif
 
-    std::cout << "Polish Chess Engine, " << EngineName << " by " << Author << '\n';
+    std::cout << "Polish Chess Engine, " << EngineName << " by " << EngineAuthor << '\n';
 
     std::string command;
     int arg_it = 1;
@@ -257,7 +257,7 @@ std::vector<OptionTunableParam>& UniversalChessInterface::getTunableOptions() {
 
 void UniversalChessInterface::parseUCI() {
     std::cout << "id name " << EngineName << '\n'
-              << "id author " << Author << '\n'
+              << "id author " << EngineAuthor << '\n'
               << "uciok" << '\n';
 }
 
@@ -508,7 +508,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseBench(std::istringstream& strm) {
-    static constexpr int BenchDepth = 7;
+    static constexpr int BenchDepth = 8;
 
     int depth = BenchDepth;
     strm >> std::skipws >> depth;
