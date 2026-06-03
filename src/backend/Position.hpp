@@ -289,7 +289,10 @@ public:
 	uint64_t perft(unsigned depth);
 
 	template <bool ExactScore>
-	int StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType att) const;
+	int StaticExchangeEval(Square org, 
+						   Square sq, 
+						   Piece::enumType target, 
+						   Piece::enumType att) const;
 
 	_NODISCARD IrreversibleState getIrreversibleState() const;
 
@@ -567,4 +570,8 @@ _INLINE std::string toStr(Position::enumStatusFlag err_flag) {
 }
 
 template <bool ExactScore>
-int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, Piece::enumType target, Piece::enumType attacker);
+int _StaticExchangeEval_unittest(const Position& pos, 
+								 Square org, 
+								 Square sq, 
+								 Piece::enumType target, 
+								 Piece::enumType attacker);

@@ -88,7 +88,11 @@ option(ARCHITECTURE_ARM 	  "Specify ARM architecture"  				   OFF)
 option(EXTENSION_BMI2   	  "Specify BMI2 Extension Instruction Set"     OFF)
 
 if (MSVC AND EXTENSION_BMI2)
-	message("EXTENSION_BMI2 is ignored on MSVC. Try enabling ENABLE_SIMD_AVX2 or ENABLE_SIMD_AVX512 instead.")
+	message(WARNING "EXTENSION_BMI2 is ignored on MSVC. Try enabling ENABLE_SIMD_AVX2 or ENABLE_SIMD_AVX512 instead.")
+endif ()
+
+if (ARCHITECTURE_ARM AND EXTENSION_BMI2)
+	message(WARNING "EXTENSION_BMI2 is not implemented on ARM architecture. Ignoring.")
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -153,20 +157,28 @@ else ()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-count-negative")
 endif ()
 
-option(ENABLE_SIMD_SSE2   "Enable SSE2 optimizations"	  OFF)
-option(ENABLE_SIMD_SSE3   "Enable SSE3 optimizations"	  OFF)
-option(ENABLE_SIMD_SSSE3  "Enable SSSE3 optimizations"	  OFF)
-option(ENABLE_SIMD_SSE4_1 "Enable SSE 4.1 optimizations"  OFF)
-option(ENABLE_SIMD_SSE4_2 "Enable SSE 4.2 optimizations"  OFF)
-option(ENABLE_SIMD_AVX    "Enable AVX optimizations"	  OFF)
-option(ENABLE_SIMD_AVX2   "Enable AVX2 optimizations"     OFF)
-option(ENABLE_SIMD_AVX512 "Enable AVX512 optimizations"   OFF)
-option(FORCE_PURE         "Force 'pure' instructions"	  OFF)
+option(ENABLE_SIMD_SSE2   "Enable SSE2 optimizations on x86"	OFF)
+option(ENABLE_SIMD_SSE3   "Enable SSE3 optimizations on x86"	OFF)
+option(ENABLE_SIMD_SSSE3  "Enable SSSE3 optimizations on x86"	OFF)
+option(ENABLE_SIMD_SSE4_1 "Enable SSE 4.1 optimizations on x86" OFF)
+option(ENABLE_SIMD_SSE4_2 "Enable SSE 4.2 optimizations on x86" OFF)
+option(ENABLE_SIMD_AVX    "Enable AVX optimizations on x86"	    OFF)
+option(ENABLE_SIMD_AVX2   "Enable AVX2 optimizations on x86"    OFF)
+option(ENABLE_SIMD_AVX512 "Enable AVX512 optimizations on x86"  OFF)
+option(FORCE_PURE         "Disable SIMD optimizations"			OFF)
+
+if (ARCHITECTURE_ARM AND NOT FORCE_PURE)
+	message(WARNING "ARCHITECTURE_ARM do not support x86 SIMD extension set.")
+endif ()
 
 if (FORCE_PURE)
 	target_compile_definitions(Leaf PUBLIC LEAF_FORCE_PURE)
 
-	message(STATUS "SIMD instructions disabled")
+	message(STATUS "SIMD optimizations disabled")
+elseif (ARCHITECTURE_ARM)
+	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_NEON)
+
+	message(STATUS "ARM NEON SIMD optimizations enabled")
 elseif (ENABLE_SIMD_SSE2)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_SSE2)
 
@@ -176,7 +188,7 @@ elseif (ENABLE_SIMD_SSE2)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - SSE2 instruction set")
+	message(STATUS "SIMD optimizations enabled - SSE2 instruction set")
 elseif (ENABLE_SIMD_SSE3)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_SSE3)
 
@@ -186,7 +198,7 @@ elseif (ENABLE_SIMD_SSE3)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - SSE3 instruction set")
+	message(STATUS "SIMD optimizations enabled - SSE3 instruction set")
 elseif (ENABLE_SIMD_SSSE3)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_SSSE3)
 
@@ -196,7 +208,7 @@ elseif (ENABLE_SIMD_SSSE3)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - SSSE3 instruction set")
+	message(STATUS "SIMD optimizations enabled - SSSE3 instruction set")
 elseif (ENABLE_SIMD_SSE4_1)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_SSE4_1)
 
@@ -206,7 +218,7 @@ elseif (ENABLE_SIMD_SSE4_1)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - SSE4.1 instruction set")
+	message(STATUS "SIMD optimizations enabled - SSE4.1 instruction set")
 elseif (ENABLE_SIMD_SSE4_2)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_SSE4_2)
 	
@@ -216,7 +228,7 @@ elseif (ENABLE_SIMD_SSE4_2)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - SSE4.2 instruction set")
+	message(STATUS "SIMD optimizations enabled - SSE4.2 instruction set")
 elseif (ENABLE_SIMD_AVX)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_AVX)
 
@@ -226,7 +238,7 @@ elseif (ENABLE_SIMD_AVX)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - AVX instruction set")
+	message(STATUS "SIMD optimizations enabled - AVX instruction set")
 elseif (ENABLE_SIMD_AVX2)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_AVX2)
 
@@ -237,7 +249,7 @@ elseif (ENABLE_SIMD_AVX2)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 	endif()
 
-	message(STATUS "SIMD instructions enabled - AVX2 instruction set")
+	message(STATUS "SIMD optimizations enabled - AVX2 instruction set")
 elseif (ENABLE_SIMD_AVX512)
 	target_compile_definitions(Leaf PUBLIC LEAF_SIMD_AVX512)
 
@@ -248,8 +260,10 @@ elseif (ENABLE_SIMD_AVX512)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mavx512bw -mavx512dq")	
 	endif()
 
-	message(STATUS "SIMD instructions enabled - AVX512 instruction set")
-endif()
+	message(STATUS "SIMD optimizations enabled - AVX512 instruction set")
+else ()
+	message(FATAL_ERROR "Did not specified SIMD optimization support")
+endif ()
 
 message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS}")
 

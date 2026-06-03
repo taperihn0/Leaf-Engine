@@ -95,7 +95,7 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
         sum_vec = _max_register_add_i32(sum_vec, rns2m);
     }
 
-    output = sumElements_i16(sum_vec);
+    output = sumRegisterElements_i16(sum_vec);
 
 #else
 

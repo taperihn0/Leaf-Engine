@@ -206,6 +206,12 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
 }
 
 void UtilsProtocol::parsePerft() {
+#if defined(DEBUG)
+    static constexpr int DepthTestLimit = 4;
+#else
+    static constexpr int DepthTestLimit = 5;
+#endif
+
     bool status = true;
 
     for (const auto& test : PerftStandard) {
@@ -224,7 +230,7 @@ void UtilsProtocol::parsePerft() {
         while (ss >> std::skipws >> token) {
             const auto depth = std::stoi(token.substr(1));
             
-            if (depth > 6) break;
+            if (depth > DepthTestLimit) break;
 
             ss >> std::skipws >> token;
             const auto nodes = std::stoull(token);

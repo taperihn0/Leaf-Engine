@@ -15,9 +15,9 @@ inline constexpr int QueenValue  = 900;
 
 class StaticEval {
 public:
-	static Score evaluateEndgame(const Position& pos);
-	static Score matEval(const Position& pos);
-	static Score staticEval(const Position& pos);
+	_NODISCARD static Score evaluateEndgame(const Position& pos);
+	_NODISCARD static Score matEval(const Position& pos);
+	_NODISCARD static Score staticEval(const Position& pos);
 private:
 	static Score pawnsStaticEval(const Position& pos, enumColor side);
 	static Score knightsStaticEval(const Position& pos, enumColor side);

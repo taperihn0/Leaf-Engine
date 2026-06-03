@@ -145,7 +145,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
 
 #endif // !LEAF_ENABLE_BMI2
 
-const array1d<uint64_t, 64> SlidersAttacks::_m_occupancy_bishop = {
+const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
 	0x40201008040200,
 	0x402010080400,
 	0x4020100a00,
@@ -212,7 +212,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_m_occupancy_bishop = {
 	0x40201008040200,
 };
 
-const array1d<uint64_t, 64> SlidersAttacks::_m_occupancy_rook = {
+const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
 	0x101010101017e,
 	0x202020202027c,
 	0x404040404047a,
@@ -279,7 +279,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_m_occupancy_rook = {
 	0x7e80808080808000,
 };
 
-const array1d<uint8_t, 64> SlidersAttacks::_m_bits_bishop = {
+const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
 	6, 5, 5, 5, 5, 5, 5, 6,
 	5, 5, 5, 5, 5, 5, 5, 5,
 	5, 5, 7, 7, 7, 7, 5, 5,
@@ -290,7 +290,7 @@ const array1d<uint8_t, 64> SlidersAttacks::_m_bits_bishop = {
 	6, 5, 5, 5, 5, 5, 5, 6,
 };
 
-const array1d<uint8_t, 64> SlidersAttacks::_m_bits_rook = {
+const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
 	12,11,11,11,11,11,11,12,
 	11,10,10,10,10,10,10,11,
 	11,10,10,10,10,10,10,11,
@@ -327,8 +327,8 @@ void SlidersAttacks::initAttackTables() {
 	};
 
 	for (int sq = 0; sq < 64; sq++) {
-		const uint8_t relv_bits = Piece == Piece::BISHOP ? _m_bits_bishop[sq] : _m_bits_rook[sq];
-		const uint64_t relv_occ = Piece == Piece::BISHOP ? _m_occupancy_bishop[sq] : _m_occupancy_rook[sq];
+		const uint8_t relv_bits = Piece == Piece::BISHOP ? _relv_bits_cnt_bishop[sq] : _relv_bits_cnt_rook[sq];
+		const uint64_t relv_occ = Piece == Piece::BISHOP ? _relv_occupancy_bishop[sq] : _relv_occupancy_rook[sq];
 
 		// looping through all occupancy subsets
 		for (uint64_t i = 0; i < (1_ui64 << relv_bits); i++) {
@@ -341,14 +341,14 @@ void SlidersAttacks::initAttackTables() {
 #if !defined(LEAF_ENABLE_BMI2)
 				sq_magic_bb = _magics_bishop[sq];
 #endif
-				sq_idx = get_index_hash(_m_occupancy_bishop[sq], subset, sq_magic_bb, relv_bits);
+				sq_idx = get_index_hash(_relv_occupancy_bishop[sq], subset, sq_magic_bb, relv_bits);
 				_mbishop_att[sq][sq_idx] = generateBishopAttacks(sq, subset);
 			}
 			else {
 #if !defined(LEAF_ENABLE_BMI2)
 				sq_magic_bb = _magics_rook[sq];
 #endif
-				sq_idx = get_index_hash(_m_occupancy_rook[sq], subset, sq_magic_bb, relv_bits);
+				sq_idx = get_index_hash(_relv_occupancy_rook[sq], subset, sq_magic_bb, relv_bits);
 				_mrook_att[sq][sq_idx] = generateRookAttacks(sq, subset);
 			}
 		}

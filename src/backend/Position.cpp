@@ -646,7 +646,11 @@ static constexpr array1d<int, 7> SeePieceValue = {
 };
 
 template <bool ExactScore>
-int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, Piece::enumType attacker) const {
+int Position::StaticExchangeEval(Square org, 
+								 Square sq, 
+								 Piece::enumType target, 
+								 Piece::enumType attacker) const 
+{
 	auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
 		for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
 			BitBoard mask = _piece_bb[side][piece] & bb;
@@ -661,7 +665,7 @@ int Position::StaticExchangeEval(Square org, Square sq, Piece::enumType target, 
 		return 1;
 	}
 	
-	int gain[32];
+	array1d<int, 32> gain;
 	int i = 0;
 
 	const BitBoard bishopsQueens = getBishops() | getQueens();

@@ -15,19 +15,34 @@ jobs:
         include:            
             - os: ubuntu-latest
               arch: x64-sse4-popcnt
-              flag: ENABLE_SIMD_SSE4_2
+              simd: ENABLE_SIMD_SSE4_2
+              arch_exclusive: OFF
+              bmi2: OFF
 
             - os: ubuntu-latest
               arch: x64-avx2
-              flag: ENABLE_SIMD_AVX2
-              
+              simd: ENABLE_SIMD_AVX2
+              arch_exclusive: OFF
+              bmi2: ON
+
             - os: windows-latest
               arch: x64-sse4-popcnt
-              flag: ENABLE_SIMD_SSE4_2
+              simd: ENABLE_SIMD_SSE4_2
+              arch_exclusive: OFF
+              bmi2: OFF
 
             - os: windows-latest
               arch: x64-avx2
-              flag: ENABLE_SIMD_AVX2
+              simd: ENABLE_SIMD_AVX2
+              arch_exclusive: OFF
+              bmi2: ON
+
+            - os: ubuntu-24.04-arm
+              arch: arm64
+              simd: ARCHITECTURE_ARM
+              arch_exclusive: OFF
+              bmi2: OFF
+              
 
     steps:
     - name: Checkout
@@ -42,7 +57,9 @@ jobs:
       run: >
         cmake -B ${{ github.workspace }}/build 
         -DCMAKE_BUILD_TYPE=Release 
-        -D${{ matrix.flag }}=ON
+        -D${{ matrix.simd }}=ON
+        -DARCHITECTURE_EXCLUSIVE=${{ matrix.arch_exclusive }}
+        -DEXTENSION_BMI2=${{ matrix.bmi2 }}
 
     - name: Build Project
       run: cmake --build ${{ github.workspace }}/build --config Release --parallel
