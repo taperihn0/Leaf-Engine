@@ -96,15 +96,15 @@ bool OpeningGenerator::isEmpty() const {
     return _positions.empty();
 }
 
-OpeningSuite::OpeningSuite(std::string path) {
+OpeningSuite::OpeningSuite(const std::filesystem::path& path) {
     loadFromFile(path);
 }
 
-void OpeningSuite::loadFromFile(std::string path) {
+void OpeningSuite::loadFromFile(const std::filesystem::path& path) {
     std::ifstream openings_file(path);
 
     if (!openings_file) {
-        ASSERT(false, "Failed to open " + path);
+        ASSERT(false, "Failed to open " + path.string());
         return;
     }
 

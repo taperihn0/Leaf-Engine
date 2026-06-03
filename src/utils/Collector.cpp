@@ -2,7 +2,7 @@
 #include "PackedPosition.hpp"
 #include "Process.hpp"
 #include "SelfGame.hpp"
-#include "Entry.hpp"
+#include "TrainEntry.hpp"
 #include "PackedNetwork.hpp"
 #include "NetworkEval.hpp"
 #include "StaticEval.hpp"
@@ -13,8 +13,8 @@
 namespace Utils
 {
 
-bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& thr_data, 
-                                           enumLogLabel thread_label) 
+bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
+                                                 enumLogLabel thread_label) 
 {
     ASSERT(thr_data.output_white_win.is_open(), "Output not opened.");
     ASSERT(thr_data.output_black_win.is_open(), "Output not opened.");
@@ -287,7 +287,7 @@ bool TournamentCollector::threadTournament(TournamentCollector::PerThreadData& t
 void TournamentCollector::perThread(TournamentCollector::PerThreadData& thr_data) {
     const enumLogLabel thread_label = threadLabel(thr_data.id);
 
-    while (!threadTournament(thr_data, thread_label)) {
+    while (!threadTournamentWorker(thr_data, thread_label)) {
         labelLog(std::cout, LOG_INFO | thread_label, "Restarting tournament and engines on thread");
     }
 
@@ -310,7 +310,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = packet.thread_count;
 
-    thread_common->err_output.open(packet.err_log_dir.data(), std::ios::app);
+    thread_common->err_output.open(packet.err_log_dir, std::ios::app);
 
     if (!thread_common->err_output) {
         labelLog(std::cout, LOG_INFO, "Failed to open " + std::string(packet.err_log_dir));
@@ -330,33 +330,29 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         PerThreadData per_thread_data;
 
         {
-            std::ostringstream ss;
-            ss << packet.log_dir << '/' << getWhiteWinOutputFile(id);
-            
-            per_thread_data.output_white_win.open(ss.str(), std::ios::binary | std::ios::app);
+            const std::filesystem::path fp = packet.log_dir / getWhiteWinOutputFile(id);
+            per_thread_data.output_white_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_white_win) {
-                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                labelLog(std::cout, LOG_INFO, "Failed to open " + fp.string());
                 return;
             }
         }
         {
-            std::ostringstream ss;
-            ss << packet.log_dir << '/' << getBlackWinOutputFile(id);
-            per_thread_data.output_black_win.open(ss.str(), std::ios::binary | std::ios::app);
+            const std::filesystem::path fp = packet.log_dir / getBlackWinOutputFile(id);
+            per_thread_data.output_black_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_black_win) {
-                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                labelLog(std::cout, LOG_INFO, "Failed to open " + fp.string());
                 return;
             }
         }
         {
-            std::ostringstream ss;
-            ss << packet.log_dir << '/' << getDrawOutputFile(id);
-            per_thread_data.output_draw.open(ss.str(), std::ios::binary | std::ios::app);
+            const std::filesystem::path fp = packet.log_dir / getDrawOutputFile(id);
+            per_thread_data.output_draw.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_draw) {
-                labelLog(std::cout, LOG_INFO, "Failed to open " + ss.str());
+                labelLog(std::cout, LOG_INFO, "Failed to open " + fp.string());
                 return;
             }
         }
@@ -400,10 +396,8 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
              "Total of " + std::to_string(thread_common->total_positions) + " positions collected on all threads");
 }
 
-_FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
-                                                           Score white_score,
-                                                           Move32b move,
-                                                           size_t total_positions_cnt) 
+bool TournamentCollector::explicitFilterPolicy(const Position& pos, 
+                                               Score white_score) 
 {
     if (white_score.isMateScore())
         return false;
@@ -412,13 +406,28 @@ _FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos,
              StaticEval::evaluateEndgame(pos) != Score::Undef)
         return false;
 
-    else if (move.isCapture() or move.isPromotion())
-        return false;
-
     else if (pos.isInCheck(pos.getTurn()))
         return false;
 
     return true;
+}
+
+_FORCEINLINE bool TournamentCollector::internalFilterPolicy(Move32b internal_move,
+                                                            _UNUSED size_t internal_total_positions_cnt)
+{
+    if (internal_move.isCapture() or internal_move.isPromotion())
+        return false;
+
+    return true;
+}
+
+_FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
+                                                            Score white_score,
+                                                            Move32b internal_move,
+                                                            size_t internal_total_positions_cnt) 
+{
+    return explicitFilterPolicy(pos, white_score) and 
+           internalFilterPolicy(internal_move, internal_total_positions_cnt);
 }
 
 } // namespace Utils

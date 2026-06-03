@@ -13,7 +13,7 @@ namespace Utils {
 class SPSA_Tuning {
 public:
     SPSA_Tuning() = default;
-    void start(uint thread_count, const std::string& spsa_log);
+    void start(uint thread_count, const std::filesystem::path& spsa_log);
 private:
     struct SPSA_Parameter {
         std::string name;

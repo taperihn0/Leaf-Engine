@@ -3,7 +3,7 @@
 #include "Tuning.hpp"
 #include "StaticEval.hpp"
 
-#ifdef _COLLECT_SEARCH_STATS
+#ifdef LEAF_COLLECT_SEARCH_STATS
 #include <iomanip>
 #endif
 
@@ -67,7 +67,7 @@ void SearchResults::print(const array1d<PVInfo, MaxSelDepth>& root_pv_line,
 	// flush every line
 	std::cout << std::endl;
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	printSearchStats();
 #endif
 }
@@ -78,7 +78,7 @@ void SearchResults::printShort() {
 	if (!best_move.isNull())
 		printBestMove();
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	printSearchStats();
 #endif
 }
@@ -93,7 +93,7 @@ void SearchResults::printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line,
 	}
 }
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 void SearchResults::printSearchStats() {
 
 #define _ASSERT_NONZERO(x) 			    \
@@ -629,9 +629,9 @@ Score Search::nmSearch(Position& pos,
 	if constexpr (!Root) {
 		if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 			results.rep_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 			return getDrawScore(node);
 		}
 	}
@@ -648,9 +648,9 @@ Score Search::nmSearch(Position& pos,
 
 			if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				results.rep_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 				return Score::Draw;
 			}
@@ -663,9 +663,9 @@ Score Search::nmSearch(Position& pos,
 
 		if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 			results.cuckoo_rep_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 			alpha = Score::Draw;
 
@@ -689,9 +689,9 @@ Score Search::nmSearch(Position& pos,
 
 	const uint64_t hash = pos.getZobristKey();
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	results.tt_probe_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 	TTEntry tt_entry;
 	tt_entry.eval = Score::Undef;
@@ -702,9 +702,9 @@ Score Search::nmSearch(Position& pos,
 	const bool exact_hit = !IsPv and tt_hit;
 
 	if (!Root and exact_hit) {
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 		return tt_entry.score;
 	}
 	
@@ -730,10 +730,10 @@ Score Search::nmSearch(Position& pos,
 
 				const bool status = SyzygyTablebase::get().probeDtz(pos, wdl, dtz, tb_move);
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				results.syzygy_tb_probe_cnt++;
 				results.syzygy_tb_cuts += status;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 				if (status) {
 					assert(tb_move != Move16b::Null);
@@ -759,10 +759,10 @@ Score Search::nmSearch(Position& pos,
 				SyzygyTablebase::TbWdlInfo wdl;
 				const bool status = SyzygyTablebase::get().probeWdl(pos, wdl);
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				results.syzygy_tb_probe_cnt++;
 				results.syzygy_tb_cuts += status;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 				if (status) {
 					const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
@@ -793,12 +793,12 @@ Score Search::nmSearch(Position& pos,
 
 	results.nodes_cnt++;
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	results.pv_nodes_cnt += IsPv;
 	results.npv_nodes_cnt += !IsPv;
 	results.cut_nodes_cnt += node->is_cut;
 	results.all_nodes_cnt += !node->is_cut;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 	NodeInfo* const child_node = node + 1;
 	assert(child_node - preroot < MaxSelDepth);
@@ -970,9 +970,9 @@ Score Search::nmSearch(Position& pos,
 			{	
 				assert(parent_node->move != Move32b::Null);
 				
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				results.null_moves_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 				pos.makeNull(node->state, accum_cache);
 
@@ -1013,9 +1013,9 @@ Score Search::nmSearch(Position& pos,
 															 verify_depth,
 															 ply);
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 					results.null_zungzwang_detected += score < beta;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 				}
 
 				if (score >= beta) {
@@ -1257,14 +1257,14 @@ Score Search::nmSearch(Position& pos,
 
 				child_node->is_cut = !(node->score > alpha);
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				results.reduced_search_cnt++;
 				results.reduced_search_fail_high += !(node->score > alpha);
 				results.reduced_search_fail_low += node->score > alpha;
 				results.move_reduced_cnt[node->move_index]++;
 				results.move_reduced_fail_high_cnt[node->move_index] += !(node->score > alpha);
 				results.move_reduction_sum[node->move_index] += reduction;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 			} 
 		
 			full_depth_search = !do_lmr or node->score > alpha;
@@ -1313,13 +1313,13 @@ Score Search::nmSearch(Position& pos,
 						node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth);
 					}
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 					if (node->move == tt_move)
 						results.ttmove_cut_cnt++;
 
 					results.beta_cut_cnt++;
 					results.move_cut_cnt[node->move_index]++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 					break;
 				}
@@ -1430,10 +1430,10 @@ Score Search::qSearch(Position& pos,
 	tt_entry.move = Move16b::Null;
 	tt_entry.score = Score::Undef;
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	results.tt_probe_cnt++;
 	results.qtt_probe_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 	const uint64_t hash = pos.getZobristKey();
 	const uint8_t probe_depth = std::max<uint8_t>(0, depth);
@@ -1443,10 +1443,10 @@ Score Search::qSearch(Position& pos,
 						   ( IsPv and tt_hit and tt_entry.bound == TTBound::EXACT);
 
 	if (exact_hit and depth <= QProbeDepth) {
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 		results.tt_cut_cnt++;
 		results.qtt_cut_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 		return tt_entry.score;
 	}
 #endif // _TT_PROBE_QSEARCH
@@ -1491,9 +1491,9 @@ Score Search::qSearch(Position& pos,
 	if ((!IsPv or tt_entry.bound != TTBound::LOWERBOUND) and 
 		(ttm16b.isPackedCapture(pos) or ttm16b.isQueenPromotion()))
 	{
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 		results.qttmove_probe_cnt++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 
 		const Move32b ttm32b = unpackedMove(pos, tt_entry.move);
 		tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
@@ -1571,7 +1571,7 @@ Score Search::qSearch(Position& pos,
 			node->best_score = node->score;
 
 			if (node->score >= beta) {
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 				if (node->move == tt_move) {
 					results.ttmove_cut_cnt++;
 					results.qttmove_cut_cnt++;
@@ -1581,7 +1581,7 @@ Score Search::qSearch(Position& pos,
 				results.qbeta_cut_cnt++;
 
 				results.move_cut_cnt[node->move_index]++;
-#endif // _COLLECT_SEARCH_STATS
+#endif // LEAF_COLLECT_SEARCH_STATS
 				return node->best_score;
 			}
 			
@@ -1654,7 +1654,7 @@ _INLINE Score Search::evaluate(const Position& pos,
 							   SearchResults& results)
 {
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	if constexpr (NodeType & QUIESCE_NODE)
 		results.qeval_cnt++;
 		
@@ -1820,7 +1820,7 @@ bool Search::isRepetitionCycle(const Position& pos,
 							   int ply,
 							   SearchResults& results)
 {
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	results.rep_call_cnt++;
 #else
 	_declUnused(results);

@@ -560,6 +560,7 @@ uint64_t Position::perft(unsigned depth) {
 			if constexpr (Root) {
 				move.print();
 				std::cout << ": " << child_nodes << '\n';
+				std::cout << std::flush;
 			}
 		}
 

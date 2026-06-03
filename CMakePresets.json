@@ -96,7 +96,8 @@
 				"INCLUDE_TESTS": "OFF",
 				"ENABLE_SIMD_AVX2": "ON",
 				"ARCHITECTURE_EXCLUSIVE": "ON",
-				"ARCHITECTURE_ARM": "OFF"
+				"ARCHITECTURE_ARM": "OFF",
+				"EXTENSION_BMI2": "ON"
 			}
 		},
 		{
@@ -110,7 +111,8 @@
 				"BUILD_UTILS": "ON",
 				"ENABLE_SIMD_AVX2": "ON",
 				"ARCHITECTURE_EXCLUSIVE": "ON",
-				"ARCHITECTURE_ARM": "OFF"
+				"ARCHITECTURE_ARM": "OFF",
+				"EXTENSION_BMI2": "ON"
 			}
 		}
 	],

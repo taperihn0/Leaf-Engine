@@ -1,4 +1,4 @@
-#include "Entry.hpp"
+#include "TrainEntry.hpp"
 
 #include <sstream>
 
@@ -41,6 +41,14 @@ bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
     }
 
     return input.good();
+}
+
+Score TrainingDataEntry::getWhiteScore() const {
+    return _game_details.white_score;
+}
+
+TrainingDataEntry::Result8b TrainingDataEntry::getGameResult() const {
+    return _game_details.result;
 }
 
 PackedPosition TrainingDataEntry::getPosition() const {

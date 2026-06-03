@@ -15,19 +15,23 @@ public:
     TournamentCollector() = default;
 
     struct TournamentPacket {
-        size_t           games_count; 
-        uint             thread_count;
-        std::string_view log_dir;
-        std::string_view err_log_dir;
-        SearchLimits     limits;
+        size_t                games_count; 
+        uint                  thread_count;
+        std::filesystem::path log_dir;
+        std::filesystem::path err_log_dir;
+        SearchLimits          limits;
     };
     
     void startTournament(const TournamentPacket& packet);
+    static bool explicitFilterPolicy(const Position& pos, 
+                                     Score white_score);
 private:
+    static bool internalFilterPolicy(Move32b internal_move,
+                                     size_t internal_total_positions_cnt);
     bool filterTrainPosition(const Position& pos, 
                              Score white_score, 
-                             Move32b move,
-                             size_t total_positions_cnt);
+                             Move32b internal_move,
+                             size_t internal_total_positions_cnt);
 
     struct CommonThreadData {
         std::atomic<size_t> games_ended;
@@ -52,18 +56,19 @@ private:
         size_t        draw_count;
         size_t        total_positions;
         uint          id;
-        std::shared_ptr<CommonThreadData> commons;
+        std::shared_ptr<CommonThreadData> 
+                      commons;
     };
 
-    bool threadTournament(PerThreadData& thread, 
-                          enumLogLabel thread_label);
+    bool threadTournamentWorker(PerThreadData& thread, 
+                                enumLogLabel thread_label);
     void perThread(PerThreadData& thread);
 
     static constexpr float _NodesRandomFactor = 0.18f;
 #if defined(DEBUG)
-    static constexpr bool _EnableSelfPlayLog = true;
+    static constexpr bool  _EnableSelfPlayLog = true;
 #else
-    static constexpr bool _EnableSelfPlayLog = false;
+    static constexpr bool  _EnableSelfPlayLog = false;
 #endif
 };
 

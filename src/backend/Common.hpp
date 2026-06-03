@@ -54,15 +54,16 @@
 #define _INTERNAL			inline
 #else
 #define _INLINE				inline
-#define _FORCEINLINE		__attribute__((always_inline)) inline 
-#define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 
+#define _FORCEINLINE		__attribute__((always_inline)) inline // [[gnu::always_inline]] ?
+#define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 		  // [[gnu::always_inline]] ?
 #define _RESTRICT 			__restrict__
 #define _INTERNAL 			inline
 #endif
 
-#define _NORETURN  [[noreturn]]
-#define _UNUSED    [[maybe_unused]]
-#define _NODISCARD [[nodiscard]]
+#define _NORETURN     [[noreturn]]
+#define _UNUSED       [[maybe_unused]]
+#define _MAYBE_UNUSED [[maybe_unused]]
+#define _NODISCARD 	  [[nodiscard]]
 
 #if defined(_CPP_STANDARD_20)
 #define _LIKELY   [[likely]]
@@ -72,7 +73,7 @@
 #define _UNLIKELY
 #endif
 
-#if defined(BUILD_UTILS) or defined(DEBUG)
+#if defined(LEAF_BUILD_UTILS) or defined(DEBUG)
 #define _ENABLE_TUNING
 #endif
 
@@ -82,6 +83,12 @@
 #else
 #define _P_CONSTEXPR constexpr
 #define _P_STATIC    static
+#endif
+
+#if defined(__GNUC__)
+#define _GNU_TARGET_BMI2_AVX2 [[gnu::target("bmi2", "avx2")]]
+#else
+#define _GNU_TARGET_BMI2_AVX2
 #endif
 
 #if defined(__GNUC__) and !defined(DEBUG)
@@ -227,7 +234,7 @@ _INLINE constexpr T maxof() {
 static int GlobFixedSeed = 1;
 static std::mt19937 GlobMersenne(GlobFixedSeed);
 
-#if !defined(BUILD_UTILS)
+#if !defined(LEAF_BUILD_UTILS)
 static thread_local uint GlobRandomSeed = GlobFixedSeed;
 #else
 static thread_local uint GlobRandomSeed = std::random_device{}();

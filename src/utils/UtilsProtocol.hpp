@@ -28,7 +28,7 @@ private:
 	void parsePerft();
 	
 	TournamentCollector _collector;
-	SPSA_Tuning _tuner;
+	SPSA_Tuning 		_tuner;
 };
 
 } // namespace Utils

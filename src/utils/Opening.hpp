@@ -13,7 +13,6 @@ class OpeningManBase
 public:
     virtual const Position& getRandomPosition(int& moves_done) const = 0;
     virtual bool isEmpty() const = 0;
-    virtual ~OpeningManBase() = default;
 };
 
 /* OpeningGenerator takes care of openings set.
@@ -29,14 +28,14 @@ public:
 private:
     OpeningGenerator() = default;
 
-    static constexpr int            _OpeningEvalThreshold = 300;
+    static constexpr int _OpeningEvalThreshold = 300;
 #if !defined(DEBUG)
-    static constexpr int            _RandomPerPos   = 35;
+    static constexpr int _RandomPerPos   = 35;
 #else
-    static constexpr int            _RandomPerPos   = 2;
+    static constexpr int _RandomPerPos   = 2;
 #endif
-    static constexpr int            _MinRandomMoves = 2;
-    static constexpr int            _MaxRandomMoves = 10;
+    static constexpr int _MinRandomMoves = 2;
+    static constexpr int _MaxRandomMoves = 10;
 
     struct GeneratedPosition {
         int moves_done;
@@ -59,9 +58,9 @@ inline OpeningGenerator GlobOpeningGenerator = []() -> OpeningGenerator {
 class OpeningSuite : public OpeningManBase {
 public:
     OpeningSuite() = default;
-    OpeningSuite(std::string path);
+    OpeningSuite(const std::filesystem::path& path);
 
-    void loadFromFile(std::string path);
+    void loadFromFile(const std::filesystem::path& path);
     void loadFromVec(const std::vector<std::string_view>& fens);
     const Position& getRandomPosition(int& moves_done) const override;
     bool isEmpty() const override;

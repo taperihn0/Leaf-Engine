@@ -1,12 +1,12 @@
 #include "UtilsProtocol.hpp"
-#include "Entry.hpp"
+#include "TrainEntry.hpp"
 #include "StaticEval.hpp"
 #include "Tuning.hpp"
 
 namespace Utils
 {
 
-void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector, 
+void UtilsProtocol::parseSelfPlay(TournamentCollector& collector, 
                                   std::istringstream& strm) {
     std::string token;
     strm >> std::skipws >> token;
@@ -26,10 +26,10 @@ void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector,
     }
 
     strm >> std::skipws >> token;
-    const std::string log_dir = token;
+    const std::filesystem::path log_dir = token;
 
     strm >> std::skipws >> token;
-    const std::string err_log_dir = token;
+    const std::filesystem::path err_log_dir = token;
 
     strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
@@ -37,8 +37,8 @@ void UtilsProtocol::parseSelfPlay(Utils::TournamentCollector& collector,
     const TournamentCollector::TournamentPacket packet = {
         static_cast<size_t>(games_count),
         static_cast<uint>(thread_cnt),
-        std::string_view(log_dir),
-        std::string_view(err_log_dir),
+        log_dir,
+        err_log_dir,
         limits,
     };
 
@@ -60,7 +60,7 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
 
     strm >> std::skipws >> begin >> std::skipws >> count;
 
-    std::vector<Utils::ExtPackedPosition> pack_positions = Utils::ExtPackedPosition::fullRead(input);
+    std::vector<ExtPackedPosition> pack_positions = ExtPackedPosition::fullRead(input);
     size_t n = pack_positions.size();
 
     if (begin < 0 or begin + count > n) {
@@ -69,42 +69,35 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
     }
 
     for (size_t i = begin; i < begin + count; i++) {
-        Position unpack = Utils::ExtPackedPosition::unpacked(pack_positions[i]);
+        Position unpack = ExtPackedPosition::unpacked(pack_positions[i]);
         unpack.print();
     }
 
     std::cout.flush();
 }
 
-bool verifyTrainData(std::ifstream& input, size_t& verified_cnt) {
+bool verifyTrainData(std::ifstream& input, 
+                     size_t& verified_cnt, 
+                     TrainingDataEntry::Result8b expected_result) 
+{
     ASSERTNOLOG(input.is_open());
 
-    static auto pos_verify = [](const Position& pos) -> bool {
-        if (!pos.isValid())
-            return false;
-
-        else if (pos.getPiecesCount() <= 6 and 
-                StaticEval::evaluateEndgame(pos) != Score::Undef)
-            return false;
-
-        else if (pos.isInCheck(pos.getTurn()))
-            return false;
-
-        return true;
-    };
-
-    Utils::TrainingDataEntry entry;
+    TrainingDataEntry entry;
     verified_cnt = 0;
 
-    while (Utils::TrainingDataEntry::read(input, entry)) {
+    while (TrainingDataEntry::read(input, entry)) {
         const PackedPosition pack = entry.getPosition();
-        const Position pos = PackedPosition::unpacked(pack);
-        
-        if (!pos_verify(pos)) {
-            std::cout << "Verification failed, invalid packed position: \n";
+        const Score white_score = entry.getWhiteScore();
+        const TrainingDataEntry::Result8b game_result = entry.getGameResult();
+
+        if (const Position pos = PackedPosition::unpacked(pack); 
+            game_result != expected_result or 
+            !TournamentCollector::explicitFilterPolicy(PackedPosition::unpacked(pack), white_score)) {
+            
+            std::cout << "Verification failed, invalid packed position\n";
 
             if (pos.isValid()) pos.print();
-            else pack.print();
+            else               pack.print();
 
             std::cout << std::flush;
             return false;
@@ -123,66 +116,76 @@ bool verifyTrainData(std::ifstream& input, size_t& verified_cnt) {
 }
 
 void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
-    std::string tournament_dir;
-    strm >> std::skipws >> tournament_dir;
+    std::vector<std::filesystem::path> dirs;
+    std::string curr_dir;
+
+    while (strm >> std::skipws >> curr_dir) {
+        dirs.emplace_back(curr_dir);
+    }
 
     size_t total_verified_positions = 0;
 
-    for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
-        std::string session_fp = "session" + std::to_string(session);
+    for (const auto& tournament_dir : dirs) {
+        for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
+            std::filesystem::path session_fp = "session" + std::to_string(session);
 
-        for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
-            {
-                std::string fp = tournament_dir + '/' + session_fp + '/' + getWhiteWinOutputFile(id);
-                std::ifstream input(fp, std::ios_base::binary);
+            if (!std::filesystem::exists(session_fp) or
+                session_fp.empty())
+                continue;
 
-                if (input) {
-                    std::cout << "Verificating " << fp << "..." << std::endl;
-                    
-                    size_t verified_cnt = 0;
+            for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getWhiteWinOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
 
-                    if (!verifyTrainData(input, verified_cnt)) {
-                        std::cout << "Verification failed on file: " << fp << std::endl;
-                        return;
+                    if (input) {
+                        std::cout << "Verificating " << fp << "..." << std::endl;
+                        
+                        size_t verified_cnt = 0;
+
+                        if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::WHITE_WIN)) {
+                            std::cout << "Verification failed on file: " << fp << std::endl;
+                            return;
+                        }
+
+                        total_verified_positions += verified_cnt;
                     }
-
-                    total_verified_positions += verified_cnt;
                 }
-            }
 
-            {
-                std::string fp = tournament_dir + '/' + session_fp + '/' + getBlackWinOutputFile(id);
-                std::ifstream input(fp, std::ios_base::binary);
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getBlackWinOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
 
-                if (input) {
-                    std::cout << "Verificating " << fp << "..." << std::endl;
-                    
-                    size_t verified_cnt = 0;
+                    if (input) {
+                        std::cout << "Verificating " << fp << "..." << std::endl;
+                        
+                        size_t verified_cnt = 0;
 
-                    if (!verifyTrainData(input, verified_cnt)) {
-                        std::cout << "Verification failed on file: " << fp << std::endl;
-                        return;
+                        if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::BLACK_WIN)) {
+                            std::cout << "Verification failed on file: " << fp << std::endl;
+                            return;
+                        }
+
+                        total_verified_positions += verified_cnt;
                     }
-
-                    total_verified_positions += verified_cnt;
                 }
-            }
 
-            {
-                std::string fp = tournament_dir + '/' + session_fp + '/' + getDrawOutputFile(id);
-                std::ifstream input(fp, std::ios_base::binary);
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getDrawOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
 
-                if (input) {
-                    std::cout << "Verificating " << fp << "..." << std::endl;
-                    
-                    size_t verified_cnt = 0;
+                    if (input) {
+                        std::cout << "Verificating " << fp << "..." << std::endl;
+                        
+                        size_t verified_cnt = 0;
 
-                    if (!verifyTrainData(input, verified_cnt)) {
-                        std::cout << "Verification failed on file: " << fp << std::endl;
-                        return;
+                        if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::DRAW)) {
+                            std::cout << "Verification failed on file: " << fp << std::endl;
+                            return;
+                        }
+
+                        total_verified_positions += verified_cnt;
                     }
-
-                    total_verified_positions += verified_cnt;
                 }
             }
         }
@@ -221,7 +224,7 @@ void UtilsProtocol::parsePerft() {
         while (ss >> std::skipws >> token) {
             const auto depth = std::stoi(token.substr(1));
             
-            if (depth > 5) break;
+            if (depth > 6) break;
 
             ss >> std::skipws >> token;
             const auto nodes = std::stoull(token);

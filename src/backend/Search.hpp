@@ -50,7 +50,7 @@ struct SearchResults {
 	void printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
 				 uint16_t pv_len);
 
-#if defined (_COLLECT_SEARCH_STATS)
+#if defined (LEAF_COLLECT_SEARCH_STATS)
 	void printSearchStats();
 #endif
 
@@ -65,7 +65,7 @@ struct SearchResults {
 	array1d<ull, MaxDepth + 1> nodes_per_depth = {};
 	array1d<time_ms_t, MaxDepth + 1> time_per_depth  = {};
 
-#if defined(_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
 	ull       pv_nodes_cnt		= 0,
 			  npv_nodes_cnt		= 0,
 			  cut_nodes_cnt		= 0,

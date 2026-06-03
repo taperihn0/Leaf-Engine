@@ -5,6 +5,5 @@
 #include "backend/Hash.hpp"
 
 _INTERNAL void setupInternals() {
-	SlidersAttacks::initAttackTables<Piece::BISHOP>();
-	SlidersAttacks::initAttackTables<Piece::ROOK>();
+	SlidersAttacks::initTables();
 }

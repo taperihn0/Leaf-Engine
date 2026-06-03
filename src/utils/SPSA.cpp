@@ -18,7 +18,7 @@ static constexpr double Gamma = 0.101;
 std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
-void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
+void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log) {
     if (thread_count > static_cast<uint>(PlatformThreadLimit)) {
         std::cout << "Too many threads requested" << std::endl;
         return;
@@ -60,6 +60,7 @@ void SPSA_Tuning::start(uint thread_count, const std::string& spsa_log) {
     limits.wtime = limits.btime = 4_s;
     limits.winc = limits.binc = 100_ms;
 
+    // TODO: try bigger opening set, maybe Lichess UHO?
     if (_openings.isEmpty())
         _openings.loadFromVec(NunnOpenings);
 

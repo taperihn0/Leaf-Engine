@@ -1,7 +1,7 @@
 #pragma once
 
 #include "UtilsCommon.hpp"
-#include "Entry.hpp"
+#include "TrainEntry.hpp"
 #include "StaticEval.hpp"
 #include "Memory.hpp"
 
