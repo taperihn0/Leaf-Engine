@@ -1,4 +1,8 @@
-#include "Setup.hpp"
+#include "UCI.hpp"
+#include "backend/Magic.hpp"
+#include "backend/Attacks.hpp"
+#include "backend/MoveGen.hpp"
+#include "backend/Hash.hpp"
 
 /*
 	IDEAS:
@@ -9,7 +13,7 @@
 */
 
 int main(int argc, const char* argv[]) {
-	setupInternals();
+	SlidersAttacks::initTables();
 	UniversalChessInterface uci;
 	uci.loop(argc, argv);
 }

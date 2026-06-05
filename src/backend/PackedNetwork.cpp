@@ -103,7 +103,7 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
     DWORD low_size = GetFileSize(_fh, &high_size);
 
     if (low_size == INVALID_FILE_SIZE) {
-        std::cout << ("Failed to retrieve file size via GetFileSizeEx(): " 
+        std::cout << ("Failed to retrieve file size via GetFileSize(): " 
                       + static_cast<std::string>(path)) << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;

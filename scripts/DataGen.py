@@ -11,7 +11,7 @@ def log_msg(msg: str):
 def main():
     if len(sys.argv) != 6 and len(sys.argv) != 7:
         print(f"Usage: {sys.argv[0]} <executable_path> <total_sessions> <games_per_session> <thread_count> <nodes> <syzygy_path(optional)>")
-        print(f"Example: {sys.argv[0]} ./bin/Utils/Release/LeafUtils 10 4000 2 8000 Leaf-Engine\src\assets\tb\Syzygy")
+        print(f"Example: {sys.argv[0]} ./bin/Utils/Release/LeafUtils 10 4000 2 8000 Leaf-Engine/src/assets/tb/Syzygy")
         sys.exit(1)
 
     executable = os.path.normpath(sys.argv[1])

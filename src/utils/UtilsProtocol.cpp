@@ -129,8 +129,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
         for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
             std::filesystem::path session_fp = "session" + std::to_string(session);
 
-            if (!std::filesystem::exists(session_fp) or
-                session_fp.empty())
+            if (!std::filesystem::exists(tournament_dir / session_fp) or session_fp.empty())
                 continue;
 
             for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {

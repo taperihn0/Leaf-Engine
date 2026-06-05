@@ -63,14 +63,14 @@ public:
 
     void clear(enumColor side);
 
-    _NODISCARD const array1d<int16_t, NetworkHiddenLayerSize>& getValues(enumColor side) const;
+    _NODISCARD const array1d<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
 #endif
 
 private:
-    array2d<int16_t, 2, NetworkHiddenLayerSize> _values;
+    array2d<int16_t, 2, NetworkAccumulatorSizePerSide> _values;
 };
 
 struct FeatureData {

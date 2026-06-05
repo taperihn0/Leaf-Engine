@@ -90,9 +90,9 @@ protected:
     static constexpr int _MaxNibbles       = _MaxPiecesOnBoard / 2;
     static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + _MaxNibbles;
 
-    BitBoard _occupancy_mask;
-    Nibble   _pieces[_MaxNibbles];
-    uint8_t  _piece_cnt;
+    BitBoard                     _occupancy_mask;
+    array1d<Nibble, _MaxNibbles> _pieces;
+    uint8_t                      _piece_cnt;
 };
 
 // ExtPackedPosition implements custom position compression.
@@ -124,7 +124,7 @@ private:
     static constexpr int    _ClockBufferSize = 3;
     static constexpr size_t _PackedBufferSize = _PackedPosBufferSize + _ClockBufferSize;
 
-    // apart from 16-std::byte pieces buffer,
+    // apart from 16-byte pieces buffer,
     // we also store fullmove count and fullmove count
     // as a so called clock data.
     struct ClockData {

@@ -1,8 +1,8 @@
 #include "UtilsProtocol.hpp"
-#include "frontend/Setup.hpp"
+#include "Magic.hpp"
 
 int main(int argc, const char* argv[]) {
-	setupInternals();
+	SlidersAttacks::initTables();
 	Utils::UtilsProtocol protocol;
 	protocol.loop(argc, argv);
 }

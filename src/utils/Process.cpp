@@ -1,5 +1,4 @@
 #include "Process.hpp"
-#include "frontend/Setup.hpp"
 #include "backend/PackedNetwork.hpp"
 #include "backend/Tablebase.hpp"
 

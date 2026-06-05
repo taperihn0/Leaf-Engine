@@ -19,6 +19,7 @@ src/assets/books/UHO_Lichess_4852_v1.epd
 src/assets/tmp/*
 src/assets/sets
 src/assets/tb
+**/*.zip
 
 **/tmp
 

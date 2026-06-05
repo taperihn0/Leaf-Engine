@@ -508,7 +508,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseBench(std::istringstream& strm) {
-    static constexpr int BenchDepth = 8;
+    static constexpr int BenchDepth = 9;
 
     int depth = BenchDepth;
     strm >> std::skipws >> depth;
