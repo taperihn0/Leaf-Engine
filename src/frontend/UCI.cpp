@@ -126,6 +126,11 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionTunableParam(SpinType<double>(ToBishopPromoScore,			  50.,  300.),  "ToBishopPromoScore",    	 	1.3),
         OptionTunableParam(SpinType<double>(ToRookPromoScore,			  150., 500.),  "ToRookPromoScore",      	 	1.3),
         OptionTunableParam(SpinType<double>(ToQueenPromoScore,			  700., 1020.), "ToQueenPromoScore",     	 	1.3),
+        OptionTunableParam(SpinType<double>(SeePawnValue,                 80.,  120.),  "SeePawnValue",                 0.9),
+        OptionTunableParam(SpinType<double>(SeeKnightValue,               250., 350.),  "SeeKnightValue",               0.9),
+        OptionTunableParam(SpinType<double>(SeeBishopValue,               250., 350.),  "SeeBishopValue",               0.9),
+        OptionTunableParam(SpinType<double>(SeeRookValue,                 450., 550.),  "SeeRookValue",                 0.9),
+        OptionTunableParam(SpinType<double>(SeeQueenValue,                830., 970.),  "SeeQueenValue",                0.9),
         }, 
 };
 
@@ -352,7 +357,7 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
     strm >> std::skipws >> os >> std::skipws >> ds;
     Square org = Square::fromChar(os[0], os[1]);
     Square dst = Square::fromChar(ds[0], ds[1]);
-    int score = _pos.StaticExchangeEval<false>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
+    int score = _pos.staticExchangeEval<false>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
                                               _pos.pieceOn(org, _pos.getTurn()));
     std::cout << score << std::endl;
 }

@@ -641,29 +641,34 @@ _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, 
 		    | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
-static constexpr array1d<int, 7> SeePieceValue = {
-	100, 300, 300, 500, 900, 10000, 0
+_INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,
+											  enumColor side,
+											  Piece::uint_t& piece) const
+{
+	for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
+		BitBoard mask = _piece_bb[side][piece] & bb;
+		if (mask) return mask.oneBit();
+	}
+	return BitBoard(0_ui64);
+}
+
+static constexpr array1d<const int*, 6> SeePieceValue = {
+	&SeePawnValue,
+	&SeeKnightValue,
+	&SeeBishopValue,
+	&SeeRookValue,
+	&SeeQueenValue,
+	&SeeKingValue
 };
 
 template <bool ExactScore>
-int Position::StaticExchangeEval(Square org, 
+int Position::staticExchangeEval(Square org, 
 								 Square sq, 
 								 Piece::enumType target, 
 								 Piece::enumType attacker) const 
 {
-	auto get_weakest_from = [this](BitBoard bb, enumColor side, Piece::uint_t& piece) _LAMBDA_FORCEINLINE {
-		for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
-			BitBoard mask = _piece_bb[side][piece] & bb;
-			if (mask) return mask.oneBit();
-		}
-		return BitBoard(0_ui64);
-	};
-
-	if (!ExactScore and
-		SeePieceValue[target] > SeePieceValue[attacker])
-	{
+	if (!ExactScore and *SeePieceValue[target] > *SeePieceValue[attacker])
 		return 1;
-	}
 	
 	array1d<int, 32> gain;
 	int i = 0;
@@ -681,20 +686,20 @@ int Position::StaticExchangeEval(Square org,
 
 	Piece::uint_t vic = target;
 	Piece::uint_t att = attacker;
-	gain[i] = SeePieceValue[vic];
+	gain[i] = *SeePieceValue[vic];
 
 	vic = att;
 	if (vic == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-		gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
+		gain[i] += *SeePieceValue[Piece::QUEEN] - *SeePieceValue[Piece::PAWN];
 		vic = Piece::QUEEN;
 	}
 
 	side2move = !side2move;
-	from = get_weakest_from(attacks, side2move, att);
+	from = getWeakestAttacker(attacks, side2move, att);
 
 	while (from != 0_ui64) {
 		i++;
-		gain[i] = -gain[i - 1] + SeePieceValue[vic];
+		gain[i] = -gain[i - 1] + *SeePieceValue[vic];
 		if constexpr (!ExactScore) {
 			if (std::max(-gain[i - 1], gain[i]) < 0)
 				break;
@@ -705,12 +710,12 @@ int Position::StaticExchangeEval(Square org,
 			attacks |= xRayAttackers(occ, sq, bishopsQueens, rooksQueens);
 		}
 		if (att == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-			gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
+			gain[i] += *SeePieceValue[Piece::QUEEN] - *SeePieceValue[Piece::PAWN];
 			att = Piece::QUEEN;
 		}
 		side2move = !side2move;
 		vic = att;
-		from = get_weakest_from(attacks, side2move, att);
+		from = getWeakestAttacker(attacks, side2move, att);
 	}
 	
 	while (i > 0) {
@@ -724,11 +729,11 @@ int Position::StaticExchangeEval(Square org,
 template <bool ExactScore>
 int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, 
 	Piece::enumType target, Piece::enumType attacker) {
-	return pos.StaticExchangeEval<ExactScore>(org, sq, target, attacker);
+	return pos.staticExchangeEval<ExactScore>(org, sq, target, attacker);
 }
 
-template int Position::StaticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType) const;
-template int Position::StaticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType) const;
+template int Position::staticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType) const;
+template int Position::staticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType) const;
 
 template int _StaticExchangeEval_unittest<false>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
 template int _StaticExchangeEval_unittest<true>(const Position&, Square, Square, Piece::enumType, Piece::enumType);

@@ -1538,7 +1538,7 @@ Score Search::qSearch(Position& pos,
 				const Piece::enumType vic = node->move.getCaptured(pos);
 				const Piece::enumType piece = node->move.getPiece();
 
-				const int capt_see_score = pos.StaticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
+				const int capt_see_score = pos.staticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
 
 				if (capt_see_score < 0)
 					continue;

@@ -92,6 +92,11 @@ void TunableParametersMap::createMapping() {
     _addr["ToBishopPromoScore"] = &ToBishopPromoScore;
     _addr["ToRookPromoScore"] = &ToRookPromoScore;
     _addr["ToQueenPromoScore"] = &ToQueenPromoScore;
+    _addr["SeePawnValue"] = &SeePawnValue;
+    _addr["SeeKnightValue"] = &SeeKnightValue;
+    _addr["SeeBishopValue"] = &SeeBishopValue;
+    _addr["SeeRookValue"] = &SeeRookValue;
+    _addr["SeeQueenValue"] = &SeeQueenValue;
 };
 
 void* TunableParametersMap::getAddressOf(const std::string& str) {

@@ -75,6 +75,17 @@ private:
 
 namespace Utils { class ExtPackedPosition; }
 
+/* Tunable Static Exchange Evaluation piece values.
+*  King score is fixed and not tuned.
+*/
+
+inline _P_CONSTEXPR int SeePawnValue = 100;
+inline _P_CONSTEXPR int SeeKnightValue = 300;
+inline _P_CONSTEXPR int SeeBishopValue = 300;
+inline _P_CONSTEXPR int SeeRookValue = 500;
+inline _P_CONSTEXPR int SeeQueenValue = 900;
+inline constexpr int 	SeeKingValue = 12000;
+
 // internal board state, including piece distribution 
 // and game flags like castling
 class Position {
@@ -289,7 +300,7 @@ public:
 	uint64_t perft(unsigned depth);
 
 	template <bool ExactScore>
-	int StaticExchangeEval(Square org, 
+	int staticExchangeEval(Square org, 
 						   Square sq, 
 						   Piece::enumType target, 
 						   Piece::enumType att) const;
@@ -307,6 +318,10 @@ public:
 private:
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
+
+	BitBoard getWeakestAttacker(BitBoard bb,
+								enumColor side,
+								Piece::uint_t& piece) const;
 
 	array1d<array1d<BitBoard, 6>, 2> _piece_bb;
 	array1d<BitBoard, 2> 			 _occupied;
