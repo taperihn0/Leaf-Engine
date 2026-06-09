@@ -151,11 +151,12 @@ _INTERNAL bool ccrOneHourTest() {
 		return last;
 	};
 
-	Timer timer;
-	timer.go();
+	time_ms_t total_duration_ms = 0_ms;
 
 	int lcnt = 0;
 	for (const auto& sv_fen : CcrOneHourSet) {
+		search.registerNewGame();
+
 		const std::string full_fen = static_cast<std::string>(sv_fen);
 		size_t next = next_token(full_fen, 0);
 
@@ -166,6 +167,9 @@ _INTERNAL bool ccrOneHourTest() {
 		size_t ind = opt.find("bm");
 
 		std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
+
+		Timer timer;
+		timer.go();
 
 		if (ind != std::string::npos) {
 			ind += 3;
@@ -182,12 +186,13 @@ _INTERNAL bool ccrOneHourTest() {
 			_TESTCASE(nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
 		}
 
+		const time_ms_t duration_ms = timer.duration();
+		total_duration_ms += duration_ms;
+
 		++lcnt;
 	}
 
-	time_ms_t duration_ms = timer.duration();
-
-	std::cout << "TEST DURATION: " << duration_ms << "ms" << std::endl;
+	std::cout << "TEST DURATION: " << total_duration_ms << "ms" << std::endl;
 	return true;
 }
 

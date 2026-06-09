@@ -327,7 +327,7 @@ _INLINE MoveData<T> MoveData<T>::makePackedPromo(Square origin,
 		|  static_cast<uint16_t>(origin));
 }
 
-_INLINE Move16b packedMove(Move32b move) {
+_NODISCARD _INLINE Move16b packedMove(Move32b move) {
 	return Move16b(
 		  (static_cast<uint16_t>(move.getPromoPiece() << 12))
 		| (static_cast<uint16_t>(move.getTarget()) << 6)

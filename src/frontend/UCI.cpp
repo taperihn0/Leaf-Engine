@@ -343,7 +343,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
     }
     
     SearchLimits limits = loadSearchLimits(strm, token);
-    _search.findBestMove(_pos, _game, limits);
+    _declUnused(_search.findBestMove(_pos, _game, limits));
 }
 
 void UniversalChessInterface::parseIsReady() {

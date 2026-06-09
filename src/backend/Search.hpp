@@ -296,15 +296,15 @@ public:
 	Search operator=(Search&& t) = delete;
 
 	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
-	Move32b findBestMove(Position& pos, 
-						 const FullInfoRecord& game, 
-						 SearchLimits limits);
+	_NODISCARD Move32b findBestMove(Position& pos, 
+						 			const FullInfoRecord& game, 
+						 			SearchLimits limits);
 
 	template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
-	Move32b findBestMove(Position& pos, 
-						 const FullInfoRecord& game, 
-						 SearchLimits limits,
-						 SearchResults& search_results);
+	_NODISCARD Move32b findBestMove(Position& pos, 
+						 			const FullInfoRecord& game, 
+						 			SearchLimits limits,
+						 			SearchResults& search_results);
 
 	static Move32b _findBestMove_unittest(Search& search, 
 									      Position& pos, 

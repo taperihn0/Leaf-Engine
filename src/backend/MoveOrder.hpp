@@ -70,10 +70,10 @@ public:
 	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
 	template <OrderType Order, bool Root>
-	bool nextMove(const NodeInfo* node, 
-				  const Position& pos, 
-				  Move32b& next_move,
-				  int16_t& move_score);
+	_NODISCARD bool nextMove(const NodeInfo* node, 
+				  			 const Position& pos, 
+				  			 Move32b& next_move,
+				  			 int16_t& move_score);
 
 	void setHashMove(Move32b m);
 

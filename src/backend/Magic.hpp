@@ -41,7 +41,7 @@ public:
 										  _relv_occupancy_bishop[sq] & occ, 
 										  _relv_bits_cnt_bishop[sq]);
 #endif
-		return _mbishop_att[static_cast<int8_t>(sq)][sqidx];
+		return _mbishop_att[sq][sqidx];
 	}
 
 	_NODISCARD static _FORCEINLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
@@ -52,7 +52,7 @@ public:
 										_relv_occupancy_rook[sq] & occ, 
 										_relv_bits_cnt_rook[sq]);
 #endif
-		return _mrook_att[static_cast<int8_t>(sq)][sqidx];
+		return _mrook_att[sq][sqidx];
 	}
 
 	_NODISCARD static _FORCEINLINE BitBoard queenAttacks(Square sq, BitBoard occ) {
