@@ -24,7 +24,7 @@
 
 CuckooTables::CuckooTables()
 	: _cuckoo_entry_buff(new CuckooEntry[_CuckooTableSize]) { 
-	memSet(_cuckoo_entry_buff.get(), 0, sizeof(CuckooEntry) * _CuckooTableSize);
+	mem::memSet(_cuckoo_entry_buff.get(), 0, sizeof(CuckooEntry) * _CuckooTableSize);
 }
 
 void CuckooTables::init() {

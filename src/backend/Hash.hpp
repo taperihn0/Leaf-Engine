@@ -33,9 +33,9 @@ public:
 	_NODISCARD static ZobristMasks& get();
 
 	uint64_t 					black_key;
-	array1d<uint64_t, 8> 	ep_file_keys;
-	array1d<uint64_t, 2> 	short_castle_keys;
-	array1d<uint64_t, 2> 	long_castle_keys;
+	array1d<uint64_t, 8> 		ep_file_keys;
+	array1d<uint64_t, 2> 		short_castle_keys;
+	array1d<uint64_t, 2> 		long_castle_keys;
 	array3d<uint64_t, 2, 6, 64> piece_keys;
 private:
 	ZobristMasks();
@@ -73,6 +73,8 @@ public:
 #if defined(_DEBUG)
 	bool printXOR_Diff(uint64_t key_2);
 #endif
+
+	static constexpr uint64_t Undef = 0;
 private:
-	uint64_t _key = 0;
+	uint64_t _key = Undef;
 };

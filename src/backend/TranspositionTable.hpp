@@ -75,6 +75,7 @@ struct alignas(BucketTargetSize) Bucket {
 };
 
 static_assert(sizeof(Bucket) == BucketTargetSize);
+static_assert(sizeof(Bucket) == alignof(Bucket));
 
 static constexpr size_t DefaultTTSizeMb = 1_MB;
 
@@ -116,7 +117,7 @@ public:
     void newGeneration();
     void clearHashfull();
 private:
-    AlignedUniquePtr<Bucket> 
+    mem::AlignedUniquePtr<Bucket> 
                  _mem;
     size_t    	 _buckets_cnt;
     uint8_t   	 _buckets_pow_2;

@@ -236,7 +236,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 }
 
 void Accumulator::clear(enumColor side) {
-    alignedMemset(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
+    mem::alignedMemset(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
 }
 
 const array1d<int16_t, NetworkAccumulatorSizePerSide>& Accumulator::getValues(enumColor side) const {

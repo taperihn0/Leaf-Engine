@@ -31,7 +31,7 @@ TTEntry::TTEntry()
 {}
 
 TranspositionTable::TranspositionTable(size_t mb_size)
-	: _mem(reinterpret_cast<Bucket*>(alignedMalloc(mb_size, sizeof(Bucket)))) 
+	: _mem(mem::makeAlignedUnique<Bucket>(mb_size / sizeof(Bucket)))
 {
 	ASSERT(isPow2(mb_size), "Transposition table must be size of 2 power");
 	ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
@@ -43,7 +43,8 @@ TranspositionTable::TranspositionTable(size_t mb_size)
 void TranspositionTable::resize(size_t size_mb) {
 	ASSERT(isPow2(size_mb), "Transposition table must be size of 2 power");
 
-	_mem = makeAlignedUnique<Bucket>(size_mb);
+	const size_t bucket_cnt = size_mb / sizeof(Bucket);
+	_mem = mem::makeAlignedUnique<Bucket>(bucket_cnt);
 	
 	ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
 	_buckets_cnt = size_mb / sizeof(Bucket);
@@ -53,7 +54,7 @@ void TranspositionTable::resize(size_t size_mb) {
 }
 
 void TranspositionTable::clear() {
-	alignedMemset(_mem.get(), 0, _buckets_cnt * sizeof(Bucket));
+	mem::alignedMemset(_mem.get(), 0, _buckets_cnt * sizeof(Bucket));
 	_generation = 0;
 	_hits = 0;
 }
@@ -176,7 +177,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 
 void TranspositionTable::prefetchBucket(uint64_t key64) const {
 	assert(getExp2(_buckets_cnt) == _buckets_pow_2);
-	prefetch(reinterpret_cast<const void*>(_mem.get() + (key64 & (_buckets_cnt - 1))));
+	mem::prefetch(reinterpret_cast<const void*>(_mem.get() + (key64 & (_buckets_cnt - 1))));
 }
 
 #if defined(DEBUG)

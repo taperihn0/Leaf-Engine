@@ -26,6 +26,8 @@
 // modify it as you wish
 #define _ENABLE_PREFETCH
 
+namespace mem {
+
 static _FORCEINLINE void prefetch(const void* addr) {
 #ifdef _ENABLE_PREFETCH
 #if defined(_MSC_VER) or defined(_INTEL_COMPILER)
@@ -114,9 +116,9 @@ template <typename T>
 using AlignedUniquePtr = std::unique_ptr<T, AlignedDeleter<T>>;
 
 template <typename T>
-_NODISCARD AlignedUniquePtr<T> makeAlignedUnique(size_t size) {
-    T* p = reinterpret_cast<T*>(alignedMalloc(size, alignof(T)));
+_NODISCARD AlignedUniquePtr<T> makeAlignedUnique(size_t count, size_t alignment = alignof(T)) {
+    T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
     return AlignedUniquePtr<T>(p);
 }
 
-
+} // namespace mem

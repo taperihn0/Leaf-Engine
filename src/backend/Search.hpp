@@ -31,18 +31,6 @@
 #include "Tablebase.hpp"
 
 struct SearchLimits {
-	bool isTimeLimit();
-
-    bool isTimeLeft();
-
-    // anyNodesLeft compares current any-node count (both search and quiescent nodes)
-    // and returns whether given number is below any-node threshold.
-    bool anyNodesLeft(ull nodes_so_far);
-
-    // anyQuiesceNodesLeft compares current quiescent nodes count
-    // and returns whether given number is below quiescent-node threshold.
-    bool anyQuiesceNodesLeft(ull qnodes_so_far);
-
 	int 	  depth		  = 0;
 	time_ms_t wtime		  = 0,
 			  btime		  = 0;
@@ -51,6 +39,7 @@ struct SearchLimits {
 			  search_time = 0;
     ull       nodes       = 0;
     ull       qnodes      = 0;
+	bool      analysis_mode = false;
 	Timer     timer;
 };
 
@@ -186,7 +175,7 @@ public:
 								 AccumulatorCluster* const accum_cluster);
 private:
 	static constexpr size_t _Count = MaxSelDepth;
-	std::unique_ptr<NodeInfo, AlignedDeleter<NodeInfo>> _stack;
+	mem::AlignedUniquePtr<NodeInfo> _stack;
 };
 
 /*
@@ -333,13 +322,12 @@ public:
 	void resizeHashTT(size_t tt_size_mb);
 	void registerNewGame();
 private:
-	template <enumInfoLevel InfoLevel>
 	Move32b goIterativeDeepening(Position& pos, 
 								 const FullInfoRecord& game, 
 								 SearchLimits& limits,
-								 SearchResults& search_results);
+								 SearchResults& search_results,
+								 enumInfoLevel info_lv);
 
-	template <enumInfoLevel InfoLevel>
 	bool goSearch(Position& pos, 
 				  const FullInfoRecord& game, 
 				  SearchLimits& limits, SearchResults& results,
@@ -407,7 +395,7 @@ private:
 	*  for very MoveOrder in TreeStack.
 	*  Also, Search class in responsible for allocation and deallocation.
 	*/
-	AlignedUniquePtr<MoveOrderHistoryTables> 
+	mem::AlignedUniquePtr<MoveOrderHistoryTables> 
 					_history_buff;
 	Score::int_t 	_contempt = Score::Undef;
 };

@@ -41,7 +41,7 @@ std::vector<PositionFormat> fullReadOf(std::istream& input) {
 }
 
 PackedPosition::PackedPosition() {
-    memSet(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
+    mem::memSet(reinterpret_cast<void*>(this), 0, sizeof(PackedPosition));
 }
 
 PackedPosition::PackedPosition(const Position& pos) {
@@ -85,7 +85,7 @@ PackedPosition PackedPosition::fromExt(const ExtPackedPosition& ext_pack) {
     pack._occupancy_mask = ext_pack._occupancy_mask;
     pack._piece_cnt = ext_pack._piece_cnt;
 
-    memCopy(reinterpret_cast<void*>(&pack._pieces), 
+    mem::memCopy(reinterpret_cast<void*>(&pack._pieces), 
             reinterpret_cast<const void*>(&ext_pack._pieces), 
             (pack._piece_cnt + 1) / 2);
 

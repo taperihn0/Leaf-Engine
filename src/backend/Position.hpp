@@ -450,8 +450,8 @@ _INLINE Position::IrreversibleState Position::getIrreversibleState() const {
 }
 
 _INLINE void Position::clearPieces() {
-	memSet(_piece_bb[0].data(), 0, 2 * 6 * sizeof(BitBoard));
-	memSet(_occupied.data(), 0, 2 * sizeof(BitBoard));
+	mem::memSet(_piece_bb[0].data(), 0, 2 * 6 * sizeof(BitBoard));
+	mem::memSet(_occupied.data(), 0, 2 * sizeof(BitBoard));
 }
 
 template <Piece::enumType Piece, enumColor Color>

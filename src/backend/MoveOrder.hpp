@@ -25,6 +25,8 @@
 class TreeStack;
 class MoveOrder;
 
+static constexpr int16_t UndefMoveScore = minof<int16_t>();
+
 /* It is basically a part of MoveOrder interface.
 *  It contains tables used in move ordering with history data, for instance 
 *  piece-square or from-to tables.
@@ -38,16 +40,17 @@ public:
 	MoveOrderHistoryTables() { clearQuietsHistory(); }
 
 	_INLINE void clearQuietsHistory() {
-		memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
+		mem::memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
 	}
 private:
 	array3d<int16_t, 2, 6, 64> _quiets_history;
 	// ...
 };
 
-enum OrderType {
-	STAGED,
-	QUIESCENT
+enum OrderType : uint8_t {
+	STAGED		   = 1, // At nmSearch nodes
+	QUIESCENT	   = 2, // At qSearch nodes
+	ONCE_GEN_LEGAL = 3  // At root node
 };
 
 /*
@@ -87,27 +90,22 @@ public:
 
 	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
-	template <OrderType Order, bool Root>
+	template <OrderType Type, bool Root>
 	_NODISCARD bool nextMove(const NodeInfo* node, 
-				  			 const Position& pos, 
+				  			 Position& pos, 
 				  			 Move32b& next_move,
 				  			 int16_t& move_score);
 
 	void setHashMove(Move32b m);
-
-	template <OrderType Type = STAGED>
 	void setKillerMove(Move32b m, uint64_t parent_hash);
 
-	template <OrderType Type = STAGED>
 	Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
-	template <int8_t Sign, OrderType Order = STAGED>
+	template <int8_t Sign>
 	void updateQuietEntry(Move32b move, enumColor side, int depth);
-
-	template <OrderType Order = STAGED>
 	void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
 	
-	template <OrderType Order>
+	template <OrderType Type>
 	void clear();
 
 	void skipQuiets();
@@ -116,26 +114,39 @@ public:
 
 	static float getQuietDepthReduction(int16_t quiet_score);
 	static float getCaptureDepthReduction(int16_t capture_score);
+
+	template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
+	_NODISCARD uint getMovesLeft();
+
+	template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
+	_NODISCARD uint getTotalMoves();
 private:
 	bool nextFromList(Move32b& move, int16_t& score);
 
 	void scoreCaptures(size_t first_ind, const Position& pos);
 	void scoreQuiets(size_t first_ind, enumColor side);
 
+	bool nextMoveFromOnceGen(Position& pos, 
+				  			 Move32b& next_move,
+				  			 int16_t& move_score);
+
 	enum class enumStage : uint8_t {
 		NONE,
-		HASH_MOVE,
-		CAPTURES,
-		PICK_CAPTURES, 
-		KILLER,
-		QUIETS,
-		PICK_QUIETS,
+		FIRST_STAGE,
+		ONCEGEN_HASH_MOVE,
+		ONCEGEN_ALL,
+		ONCEGEN_PICK_CAPTURES,
+		ONCEGEN_PICK_QUIETS,
+		STAGED_HASH_MOVE,
+		STAGED_CAPTURES,
+		STAGED_PICK_CAPTURES, 
+		STAGED_KILLER,
+		STAGED_QUIETS,
+		STAGED_PICK_QUIETS,
 	};
 
 	static_assert(is_same<MoveList::entryscore_t, int16_t> or
 				  is_same<MoveList::entryscore_t, int32_t>);
-
-	static constexpr enumStage _FirstStage = enumStage::HASH_MOVE;
 
 	MoveOrderHistoryTables* _tables;
 
@@ -158,23 +169,19 @@ _INLINE void MoveOrder::setHashMove(Move32b m) {
 	_hash_move = m;
 }
 
-template <OrderType Type>
 _INLINE void MoveOrder::setKillerMove(Move32b m, uint64_t parent_hash) {
-	static_assert(Type == STAGED);
 	_killer_move = m;
 	_killer_move_parent_hash = parent_hash;
 }
 
-template <OrderType Type>
 _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
-	static_assert(Type == STAGED);
 	killer_move_parent_hash = _killer_move_parent_hash;
 	return _killer_move;
 }
 
 template <OrderType Type>
 _INLINE void MoveOrder::clear() {
-	_stage = _FirstStage;
+	_stage = enumStage::FIRST_STAGE;
 	_iterator = 0;
 	_quiets_ind = 0;
 	_hash_move = Move32b::Null;
@@ -204,4 +211,14 @@ _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
 
 _FORCEINLINE float MoveOrder::getCaptureDepthReduction(int16_t capture_score) {
 	return static_cast<float>(capture_score / CaptureMoveScoreReductionDiv);
+}
+
+template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
+uint MoveOrder::getMovesLeft() {
+	return _move_list.count() - _iterator;
+}
+
+template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
+uint MoveOrder::getTotalMoves() {
+	return _move_list.count();
 }

@@ -31,24 +31,30 @@ MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables)
 
 template <OrderType Type, bool Root>
 bool MoveOrder::nextMove(const NodeInfo* node,
-						 const Position& pos, 
+						 Position& pos, 
 						 Move32b& next_move,
 						 int16_t& move_score) 
 {
-	static_assert(!Root or Type == STAGED);
+	static_assert(!Root or Type == ONCE_GEN_LEGAL);
 	assert(_tables != nullptr);
 
 	if constexpr (Root) {
 		_killer_move = Move32b::Null;
 	}
-	
+
+	next_move = Move32b::Null;
+	move_score = Score::Undef;
+
+	if constexpr (Type == ONCE_GEN_LEGAL) {
+		return nextMoveFromOnceGen(pos, next_move, move_score);
+	}
+
 	switch (_stage) {
-	// GCC requires that, without that case it reports warning [-Wswitch]
-	case enumStage::NONE: 
-		assert(false);
-		break;
-	case enumStage::HASH_MOVE:
-		_stage = enumStage::CAPTURES;
+	case enumStage::FIRST_STAGE:
+		_stage = enumStage::STAGED_HASH_MOVE;
+		[[fallthrough]];
+	case enumStage::STAGED_HASH_MOVE:
+		_stage = enumStage::STAGED_CAPTURES;
 
 		if (!_hash_move.isNull()) {
 			next_move = _hash_move;
@@ -56,32 +62,32 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 		}
 
 		[[fallthrough]];
-	case enumStage::CAPTURES:
+	case enumStage::STAGED_CAPTURES:
 		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
 		scoreCaptures(0, pos);
 
-		_stage = enumStage::PICK_CAPTURES;
+		_stage = enumStage::STAGED_PICK_CAPTURES;
 
 		[[fallthrough]];
-	case enumStage::PICK_CAPTURES:
+	case enumStage::STAGED_PICK_CAPTURES:
 		if (nextFromList(next_move, move_score))
 			return true;
 		
 		if constexpr (Type == QUIESCENT)
 			return false;
 
-		_stage = enumStage::KILLER;
+		_stage = enumStage::STAGED_KILLER;
 
 		[[fallthrough]];
-	case enumStage::KILLER:
+	case enumStage::STAGED_KILLER:
 		assert(Type != QUIESCENT);
 
-		_stage = enumStage::QUIETS;
+		_stage = enumStage::STAGED_QUIETS;
 		_quiets_ind = _iterator;
 		
 		{
-			uint64_t parent_hash = 0;
+			uint64_t parent_hash = ZHash::Undef;
 
 			if constexpr (!Root) {
 				const NodeInfo* const parent_node = node - 1;
@@ -100,30 +106,33 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 		}
 
 		[[fallthrough]];
-	case enumStage::QUIETS:
+	case enumStage::STAGED_QUIETS:
 		assert(Type != QUIESCENT);
 
 		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-		_stage = enumStage::PICK_QUIETS;
+		_stage = enumStage::STAGED_PICK_QUIETS;
 
 		[[fallthrough]];
-	case enumStage::PICK_QUIETS:
+	case enumStage::STAGED_PICK_QUIETS:
 		assert(Type != QUIESCENT);
 
-		const enumColor side = pos.getTurn();
-
-		scoreQuiets(_iterator, side);
+		{
+			const enumColor side = pos.getTurn();
+			scoreQuiets(_iterator, side);
+		}
 
 		return nextFromList(next_move, move_score);
+	default:
+		assert(false);
+		break;
 	}
 
 	return false;
 }
 
-template <int8_t Sign, OrderType Type>
+template <int8_t Sign>
 void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
-	static_assert(Type == STAGED);
 	static_assert(Sign == -1 or Sign == 1);
 	assert(_tables != nullptr);
 
@@ -139,10 +148,7 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 	assert(abs(quiet_value) <= MaxQuietsHistory);
 }
 
-template <OrderType Type>
 void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
-	static_assert(Type == STAGED);
-
 	assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
 	updateQuietEntry<1>(bestmove, side, depth);
@@ -245,7 +251,55 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 	}
 }
 
-template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, const Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<STAGED, true> (const NodeInfo*, const Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<QUIESCENT, false>(const NodeInfo*, const Position&, Move32b&, int16_t&);
-template void MoveOrder::updateQuietsHistory(Move32b, enumColor, int);
+bool MoveOrder::nextMoveFromOnceGen(Position& pos, 
+									Move32b& next_move,
+									int16_t& move_score)
+{
+	switch (_stage) {
+	case enumStage::FIRST_STAGE:
+		_stage = enumStage::ONCEGEN_HASH_MOVE;
+		[[fallthrough]];
+	case enumStage::ONCEGEN_HASH_MOVE:
+		_stage = enumStage::ONCEGEN_ALL;
+
+		if (!_hash_move.isNull())
+			next_move = _hash_move;
+		
+		[[fallthrough]];
+	case enumStage::ONCEGEN_ALL:
+		_stage = enumStage::ONCEGEN_PICK_CAPTURES;
+
+		MoveGen::generateLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+		scoreCaptures(0, pos);
+
+		_quiets_ind = _iterator;
+		MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+
+		if (!next_move.isNull())
+			return true;
+
+		[[fallthrough]];
+	case enumStage::ONCEGEN_PICK_CAPTURES:
+		if (nextFromList(next_move, move_score))
+			return true;
+
+		_stage = enumStage::ONCEGEN_PICK_QUIETS;
+
+		[[fallthrough]];
+	case enumStage::ONCEGEN_PICK_QUIETS:
+		{
+			const enumColor side = pos.getTurn();
+			scoreQuiets(_iterator, side);
+		}
+		return nextFromList(next_move, move_score);
+	default:
+		assert(false);
+		break;
+	}
+
+	return false;
+}
+
+template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<QUIESCENT, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<ONCE_GEN_LEGAL, true> (const NodeInfo*, Position&, Move32b&, int16_t&);
