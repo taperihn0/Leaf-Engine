@@ -254,7 +254,7 @@ void Search::registerNewGame() {
 }
 
 TreeStack::TreeStack()
-	: _stack(mem::makeAlignedUnique<NodeInfo>(_Count, CACHELINE_SIZE))
+	: _stack(mem::makeAlignedUnique<NodeInfo>(_Count, CachelineSize))
 {
 	ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
@@ -369,7 +369,7 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 
 Search::Search(TranspositionTable&& tt) 
 	: _tt(std::move(tt))
-	, _history_buff(mem::makeAlignedUnique<MoveOrderHistoryTables>(1, CACHELINE_SIZE))
+	, _history_buff(mem::makeAlignedUnique<MoveOrderHistoryTables>(1, CachelineSize))
 {
 	ASSERT(_history_buff != nullptr, "Failed to allocate memory");
 	registerNewGame();

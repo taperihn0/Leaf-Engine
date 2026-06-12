@@ -25,7 +25,7 @@ namespace nn {
 
 static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
-class alignas(CACHELINE_SIZE) Accumulator {
+class alignas(CachelineSize) Accumulator {
 public:
     _INLINE Accumulator() = default;
     _INLINE Accumulator(const PackedNeuralNetwork& network, 

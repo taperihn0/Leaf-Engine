@@ -108,8 +108,7 @@
 #define _GNU_TARGET_BMI2_AVX2
 #endif
 
-// Target cacheline size is fixed and that is 64 bytes
-#define CACHELINE_SIZE 64
+static constexpr size_t CachelineSize = 64;
 
 #if defined(__GNUC__) and !defined(DEBUG)
 // Loading embedded net do not work for debug builds
