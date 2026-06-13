@@ -873,6 +873,42 @@ Score Search::nmSearch(Position& pos,
 	Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
 												: Move32b::Null;
 
+	/* Internal Iterative Deepening -
+	*  done only in PV Nodes. When no hash move is found for said node, 
+	*  we allow to do some shallow research in order to obtain one.
+	*  That strategy can only pay off when the move ordering is actually 
+	*  very important.
+	*/
+	if constexpr (!Root and IsPv) {
+		if (depth >= IidDepth and 
+			tt_move.isNull() and
+			node->is_cut) 
+		{
+			child_node->is_cut = !node->is_cut;
+
+			_UNUSED const Score iid_score =
+				nmSearch<NmNodeType, false>(pos, limits, results, game, node,
+										    alpha, beta,
+										    4 * depth / IidDepthDiv,
+										    ply);
+
+			TTEntry iid_entry;
+			iid_entry.eval = Score::Undef;
+			iid_entry.move = Move16b::Null;
+			iid_entry.score = Score::Undef;
+
+			_UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
+			
+			ttm32b = unpackedMove(pos, iid_entry.move);
+			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
+												: Move32b::Null;
+
+			if (!tt_move.isNull() and iid_entry.eval.isValid()) {
+				node->eval = iid_entry.eval;
+			}
+		}
+	}
+
 	/* Dynamic Improving implementation -
 	*  we're clamping improvement rate to range [-1., 1.]
 	*/
@@ -1022,42 +1058,6 @@ Score Search::nmSearch(Position& pos,
 				else if (score <= -Score::MateBound) {
 					mate_thread = true;
 				}
-			}
-		}
-	}
-
-	/* Internal Iterative Deepening -
-	*  done only in PV Nodes. When no hash move is found for said node, 
-	*  we allow to do some shallow research in order to obtain one.
-	*  That strategy can only pay off when the move ordering is actually 
-	*  very important.
-	*/
-	if constexpr (!Root and IsPv) {
-		if (depth >= IidDepth and 
-			tt_move.isNull() and
-			node->is_cut) 
-		{
-			child_node->is_cut = !node->is_cut;
-
-			_UNUSED const Score iid_score =
-				nmSearch<NmNodeType, false>(pos, limits, results, game, node,
-										    alpha, beta,
-										    4 * depth / IidDepthDiv,
-										    ply);
-
-			TTEntry iid_entry;
-			iid_entry.eval = Score::Undef;
-			iid_entry.move = Move16b::Null;
-			iid_entry.score = Score::Undef;
-
-			_UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
-			
-			ttm32b = unpackedMove(pos, iid_entry.move);
-			tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-												: Move32b::Null;
-
-			if (!tt_move.isNull() and iid_entry.eval.isValid()) {
-				node->eval = iid_entry.eval;
 			}
 		}
 	}
