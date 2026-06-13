@@ -393,6 +393,8 @@ Move32b Search::findBestMove(Position& pos,
 							 SearchResults& search_results) 
 {
 	ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
+	ASSERT(search_results.best_move.isNull(), 
+		   "Best move should be null before doing the search");
 
 	_tt.newGeneration();
 	
@@ -545,6 +547,9 @@ Move32b Search::goIterativeDeepening(Position& pos,
 									 +Score::Mate);
 			}
 		}
+
+		if (search_results.best_move.isNull())
+			search_results.best_move = root->best_move;
 
 		if (terminate)
 			break;

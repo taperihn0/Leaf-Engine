@@ -160,9 +160,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
 
         moves_done++;
 
-        ASSERTNOLOG(score != Score::Undef);
-
-        if (std::abs(static_cast<int>(score)) < _LowScore) 
+        if (score.isValid() and std::abs(static_cast<int>(score)) < _LowScore) 
             draw_half_moves++;
         else
             draw_half_moves = 0;
