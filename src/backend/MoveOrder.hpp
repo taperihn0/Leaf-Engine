@@ -121,7 +121,7 @@ public:
 	template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
 	_NODISCARD uint getTotalMoves();
 private:
-	bool nextFromList(Move32b& move, int16_t& score);
+	bool nextFromList(Move32b& move, int16_t& score, size_t end_idx = maxof<size_t>());
 
 	void scoreCaptures(size_t first_ind, const Position& pos);
 	void scoreQuiets(size_t first_ind, enumColor side);

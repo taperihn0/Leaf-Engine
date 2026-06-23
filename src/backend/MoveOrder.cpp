@@ -36,6 +36,8 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 						 int16_t& move_score) 
 {
 	static_assert(!Root or Type == ONCE_GEN_LEGAL);
+	static_assert(Root or Type != ONCE_GEN_LEGAL);
+
 	assert(_tables != nullptr);
 
 	if constexpr (Root) {
@@ -116,12 +118,10 @@ bool MoveOrder::nextMove(const NodeInfo* node,
 		[[fallthrough]];
 	case enumStage::STAGED_PICK_QUIETS:
 		assert(Type != QUIESCENT);
-
 		{
 			const enumColor side = pos.getTurn();
 			scoreQuiets(_iterator, side);
 		}
-
 		return nextFromList(next_move, move_score);
 	default:
 		assert(false);
@@ -166,9 +166,15 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
 	}
 }
 
-_INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score) {
-	while (_iterator < _move_list.count()) {
+/* Search for another move in a '_move_list' starting from current '_iterator'
+*  up to the possible 'end_idx' position.
+*/
+_INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score, size_t end_idx) {
+	assert(_iterator <= end_idx);
+
+	while (_iterator < _move_list.count() and _iterator < end_idx) {
 		_move_list.selectSort(_iterator);
+
 		move = _move_list.getMove(_iterator);
 		score = _move_list.getScore(_iterator++);
 
@@ -272,15 +278,16 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 		MoveGen::generateLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 		scoreCaptures(0, pos);
 
-		_quiets_ind = _iterator;
+		_quiets_ind = _move_list.count();
 		MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-		if (!next_move.isNull())
+		if (!next_move.isNull()) // got hash move assigned already
 			return true;
 
 		[[fallthrough]];
 	case enumStage::ONCEGEN_PICK_CAPTURES:
-		if (nextFromList(next_move, move_score))
+		// Search for another capture only, stop at quiets
+		if (nextFromList(next_move, move_score, _quiets_ind))
 			return true;
 
 		_stage = enumStage::ONCEGEN_PICK_QUIETS;

@@ -141,8 +141,9 @@ private:
 	array1d<Entry, _MaxSize> _moves = {};
 };
 
-inline void MoveList::selectSort(size_t first_ind) {
+_INLINE void MoveList::selectSort(size_t first_ind) {
 	assert(first_ind < _idx);
+
 	entryscore_t best = _moves[first_ind].score;
 	size_t ind = first_ind;
 
