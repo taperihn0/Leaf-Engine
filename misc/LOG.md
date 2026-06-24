@@ -1,10 +1,10 @@
-### [commit:fe0d81d] feature: Obvious (Single) moves, analysis disabled
+### [commit:2dd1cb8] feature: Obvious (single) move in Root
 ```
-Score of leaf_obv_attempt vs leaf_obv_base: 850 - 1163 - 1125  [0.450] 3138
-...      leaf_obv_attempt playing White: 316 - 728 - 525  [0.369] 1569
-...      leaf_obv_attempt playing Black: 534 - 435 - 600  [0.532] 1569
-...      White vs Black: 751 - 1262 - 1125  [0.419] 3138
-Elo difference: -34.8 +/- 9.7, LOS: 0.0 %, DrawRatio: 35.9 %
+Score of leaf_obv vs leaf_master: 1788 - 1717 - 1995  [0.506] 5500
+...      leaf_obv playing White: 1293 - 486 - 971  [0.647] 2750
+...      leaf_obv playing Black: 495 - 1231 - 1024  [0.366] 2750
+...      White vs Black: 2524 - 981 - 1995  [0.640] 5500
+Elo difference: 4.5 +/- 7.3, LOS: 88.5 %, DrawRatio: 36.3 %
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf
 ```
 

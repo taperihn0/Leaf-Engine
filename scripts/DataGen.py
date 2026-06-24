@@ -31,7 +31,7 @@ def main():
         sys.exit(1)
 
     date_str = datetime.now().strftime("%b%d").lower()
-    base_dir = os.path.join("misc", f"selfplay_{date_str}")
+    base_dir = os.path.join("misc/selfplay", f"selfplay_{date_str}")
 
     if os.path.isdir(base_dir):
         suffix_code = 97
