@@ -3,12 +3,12 @@ logs/spsa_log_*.txt
 misc/*.txt
 misc/*.key
 misc/selfplay/
+misc/spsa/
 misc/selfplay*/
 misc/selfplay_*
 misc/selfplay_legacy/
 misc/tmp
 misc/log
-misc/fuckups
 workspaces
 CMakePresets.json
 
