@@ -1,3 +1,13 @@
+### [commit:fe0d81d] feature: Obvious (Single) moves, analysis disabled
+```
+Score of leaf_obv_attempt vs leaf_obv_base: 850 - 1163 - 1125  [0.450] 3138
+...      leaf_obv_attempt playing White: 316 - 728 - 525  [0.369] 1569
+...      leaf_obv_attempt playing Black: 534 - 435 - 600  [0.532] 1569
+...      White vs Black: 751 - 1262 - 1125  [0.419] 3138
+Elo difference: -34.8 +/- 9.7, LOS: 0.0 %, DrawRatio: 35.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:22691b8] feature: Using _pext_u64 for slider attacks
 ```
 Score of leaf_bmi2 vs leaf_native: 1581 - 1494 - 925  [0.511] 4000
