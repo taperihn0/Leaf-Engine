@@ -283,7 +283,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
 		{
 			const enumColor side = pos.getTurn();
-			scoreQuiets(_iterator, side);
+			scoreQuiets(_quiets_ind, side);
 		}
 
 		if (!next_move.isNull()) // got hash move assigned already
