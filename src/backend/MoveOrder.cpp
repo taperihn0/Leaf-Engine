@@ -281,6 +281,11 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 		_quiets_ind = _move_list.count();
 		MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
+		{
+			const enumColor side = pos.getTurn();
+			scoreQuiets(_iterator, side);
+		}
+
 		if (!next_move.isNull()) // got hash move assigned already
 			return true;
 
@@ -294,10 +299,6 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
 		[[fallthrough]];
 	case enumStage::ONCEGEN_PICK_QUIETS:
-		{
-			const enumColor side = pos.getTurn();
-			scoreQuiets(_iterator, side);
-		}
 		return nextFromList(next_move, move_score);
 	default:
 		assert(false);

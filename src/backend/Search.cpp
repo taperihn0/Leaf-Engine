@@ -548,11 +548,12 @@ Move32b Search::goIterativeDeepening(Position& pos,
 			}
 		}
 
-		if (search_results.best_move.isNull())
-			search_results.best_move = root->best_move;
+		if (terminate) {
+			if (search_results.best_move.isNull())
+				search_results.best_move = root->best_move;
 
-		if (terminate)
 			break;
+		}
 
 		if (info_lv == SEARCH_FULL_INFO) {
 			search_results.print(root->pv_line, root->pv_line_len, _tt);
@@ -1091,7 +1092,7 @@ Score Search::nmSearch(Position& pos,
 		 node->move_picker.nextMove<OrderPolicy, Root>(node, pos, node->move, move_score);
 		 node->move_index++) 
 	{
-		if constexpr (Root) {
+		if constexpr (Root and OrderPolicy == ONCE_GEN_LEGAL) {
 			if (!limits.analysis_mode and 
 				node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
 				results.score_cp = Score::Undef;
