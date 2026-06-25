@@ -1579,7 +1579,7 @@ Score Search::qSearch(Position& pos,
 
 				const int capt_see_score = pos.staticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
 
-				if (capt_see_score < 0)
+				if (capt_see_score < SeeValuePrune)
 					continue;
 			}
 		}
