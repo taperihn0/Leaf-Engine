@@ -197,7 +197,7 @@ bool Move32b::isPseudoLegal(const Position& pos) const {
 						  d = pos.pieceOn(dst, pos.getOppositeTurn());
 
 	if (p == Piece::KING) {
-		if (kingAttacks(pos.getKingSquare(pos.getOppositeTurn())).isOccupiedSq(dst))
+		if (kingAttacks(pos.getKingSquareBySide(pos.getOppositeTurn())).isOccupiedSq(dst))
 			return false;
 
 		if (isShortCastle()) {

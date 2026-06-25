@@ -280,3 +280,48 @@ template <typename T, size_t N, size_t M, size_t S>
 using array3d = array1d<
 					array2d<T, M, S>, 
 				N>;
+
+template <typename T, size_t N>
+_FORCEINLINE T* dataOfArray1d(array1d<T, N>& arr) {
+	return reinterpret_cast<T*>(arr.data());
+}
+
+template <typename T, size_t N, size_t M>
+_FORCEINLINE T* dataOfArray2d(array2d<T, N, M>& arr) {
+	return reinterpret_cast<T*>(arr.data());
+}
+
+template <typename T, size_t N, size_t M, size_t S>
+_FORCEINLINE T* dataOfArray3d(array3d<T, N, M, S>& arr) {
+	return reinterpret_cast<T*>(arr.data());
+}
+
+template <typename T, size_t N>
+_FORCEINLINE const T* dataOfArray1d(const array1d<T, N>& arr) {
+	return reinterpret_cast<const T*>(arr.data());
+}
+
+template <typename T, size_t N, size_t M>
+_FORCEINLINE const T* dataOfArray2d(const array2d<T, N, M>& arr) {
+	return reinterpret_cast<const T*>(arr.data());
+}
+
+template <typename T, size_t N, size_t M, size_t S>
+_FORCEINLINE const T* dataOfArray3d(const array3d<T, N, M, S>& arr) {
+	return reinterpret_cast<const T*>(arr.data());
+}
+
+template <typename T, size_t N>
+_FORCEINLINE constexpr size_t countOfArray1d(const array1d<T, N>&) {
+    return N;
+}
+
+template <typename T, size_t N, size_t M>
+_FORCEINLINE constexpr size_t countOfArray2d(const array2d<T, N, M>&) {
+    return N * M;
+}
+
+template <typename T, size_t N, size_t M, size_t S>
+_FORCEINLINE constexpr size_t countOfArray3d(const array3d<T, N, M, S>&) {
+    return N * M * S;
+}

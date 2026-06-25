@@ -115,6 +115,7 @@ void TunableParametersMap::createMapping() {
     _addr["SeeBishopValue"] = &SeeBishopValue;
     _addr["SeeRookValue"] = &SeeRookValue;
     _addr["SeeQueenValue"] = &SeeQueenValue;
+    _addr["SeeValuePrune"] = &SeeValuePrune;
 };
 
 void* TunableParametersMap::getAddressOf(const std::string& str) {

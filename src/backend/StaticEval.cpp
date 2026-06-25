@@ -187,7 +187,7 @@ _INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) 
 }
 
 _INLINE Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
-	const Square ksq = pos.getKingSquare(side);
+	const Square ksq = pos.getKingSquareBySide(side);
 	return Score(_mg_king_tables[blackPerspectiveFlip(ksq, side)]);
 }
 

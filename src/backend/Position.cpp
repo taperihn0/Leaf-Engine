@@ -234,7 +234,7 @@ bool Position::operator==(const Position& pos) const {
 	      or getFullmoveClock() != pos.getFullmoveClock())
 		return false;
 	
-	else if (getKingSquare(WHITE) != pos.getKingSquare(WHITE)
+	else if (getKingSquareBySide(WHITE) != pos.getKingSquareBySide(WHITE)
 		  or getKingBySide(BLACK) != pos.getKingBySide(BLACK))
 		return false;
 
@@ -664,7 +664,7 @@ int Position::staticExchangeEval(Square org,
 	BitBoard occ = getOccupied() ^ from;
 	enumColor side2move = getTurn();
 
-	BitBoard attacks = (attacksTo(sq, !side2move, occ) ^ from) | attacksTo(sq, side2move, occ);
+	BitBoard attacks = (getAttacksToSquare(sq, !side2move, occ) ^ from) | getAttacksToSquare(sq, side2move, occ);
 
 	Piece::uint_t vic = target;
 	Piece::uint_t att = attacker;

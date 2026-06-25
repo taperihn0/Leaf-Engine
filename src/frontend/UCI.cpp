@@ -57,6 +57,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionPath("SyzygyPath",    StringType("<empty>")),
         OptionPath("NeuralNetPath", StringType(static_cast<std::string>(DefaultNeuralNetOptionPath))),
         { // --- Tunable parameters ---
+          // TODO: these may be float aswell 
         OptionTunableParam(SpinType<double>(IidDepth,					  2.,  5.),     "IidDepth", 		    		2.),
         OptionTunableParam(SpinType<double>(IidDepthDiv,				  8.,  14.),    "IidDepthDiv", 		    		2.),
         OptionTunableParam(SpinType<double>(RfpDepth,     				  2.,  4.),     "RfpDepth", 		    		2.),
@@ -149,6 +150,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionTunableParam(SpinType<double>(SeeBishopValue,               250., 350.),  "SeeBishopValue",               0.9),
         OptionTunableParam(SpinType<double>(SeeRookValue,                 450., 550.),  "SeeRookValue",                 0.9),
         OptionTunableParam(SpinType<double>(SeeQueenValue,                830., 970.),  "SeeQueenValue",                0.9),
+        OptionTunableParam(SpinType<double>(SeeValuePrune,                -150., 80.),  "SeeValuePrune",                0.65),
         }, 
 };
 

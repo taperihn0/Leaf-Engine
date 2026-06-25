@@ -174,7 +174,7 @@ public:
 		return _piece_bb[col_type][Piece::KING];
 	}
 
-	_NODISCARD _INLINE Square getKingSquare(enumColor col_type) const {
+	_NODISCARD _INLINE Square getKingSquareBySide(enumColor col_type) const {
 		assert(_king_sq[col_type] == _piece_bb[col_type][Piece::KING].bitScanForward());
 		return _king_sq[col_type];
 	}
@@ -282,12 +282,25 @@ public:
 	_NODISCARD int getNonPawnMaterial() const;
 
 	// returns true whether square is attacked by any opposide-color piece excluding enemy king
-	_NODISCARD bool attacked(Square sq, enumColor side) const;
+	_NODISCARD bool isAttackedSquare(Square sq, enumColor side) const;
 
 	// just like attacked function above, but includes king attacks
-	_NODISCARD bool attacked_KingIncluded(Square sq, enumColor side) const;
+	_NODISCARD bool isAttackedSquare_KingIncluded(Square sq, enumColor side) const;
 
-	_NODISCARD BitBoard attacksTo(Square sq, enumColor side, BitBoard occ) const;
+	// that is utility function -
+	// it does exactly the same as isAttackedSquare, but with custom occupancies
+	_NODISCARD static bool isAttackedSquareWithOccupancies(Square sq, 
+														   enumColor side,
+														   const array1d<array1d<BitBoard, 6>, 2>& pc_bbs);
+
+	// returns mask of attackers pointed at given square that are opposite side
+	_NODISCARD BitBoard getAttacksToSquare(Square sq, enumColor side, BitBoard occ) const;
+
+	// returns mask of every attacked square by pieces of side
+	_NODISCARD BitBoard getAttackedMask(enumColor side) const;
+
+	// returns mask of every attacked square by pieces of side exluding enemy king
+	_NODISCARD BitBoard getAttackedMask_kingIncluded(enumColor side) const;
 
 	_NODISCARD bool isInCheck(enumColor side) const;
 	_NODISCARD bool isInDoubleCheck(enumColor side) const;
@@ -345,15 +358,15 @@ private:
 	template <bool Root = true>
 	uint64_t perft(uint depth);
 
-	array1d<array1d<BitBoard, 6>, 2> _piece_bb;
-	array1d<BitBoard, 2> 			 _occupied;
-	array1d<CastlingRights, 2> 		 _castling_rights;
-	array1d<Square, 2> 				 _king_sq;
-	Turn 							 _turn;
-	Square 	    					 _ep_square;
-	ZHash 						   	 _zhash;
-	uint8_t     					 _halfmove_count;
-	uint16_t    					 _fullmove_count;
+	array2d<BitBoard, 2, 6> 	_piece_bb;
+	array1d<BitBoard, 2> 		_occupied;
+	array1d<CastlingRights, 2> 	_castling_rights;
+	array1d<Square, 2> 			_king_sq;
+	Turn 						_turn;
+	Square 	    				_ep_square;
+	ZHash 						_zhash;
+	uint8_t     				_halfmove_count;
+	uint16_t    				_fullmove_count;
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
@@ -370,7 +383,7 @@ _INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::SQ_F1 : Square::SQ_F8;
 	static constexpr Square KingDstSq = Side == WHITE ? Square::SQ_G1 : Square::SQ_G8;
 
-	return !pos.attacked_KingIncluded(IntermediateSq, Side)
+	return !pos.isAttackedSquare_KingIncluded(IntermediateSq, Side)
 		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
@@ -378,7 +391,7 @@ _INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos, enumColo
 	const Square intermediate_sq = side == WHITE ? Square::SQ_F1 : Square::SQ_F8;
 	const Square king_dst_sq = side == WHITE ? Square::SQ_G1 : Square::SQ_G8;
 
-	return !pos.attacked_KingIncluded(intermediate_sq, side)
+	return !pos.isAttackedSquare_KingIncluded(intermediate_sq, side)
 		and !(kingAttacks(king_dst_sq) & pos.getKingBySide(!side));
 }
 
@@ -387,7 +400,7 @@ _INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos) const {
 	static constexpr Square IntermediateSq = Side == WHITE ? Square::SQ_D1 : Square::SQ_D8;
 	static constexpr Square KingDstSq = Side == WHITE ? Square::SQ_C1 : Square::SQ_C8;
 
-	return !pos.attacked_KingIncluded(IntermediateSq, Side)
+	return !pos.isAttackedSquare_KingIncluded(IntermediateSq, Side)
 		and !(kingAttacks(KingDstSq) & pos.getKingBySide(!Side));
 }
 
@@ -395,7 +408,7 @@ _INLINE bool CastlingRights::notThroughCheck_Long(const Position& pos, enumColor
 	const Square intermediate_sq = side == WHITE ? Square::SQ_D1 : Square::SQ_D8;
 	const Square king_dst_sq = side == WHITE ? Square::SQ_C1 : Square::SQ_C8;
 
-	return !pos.attacked_KingIncluded(intermediate_sq, side)
+	return !pos.isAttackedSquare_KingIncluded(intermediate_sq, side)
 		and !(kingAttacks(king_dst_sq) & pos.getKingBySide(!side));
 }
 
@@ -489,36 +502,75 @@ _INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
 	return getKingBySide(color);
 }
 
-_INLINE bool Position::attacked(Square sq, enumColor side) const {
+_INLINE bool Position::isAttackedSquare(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
 	return (knightAttacks(sq) & getKnightsBySide(!side)) or
-		(pawnAttacks(sq, side) & getPawnsBySide(!side)) or
-		(SlidersAttacks::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
-		(SlidersAttacks::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
+		   (pawnAttacks(sq, side) & getPawnsBySide(!side)) or
+		   (SlidersAttacks::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
+		   (SlidersAttacks::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
 }
 
-_INLINE bool Position::attacked_KingIncluded(Square sq, enumColor side) const {
-	return attacked(sq, side) or (kingAttacks(sq) & getKingBySide(!side));
+_INLINE bool Position::isAttackedSquare_KingIncluded(Square sq, enumColor side) const {
+	return isAttackedSquare(sq, side) or (kingAttacks(sq) & getKingBySide(!side));
 }
 
-_INLINE BitBoard Position::attacksTo(Square sq, enumColor side, BitBoard occ) const {
+_INLINE bool Position::isAttackedSquareWithOccupancies(Square sq, 
+													   enumColor side,
+													   const array2d<BitBoard, 2, 6>& pc_bbs)
+{
+	const BitBoard occ = std::accumulate(dataOfArray2d(pc_bbs), dataOfArray2d(pc_bbs) + countOfArray2d(pc_bbs), 
+		BitBoard::Empty, 
+		[](BitBoard prev, BitBoard bb) {
+			return prev | bb;
+		});
+	
+	const BitBoard opp_bishop_queens = pc_bbs[!side][Piece::BISHOP] | pc_bbs[!side][Piece::QUEEN];
+	const BitBoard opp_rook_queens = pc_bbs[!side][Piece::ROOK] | pc_bbs[!side][Piece::QUEEN];
+
+	return (knightAttacks(sq) & pc_bbs[!side][Piece::KNIGHT]) or
+		   (pawnAttacks(sq, side) & pc_bbs[!side][Piece::PAWN]) or
+		   (SlidersAttacks::rookAttacks(sq, occ) & opp_rook_queens) or
+		   (SlidersAttacks::bishopAttacks(sq, occ) & opp_bishop_queens);
+}
+
+_INLINE BitBoard Position::getAttacksToSquare(Square sq, enumColor side, BitBoard occ) const {
 	const BitBoard queen = _piece_bb[!side][Piece::QUEEN],
 				   rookQueen = _piece_bb[!side][Piece::ROOK] | queen,
 				   bishopQueen = _piece_bb[!side][Piece::BISHOP] | queen;
 
-	return (_piece_bb[!side][Piece::PAWN] & pawnAttacks(sq, side))
-		| (_piece_bb[!side][Piece::KNIGHT] & knightAttacks(sq))
-		| (_piece_bb[!side][Piece::KING] & kingAttacks(sq))
-		| (bishopQueen & attacks<Piece::BISHOP>(sq, occ))
-		| (rookQueen & attacks<Piece::ROOK>(sq, occ));
+	return (_piece_bb[!side][Piece::PAWN] & pawnAttacks(sq, side)) |
+		   (_piece_bb[!side][Piece::KNIGHT] & knightAttacks(sq)) |
+		   (_piece_bb[!side][Piece::KING] & kingAttacks(sq)) |
+		   (bishopQueen & attacks<Piece::BISHOP>(sq, occ)) |
+		   (rookQueen & attacks<Piece::ROOK>(sq, occ));
+}
+
+_INLINE BitBoard Position::getAttackedMask(enumColor side) const {
+	const BitBoard occ = getOccupied();
+	BitBoard bb = BitBoard::Empty;
+
+	for (Piece::enumType pc : Piece::PieceTypeWithoutKingList) {
+		BitBoard pc_bb = _piece_bb[side][pc];
+		
+		while (pc_bb) { 
+			const Square sq(pc_bb.dropForward());
+			pc_bb |= attacks(pc, sq, occ);
+		}
+	}
+
+	return bb;
+}
+
+_INLINE BitBoard Position::getAttackedMask_kingIncluded(enumColor side) const {
+	return kingAttacks(getKingSquareBySide(side)) | getAttackedMask(side);
 }
 
 _INLINE bool Position::isInCheck(enumColor side) const {
-	return attacked(getKingSquare(side), side);
+	return isAttackedSquare(getKingSquareBySide(side), side);
 }
 
 _INLINE bool Position::isInDoubleCheck(enumColor side) const {
-	const Square king_sq = getKingSquare(side);
+	const Square king_sq = getKingSquareBySide(side);
 	const BitBoard occupied = getOccupied();
 
 	uint8_t att_count = 0;
@@ -542,23 +594,23 @@ _INLINE bool Position::isInDoubleCheck(enumColor side) const {
 	return att_count >= 2;
 }
 
-_INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked) const {
+_INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor isAttackedSquare) const {
 	const BitBoard occupied = getOccupied();
 	BitBoard bb;
 	
-	bb = pawnAttacks(sq, attacked) & getPawnsBySide(!attacked);
+	bb = pawnAttacks(sq, isAttackedSquare) & getPawnsBySide(!isAttackedSquare);
 	if (bb)
 		return bb;
 
-	bb = knightAttacks(sq) & getKnightsBySide(!attacked);
+	bb = knightAttacks(sq) & getKnightsBySide(!isAttackedSquare);
 	if (bb)
 		return bb;
 
-	bb = SlidersAttacks::bishopAttacks(sq, occupied) & getBishopsQueensBySide(!attacked);
+	bb = SlidersAttacks::bishopAttacks(sq, occupied) & getBishopsQueensBySide(!isAttackedSquare);
 	if (bb)
 		return bb;
 
-	bb = SlidersAttacks::rookAttacks(sq, occupied) & getRooksQueensBySide(!attacked);
+	bb = SlidersAttacks::rookAttacks(sq, occupied) & getRooksQueensBySide(!isAttackedSquare);
 	if (bb)
 		return bb;
 
@@ -566,13 +618,13 @@ _INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked)
 }
 
 _INLINE BitBoard Position::getCheckers(enumColor side) const {
-	return leastValuableAttackers(getKingSquare(side), side);
+	return leastValuableAttackers(getKingSquareBySide(side), side);
 }
 
 _INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
-	for (Piece::enumType piece_t : Piece::PieceTypeList) {
-		if (_piece_bb[by_color][piece_t].isOccupiedSq(sq))
-			return piece_t;
+	for (Piece::enumType pc : Piece::PieceTypeList) {
+		if (_piece_bb[by_color][pc].isOccupiedSq(sq))
+			return pc;
 	}
 
 	return Piece::NONE;

@@ -82,13 +82,21 @@ public:
 		return _col;
 	}
 
-	static constexpr array1d<enumType, 6> PieceTypeList = { 
+	static constexpr array1d<enumType, 5> PieceTypeWithoutKingList = {
 		Piece::PAWN, 
 		Piece::KNIGHT, 
 		Piece::BISHOP, 
 		Piece::ROOK, 
 		Piece::QUEEN, 
-		Piece::KING
+	};
+
+	static constexpr array1d<enumType, 6> PieceTypeList = { 
+		Piece::PAWN, 
+		Piece::KNIGHT, 
+		Piece::BISHOP, 
+		Piece::ROOK, 
+		Piece::QUEEN,
+		Piece::KING,
 	};
 
 private:
