@@ -204,14 +204,15 @@ public:
 	}
 
 	_NODISCARD _INLINE constexpr bool isEmpty() const {
-		return _board == 0_ui64;
+		return _board == BitBoard::Empty;
 	}
 
 	_NODISCARD _INLINE constexpr bool isSingleBit() const {
-		return !isEmpty() and isPow2(_board);
+		return !isEmpty() and isExp2(_board);
 	}
 
 	static constexpr uint64_t Universe     = 0xffffffffffffffff_ui64;
+	static constexpr uint64_t Empty 	   = 0x0000000000000000_ui64;
 	static constexpr uint64_t AFile	       = 0x0101010101010101_ui64;
 	static constexpr uint64_t BFile	       = 0x0202020202020202_ui64;
 	static constexpr uint64_t GFile	       = 0x4040404040404040_ui64;
@@ -245,14 +246,14 @@ _INLINE int BitBoard::popCount() const {
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 _INLINE int BitBoard::bitScanForward() const {
-	assert(_board != 0_ui64);
+	assert(_board != BitBoard::Empty);
 	unsigned long s;
 	_BitScanForward64(&s, _board);
 	return static_cast<int>(s);
 }
 
 _INLINE int BitBoard::bitScanReverse() const {
-	assert(_board != 0_ui64);
+	assert(_board != BitBoard::Empty);
 	unsigned long s;
 	_BitScanReverse64(&s, _board);
 	return static_cast<int>(s);
@@ -260,12 +261,12 @@ _INLINE int BitBoard::bitScanReverse() const {
 
 #elif defined(__GNUC__)
 _INLINE int BitBoard::bitScanForward() const {
-	assert(_board != 0_ui64);
+	assert(_board != BitBoard::Empty);
 	return __builtin_ctzll(_board);
 }
 
 _INLINE int BitBoard::bitScanReverse() const {
-	assert(_board != 0_ui64);
+	assert(_board != BitBoard::Empty);
 	return __builtin_clzll(_board);
 }
 #else
@@ -293,7 +294,7 @@ _INLINE int BitBoard::bitScanForward() const {
 _INLINE int BitBoard::bitScanReverse() const {
 	static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
 	uint64_t bb = _board;
-	assert(_board != 0_ui64);
+	assert(_board != BitBoard::Empty);
 	bb |= bb >> 1;
 	bb |= bb >> 2;
 	bb |= bb >> 4;

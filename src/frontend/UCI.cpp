@@ -349,12 +349,12 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
     std::string token;
     strm >> std::skipws >> token;
 
-    if (token == "perft") {
+    if (token == "goPerft") {
         strm >> std::skipws >> token;
 
         if (isValidNumber(token.substr(1)) and !isSigned(token)) {
             const unsigned depth = std::stoi(token);
-            _pos.perft(depth);
+            _pos.goPerft(depth);
         }
 
         return;

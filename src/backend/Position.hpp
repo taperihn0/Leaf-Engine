@@ -25,6 +25,7 @@
 #include "Color.hpp"
 #include "Move.hpp"
 #include "Memory.hpp"
+#include "Time.hpp"
 
 class Position;
 struct NodeInfo;
@@ -314,8 +315,8 @@ public:
 		return _zhash;
 	}
 
-	template <bool Root = true>
-	uint64_t perft(unsigned depth);
+	uint64_t goPerft(uint depth);
+	uint64_t goPerft(uint depth, time_ms_t& duration_ms);
 
 	template <bool ExactScore>
 	int staticExchangeEval(Square org, 
@@ -340,6 +341,9 @@ private:
 	BitBoard getWeakestAttacker(BitBoard bb,
 								enumColor side,
 								Piece::uint_t& piece) const;
+
+	template <bool Root = true>
+	uint64_t perft(uint depth);
 
 	array1d<array1d<BitBoard, 6>, 2> _piece_bb;
 	array1d<BitBoard, 2> 			 _occupied;
@@ -558,7 +562,7 @@ _INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor attacked)
 	if (bb)
 		return bb;
 
-	return BitBoard(0_ui64);
+	return BitBoard::Empty;
 }
 
 _INLINE BitBoard Position::getCheckers(enumColor side) const {

@@ -19,11 +19,11 @@
 #pragma once
 
 #include "Common.hpp"
-#include "Position.hpp"
 
 #include <chrono>
 
 using time_ms_t = ll;
+using time_s_t = ll;
 using internal_clock_t = std::chrono::steady_clock;
 using timepoint_t = internal_clock_t::time_point;
 
@@ -31,8 +31,8 @@ _INLINE constexpr time_ms_t operator"" _ms(ull t) {
 	return static_cast<time_ms_t>(t);
 }
 
-_INLINE constexpr time_ms_t operator"" _s(ull t) {
-	return static_cast<time_ms_t>(t) * 1000;
+_INLINE constexpr time_s_t operator"" _s(ull t) {
+	return static_cast<time_ms_t>(t);
 }
 
 class Clock {
@@ -51,6 +51,7 @@ private:
 };
 
 struct SearchLimits;
+class Position;
 
 class TimeMan {
 public:

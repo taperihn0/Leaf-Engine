@@ -139,7 +139,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 		else {
 			Piece::enumType piece = Piece::typeFromChar(str[0]);
 			BitBoard bb = attacks(piece, target, pos.getOccupied()) & pos.get(piece, pos.getTurn());
-			ASSERT(bb != BitBoard(0_ui64), "Invalid capture");
+			ASSERT(bb != BitBoard::Empty, "Invalid capture");
 
 			if (bb.popCount() > 1) {
 				char id = str[1];

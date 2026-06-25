@@ -33,7 +33,7 @@ TTEntry::TTEntry()
 TranspositionTable::TranspositionTable(size_t mb_size)
 	: _mem(mem::makeAlignedUnique<Bucket>(mb_size / sizeof(Bucket)))
 {
-	ASSERT(isPow2(mb_size), "Transposition table must be size of 2 power");
+	ASSERT(isExp2(mb_size), "Transposition table must be size of 2 power");
 	ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
 	_buckets_cnt = mb_size / sizeof(Bucket);
 	_buckets_pow_2 = getExp2(_buckets_cnt);
@@ -41,7 +41,7 @@ TranspositionTable::TranspositionTable(size_t mb_size)
 }
 
 void TranspositionTable::resize(size_t size_mb) {
-	ASSERT(isPow2(size_mb), "Transposition table must be size of 2 power");
+	ASSERT(isExp2(size_mb), "Transposition table must be size of 2 power");
 
 	const size_t bucket_cnt = size_mb / sizeof(Bucket);
 	_mem = mem::makeAlignedUnique<Bucket>(bucket_cnt);

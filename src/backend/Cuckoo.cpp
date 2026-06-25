@@ -35,7 +35,7 @@ void CuckooTables::init() {
 
 			for (uint8_t from = 0; from < 64; from++) {
 				for (uint8_t to = from + 1; to < 64; to++) {
-					BitBoard attacks = 0_ui64;
+					BitBoard attacks = BitBoard::Empty;
 
 					switch (piece) {
 					case Piece::KNIGHT:

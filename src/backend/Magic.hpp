@@ -77,6 +77,22 @@ public:
 		return rookAttacks(sq, occ) | bishopAttacks(sq, occ);
 	}
 
+	_NODISCARD static _FORCEINLINE BitBoard xRayBishopAttacks(Square sq) {
+		const BitBoard bb = _mbishop_att[sq][0];
+		assert(bb.popCount() == _relv_bits_cnt_bishop[sq]);
+		return bb;
+	}
+
+	_NODISCARD static _FORCEINLINE BitBoard xRayRookAttacks(Square sq) {
+		const BitBoard bb = _mrook_att[sq][0];
+		assert(bb.popCount() == _mrook_att[sq]);
+		return bb;
+	}
+
+	_NODISCARD static _FORCEINLINE BitBoard xRayQueenAttacks(Square sq) {
+		return xRayBishopAttacks(sq) | xRayRookAttacks(sq);
+	}
+
 	static void initTables();
 private:
 	// initialize look-up tables for bishop and rook

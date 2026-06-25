@@ -18,6 +18,7 @@
 
 #include "Time.hpp"
 #include "Search.hpp"
+#include "Position.hpp"
 
 timepoint_t Clock::timePoint() { 
 	return internal_clock_t::now();

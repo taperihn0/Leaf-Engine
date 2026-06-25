@@ -352,7 +352,7 @@ void SlidersAttacks::initAttackTables() {
 		for (uint64_t i = 0; i < (1_ui64 << relv_bits); i++) {
 			const BitBoard subset = indexToSubset(i, relv_occ, relv_bits);
 
-			BitBoard sq_magic_bb = BitBoard(0_ui64);
+			BitBoard sq_magic_bb = BitBoard::Empty;
 			size_t sq_idx = 0;
 
 			if constexpr (Piece == Piece::BISHOP) {
@@ -374,7 +374,7 @@ void SlidersAttacks::initAttackTables() {
 }
 
 BitBoard SlidersAttacks::indexToSubset(uint64_t i, BitBoard relv_occ, uint8_t relv_bits) {
-	BitBoard subset = BitBoard(0_ui64);
+	BitBoard subset = BitBoard::Empty;
 
 	for (uint8_t j = 0; j < relv_bits; j++) {
 		const int ls1b_idx = relv_occ.dropForward();
@@ -388,7 +388,7 @@ uint64_t SlidersAttacks::generateBishopAttacks(Square sq, BitBoard relv_occ) {
 	const int f_rank = sq / 8;
 	const int f_file = sq % 8;
 	
-	uint64_t mask = BitBoard(0_ui64);
+	uint64_t mask = BitBoard::Empty;
 
 	for (int r = f_rank + 1, f = f_file + 1; r < 8 and f < 8; r++, f++) {
 		mask |= BitBoard(Square(r * 8 + f));
@@ -417,7 +417,7 @@ uint64_t SlidersAttacks::generateRookAttacks(Square sq, BitBoard relv_occ) {
 	const int f_rank = sq / 8;
 	const int f_file = sq % 8;
 
-	uint64_t mask = BitBoard(0_ui64);
+	uint64_t mask = BitBoard::Empty;
 
 	for (int r = f_rank + 1; r < 8; r++) {
 		mask |= BitBoard(Square(r * 8 + f_file));

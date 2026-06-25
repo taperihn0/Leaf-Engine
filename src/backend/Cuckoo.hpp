@@ -52,7 +52,7 @@ private:
 	void validate();
 
 	static constexpr size_t _CuckooTableSize = 4096;
-	static_assert(isPow2(_CuckooTableSize));
+	static_assert(isExp2(_CuckooTableSize));
 
 	static constexpr uint	_KickThreshold = 216;
 	static constexpr size_t _AccurateCount = 2212;

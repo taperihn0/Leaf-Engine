@@ -22,6 +22,7 @@
 #include "Move.hpp"
 #include "Hash.hpp"
 #include "Time.hpp"
+#include "Position.hpp"
 
 class MoveRecord {
 public:

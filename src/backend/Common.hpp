@@ -206,7 +206,7 @@ template <typename T, typename = std::enable_if_t<
 						std::is_integral_v<T> and std::is_unsigned_v<T>
 					  >
 >
-_INLINE constexpr bool isPow2(T x) {
+_INLINE constexpr bool isExp2(T x) {
 	return (x & (x - 1)) == 0;
 }
 

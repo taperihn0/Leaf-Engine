@@ -19,23 +19,43 @@
 #include "MoveGen.hpp"
 #include "Attacks.hpp"
 
-template <MoveGen::enumMode GenType, bool Capture>
-inline void generatePromotions(Square origin, Square target, MoveList& move_list) {
-	if constexpr (GenType == MoveGen::CAPTURES or 
-				  GenType == MoveGen::TACTICALS)
+enum enumLegality : uint8_t {
+	LEGAL,
+	PSEUDOLEGAL
+};
+
+struct CacheKingRelated {
+	const Square ksq;
+	BitBoard rook_att_from_ksq;
+	BitBoard bishop_att_from_ksq;
+	BitBoard diag_pinned_pcs;
+	BitBoard hv_pinned_pcs;
+	BitBoard pinned;
+};
+
+template <MoveGen::enumGenMoves Moves2Gen, bool Capture>
+_INLINE void generatePromotions(Square origin, 
+							    Square target, 
+							    MoveList& move_list) 
+{
+	if constexpr (Moves2Gen == MoveGen::CAPTURES or 
+				  Moves2Gen == MoveGen::TACTICALS)
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::QUEEN));
 
 	if constexpr (Capture or 
-				  GenType == MoveGen::QUIETS or 
-				  GenType == MoveGen::TACTICALS) {
+				  Moves2Gen == MoveGen::QUIETS or 
+				  Moves2Gen == MoveGen::TACTICALS) {
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::KNIGHT));
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::BISHOP));
 		move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::ROOK));
 	}
 }
 
-template <MoveGen::enumMode GenType, enumColor Side>
-void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard enemies) {
+template <MoveGen::enumGenMoves Moves2Gen, enumColor Side>
+void generatePawnCaptures(const Position& pos, 
+						  MoveList& move_list, 
+						  BitBoard enemies) 
+{
 	static constexpr int      NortWest = 7, 
 							  NortEast = 9, 
 							  SoutWest = -9, 
@@ -59,12 +79,12 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 	att ^= promoted;
 
 	while (promoted) {
-		const Square dst = Square(promoted.dropForward());
-		generatePromotions<GenType, Captures>(dst - WestDiag, dst, move_list);
+		const Square dst(promoted.dropForward());
+		generatePromotions<Moves2Gen, Captures>(dst - WestDiag, dst, move_list);
 	}
 
 	while (att) {
-		const Square dst = Square(att.dropForward());
+		const Square dst(att.dropForward());
 		move_list.push(Move32b::makeSimple(dst - WestDiag, dst, Captures, Piece::PAWN));
 	}
 
@@ -78,12 +98,12 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 	att ^= promoted;
 
 	while (promoted) {
-		const Square dst = Square(promoted.dropForward());
-		generatePromotions<GenType, Captures>(dst - EastDiag, dst, move_list);
+		const Square dst(promoted.dropForward());
+		generatePromotions<Moves2Gen, Captures>(dst - EastDiag, dst, move_list);
 	}
 
 	while (att) {
-		const Square dst = Square(att.dropForward());
+		const Square dst(att.dropForward());
 		move_list.push(Move32b::makeSimple(dst - EastDiag, dst, Captures, Piece::PAWN));
 	}
 	
@@ -100,8 +120,12 @@ void generatePawnCaptures(const Position& pos, MoveList& move_list, BitBoard ene
 		move_list.push(Move32b::makeEnPassant(ep_sq - EastDiag, ep_sq));
 }
 
-template <MoveGen::enumMode GenType, enumColor Side>
-void generatePawnPushes(const Position& pos, MoveList& move_list, BitBoard empties) {
+template <MoveGen::enumGenMoves Moves2Gen, enumColor Side>
+void generatePawnPushes(const Position& pos, 
+						MoveList& move_list, 
+						BitBoard empties,
+						const CacheKingRelated& cache) 
+{
 	static constexpr int      Dir = Side == WHITE ? 8 : -8;
 	static constexpr bool     Captures = true,
 							  nonCaptures = !Captures;
@@ -113,39 +137,84 @@ void generatePawnPushes(const Position& pos, MoveList& move_list, BitBoard empti
 	pushable &= empties;
 
 	BitBoard promoted = pushable & BackRank;
+
+	/* Handle pinned pawns that are ready to promote.
+	*  These pawns cannot be pushed anyway.
+	*/
+	if constexpr (LMode == LEGAL)
+		promoted &= ~cache.hv_pinned_pcs;
+
 	pushable ^= promoted;
 
 	while (promoted) {
-		const Square dst = Square(promoted.dropForward());
-		generatePromotions<GenType, nonCaptures>(dst - Dir, dst, move_list);
+		const Square dst(promoted.dropForward());
+		generatePromotions<Moves2Gen, nonCaptures>(dst - Dir, dst, move_list);
 	}
 
-	if constexpr (GenType == MoveGen::QUIETS) {
+	if constexpr (Moves2Gen == MoveGen::QUIETS) {
 		BitBoard double_pushable = pushable & DoublePushable;
 		double_pushable = double_pushable.genShift<Dir>();
 		double_pushable &= empties;
 
+		/* We can push only those pawns that are h-vertically pinned and 
+		*  can move up in a king pin line.
+		*/
+
+		/* Handle pins in double-pushable pawns */
+		if constexpr (LMode == LEGAL) {
+			const BitBoard pins = double_pushable & cache.hv_pinned_pcs.genShift<2 * Dir>() & cache.rook_att_from_ksq;
+
+			while (pins) {
+				const Square dst(pins.dropForward());
+				move_list.push(Move32b::makeSimple(dst -  2 * Dir, dst, nonCaptures, Piece::PAWN));
+			}
+
+			double_pushable ^= pins;
+		}
+
 		while (double_pushable) {
-			const Square dst = Square(double_pushable.dropForward());
+			const Square dst(double_pushable.dropForward());
 			move_list.push(Move32b::makeSimple(dst -  2 * Dir, dst, nonCaptures, Piece::PAWN));
 		}
 
+		/* Handle pins in pushable pawns */
+		if constexpr (LMode == LEGAL) {
+			const BitBoard pins = pushable & cache.hv_pinned_pcs.genShift<Dir>() & cache.rook_att_from_ksq;
+
+			while (pins) {
+				const Square dst(pins.dropForward());
+				move_list.push(Move32b::makeSimple(dst - Dir, dst, nonCaptures, Piece::PAWN));
+			}
+
+			pushable ^= pins;
+		}
+
 		while (pushable) {
-			const Square dst = Square(pushable.dropForward());
+			const Square dst(pushable.dropForward());
 			move_list.push(Move32b::makeSimple(dst - Dir, dst, nonCaptures, Piece::PAWN));
 		}
 	}
 }
 
-template <MoveGen::enumMode GenType, enumColor Side>
-inline void generatePawnMoves(const Position& pos, MoveList& move_list, BitBoard enemies, BitBoard empties) {
-	if constexpr (GenType != MoveGen::QUIETS)
-		generatePawnCaptures<GenType, Side>(pos, move_list, enemies);
-	generatePawnPushes<GenType, Side>(pos, move_list, empties);
+template <MoveGen::enumGenMoves Moves2Gen, enumColor Side>
+_FORCEINLINE void generatePawnMoves(const Position& pos, 
+							  		MoveList& move_list, 
+							  		BitBoard enemies, 
+							  		BitBoard empties) 
+{
+	if constexpr (Moves2Gen != MoveGen::QUIETS)
+		generatePawnCaptures<Moves2Gen, Side>(pos, move_list, enemies);
+
+	generatePawnPushes<Moves2Gen, Side>(pos, move_list, empties);
 }
 
 template <enumColor Side, bool isCapture>
-inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied, bool check) {
+void generateKingMoves(const Position& pos, 
+					   MoveList& move_list, 
+					   BitBoard mask, 
+					   BitBoard occupied, 
+					   bool check) 
+{
 	const Square org = pos.getKingSquare(Side);
 	// exclude opponent king's attacks from our king's attack mask - kings cannot touch
 	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingSquare(!Side));
@@ -175,84 +244,175 @@ inline void generateKingMoves(const Position& pos, MoveList& move_list, BitBoard
 		move_list.push(Move32b::makeCastling<Move32b::Castle::LONG>(org, LongCastleDst));
 }
 
-template <Piece::enumType Piece, enumColor Side, bool isCapture> 
-inline void generate(const Position& pos, MoveList& move_list, BitBoard mask, BitBoard occupied) {
-	static_assert(Piece != Piece::PAWN and Piece != Piece::NONE and Piece != Piece::KING, 
-		"Unsupported piecetype in generate func template");
+template <Piece::enumType Piece, enumLegality LMode, enumColor Side, bool isCapture> 
+_INLINE void generate(const Position& pos, 
+					  MoveList& move_list, 
+					  BitBoard mask, 
+					  BitBoard occupied,
+					  const CacheKingRelated& cache) 
+{
+	static_assert(Piece != Piece::PAWN and 
+				  Piece != Piece::NONE and 
+				  Piece != Piece::KING, 
+				  "Unsupported piecetype in generate func template");
 
 	BitBoard pieces = pos.get<Piece, Side>();
 
+	/* We need to handle pins carefully */
+	if constexpr (LMode == LEGAL and Piece != Piece::KNIGHT) {
+		const BitBoard base_pin_pcs = Piece == Piece::BISHOP ? cache.diag_pinned_pcs :
+									  Piece == Piece::ROOK   ? cache.hv_pinned_pcs   :
+									  /* Piece::QUEEN */ 	   cache.pinned;
+
+		static auto get_pinned_queen_mask = [](Square sq, 
+											   const Position& pos, 
+											   const CacheKingRelated& cache)
+		{
+			const BitBoard opp_pieces = pos.getOppositePieces();
+			const BitBoard king_qray = attacks<Piece::QUEEN>(cache.ksq, opp_pieces);
+
+			BitBoard to_pinner = attacks<Piece::QUEEN>(cache.ksq, opp_pieces);
+			to_pinner ^= attacks<Piece::QUEEN>(sq, opp_pieces ^ BitBoard(sq));
+
+			return (king_qray & to_pinner) | inBetween(cache.ksq, sq);
+		};
+
+		BitBoard pins = pieces & base_pin_pcs;
+
+		while (pins) {
+			const Square org(pins.dropForward());
+			const BitBoard pin_mask = Piece == Piece::BISHOP ? cache.bishop_att_from_ksq :
+								  	  Piece == Piece::ROOK   ? cache.rook_att_from_ksq   :
+								  	  /* Piece::QUEEN */ 	   get_pinned_queen_mask(org, pos, cache);
+
+			BitBoard att = attacks<Piece>(org, occupied) & mask & pin_mask;
+
+			while (att) {
+				const Square dst(att.dropForward());
+				move_list.push(Move32b::makeSimple(org, dst, isCapture, Piece));
+			}
+		}
+
+
+		// we need to exclude pinned pieces that are already processed
+		pieces ^= pins;
+	}
+
 	while (pieces) {
-		const Square org = Square(pieces.dropForward());
+		const Square org(pieces.dropForward());
 		BitBoard att = attacks<Piece>(org, occupied) & mask;
 
 		while (att) {
-			const Square dst = Square(att.dropForward());
+			const Square dst(att.dropForward());
 			move_list.push(Move32b::makeSimple(org, dst, isCapture, Piece));
 		}
 	}
 }
 
-template <MoveGen::enumMode GenType, enumColor Side>
-void generateByColor(const Position& pos, MoveList& move_list, const BitBoard occupied, 
-	const BitBoard enemy_pieces, const BitBoard checkers) {
-	static constexpr bool areCaptures = GenType != MoveGen::QUIETS;
-	const BitBoard		  empties = ~occupied,
-						  gen_mask = GenType == MoveGen::QUIETS ? empties : enemy_pieces;
-	const bool			  check = static_cast<bool>(checkers);
+_INLINE BitBoard getPinsMask(Square ksq, BitBoard pinners, const Position& pos) {
+	const BitBoard own_pieces = pos.getOwnPieces();
+	BitBoard pins = BitBoard::Empty;
 
-	BitBoard pieces_mask = gen_mask;
+	while (pinners) {
+		const Square sq(pinners.dropForward());
+		const BitBoard blockers = own_pieces & inBetween(sq, ksq);
 
-	if (check)
-		pieces_mask &= inBetween(pos.getKingSquare(Side), checkers.bitScanForward());
+		if (isExp2<uint64_t>(blockers)) 
+			pins |= blockers;
+	}
 
-	generatePawnMoves<GenType, Side>(pos, move_list, enemy_pieces, empties);
-
-	generate<Piece::KNIGHT, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::BISHOP, Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::ROOK,   Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-	generate<Piece::QUEEN,  Side, areCaptures>(pos, move_list, pieces_mask, occupied);
-
-	generateKingMoves<Side, areCaptures>(pos, move_list, gen_mask, occupied, check);
+	return pins;
 }
 
-template <MoveGen::enumMode GenType>
+_INLINE BitBoard getDiagPinsMask(Square ksq, const Position& pos) {
+	const enumColor side2move = pos.getTurn();
+	const BitBoard pinners = pos.getBishopsQueensBySide(!side2move) & 
+							 SlidersAttacks::xRayBishopAttacks(ksq);
+	return getPinsMask(ksq, pinners, pos);
+}
+
+_INLINE BitBoard getHorizontalVerticalPinsMask(Square ksq, const Position& pos) {
+	const enumColor side2move = pos.getTurn();
+	const BitBoard pinners = pos.getRooksQueensBySide(!side2move) & 
+							 SlidersAttacks::xRayRookAttacks(ksq);
+	return getPinsMask(ksq, pinners, pos);
+}
+
+template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode, enumColor Side>
+void generateByColor(const Position& pos, 
+					 MoveList& move_list, 
+					 const BitBoard occupied, 
+					 const BitBoard enemy_pieces, 
+					 const BitBoard checkers) 
+{
+	static constexpr bool 	areCaptures = Moves2Gen != MoveGen::QUIETS;
+	const BitBoard		  	empties = ~occupied,
+						  	base_gen_mask = Moves2Gen == MoveGen::QUIETS ? empties : enemy_pieces;
+	const bool			  	check = static_cast<bool>(checkers);
+	static CacheKingRelated cache = {};
+
+	if constexpr (LMode == LEGAL) {
+		cache.ksq = pos.getKingSquare(Side);
+		cache.bishop_att_from_ksq = SlidersAttacks::xRayBishopAttacks(cache.ksq);
+		cache.rook_att_from_ksq = SlidersAttacks::xRayRookAttacks(cache.ksq);
+		cache.diag_pinned_pcs = getDiagPinsMask(cache.ksq, pos);
+		cache.hv_pinned_pcs = getHorizontalVerticalPinsMask(cache.ksq, pos);
+		cache.pinned = cache.diag_pinned_pcs | cache.hv_pinned_pcs;
+	}
+
+	BitBoard base_pieces_mask = base_gen_mask;
+
+	if (check)
+		base_pieces_mask &= inBetween(pos.getKingSquare(Side), checkers.bitScanForward());
+
+	generatePawnMoves<Moves2Gen, Side>(pos, move_list, enemy_pieces, empties);
+
+	generate<Piece::KNIGHT, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
+	generate<Piece::BISHOP, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
+	generate<Piece::ROOK,   LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
+	generate<Piece::QUEEN,  LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
+
+	generateKingMoves<Side, areCaptures>(pos, move_list, base_gen_mask, occupied, check);
+}
+
+template <MoveGen::enumGenMoves Moves2Gen>
 void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list) {
 	const BitBoard enemy_pieces = pos.getOppositePieces(),
 				   occupied = pos.getOccupied(),
 				   checkers = pos.getCheckers(pos.getTurn());
 
-	static_cast<enumColor>(pos.getTurn()) == WHITE ? 
-		generateByColor<GenType, WHITE>(pos, move_list, occupied, enemy_pieces, checkers) :
-		generateByColor<GenType, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
+	if (pos.getTurn() == WHITE)
+		generateByColor<Moves2Gen, PSEUDOLEGAL, WHITE>(pos, move_list, occupied, enemy_pieces, checkers);
+	else
+		generateByColor<Moves2Gen, PSEUDOLEGAL, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
 }
 
 /*
-	MoveGen::generatePseudoLegalMoves<MoveGen::ALL> generates all pseudolegal moves.
-	Oriented towards perft generation, tested and debuged by perft function.
-
-	Its performance was measured and documented. Athough fully legal generators are much
-	more efficient in perft testing due to possibility of incorporating bulk counting in perft 
-	search, my pseudo-legal generator got some extra megaNodes per second.
-	Result above were generated in a position 
-	{ r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 }
-	in depth 6,
-	also before implementing any other features like Zobrist Hashing.
-
-	added pre-calculated attack masks:
-	-> (217.774 seconds, 31790kN/sec.)
-
-	changed if-branches in make function:
-	-> (204.242 seconds, 33896kN/sec.)
-
-	delegated variable definitions in make and unmake:
-	-> (192.031 seconds, 36051kN/sec.)
-
-	changed if-branch for captures and r-value references in MoveList::push:
-	-> (190.25 seconds, 36389kN/sec.)
-
-	used __forceinline attribute:
-	-> (179.723 seconds, 38520kN/sec.)
+*	MoveGen::generatePseudoLegalMoves<MoveGen::ALL> generates all pseudolegal moves.
+*	Oriented towards perft generation, tested and debuged by perft function.
+*
+*	Its performance was measured and documented. Athough fully legal generators are much
+*	more efficient in perft testing due to possibility of incorporating bulk counting in perft 
+*	search, my pseudo-legal generator got some extra megaNodes per second.
+*	Result above were generated in a position 
+*	{ r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 }
+*	in depth 6,
+*	also before implementing any other features like Zobrist Hashing.
+*
+*	added pre-calculated attack masks:
+*	-> (217.774 seconds, 31790kN/sec.)
+*
+*	changed if-branches in make function:
+*	-> (204.242 seconds, 33896kN/sec.)
+*
+*	delegated variable definitions in make and unmake:
+*	-> (192.031 seconds, 36051kN/sec.)
+*
+*	changed if-branch for captures and r-value references in MoveList::push:
+*	-> (190.25 seconds, 36389kN/sec.)
+*
+*	used __forceinline attribute:
+*	-> (179.723 seconds, 38520kN/sec.)
 */
 
 template <>
@@ -262,30 +422,30 @@ void MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(const Position& pos, MoveLi
 				   checkers = pos.getCheckers(pos.getTurn());
 
 	if (pos.getTurn() == WHITE) {
-		generateByColor<CAPTURES, WHITE>(pos, move_list, occupied, enemy_pieces, checkers);
-		generateByColor<QUIETS, WHITE>  (pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<CAPTURES, PSEUDOLEGAL, WHITE>(pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<QUIETS, PSEUDOLEGAL, WHITE>  (pos, move_list, occupied, enemy_pieces, checkers);
 	}
 	else {
-		generateByColor<CAPTURES, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
-		generateByColor<QUIETS, BLACK>  (pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<CAPTURES, PSEUDOLEGAL, BLACK>(pos, move_list, occupied, enemy_pieces, checkers);
+		generateByColor<QUIETS, PSEUDOLEGAL, BLACK>  (pos, move_list, occupied, enemy_pieces, checkers);
 	}
 }
 
-template <MoveGen::enumMode GenType>
+template <MoveGen::enumGenMoves Moves2Gen>
 void MoveGen::generateLegalMoves(Position& pos, MoveList& move_list) {
     // TODO: Optimize that on the stage of adding a new moves to the list.
-    generatePseudoLegalMoves<GenType>(pos, move_list);
+    generatePseudoLegalMoves<Moves2Gen>(pos, move_list);
 
     move_list.remove([&pos](MoveList::Entry en) {
         return !en.move.isLegal(pos);
     });
 }
 
-template <MoveGen::enumMode GenType>
+template <MoveGen::enumGenMoves Moves2Gen>
 Move32b MoveGen::getRandomLegalMove(Position& pos) {
 	// TODO: Optimize that - generate just one move, not entire list.
     MoveList ml;
-    generateLegalMoves<GenType>(pos, ml);
+    generateLegalMoves<Moves2Gen>(pos, ml);
     return ml.getRandomMove();
 }
 

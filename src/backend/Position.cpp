@@ -19,7 +19,6 @@
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveGen.hpp"
-#include "Time.hpp"
 #include "Search.hpp"
 #include "Accumulator.hpp"
 #include "StaticEval.hpp"
@@ -41,9 +40,9 @@ void CastlingRights::printByColor(enumColor col_type) const {
 Position::Position() {
 	std::fill(_piece_bb[0].begin(), _piece_bb[0].end(), 0);
 	std::fill(_piece_bb[1].begin(), _piece_bb[1].end(), 0);
-	_occupied[0] = 0_ui64;
-	_occupied[1] = 0_ui64;
-	_zhash = 0_ui64;
+	_occupied[0] = BitBoard::Empty;
+	_occupied[1] = BitBoard::Empty;
+	_zhash = BitBoard::Empty;
 }
 
 Position::Position(std::string init_fen) {
@@ -549,56 +548,6 @@ uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
 	return new_zhash;
 }
 
-template <bool Root>
-uint64_t Position::perft(unsigned depth) {
-	if (depth == 0)
-		return 1;
-
-	Timer my_timer;
-
-	if constexpr (Root)
-		my_timer.go();
-
-	uint64_t nodes = 0, child_nodes = 0;
-
-	MoveList move_list;
-	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
-
-	IrreversibleState state = getIrreversibleState();
-
-	for (size_t i = 0; i < move_list.count(); i++) {
-		Move32b move = move_list.getMove(i);
-
-		if (make(move)) {
-			assert(_zhash == ZHash::generateOnFly(*this));
-
-			child_nodes = perft<false>(depth - 1);
-			nodes += child_nodes;
-
-			if constexpr (Root) {
-				move.print();
-				std::cout << ": " << child_nodes << '\n';
-				std::cout << std::flush;
-			}
-		}
-
-		unmake(move, state);
-	}
-
-	if constexpr (Root) {
-		time_ms_t duration_ms = my_timer.duration();
-		duration_ms = duration_ms ? duration_ms : 1;
-
-		std::cout << "total nodes: " << nodes << " (" << duration_ms / 1000.f << " seconds, " 
-			<< nodes / duration_ms << "kN/sec.)" << '\n';
-	}
-
-	return nodes;
-}
-
-template uint64_t Position::perft<false>(unsigned depth);
-template uint64_t Position::perft<true>(unsigned depth);
-
 void Position::setGameStatesFromStr(const std::string fen, size_t i) {
     std::stringstream ss(fen.substr(i));
     std::string turn, 
@@ -667,7 +616,22 @@ _INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,
 		BitBoard mask = _piece_bb[side][piece] & bb;
 		if (mask) return mask.oneBit();
 	}
-	return BitBoard(0_ui64);
+	return BitBoard::Empty;
+}
+
+uint64_t Position::goPerft(uint depth) {
+	time_ms_t tmp;
+	return goPerft(depth, tmp);	
+}
+
+uint64_t Position::goPerft(uint depth, time_ms_t& duration_ms) {
+	Timer timer;
+	timer.go();
+
+	const uint64_t nodes_cnt = perft<true>(depth);
+
+	duration_ms = timer.duration();
+	return nodes_cnt;
 }
 
 static constexpr array1d<const int*, 6> SeePieceValue = {
@@ -715,7 +679,7 @@ int Position::staticExchangeEval(Square org,
 	side2move = !side2move;
 	from = getWeakestAttacker(attacks, side2move, att);
 
-	while (from != 0_ui64) {
+	while (from != BitBoard::Empty) {
 		i++;
 		gain[i] = -gain[i - 1] + *SeePieceValue[vic];
 		if constexpr (!ExactScore) {
@@ -743,6 +707,56 @@ int Position::staticExchangeEval(Square org,
 
 	return gain[0];
 }
+
+template <bool Root>
+uint64_t Position::perft(unsigned depth) {
+	if (depth == 0)
+		return 1;
+
+	Timer my_timer;
+
+	if constexpr (Root)
+		my_timer.go();
+
+	uint64_t nodes = 0, child_nodes = 0;
+
+	MoveList move_list;
+	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
+
+	IrreversibleState state = getIrreversibleState();
+
+	for (size_t i = 0; i < move_list.count(); i++) {
+		Move32b move = move_list.getMove(i);
+
+		if (make(move)) {
+			assert(_zhash == ZHash::generateOnFly(*this));
+
+			child_nodes = perft<false>(depth - 1);
+			nodes += child_nodes;
+
+			if constexpr (Root) {
+				move.print();
+				std::cout << ": " << child_nodes << '\n';
+				std::cout << std::flush;
+			}
+		}
+
+		unmake(move, state);
+	}
+
+	if constexpr (Root) {
+		time_ms_t duration_ms = my_timer.duration();
+		duration_ms = duration_ms ? duration_ms : 1;
+
+		std::cout << "total nodes: " << nodes << " (" << duration_ms / 1000.f << " seconds, " 
+				  << nodes / duration_ms << "kN/sec.)" << '\n';
+	}
+
+	return nodes;
+}
+
+template uint64_t Position::perft<false>(uint depth);
+template uint64_t Position::perft<true>(uint depth);
 
 template <bool ExactScore>
 int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq, 

@@ -32,7 +32,7 @@ RectangularTable& RectangularTable::get() {
 }
 
 BitBoard RectangularTable::inBetweenOnFly(Square org, Square dst) {
-	BitBoard res = BitBoard(0_ui64);
+	BitBoard res = BitBoard::Empty;
 
 	const Square sq_min = std::min(org, dst),
 				 sq_max = std::max(org, dst);

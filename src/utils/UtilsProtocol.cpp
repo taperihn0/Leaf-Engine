@@ -230,6 +230,7 @@ void UtilsProtocol::parsePerft() {
 #endif
 
     bool status = true;
+    time_ms_t total_duration_ms = 0_ms;
 
     for (const auto& test : PerftStandard) {
         std::istringstream ss(static_cast<std::string>(test));
@@ -252,7 +253,10 @@ void UtilsProtocol::parsePerft() {
             ss >> std::skipws >> token;
             const auto nodes = std::stoull(token);
 
-            const auto perft_nodes = pos.perft(depth);
+            time_ms_t duration_ms;
+            const auto perft_nodes = pos.goPerft(depth, duration_ms);
+
+            total_duration_ms += duration_ms;
 
             if (nodes != perft_nodes) {
                 std::cout << "Invalid node count for fen: " << fen << std::endl;
@@ -266,10 +270,14 @@ void UtilsProtocol::parsePerft() {
         }
     }
 
+    const float total_sec_duration = total_duration_ms / 1000.f;
+
     if (status)
-        std::cout << "Perft suit test passed" << std::endl;
+        std::cout << "Perft suit test passed in " 
+                  << total_sec_duration << " seconds" << std::endl;
     else
-        std::cout << "Perft suit test failed" << std::endl;
+        std::cout << "Perft suit test failed in " 
+                  << total_sec_duration << " seconds" << std::endl;
 }
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
