@@ -204,7 +204,7 @@ void generatePawnCaptures(const Position& pos,
 		if (pawns.pawnsAttack<WestDiag>() & ep_bb) {
 			const Square org = ep_sq - WestDiag;
 
-			const BitBoard after_opp_pawns = pos.getPawnsBySide(!Side) & ~BitBoard(ep_sq - Dir);
+			const BitBoard after_opp_pawns = pos.getPawnsBySide(!Side) & ~BitBoard(Square(ep_sq - Dir));
 			const BitBoard after_own_pawns = pawns ^ BitBoard(org) ^ ep_bb;
 
 			pc_bbs[Side][Piece::PAWN] = after_own_pawns;
@@ -217,11 +217,8 @@ void generatePawnCaptures(const Position& pos,
 		if (pawns.pawnsAttack<EastDiag>() & ep_bb) {
 			const Square org = ep_sq - EastDiag;
 
-			pc_bbs[Side][Piece::PAWN] = pos.getPawnsBySide(Side);
-			pc_bbs[!Side][Piece::PAWN] = pos.getPawnsBySide(!Side);
-
-			const BitBoard after_opp_pawns = pos.getPawnsBySide(!Side) & ~BitBoard(ep_sq - Dir);
-			const BitBoard after_own_pawns = pawns ^ BitBoard(org) ^ ep_bb;
+			const BitBoard after_opp_pawns = pos.getPawnsBySide(!Side) & ~BitBoard(Square(ep_sq - Dir));
+			const BitBoard after_own_pawns = (pawns ^ BitBoard(org)) | ep_bb;
 
 			pc_bbs[Side][Piece::PAWN] = after_own_pawns;
 			pc_bbs[!Side][Piece::PAWN] = after_opp_pawns;
@@ -257,9 +254,8 @@ void generatePawnPushes(const Position& pos,
 	BitBoard pushable = pos.get<Piece::PAWN, Side>();
 
 	// exclude pinned pawns that cannot move anyway
-	if constexpr (LMode == LEGAL) {
+	if constexpr (LMode == LEGAL)
 		pushable &= ~cache.diag_pinned_pcs;
-	}
 
 	pushable = pushable.genShift<Dir>();
 	pushable &= empties;
@@ -356,10 +352,11 @@ void generateKingMoves(const Position& pos,
 	const Square org = cache.ksq;
 	// exclude opponent king's attacks from our king's attack mask - kings cannot touch
 	BitBoard att = kingAttacks(org) & mask & ~kingAttacks(pos.getKingSquareBySide(!Side));
+	BitBoard attacked_mask = BitBoard::Empty;
 
 	// exclude already attacked squares
 	if constexpr (LMode == LEGAL) {
-		const BitBoard attacked_mask = pos.getAttackedMaskForLegalKingMoves(!Side);
+		attacked_mask = pos.getAttackedMaskForLegalKingMoves(!Side);
 		att &= ~attacked_mask;
 	}
 
@@ -379,13 +376,17 @@ void generateKingMoves(const Position& pos,
 
 	if (own_castling_state.isShortPossible() and
 		own_castling_state.notThroughPieces_Short<Side>(occupied) and
-		own_castling_state.notThroughCheck_Short<Side>(pos))
+		own_castling_state.notThroughCheck_Short<Side>(pos) and
+	    (LMode != LEGAL or !attacked_mask.isOccupiedSq(ShortCastleDst))) {
 		move_list.push(Move32b::makeCastling<Move32b::Castle::SHORT>(org, ShortCastleDst));
+	}
 
 	if (own_castling_state.isLongPossible() and
 		own_castling_state.notThroughPieces_Long<Side>(occupied) and
-		own_castling_state.notThroughCheck_Long<Side>(pos))
+		own_castling_state.notThroughCheck_Long<Side>(pos) and
+		(LMode != LEGAL or !attacked_mask.isOccupiedSq(LongCastleDst))) {
 		move_list.push(Move32b::makeCastling<Move32b::Castle::LONG>(org, LongCastleDst));
+	}
 }
 
 template <Piece::enumType Pc, enumLegality LMode, enumColor Side, bool isCapture> 
@@ -415,7 +416,7 @@ _INLINE void generate(const Position& pos,
 			const BitBoard opp_pieces = pos.getOppositePieces();
 			const BitBoard king_qray = attacks<Piece::QUEEN>(cache.ksq, opp_pieces);
 			const BitBoard blockers = BitBoard(sq) & king_qray;
-			const BitBoard xray = king_qray ^ attacks<Piece::QUEEN>(sq, opp_pieces ^ blockers);
+			const BitBoard xray = king_qray ^ attacks<Piece::QUEEN>(cache.ksq, opp_pieces ^ blockers);
 			return king_qray & xray | inBetween(cache.ksq, sq);
 		};
 
@@ -534,15 +535,20 @@ void generateByColor(const Position& pos,
 
 	if (!only_king_moves) {
 		BitBoard base_pieces_mask = base_gen_mask;
+		BitBoard pin_mask = BitBoard::Universe;
 
 		if (check) {
-			if (knight_checker)
+			if (knight_checker) {
 				base_pieces_mask &= knight_checker;
-			else
-				base_pieces_mask &= inBetween(pos.getKingSquareBySide(Side), checkers.bitScanForward());
+				pin_mask = knight_checker;
+			}
+			else {
+				pin_mask = inBetween(pos.getKingSquareBySide(Side), checkers.bitScanForward());
+				base_pieces_mask &= pin_mask;
+			}
 		}
 
-		generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, base_pieces_mask, enemy_pieces, empties, cache);
+		generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, pin_mask, enemy_pieces, empties, cache);
 
 		generate<Piece::KNIGHT, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
 		generate<Piece::BISHOP, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
@@ -558,7 +564,8 @@ void generateMovesInMode(const Position& pos, MoveList& move_list) {
 	const enumColor side2move = pos.getTurn();
 	const BitBoard enemy_pieces = pos.getOppositePieces(),
 				   occupied = pos.getOccupied(),
-				   checkers = pos.getCheckers(side2move);
+				   checkers = LMode == PSEUDOLEGAL ? pos.getWeakestCheckers(side2move) 
+				   								   : pos.getCheckers(side2move);
 
 	const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 

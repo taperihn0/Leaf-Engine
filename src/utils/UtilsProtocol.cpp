@@ -226,7 +226,7 @@ void UtilsProtocol::parsePerft() {
 #if defined(DEBUG)
     static constexpr int DepthTestLimit = 4;
 #else
-    static constexpr int DepthTestLimit = 5;
+    static constexpr int DepthTestLimit = 6;
 #endif
 
     bool status = true;

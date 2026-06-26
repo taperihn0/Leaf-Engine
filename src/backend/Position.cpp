@@ -723,20 +723,20 @@ uint64_t Position::perft(unsigned depth) {
 	MoveList move_list;
 	MoveGen::generateLegalMoves<MoveGen::ALL>(*this, move_list);
 
-	if (depth == 4) {
-		std::cout << std::endl;
-	}
+	//if (depth == 4) {
+	//	std::cout << std::endl;
+	//}
 
 	IrreversibleState state = getIrreversibleState();
 
 	for (size_t i = 0; i < move_list.count(); i++) {
 		Move32b move = move_list.getMove(i);
 
-		if (_zhash == 6521679499539115699) {
-			print();
-			move.print();
-			std::cout << std::flush;
-		}
+		//if (_zhash == 686471122751844478) {
+		//	print();
+		//	move.print();
+		//	std::cout << std::flush;
+		//}
 		//std::cout << _zhash << '\n';
 
 		if (make(move)) {

@@ -313,6 +313,9 @@ public:
 
 	// Do not return all of the checkers, but terminates as soon as just one checker in found.
 	// If no checkers found, returns empty board.
+	_NODISCARD BitBoard getWeakestCheckers(enumColor side) const;
+
+	// return all of the checkers
 	_NODISCARD BitBoard getCheckers(enumColor side) const;
 
 	_NODISCARD Piece::enumType pieceOn(Square sq, enumColor by_color) const;
@@ -631,8 +634,12 @@ _INLINE BitBoard Position::leastValuableAttackers(Square sq, enumColor isAttacke
 	return BitBoard::Empty;
 }
 
-_INLINE BitBoard Position::getCheckers(enumColor side) const {
+_INLINE BitBoard Position::getWeakestCheckers(enumColor side) const {
 	return leastValuableAttackers(getKingSquareBySide(side), side);
+}
+
+_INLINE BitBoard Position::getCheckers(enumColor side) const {
+	return getAttacksToSquare(getKingSquareBySide(side), side, getOccupied());
 }
 
 _INLINE Piece::enumType Position::pieceOn(Square sq, enumColor by_color) const {
