@@ -477,7 +477,7 @@ _FORCEINLINE BitBoard inBetween(Square org, Square dst) {
 // InBetween but without 'org' and 'dst' squares.
 _FORCEINLINE BitBoard onlyBetween(Square org, Square dst) {
 	assert(org.isValid() and dst.isValid());
-	return RectangularTable::get().t64[org][dst] & ~(BitBoard(org) | BitBoard(dst));
+	return RectangularTable::get().t64[org][dst] ^ BitBoard(org) ^ BitBoard(dst);
 }
 
 } // namespace

@@ -721,12 +721,23 @@ uint64_t Position::perft(unsigned depth) {
 	uint64_t nodes = 0, child_nodes = 0;
 
 	MoveList move_list;
-	MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
+	MoveGen::generateLegalMoves<MoveGen::ALL>(*this, move_list);
+
+	if (depth == 4) {
+		std::cout << std::endl;
+	}
 
 	IrreversibleState state = getIrreversibleState();
 
 	for (size_t i = 0; i < move_list.count(); i++) {
 		Move32b move = move_list.getMove(i);
+
+		if (_zhash == 6521679499539115699) {
+			print();
+			move.print();
+			std::cout << std::flush;
+		}
+		//std::cout << _zhash << '\n';
 
 		if (make(move)) {
 			assert(_zhash == ZHash::generateOnFly(*this));
@@ -739,6 +750,12 @@ uint64_t Position::perft(unsigned depth) {
 				std::cout << ": " << child_nodes << '\n';
 				std::cout << std::flush;
 			}
+		} else {
+			move.print();
+			std::cout << depth << std::endl;
+			std::cout << i << std::endl;
+			std::cout << std::flush;
+			ASSERTNOLOG(false);
 		}
 
 		unmake(move, state);

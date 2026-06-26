@@ -287,7 +287,7 @@ public:
 	// just like attacked function above, but includes king attacks
 	_NODISCARD bool isAttackedSquare_KingIncluded(Square sq, enumColor side) const;
 
-	// that is utility function -
+	// this is utility function -
 	// it does exactly the same as isAttackedSquare, but with custom occupancies
 	_NODISCARD static bool isAttackedSquareWithOccupancies(Square sq, 
 														   enumColor side,
@@ -298,6 +298,10 @@ public:
 
 	// returns mask of every attacked square by pieces of side
 	_NODISCARD BitBoard getAttackedMask(enumColor side) const;
+
+	// with purpose of generating legal king moves.
+	// same as getAttackedMask, but excludes king itself.
+	_NODISCARD BitBoard getAttackedMaskForLegalKingMoves(enumColor side) const;
 
 	// returns mask of every attacked square by pieces of side exluding enemy king
 	_NODISCARD BitBoard getAttackedMask_kingIncluded(enumColor side) const;
@@ -315,8 +319,8 @@ public:
 	_NODISCARD Piece fullPieceOn(Square sq) const;
 
 	// returns whether move is legal or pseudo-legal
-	bool make(Move32b& move);
-	bool make(Move32b& move, nn::AccumulatorCache* accum_cache);
+	_NODISCARD bool make(Move32b& move);
+	_NODISCARD bool make(Move32b& move, nn::AccumulatorCache* accum_cache);
 	void unmake(Move32b move, const IrreversibleState& prev_state);
 
 	void makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_cache);
@@ -348,6 +352,9 @@ public:
 		uint64_t 				   hash_key;
 	};
 private:
+	// same as getAttackedMask, but with custom accumulated occupancy mask
+	BitBoard getAttackedMaskWithMask(enumColor side, BitBoard occ) const;
+
 	void clearPieces();
 	void setGameStatesFromStr(const std::string fen, size_t i);
 
@@ -502,7 +509,7 @@ _INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
 	return getKingBySide(color);
 }
 
-_INLINE bool Position::isAttackedSquare(Square sq, enumColor side) const {
+_FORCEINLINE bool Position::isAttackedSquare(Square sq, enumColor side) const {
 	const BitBoard occ = getOccupied();
 	return (knightAttacks(sq) & getKnightsBySide(!side)) or
 		   (pawnAttacks(sq, side) & getPawnsBySide(!side)) or
@@ -545,8 +552,15 @@ _INLINE BitBoard Position::getAttacksToSquare(Square sq, enumColor side, BitBoar
 		   (rookQueen & attacks<Piece::ROOK>(sq, occ));
 }
 
-_INLINE BitBoard Position::getAttackedMask(enumColor side) const {
-	const BitBoard occ = getOccupied();
+_FORCEINLINE BitBoard Position::getAttackedMask(enumColor side) const {
+	return getAttackedMaskWithMask(side, getOccupied());
+}
+
+_FORCEINLINE BitBoard Position::getAttackedMaskForLegalKingMoves(enumColor side) const {
+	return getAttackedMaskWithMask(side, getOccupied() ^ _piece_bb[!side][Piece::KING]);
+}
+
+_INLINE BitBoard Position::getAttackedMaskWithMask(enumColor side, BitBoard occ) const {
 	BitBoard bb = BitBoard::Empty;
 
 	for (Piece::enumType pc : Piece::PieceTypeWithoutKingList) {
@@ -554,7 +568,7 @@ _INLINE BitBoard Position::getAttackedMask(enumColor side) const {
 		
 		while (pc_bb) { 
 			const Square sq(pc_bb.dropForward());
-			pc_bb |= attacks(pc, sq, occ);
+			bb |= attacksIncludePawns(pc, sq, occ, side);
 		}
 	}
 

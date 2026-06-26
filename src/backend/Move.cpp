@@ -239,8 +239,7 @@ bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
 template <>
 bool Move32b::isLegal(Position& pos) {
 	const Position::IrreversibleState state = pos.getIrreversibleState();
-	pos.make(*this);
-	bool legal = isLegalMoved();
+	bool legal = pos.make(*this);
 	pos.unmake(*this, state);
 	return legal;
 }

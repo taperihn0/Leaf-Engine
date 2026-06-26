@@ -57,7 +57,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionPath("SyzygyPath",    StringType("<empty>")),
         OptionPath("NeuralNetPath", StringType(static_cast<std::string>(DefaultNeuralNetOptionPath))),
         { // --- Tunable parameters ---
-          // TODO: these may be float aswell 
+          // TODO: these may be floats aswell 
         OptionTunableParam(SpinType<double>(IidDepth,					  2.,  5.),     "IidDepth", 		    		2.),
         OptionTunableParam(SpinType<double>(IidDepthDiv,				  8.,  14.),    "IidDepthDiv", 		    		2.),
         OptionTunableParam(SpinType<double>(RfpDepth,     				  2.,  4.),     "RfpDepth", 		    		2.),
@@ -342,7 +342,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
             }
 
             _game.recordInfo(_pos.getZobristKey(), move);
-            _pos.make(move);
+            ASSERTNOLOG(_pos.make(move));
         }
     }
 }
@@ -351,7 +351,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
     std::string token;
     strm >> std::skipws >> token;
 
-    if (token == "goPerft") {
+    if (token == "perft") {
         strm >> std::skipws >> token;
 
         if (isValidNumber(token.substr(1)) and !isSigned(token)) {

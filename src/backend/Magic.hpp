@@ -79,13 +79,11 @@ public:
 
 	_NODISCARD static _FORCEINLINE BitBoard xRayBishopAttacks(Square sq) {
 		const BitBoard bb = _mbishop_att[sq][0];
-		assert(bb.popCount() == _relv_bits_cnt_bishop[sq]);
 		return bb;
 	}
 
 	_NODISCARD static _FORCEINLINE BitBoard xRayRookAttacks(Square sq) {
 		const BitBoard bb = _mrook_att[sq][0];
-		assert(bb.popCount() == _mrook_att[sq]);
 		return bb;
 	}
 

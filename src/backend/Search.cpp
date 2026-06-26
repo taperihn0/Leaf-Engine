@@ -1806,7 +1806,7 @@ void Search::refreshPVinTT(const Position& pos,
 		}
 		
 		Move32b pv_unpack = unpackedMove(cpy_pos, pv_move);
-		cpy_pos.make(pv_unpack);
+		_declUnused(cpy_pos.make(pv_unpack));
 	}
 
 	if (results.best_move.isNull())
