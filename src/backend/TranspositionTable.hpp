@@ -31,8 +31,8 @@ static constexpr size_t  EntryKeySize     = 18;
 static constexpr uint8_t EntryMaxDepth    = 64;
 
 enum class TTBound : uint8_t {
-    NONE 	   = 0,
-    EXACT  	   = 1,
+    NONE        = 0,
+    EXACT         = 1,
     UPPERBOUND = 2,
     LOWERBOUND = 3,
     MAX_BOUND  = 3
@@ -57,9 +57,9 @@ struct TTEntry {
     uint16_t key16;
     uint8_t  key18 : 2;
     uint8_t  generation : 6;
-    TTBound	 bound : 2;
+    TTBound     bound : 2;
     uint8_t  depth : 6;
-    Score	 score;
+    Score     score;
     Move16b  move;
     Score    eval;
 };
@@ -118,9 +118,9 @@ public:
     void clearHashfull();
 private:
     mem::AlignedUniquePtr<Bucket> 
-                 _mem;
-    size_t    	 _buckets_cnt;
-    uint8_t   	 _buckets_pow_2;
-    uint8_t   	 _generation;
-    ull       	 _hits;
+            _mem;
+    size_t  _buckets_cnt;
+    uint8_t _buckets_pow_2;
+    uint8_t _generation;
+    ull     _hits;
 };

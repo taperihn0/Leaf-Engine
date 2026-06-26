@@ -103,17 +103,17 @@ bool Game::isGameCycle() const {
     int repetition_cnt = 0;
 
     for (int i = 1; i <= halfmove_cnt; i++) {
-		const int cnt = halfmove_cnt - i;
+        const int cnt = halfmove_cnt - i;
 
-		const Move32b move = _pos_record.getPrevMove(cnt);
+        const Move32b move = _pos_record.getPrevMove(cnt);
 
         if (move.isIrreversible())
-			return false;
-		else if (hash_key == _pos_record.getPrevKey(cnt)) {
-			if (++repetition_cnt >= 3)
-				return true;
-		}
-	}
+            return false;
+        else if (hash_key == _pos_record.getPrevKey(cnt)) {
+            if (++repetition_cnt >= 3)
+                return true;
+        }
+    }
 
     return false;
 }

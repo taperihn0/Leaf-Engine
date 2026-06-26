@@ -46,7 +46,7 @@ public:
 
 #if defined(_MSC_VER)
     HANDLE hproc = nullptr;
-	HANDLE hthread = nullptr;
+    HANDLE hthread = nullptr;
 #else
     pid_t pid = 0;
 private:

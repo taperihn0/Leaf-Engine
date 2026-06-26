@@ -22,109 +22,109 @@
 
 class Score {
 public:
-	using int_t = int16_t;
+    using int_t = int16_t;
 
-	_INLINE Score() = default;
-	_INLINE constexpr Score(int_t val)
-		: _raw(val) {
-	}
+    _INLINE Score() = default;
+    _INLINE constexpr Score(int_t val)
+        : _raw(val) {
+    }
 
-	_INLINE Score operator+(Score b) const {
-		return _raw + b._raw;
-	}
+    _INLINE Score operator+(Score b) const {
+        return _raw + b._raw;
+    }
 
-	_INLINE Score operator+=(Score b) {
-		return _raw += b._raw;
-	}
+    _INLINE Score operator+=(Score b) {
+        return _raw += b._raw;
+    }
 
-	_INLINE Score operator-=(Score b) {
-		return _raw -= b._raw;
-	}
+    _INLINE Score operator-=(Score b) {
+        return _raw -= b._raw;
+    }
 
-	_INLINE Score operator-(Score b) const {
-		return _raw - b._raw;
-	}
+    _INLINE Score operator-(Score b) const {
+        return _raw - b._raw;
+    }
 
-	_INLINE bool operator>(Score b) const {
-		return _raw > b._raw;
-	}
+    _INLINE bool operator>(Score b) const {
+        return _raw > b._raw;
+    }
 
-	_INLINE bool operator>=(Score b) const {
-		return _raw >= b._raw;
-	}
+    _INLINE bool operator>=(Score b) const {
+        return _raw >= b._raw;
+    }
 
-	_INLINE bool operator<=(Score b) const {
-		return _raw <= b._raw;
-	}
+    _INLINE bool operator<=(Score b) const {
+        return _raw <= b._raw;
+    }
 
-	_INLINE bool operator==(Score b) const {
-		return _raw == b._raw;
-	}
+    _INLINE bool operator==(Score b) const {
+        return _raw == b._raw;
+    }
 
-	_INLINE bool operator!=(Score b) const {
-		return _raw != b._raw;
-	}
+    _INLINE bool operator!=(Score b) const {
+        return _raw != b._raw;
+    }
 
-	_INLINE bool operator<(Score b) const {
-		return _raw < b._raw;
-	}
+    _INLINE bool operator<(Score b) const {
+        return _raw < b._raw;
+    }
 
-	_INLINE Score operator*(Score b) const {
-		return _raw * b._raw;
-	}
+    _INLINE Score operator*(Score b) const {
+        return _raw * b._raw;
+    }
 
-	_INLINE Score operator*(long double d) const {
-		return static_cast<Score::int_t>(_raw * d);
-	}
+    _INLINE Score operator*(long double d) const {
+        return static_cast<Score::int_t>(_raw * d);
+    }
 
-	_INLINE Score operator/(Score b) const {
-		return _raw / b._raw;
-	}
+    _INLINE Score operator/(Score b) const {
+        return _raw / b._raw;
+    }
 
-	_INLINE Score operator-() const {
-		return -_raw;
-	}
+    _INLINE Score operator-() const {
+        return -_raw;
+    }
 
-	_INLINE explicit operator int_t() const {
-		return _raw;
-	}
+    _INLINE explicit operator int_t() const {
+        return _raw;
+    }
 
-	_INLINE explicit operator int() const {
-		return _raw;
-	}
+    _INLINE explicit operator int() const {
+        return _raw;
+    }
 
-	_INLINE explicit operator float() const {
-		return static_cast<float>(_raw);
-	}
+    _INLINE explicit operator float() const {
+        return static_cast<float>(_raw);
+    }
 
-	_NODISCARD _INLINE bool isValid() const {
-		return _raw != Undef and _raw != -Undef;
-	}
+    _NODISCARD _INLINE bool isValid() const {
+        return _raw != Undef and _raw != -Undef;
+    }
 
-	_NODISCARD _INLINE bool isMateScore() const {
-		return isValid() and 
-			   ((_raw >= -Mate and _raw < -MateBound) or 
-			   	(_raw > MateBound and _raw <= Mate));
-	}
+    _NODISCARD _INLINE bool isMateScore() const {
+        return isValid() and 
+               ((_raw >= -Mate and _raw < -MateBound) or 
+                   (_raw > MateBound and _raw <= Mate));
+    }
 
-	_NODISCARD static _INLINE Score getMateScore(int ply) {
-		return static_cast<Score>(Mate - ply);
-	}
+    _NODISCARD static _INLINE Score getMateScore(int ply) {
+        return static_cast<Score>(Mate - ply);
+    }
 
-	_NODISCARD _INTERNAL std::string toStr() const {
-		if (_raw > MateBound)
-			return "mate " + std::to_string((Score::Mate - _raw + 1) / 2);
-		else if (_raw < -MateBound)
-			return "mate -" + std::to_string((_raw + Score::Mate + 1) / 2);
+    _NODISCARD _INTERNAL std::string toStr() const {
+        if (_raw > MateBound)
+            return "mate " + std::to_string((Score::Mate - _raw + 1) / 2);
+        else if (_raw < -MateBound)
+            return "mate -" + std::to_string((_raw + Score::Mate + 1) / 2);
 
-		return "cp " + std::to_string(_raw);
-	}
-	
-	static constexpr int_t Draw		  = 0,
-						   Mate		  = 32000,
-						   MateBound  = Mate - MaxDepth,
-						   Infinity   = maxof<int_t>(),
-						   Undef      = 32500;
+        return "cp " + std::to_string(_raw);
+    }
+    
+    static constexpr int_t Draw          = 0,
+                           Mate          = 32000,
+                           MateBound  = Mate - MaxDepth,
+                           Infinity   = maxof<int_t>(),
+                           Undef      = 32500;
 private:
-	int_t _raw;
+    int_t _raw;
 };

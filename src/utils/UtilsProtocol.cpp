@@ -239,11 +239,11 @@ void UtilsProtocol::parsePerft() {
         std::string token;
 
         for (int i = 0; i < 6; i++) {
-		    ss >> std::skipws >> token;
-		    fen += ' ' + token;
+            ss >> std::skipws >> token;
+            fen += ' ' + token;
         }
 
-		Position pos(fen);
+        Position pos(fen);
 
         while (ss >> std::skipws >> token) {
             const auto depth = std::stoi(token.substr(1));
@@ -281,10 +281,10 @@ void UtilsProtocol::parsePerft() {
 }
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
-	std::ios_base::sync_with_stdio(false);
+    std::ios_base::sync_with_stdio(false);
 
 #if defined(_ENABLE_TUNING)
-	GlobParamMapping.createMapping();
+    GlobParamMapping.createMapping();
 #endif
 
     if (argc > 1 and std::string(argv[1]) == "--self-play")
@@ -292,48 +292,48 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 
     ProcExecArg = argv[0];
 
-	std::cout << "Utility build of Leaf" << '\n';
+    std::cout << "Utility build of Leaf" << '\n';
 
-	std::string command;
+    std::string command;
 
-	do {
-		if (!std::getline(std::cin, command))
-			command = "quit";
+    do {
+        if (!std::getline(std::cin, command))
+            command = "quit";
 
-		std::istringstream strm(command);
-		std::string token;
+        std::istringstream strm(command);
+        std::string token;
 
-		strm >> std::skipws >> token;
+        strm >> std::skipws >> token;
 
-             if (token == "uci")				   parseUCI();
-        else if (token == "ucinewgame") 		   parseNewGame();
-        else if (token == "position")			   parsePosition(strm);
-        else if (token == "print")				   _pos.print();
-        else if (token == "go")					   parseGo(strm);
-        else if (token == "isready")			   parseIsReady();
-        else if (token == "export_net") 		   parseNeuralNet(strm);
-        else if (token == "rewrite_header")		   parseRewriteNet(strm);
-        else if (token == "options")			   parseShowOptions();
-        else if (token == "setoption")			   parseSetOptions(strm);
+             if (token == "uci")                   parseUCI();
+        else if (token == "ucinewgame")            parseNewGame();
+        else if (token == "position")               parsePosition(strm);
+        else if (token == "print")                 _pos.print();
+        else if (token == "go")                    parseGo(strm);
+        else if (token == "isready")               parseIsReady();
+        else if (token == "export_net")            parseNeuralNet(strm);
+        else if (token == "rewrite_header")        parseRewriteNet(strm);
+        else if (token == "options")               parseShowOptions();
+        else if (token == "setoption")             parseSetOptions(strm);
         else if (token == "test_pack")             packedPositionTests();
         else if (token == "test_ccr_one_hour")     ccrOneHourTest();
         else if (token == "test_null_move")        nullMoveTest();
-		else if (token == "test_see")		       seeTests();
-		else if (token == "test_pack_on")          parsePackedFile(strm);
-		else if (token == "test_extpack_on")       parseExtPackedFile(strm);
+        else if (token == "test_see")              seeTests();
+        else if (token == "test_pack_on")          parsePackedFile(strm);
+        else if (token == "test_extpack_on")       parseExtPackedFile(strm);
         else if (token == "test_perft")            parsePerft();
-		else if (token == "self_play")		       parseSelfPlay(_collector, strm);
-		else if (token == "load_openings")         GlobOpeningGenerator.load();
-		else if (token == "view_positions")        parseShowPositions(strm);
-		else if (token == "verify_session")        parseVerifySession(strm);
-		else if (token == "spsa")                  parseSPSA(strm);
+        else if (token == "self_play")             parseSelfPlay(_collector, strm);
+        else if (token == "load_openings")         GlobOpeningGenerator.load();
+        else if (token == "view_positions")        parseShowPositions(strm);
+        else if (token == "verify_session")        parseVerifySession(strm);
+        else if (token == "spsa")                  parseSPSA(strm);
 
 #if defined(_UCI_DEBUG_UTILS)
-		else if (token == "see")				   parseSEE(strm);
-		else if (token == "nneval")				   parseNNEval(strm);
+        else if (token == "see")                   parseSEE(strm);
+        else if (token == "nneval")                parseNNEval(strm);
 #endif
 
-	} while (command != "quit");
+    } while (command != "quit");
 }
 
 } // namespace Utils

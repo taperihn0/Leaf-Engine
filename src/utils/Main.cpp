@@ -20,7 +20,7 @@
 #include "Magic.hpp"
 
 int main(int argc, const char* argv[]) {
-	SlidersAttacks::initTables();
-	Utils::UtilsProtocol protocol;
-	protocol.loop(argc, argv);
+    SlidersAttacks::initTables();
+    Utils::UtilsProtocol protocol;
+    protocol.loop(argc, argv);
 }

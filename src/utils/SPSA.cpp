@@ -73,7 +73,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     SearchLimits limits;
 
     // Game parameters
-	limits.depth = MaxDepth; // avoid depth overflow
+    limits.depth = MaxDepth; // avoid depth overflow
     limits.nodes = 0; // no node limit
     limits.wtime = limits.btime = 4_s;
     limits.winc = limits.binc = 100_ms;

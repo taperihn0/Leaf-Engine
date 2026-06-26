@@ -21,291 +21,291 @@
 #include "Search.hpp"
 
 MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) 
-	: _tables(history_tables) {}
+    : _tables(history_tables) {}
 
 /* 
-*	MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
+*    MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
 *   Both generates appropiate moves on fly, during move picking as stage is 
-*	moving from really promising moves to less interesting ones.
+*    moving from really promising moves to less interesting ones.
 */
 
 template <OrderType Type, bool Root>
 bool MoveOrder::nextMove(const NodeInfo* node,
-						 Position& pos, 
-						 Move32b& next_move,
-						 int16_t& move_score) 
+                         Position& pos, 
+                         Move32b& next_move,
+                         int16_t& move_score) 
 {
-	static_assert(!Root or Type == ONCE_GEN_LEGAL);
-	static_assert(Root or Type != ONCE_GEN_LEGAL);
+    static_assert(!Root or Type == ONCE_GEN_LEGAL);
+    static_assert(Root or Type != ONCE_GEN_LEGAL);
 
-	assert(_tables != nullptr);
+    assert(_tables != nullptr);
 
-	if constexpr (Root) {
-		_killer_move = Move32b::Null;
-	}
+    if constexpr (Root) {
+        _killer_move = Move32b::Null;
+    }
 
-	next_move = Move32b::Null;
-	move_score = Score::Undef;
+    next_move = Move32b::Null;
+    move_score = Score::Undef;
 
-	if constexpr (Type == ONCE_GEN_LEGAL) {
-		return nextMoveFromOnceGen(pos, next_move, move_score);
-	}
+    if constexpr (Type == ONCE_GEN_LEGAL) {
+        return nextMoveFromOnceGen(pos, next_move, move_score);
+    }
 
-	switch (_stage) {
-	case enumStage::FIRST_STAGE:
-		_stage = enumStage::STAGED_HASH_MOVE;
-		[[fallthrough]];
-	case enumStage::STAGED_HASH_MOVE:
-		_stage = enumStage::STAGED_CAPTURES;
+    switch (_stage) {
+    case enumStage::FIRST_STAGE:
+        _stage = enumStage::STAGED_HASH_MOVE;
+        [[fallthrough]];
+    case enumStage::STAGED_HASH_MOVE:
+        _stage = enumStage::STAGED_CAPTURES;
 
-		if (!_hash_move.isNull()) {
-			next_move = _hash_move;
-			return true;
-		}
+        if (!_hash_move.isNull()) {
+            next_move = _hash_move;
+            return true;
+        }
 
-		[[fallthrough]];
-	case enumStage::STAGED_CAPTURES:
-		MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+        [[fallthrough]];
+    case enumStage::STAGED_CAPTURES:
+        MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
-		scoreCaptures(0, pos);
+        scoreCaptures(0, pos);
 
-		_stage = enumStage::STAGED_PICK_CAPTURES;
+        _stage = enumStage::STAGED_PICK_CAPTURES;
 
-		[[fallthrough]];
-	case enumStage::STAGED_PICK_CAPTURES:
-		if (nextFromList(next_move, move_score))
-			return true;
-		
-		if constexpr (Type == QUIESCENT)
-			return false;
+        [[fallthrough]];
+    case enumStage::STAGED_PICK_CAPTURES:
+        if (nextFromList(next_move, move_score))
+            return true;
+        
+        if constexpr (Type == QUIESCENT)
+            return false;
 
-		_stage = enumStage::STAGED_KILLER;
+        _stage = enumStage::STAGED_KILLER;
 
-		[[fallthrough]];
-	case enumStage::STAGED_KILLER:
-		assert(Type != QUIESCENT);
+        [[fallthrough]];
+    case enumStage::STAGED_KILLER:
+        assert(Type != QUIESCENT);
 
-		_stage = enumStage::STAGED_QUIETS;
-		_quiets_ind = _iterator;
-		
-		{
-			uint64_t parent_hash = ZHash::Undef;
+        _stage = enumStage::STAGED_QUIETS;
+        _quiets_ind = _iterator;
+        
+        {
+            uint64_t parent_hash = ZHash::Undef;
 
-			if constexpr (!Root) {
-				const NodeInfo* const parent_node = node - 1;
-				parent_hash = parent_node->state.hash_key;
-			}
+            if constexpr (!Root) {
+                const NodeInfo* const parent_node = node - 1;
+                parent_hash = parent_node->state.hash_key;
+            }
 
-			if (!_killer_move.isNull() and
-				_killer_move != _hash_move and
-				!Root and
-				parent_hash == _killer_move_parent_hash and
-				_killer_move.isPseudoLegal(pos))
-			{
-				next_move = _killer_move;
-				return true;
-			}
-		}
+            if (!_killer_move.isNull() and
+                _killer_move != _hash_move and
+                !Root and
+                parent_hash == _killer_move_parent_hash and
+                _killer_move.isPseudoLegal(pos))
+            {
+                next_move = _killer_move;
+                return true;
+            }
+        }
 
-		[[fallthrough]];
-	case enumStage::STAGED_QUIETS:
-		assert(Type != QUIESCENT);
+        [[fallthrough]];
+    case enumStage::STAGED_QUIETS:
+        assert(Type != QUIESCENT);
 
-		MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+        MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-		_stage = enumStage::STAGED_PICK_QUIETS;
+        _stage = enumStage::STAGED_PICK_QUIETS;
 
-		[[fallthrough]];
-	case enumStage::STAGED_PICK_QUIETS:
-		assert(Type != QUIESCENT);
-		{
-			const enumColor side = pos.getTurn();
-			scoreQuiets(_iterator, side);
-		}
-		return nextFromList(next_move, move_score);
-	default:
-		assert(false);
-		break;
-	}
+        [[fallthrough]];
+    case enumStage::STAGED_PICK_QUIETS:
+        assert(Type != QUIESCENT);
+        {
+            const enumColor side = pos.getTurn();
+            scoreQuiets(_iterator, side);
+        }
+        return nextFromList(next_move, move_score);
+    default:
+        assert(false);
+        break;
+    }
 
-	return false;
+    return false;
 }
 
 template <int8_t Sign>
 void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
-	static_assert(Sign == -1 or Sign == 1);
-	assert(_tables != nullptr);
+    static_assert(Sign == -1 or Sign == 1);
+    assert(_tables != nullptr);
 
-	const Piece::uint_t piece = value(move.getPiece());
-	const Square dst = move.getTarget();
+    const Piece::uint_t piece = value(move.getPiece());
+    const Square dst = move.getTarget();
 
-	const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
-	const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
+    const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
+    const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
 
-	_tables->_quiets_history[side][piece][dst] += 
-		static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxQuietsHistory);
+    _tables->_quiets_history[side][piece][dst] += 
+        static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxQuietsHistory);
 
-	assert(abs(quiet_value) <= MaxQuietsHistory);
+    assert(abs(quiet_value) <= MaxQuietsHistory);
 }
 
 void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
-	assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
+    assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
-	updateQuietEntry<1>(bestmove, side, depth);
+    updateQuietEntry<1>(bestmove, side, depth);
 
-	for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
-		MoveList::Entry* entry = _move_list.getEntry(i);
-		Move32b* move = &entry->move;
+    for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
+        MoveList::Entry* entry = _move_list.getEntry(i);
+        Move32b* move = &entry->move;
 
-		assert(move->isQuiet() and !move->isQueenPromotion());
+        assert(move->isQuiet() and !move->isQueenPromotion());
 
-		if (*move == bestmove)
-			break;
+        if (*move == bestmove)
+            break;
 
-		updateQuietEntry<-1>(*move, side, depth);
-	}
+        updateQuietEntry<-1>(*move, side, depth);
+    }
 }
 
 /* Search for another move in a '_move_list' starting from current '_iterator'
 *  up to the possible 'end_idx' position.
 */
 _INLINE bool MoveOrder::nextFromList(Move32b& move, int16_t& score, size_t end_idx) {
-	assert(_iterator <= end_idx);
+    assert(_iterator <= end_idx);
 
-	while (_iterator < _move_list.count() and _iterator < end_idx) {
-		_move_list.selectSort(_iterator);
+    while (_iterator < _move_list.count() and _iterator < end_idx) {
+        _move_list.selectSort(_iterator);
 
-		move = _move_list.getMove(_iterator);
-		score = _move_list.getScore(_iterator++);
+        move = _move_list.getMove(_iterator);
+        score = _move_list.getScore(_iterator++);
 
-		if (move != _hash_move and move != _killer_move)
-			return true;
-	}
+        if (move != _hash_move and move != _killer_move)
+            return true;
+    }
 
-	return false;
+    return false;
 }
 
 static array1d<const int16_t*, 5> CaptureScore = {
-	reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
-	reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
-	reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
-	reinterpret_cast<const int16_t*>(&RookCapturedScore), 
-	reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
+    reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
+    reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
+    reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
+    reinterpret_cast<const int16_t*>(&RookCapturedScore), 
+    reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
 };
 
 static array1d<const int16_t*, 5> PromotionScore = {
-	nullptr,    					// pawn placeholder 
-	reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
-	reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 
-	reinterpret_cast<const int16_t*>(&ToRookPromoScore),
-	reinterpret_cast<const int16_t*>(&ToQueenPromoScore)
+    nullptr,                        // pawn placeholder 
+    reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
+    reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 
+    reinterpret_cast<const int16_t*>(&ToRookPromoScore),
+    reinterpret_cast<const int16_t*>(&ToQueenPromoScore)
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
-	const enumColor oppside = static_cast<enumColor>(pos.getOppositeTurn());
-	_declUnused(oppside); // that is unused for now I guess
+    const enumColor oppside = static_cast<enumColor>(pos.getOppositeTurn());
+    _declUnused(oppside); // that is unused for now I guess
 
-	for (size_t i = first_ind; i < _move_list.count(); i++) {
-		MoveList::Entry* entry = _move_list.getEntry(i);
-		const Move32b* move = &entry->move;
-		MoveList::entryscore_t* score = &entry->score;
+    for (size_t i = first_ind; i < _move_list.count(); i++) {
+        MoveList::Entry* entry = _move_list.getEntry(i);
+        const Move32b* move = &entry->move;
+        MoveList::entryscore_t* score = &entry->score;
 
-		assert(move->isCapture() or 
-			  (move->isPromotion() and 
-			   move->isQueenPromotion() and 
-			  !move->isLegalMoved())); // legality not checked yet
+        assert(move->isCapture() or 
+              (move->isPromotion() and 
+               move->isQueenPromotion() and 
+              !move->isLegalMoved())); // legality not checked yet
 
-		*score = 0;
+        *score = 0;
 
-		if (move->isEnPassant()) {
-			*score = *CaptureScore[Piece::PAWN] - value(Piece::PAWN);
-		}
-		else if (move->isCapture()) {
-			const Piece::uint_t piece_ind = value(move->getPiece());
-			const Piece::uint_t vic = move->getCaptured(pos);
-			*score = *CaptureScore[vic] - piece_ind;
-		}
-		
-		/* We treat promotions as 'captures' here, since it 
-		*  is obviously a tactical move.
-		*/
-		if (move->isPromotion()) {
-			const Piece::uint_t promo = value(move->getPromoPiece());
-			*score += *PromotionScore[promo];
-		}
-	}
+        if (move->isEnPassant()) {
+            *score = *CaptureScore[Piece::PAWN] - value(Piece::PAWN);
+        }
+        else if (move->isCapture()) {
+            const Piece::uint_t piece_ind = value(move->getPiece());
+            const Piece::uint_t vic = move->getCaptured(pos);
+            *score = *CaptureScore[vic] - piece_ind;
+        }
+        
+        /* We treat promotions as 'captures' here, since it 
+        *  is obviously a tactical move.
+        */
+        if (move->isPromotion()) {
+            const Piece::uint_t promo = value(move->getPromoPiece());
+            *score += *PromotionScore[promo];
+        }
+    }
 }
 
 void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
-	assert(_tables != nullptr);
+    assert(_tables != nullptr);
 
-	for (size_t i = first_ind; i < _move_list.count(); i++) {
-		MoveList::Entry* entry = _move_list.getEntry(i);
-		const Move32b* move = &entry->move;
-		MoveList::entryscore_t* score = &entry->score;
+    for (size_t i = first_ind; i < _move_list.count(); i++) {
+        MoveList::Entry* entry = _move_list.getEntry(i);
+        const Move32b* move = &entry->move;
+        MoveList::entryscore_t* score = &entry->score;
 
-		assert(move->isQuiet());
+        assert(move->isQuiet());
 
-		const Piece::uint_t piece = value(move->getPiece());
-		const Square dst = move->getTarget();
+        const Piece::uint_t piece = value(move->getPiece());
+        const Square dst = move->getTarget();
 
-		/* Since quiet move history value is in range [-MaxQuietsHistory, +MaxQuietsHistory],
-		*  we shift so that we got non-negative actual score.
-		*/
-		const int16_t* quiet_value = &_tables->_quiets_history[side][piece][dst];
-		*score = *quiet_value + MaxQuietsHistory;
-	}
+        /* Since quiet move history value is in range [-MaxQuietsHistory, +MaxQuietsHistory],
+        *  we shift so that we got non-negative actual score.
+        */
+        const int16_t* quiet_value = &_tables->_quiets_history[side][piece][dst];
+        *score = *quiet_value + MaxQuietsHistory;
+    }
 }
 
 bool MoveOrder::nextMoveFromOnceGen(Position& pos, 
-									Move32b& next_move,
-									int16_t& move_score)
+                                    Move32b& next_move,
+                                    int16_t& move_score)
 {
-	switch (_stage) {
-	case enumStage::FIRST_STAGE:
-		_stage = enumStage::ONCEGEN_HASH_MOVE;
-		[[fallthrough]];
-	case enumStage::ONCEGEN_HASH_MOVE:
-		_stage = enumStage::ONCEGEN_ALL;
+    switch (_stage) {
+    case enumStage::FIRST_STAGE:
+        _stage = enumStage::ONCEGEN_HASH_MOVE;
+        [[fallthrough]];
+    case enumStage::ONCEGEN_HASH_MOVE:
+        _stage = enumStage::ONCEGEN_ALL;
 
-		if (!_hash_move.isNull())
-			next_move = _hash_move;
-		
-		[[fallthrough]];
-	case enumStage::ONCEGEN_ALL:
-		_stage = enumStage::ONCEGEN_PICK_CAPTURES;
+        if (!_hash_move.isNull())
+            next_move = _hash_move;
+        
+        [[fallthrough]];
+    case enumStage::ONCEGEN_ALL:
+        _stage = enumStage::ONCEGEN_PICK_CAPTURES;
 
-		MoveGen::generateLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
-		scoreCaptures(0, pos);
+        MoveGen::generateLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
+        scoreCaptures(0, pos);
 
-		_quiets_ind = _move_list.count();
-		MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+        _quiets_ind = _move_list.count();
+        MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-		{
-			const enumColor side = pos.getTurn();
-			scoreQuiets(_quiets_ind, side);
-		}
+        {
+            const enumColor side = pos.getTurn();
+            scoreQuiets(_quiets_ind, side);
+        }
 
-		if (!next_move.isNull()) // got hash move assigned already
-			return true;
+        if (!next_move.isNull()) // got hash move assigned already
+            return true;
 
-		[[fallthrough]];
-	case enumStage::ONCEGEN_PICK_CAPTURES:
-		// Search for another capture only, stop at quiets
-		if (nextFromList(next_move, move_score, _quiets_ind))
-			return true;
+        [[fallthrough]];
+    case enumStage::ONCEGEN_PICK_CAPTURES:
+        // Search for another capture only, stop at quiets
+        if (nextFromList(next_move, move_score, _quiets_ind))
+            return true;
 
-		_stage = enumStage::ONCEGEN_PICK_QUIETS;
+        _stage = enumStage::ONCEGEN_PICK_QUIETS;
 
-		[[fallthrough]];
-	case enumStage::ONCEGEN_PICK_QUIETS:
-		return nextFromList(next_move, move_score);
-	default:
-		assert(false);
-		break;
-	}
+        [[fallthrough]];
+    case enumStage::ONCEGEN_PICK_QUIETS:
+        return nextFromList(next_move, move_score);
+    default:
+        assert(false);
+        break;
+    }
 
-	return false;
+    return false;
 }
 
 template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, Position&, Move32b&, int16_t&);

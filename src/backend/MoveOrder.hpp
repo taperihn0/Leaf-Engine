@@ -36,21 +36,21 @@ static constexpr int16_t UndefMoveScore = minof<int16_t>();
 
 class MoveOrderHistoryTables {
 public:
-	friend class MoveOrder;
-	MoveOrderHistoryTables() { clearQuietsHistory(); }
+    friend class MoveOrder;
+    MoveOrderHistoryTables() { clearQuietsHistory(); }
 
-	_INLINE void clearQuietsHistory() {
-		mem::memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
-	}
+    _INLINE void clearQuietsHistory() {
+        mem::memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
+    }
 private:
-	array3d<int16_t, 2, 6, 64> _quiets_history;
-	// ...
+    array3d<int16_t, 2, 6, 64> _quiets_history;
+    // ...
 };
 
 enum OrderType : uint8_t {
-	STAGED		   = 1, // At nmSearch nodes
-	QUIESCENT	   = 2, // At qSearch nodes
-	ONCE_GEN_LEGAL = 3  // At root node
+    STAGED           = 1, // At nmSearch nodes
+    QUIESCENT       = 2, // At qSearch nodes
+    ONCE_GEN_LEGAL = 3  // At root node
 };
 
 /*
@@ -86,139 +86,139 @@ inline constexpr int QueenCapturedScore   = 900;
 
 class MoveOrder {
 public:
-	MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
+    MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
 
-	void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
+    void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
-	template <OrderType Type, bool Root>
-	_NODISCARD bool nextMove(const NodeInfo* node, 
-				  			 Position& pos, 
-				  			 Move32b& next_move,
-				  			 int16_t& move_score);
+    template <OrderType Type, bool Root>
+    _NODISCARD bool nextMove(const NodeInfo* node, 
+                               Position& pos, 
+                               Move32b& next_move,
+                               int16_t& move_score);
 
-	void setHashMove(Move32b m);
-	void setKillerMove(Move32b m, uint64_t parent_hash);
+    void setHashMove(Move32b m);
+    void setKillerMove(Move32b m, uint64_t parent_hash);
 
-	Move32b getKillerMove(uint64_t& killer_move_parent_hash);
+    Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
-	template <int8_t Sign>
-	void updateQuietEntry(Move32b move, enumColor side, int depth);
-	void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
-	
-	template <OrderType Type>
-	void clear();
+    template <int8_t Sign>
+    void updateQuietEntry(Move32b move, enumColor side, int depth);
+    void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
+    
+    template <OrderType Type>
+    void clear();
 
-	void skipQuiets();
+    void skipQuiets();
 
-	int16_t getQuietScore(Move32b move, enumColor side);
+    int16_t getQuietScore(Move32b move, enumColor side);
 
-	static float getQuietDepthReduction(int16_t quiet_score);
-	static float getCaptureDepthReduction(int16_t capture_score);
+    static float getQuietDepthReduction(int16_t quiet_score);
+    static float getCaptureDepthReduction(int16_t capture_score);
 
-	template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
-	_NODISCARD uint getMovesLeft();
+    template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
+    _NODISCARD uint getMovesLeft();
 
-	template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
-	_NODISCARD uint getTotalMoves();
+    template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
+    _NODISCARD uint getTotalMoves();
 private:
-	bool nextFromList(Move32b& move, int16_t& score, size_t end_idx = maxof<size_t>());
+    bool nextFromList(Move32b& move, int16_t& score, size_t end_idx = maxof<size_t>());
 
-	void scoreCaptures(size_t first_ind, const Position& pos);
-	void scoreQuiets(size_t first_ind, enumColor side);
+    void scoreCaptures(size_t first_ind, const Position& pos);
+    void scoreQuiets(size_t first_ind, enumColor side);
 
-	bool nextMoveFromOnceGen(Position& pos, 
-				  			 Move32b& next_move,
-				  			 int16_t& move_score);
+    bool nextMoveFromOnceGen(Position& pos, 
+                               Move32b& next_move,
+                               int16_t& move_score);
 
-	enum class enumStage : uint8_t {
-		NONE,
-		FIRST_STAGE,
-		ONCEGEN_HASH_MOVE,
-		ONCEGEN_ALL,
-		ONCEGEN_PICK_CAPTURES,
-		ONCEGEN_PICK_QUIETS,
-		STAGED_HASH_MOVE,
-		STAGED_CAPTURES,
-		STAGED_PICK_CAPTURES, 
-		STAGED_KILLER,
-		STAGED_QUIETS,
-		STAGED_PICK_QUIETS,
-	};
+    enum class enumStage : uint8_t {
+        NONE,
+        FIRST_STAGE,
+        ONCEGEN_HASH_MOVE,
+        ONCEGEN_ALL,
+        ONCEGEN_PICK_CAPTURES,
+        ONCEGEN_PICK_QUIETS,
+        STAGED_HASH_MOVE,
+        STAGED_CAPTURES,
+        STAGED_PICK_CAPTURES, 
+        STAGED_KILLER,
+        STAGED_QUIETS,
+        STAGED_PICK_QUIETS,
+    };
 
-	static_assert(is_same<MoveList::entryscore_t, int16_t> or
-				  is_same<MoveList::entryscore_t, int32_t>);
+    static_assert(is_same<MoveList::entryscore_t, int16_t> or
+                  is_same<MoveList::entryscore_t, int32_t>);
 
-	MoveOrderHistoryTables* _tables;
+    MoveOrderHistoryTables* _tables;
 
-	enumStage _stage       = enumStage::NONE;
-	size_t    _iterator    = 0;
-	size_t    _quiets_ind  = 0;
+    enumStage _stage       = enumStage::NONE;
+    size_t    _iterator    = 0;
+    size_t    _quiets_ind  = 0;
 
-	Move32b	 _hash_move	   = Move32b::Null;
-	Move32b	 _killer_move  = Move32b::Null;
-	uint64_t _killer_move_parent_hash = 0;
+    Move32b     _hash_move       = Move32b::Null;
+    Move32b     _killer_move  = Move32b::Null;
+    uint64_t _killer_move_parent_hash = 0;
 
-	MoveList _move_list;
+    MoveList _move_list;
 };
 
 _INLINE void MoveOrder::setHistoryBuffer(MoveOrderHistoryTables* history_tables) {
-	_tables = history_tables;
+    _tables = history_tables;
 }
 
 _INLINE void MoveOrder::setHashMove(Move32b m) {
-	_hash_move = m;
+    _hash_move = m;
 }
 
 _INLINE void MoveOrder::setKillerMove(Move32b m, uint64_t parent_hash) {
-	_killer_move = m;
-	_killer_move_parent_hash = parent_hash;
+    _killer_move = m;
+    _killer_move_parent_hash = parent_hash;
 }
 
 _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
-	killer_move_parent_hash = _killer_move_parent_hash;
-	return _killer_move;
+    killer_move_parent_hash = _killer_move_parent_hash;
+    return _killer_move;
 }
 
 template <OrderType Type>
 _INLINE void MoveOrder::clear() {
-	_stage = enumStage::FIRST_STAGE;
-	_iterator = 0;
-	_quiets_ind = 0;
-	_hash_move = Move32b::Null;
+    _stage = enumStage::FIRST_STAGE;
+    _iterator = 0;
+    _quiets_ind = 0;
+    _hash_move = Move32b::Null;
 
-	if constexpr (Type == QUIESCENT)
-		_killer_move = Move32b::Null;
+    if constexpr (Type == QUIESCENT)
+        _killer_move = Move32b::Null;
 
-	_move_list.clear();
+    _move_list.clear();
 }
 
 _INLINE void MoveOrder::skipQuiets() {
-	_iterator = _move_list.count();
+    _iterator = _move_list.count();
 }
 
 _INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
-	const Piece::uint_t piece_ind = value(move.getPiece());
-	const Square dst = move.getTarget();
-	return _tables->_quiets_history[side][piece_ind][dst];
+    const Piece::uint_t piece_ind = value(move.getPiece());
+    const Square dst = move.getTarget();
+    return _tables->_quiets_history[side][piece_ind][dst];
 }
 
 _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-	const int16_t centered_score = quiet_score - MaxQuietsHistory;
-	const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-	const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
-	return centered_score < 0 ? val : -val;
+    const int16_t centered_score = quiet_score - MaxQuietsHistory;
+    const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
+    const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
+    return centered_score < 0 ? val : -val;
 }
 
 _FORCEINLINE float MoveOrder::getCaptureDepthReduction(int16_t capture_score) {
-	return static_cast<float>(capture_score / CaptureMoveScoreReductionDiv);
+    return static_cast<float>(capture_score / CaptureMoveScoreReductionDiv);
 }
 
 template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getMovesLeft() {
-	return _move_list.count() - _iterator;
+    return _move_list.count() - _iterator;
 }
 
 template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getTotalMoves() {
-	return _move_list.count();
+    return _move_list.count();
 }

@@ -34,19 +34,19 @@ namespace Utils {
 */
 class UtilsProtocol : public UniversalChessInterface {
 public:
-	UtilsProtocol() = default;
-	~UtilsProtocol() = default;
+    UtilsProtocol() = default;
+    ~UtilsProtocol() = default;
 
-	void loop(int argc, const char* argv[]);
+    void loop(int argc, const char* argv[]);
 private:
-	void parseSelfPlay(Utils::TournamentCollector& collector, std::istringstream& strm);
-	void parseShowPositions(std::istringstream& strm);
-	void parseVerifySession(std::istringstream& strm);
-	void parseSPSA(std::istringstream& strm);
-	void parsePerft();
-	
-	TournamentCollector _collector;
-	SPSA_Tuning 		_tuner;
+    void parseSelfPlay(Utils::TournamentCollector& collector, std::istringstream& strm);
+    void parseShowPositions(std::istringstream& strm);
+    void parseVerifySession(std::istringstream& strm);
+    void parseSPSA(std::istringstream& strm);
+    void parsePerft();
+    
+    TournamentCollector _collector;
+    SPSA_Tuning         _tuner;
 };
 
 } // namespace Utils

@@ -25,41 +25,41 @@
 
 class UniversalChessInterface {
 public:
-	UniversalChessInterface();
-	~UniversalChessInterface() = default;
+    UniversalChessInterface();
+    ~UniversalChessInterface() = default;
 
-	static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
-	static std::vector<OptionTunableParam>& getTunableOptions();
+    static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
+    static std::vector<OptionTunableParam>& getTunableOptions();
 
-	virtual void loop(int argc, const char* argv[]);
+    virtual void loop(int argc, const char* argv[]);
 protected:
-	void parseUCI();
-	void parseNewGame();
-	void parsePosition(std::istringstream& strm);
-	void parseGo(std::istringstream& strm);
-	void parseIsReady();
-	bool parseNeuralNet(std::istringstream& strm);
-	void parseRewriteNet(std::istringstream& strm); 
-	void parseSetOptions(std::istringstream& strm);
-	void parseBench(std::istringstream& strm);
-	void parseShowOptions();
-	void parseSelfPlay();
+    void parseUCI();
+    void parseNewGame();
+    void parsePosition(std::istringstream& strm);
+    void parseGo(std::istringstream& strm);
+    void parseIsReady();
+    bool parseNeuralNet(std::istringstream& strm);
+    void parseRewriteNet(std::istringstream& strm); 
+    void parseSetOptions(std::istringstream& strm);
+    void parseBench(std::istringstream& strm);
+    void parseShowOptions();
+    void parseSelfPlay();
 
 #if defined(_UCI_DEBUG_UTILS)
-	void parseSEE(std::istringstream& strm);
-	void parseNNEval(std::istringstream& strm);
+    void parseSEE(std::istringstream& strm);
+    void parseNNEval(std::istringstream& strm);
 #endif
 
-	struct Options {
-		OptionHash 					    hash_opt;
-		OptionClearHash 			    clear_hash_opt;
-		OptionPath 						syzygy_opt;
-		OptionPath 						neural_net_opt;
-		std::vector<OptionTunableParam> tunable_params_opt;
-	};
+    struct Options {
+        OptionHash                      hash_opt;
+        OptionClearHash                 clear_hash_opt;
+        OptionPath                      syzygy_opt;
+        OptionPath                      neural_net_opt;
+        std::vector<OptionTunableParam> tunable_params_opt;
+    };
 
-	Search         _search;
-	Position 	   _pos;
-	FullInfoRecord _game;
-	static Options _options;
+    Search         _search;
+    Position        _pos;
+    FullInfoRecord _game;
+    static Options _options;
 };

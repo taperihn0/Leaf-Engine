@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <iostream>	
+#include <iostream>    
 #include <string>
 #include <cassert>
 #include <type_traits>
@@ -65,26 +65,26 @@
 
 #if defined(_MSC_VER)
 // using __forceinline by default - that came out to be more efficient
-#define _INLINE				__forceinline 
-#define _FORCEINLINE		__forceinline
+#define _INLINE             __forceinline 
+#define _FORCEINLINE        __forceinline
 #define _LAMBDA_FORCEINLINE [[msvc::forceinline]]
-#define _RESTRICT			__restrict
-#define _INTERNAL			inline
+#define _RESTRICT            __restrict
+#define _INTERNAL            inline
 #else
-#define _INLINE				inline
-#define _FORCEINLINE		__attribute__((always_inline)) inline // [[gnu::always_inline]] ?
-#define _LAMBDA_FORCEINLINE __attribute__((always_inline)) 		  // [[gnu::always_inline]] ?
-#define _RESTRICT 			__restrict__
-#define _INTERNAL 			inline
+#define _INLINE             inline
+#define _FORCEINLINE        __attribute__((always_inline)) inline // [[gnu::always_inline]] ?
+#define _LAMBDA_FORCEINLINE __attribute__((always_inline))        // [[gnu::always_inline]] ?
+#define _RESTRICT           __restrict__
+#define _INTERNAL           inline
 #endif
 
 #define _NORETURN     [[noreturn]]
 #define _UNUSED       [[maybe_unused]]
 #define _MAYBE_UNUSED [[maybe_unused]]
-#define _NODISCARD 	  [[nodiscard]]
+#define _NODISCARD    [[nodiscard]]
 #if defined(_CPP_STANDARD_20)
-#define _LIKELY   	  [[likely]]
-#define _UNLIKELY 	  [[unlikely]]
+#define _LIKELY       [[likely]]
+#define _UNLIKELY     [[unlikely]]
 #else
 #define _LIKELY
 #define _UNLIKELY
@@ -159,92 +159,92 @@ constexpr bool is_numeric = (is_real<T> or is_integral<T>);
 #define _IS_SAME_TYPE(t1, t2) (_isSameType<t1, t2>())
 
 inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
-	return static_cast<uint8_t>(a);
+    return static_cast<uint8_t>(a);
 }
 
 inline constexpr uint16_t operator"" _ui16(ull a) noexcept {
-	return static_cast<uint16_t>(a);
+    return static_cast<uint16_t>(a);
 }
 
 inline constexpr uint32_t operator"" _ui32(ull a) noexcept {
-	return static_cast<uint32_t>(a);
+    return static_cast<uint32_t>(a);
 }
 
 inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
-	return static_cast<uint64_t>(a);
+    return static_cast<uint64_t>(a);
 }
 
 inline constexpr size_t operator""_MB(ull mb_count) {
-	return mb_count * 1024 * 1024;
+    return mb_count * 1024 * 1024;
 }
 
 #define ASSERT(s, msg) static_cast<void>((s) or ::releaseFailedAssertion(__FILE__, msg, __LINE__))
 #define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
-	std::cout << text << '\n' << file << ", line " << line << std::endl;
-	exit(EXIT_FAILURE);
-	return false;
+    std::cout << text << '\n' << file << ", line " << line << std::endl;
+    exit(EXIT_FAILURE);
+    return false;
 }
 
 static constexpr int MaxNodeMoves = 128;
-static constexpr int MaxDepth 	  = 96;
+static constexpr int MaxDepth       = 96;
 static constexpr int MaxSelDepth  = 128;
 static constexpr int MaxGameMoves = 1024;
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 _FORCEINLINE constexpr T sq(T x) {
-	return x * x;
+    return x * x;
 }
 
 template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _FORCEINLINE constexpr T abs(T x) {
-	return x < 0 ? -x : x;
+    return x < 0 ? -x : x;
 }
 
 template <typename T, typename = std::enable_if_t<
-						std::is_integral_v<T> and std::is_unsigned_v<T>
-					  >
+                        std::is_integral_v<T> and std::is_unsigned_v<T>
+                      >
 >
 _INLINE constexpr bool isExp2(T x) {
-	return (x & (x - 1)) == 0;
+    return (x & (x - 1)) == 0;
 }
 
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 _INLINE constexpr T round(T x) {
-	if (x >= 0.l) return static_cast<T>(static_cast<ull>(x + 0.5f));
+    if (x >= 0.l) return static_cast<T>(static_cast<ull>(x + 0.5f));
     return static_cast<T>(static_cast<ll>(x - 0.5f));
 }
 
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 _INLINE constexpr int roundi(T x) {
-	return static_cast<int>(round<T>(x));
+    return static_cast<int>(round<T>(x));
 }
 
 template <typename T, typename = std::enable_if_t<
-						std::is_integral_v<T> and std::is_unsigned_v<T>
-					  >
+                        std::is_integral_v<T> and std::is_unsigned_v<T>
+                      >
 >
 _INLINE constexpr uint8_t getExp2(T x) {
-	assert(x != 0);
+    assert(x != 0);
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
-	unsigned long s;
-	_BitScanForward64(&s, x);
-	return static_cast<int>(s);
+    unsigned long s;
+    _BitScanForward64(&s, x);
+    return static_cast<int>(s);
 #else
-	return __builtin_ctzll(x);
+    return __builtin_ctzll(x);
 #endif
 }
 
 template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _INLINE constexpr T minof() {
-	return std::numeric_limits<T>::min();
+    return std::numeric_limits<T>::min();
 }
 
 template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _INLINE constexpr T maxof() {
-	return std::numeric_limits<T>::max();
+    return std::numeric_limits<T>::max();
 }
 
 static int GlobFixedSeed = 1;
@@ -258,14 +258,14 @@ static thread_local uint GlobRandomSeed = std::random_device{}();
 
 template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
 _INLINE T random(T l, T r) {
-	static thread_local std::mt19937 mersenne(GlobRandomSeed);
+    static thread_local std::mt19937 mersenne(GlobRandomSeed);
     std::uniform_int_distribution<T> dist(l, r);
     return dist(mersenne);
 }
 
 template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
 _INLINE T sparseRandom(T l, T r) {
-	return random<T>(l, r) & random<T>(l, r);
+    return random<T>(l, r) & random<T>(l, r);
 }
 
 template <typename T, size_t N>
@@ -273,42 +273,42 @@ using array1d = std::array<T, N>;
 
 template <typename T, size_t N, size_t M>
 using array2d = array1d<
-					array1d<T, M>, 
-				N>;
+                    array1d<T, M>, 
+                N>;
 
 template <typename T, size_t N, size_t M, size_t S>
 using array3d = array1d<
-					array2d<T, M, S>, 
-				N>;
+                    array2d<T, M, S>, 
+                N>;
 
 template <typename T, size_t N>
 _FORCEINLINE T* dataOfArray1d(array1d<T, N>& arr) {
-	return reinterpret_cast<T*>(arr.data());
+    return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M>
 _FORCEINLINE T* dataOfArray2d(array2d<T, N, M>& arr) {
-	return reinterpret_cast<T*>(arr.data());
+    return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M, size_t S>
 _FORCEINLINE T* dataOfArray3d(array3d<T, N, M, S>& arr) {
-	return reinterpret_cast<T*>(arr.data());
+    return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N>
 _FORCEINLINE const T* dataOfArray1d(const array1d<T, N>& arr) {
-	return reinterpret_cast<const T*>(arr.data());
+    return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M>
 _FORCEINLINE const T* dataOfArray2d(const array2d<T, N, M>& arr) {
-	return reinterpret_cast<const T*>(arr.data());
+    return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M, size_t S>
 _FORCEINLINE const T* dataOfArray3d(const array3d<T, N, M, S>& arr) {
-	return reinterpret_cast<const T*>(arr.data());
+    return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N>

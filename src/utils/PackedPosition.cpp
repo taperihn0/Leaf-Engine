@@ -375,73 +375,73 @@ uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position&
 }
 
 void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part) {
-		Square square = occupied.dropForward();
-		
-		ExtPackedPosition::SpecialMasks piece_flags;
-		Piece piece = ExtPackedPosition::pieceFromMask(nibble_part, piece_flags, square);
+        Square square = occupied.dropForward();
+        
+        ExtPackedPosition::SpecialMasks piece_flags;
+        Piece piece = ExtPackedPosition::pieceFromMask(nibble_part, piece_flags, square);
 
-		enumColor color = piece.color();
-		Piece::enumType piece_type = piece.type();
+        enumColor color = piece.color();
+        Piece::enumType piece_type = piece.type();
 
-		switch (piece_flags) {
-		case ExtPackedPosition::EN_PASSANT_PAWN: {
-			Square ep_sq = square + (color ? 8 : -8);
-			pos._ep_square = ep_sq;
-			break;
-		}
-		case ExtPackedPosition::WHITE_ROOK_WITH_CASTLING:
-		case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
-			Square::enumFile file = square.getFile();
+        switch (piece_flags) {
+        case ExtPackedPosition::EN_PASSANT_PAWN: {
+            Square ep_sq = square + (color ? 8 : -8);
+            pos._ep_square = ep_sq;
+            break;
+        }
+        case ExtPackedPosition::WHITE_ROOK_WITH_CASTLING:
+        case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
+            Square::enumFile file = square.getFile();
 
-			if (file == Square::FILE_A) 
-				pos._castling_rights[color].setQueenSide(true);
-			else if (file == Square::FILE_H)
-				pos._castling_rights[color].setKingSide(true);
-			else
-				assert(false);
+            if (file == Square::FILE_A) 
+                pos._castling_rights[color].setQueenSide(true);
+            else if (file == Square::FILE_H)
+                pos._castling_rights[color].setKingSide(true);
+            else
+                assert(false);
 
-			break;
-		}
-		case ExtPackedPosition::BLACK_KING_TO_MOVE:
-			pos._turn = BLACK;
-			break;
-		case ExtPackedPosition::NO_SPECIAL: break;
-	}
+            break;
+        }
+        case ExtPackedPosition::BLACK_KING_TO_MOVE:
+            pos._turn = BLACK;
+            break;
+        case ExtPackedPosition::NO_SPECIAL: break;
+    }
 
-	pos._piece_bb[color][piece_type].setBit(square);
+    pos._piece_bb[color][piece_type].setBit(square);
 }
 
 Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
-	Position pos;
-	BitBoard occupied = pack.getOccupancy();
+    Position pos;
+    BitBoard occupied = pack.getOccupancy();
 
-	pos._ep_square = Square::None;
-	pos._turn = WHITE;
+    pos._ep_square = Square::None;
+    pos._turn = WHITE;
 
-	pos._castling_rights[WHITE].clear();
-	pos._castling_rights[BLACK].clear();
+    pos._castling_rights[WHITE].clear();
+    pos._castling_rights[BLACK].clear();
 
-	for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
-		ExtPackedPosition::Nibble nibble = pack._pieces[i];
+    for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
+        ExtPackedPosition::Nibble nibble = pack._pieces[i];
 
-		placeNextPieceFromNibble(pos, occupied, nibble.lo);
+        placeNextPieceFromNibble(pos, occupied, nibble.lo);
 
-		if (occupied) 
-			placeNextPieceFromNibble(pos, occupied, nibble.hi);
-	}
+        if (occupied) 
+            placeNextPieceFromNibble(pos, occupied, nibble.hi);
+    }
 
-	pos._halfmove_count = pack._clock_data.halfmove;
+    pos._halfmove_count = pack._clock_data.halfmove;
     pos._fullmove_count = pack._clock_data.fullmove;
 
-	pos._occupied[WHITE] = pos.getBySideOnFly(WHITE);
-	pos._occupied[BLACK] = pos.getBySideOnFly(BLACK);
+    pos._occupied[WHITE] = pos.getBySideOnFly(WHITE);
+    pos._occupied[BLACK] = pos.getBySideOnFly(BLACK);
 
-	pos._king_sq[WHITE] = pos.getKingBySide(WHITE).bitScanForward();
-	pos._king_sq[BLACK] = pos.getKingBySide(BLACK).bitScanForward();
+    pos._king_sq[WHITE] = pos.getKingBySide(WHITE).bitScanForward();
+    pos._king_sq[BLACK] = pos.getKingBySide(BLACK).bitScanForward();
 
-	pos._zhash = ZHash::generateOnFly(pos);
+    pos._zhash = ZHash::generateOnFly(pos);
 
-	return pos;
+    return pos;
 }
 
 bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pack) {

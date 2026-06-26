@@ -28,26 +28,26 @@ using internal_clock_t = std::chrono::steady_clock;
 using timepoint_t = internal_clock_t::time_point;
 
 _INLINE constexpr time_ms_t operator"" _ms(ull t) {
-	return static_cast<time_ms_t>(t);
+    return static_cast<time_ms_t>(t);
 }
 
 _INLINE constexpr time_s_t operator"" _s(ull t) {
-	return static_cast<time_ms_t>(t);
+    return static_cast<time_ms_t>(t);
 }
 
 class Clock {
 public:
-	Clock() = delete;
-	_NODISCARD static timepoint_t timePoint();
-	_NODISCARD static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
+    Clock() = delete;
+    _NODISCARD static timepoint_t timePoint();
+    _NODISCARD static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
 };
 
 class Timer {
 public:
-	void go();
-	_NODISCARD time_ms_t duration() const;
+    void go();
+    _NODISCARD time_ms_t duration() const;
 private:
-	timepoint_t _start_tp;
+    timepoint_t _start_tp;
 };
 
 struct SearchLimits;
@@ -55,6 +55,6 @@ class Position;
 
 class TimeMan {
 public:
-	TimeMan() = delete;
-	_NODISCARD static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
+    TimeMan() = delete;
+    _NODISCARD static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
 };

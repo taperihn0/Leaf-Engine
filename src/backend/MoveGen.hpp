@@ -24,28 +24,28 @@
 class MoveGen {
 public:
 
-	/*
-	*	Generation mode:
-	*	<CAPTURES> - all pseudo-legal captures and queen promotions
-	*	<TACTICALS> - all pseudo-legal captures and all promotions
-	*	<QUIETS> - all pseudo-legal non-captures and promotions without queen promotions
-	*	<ALL> - all pseudo-legal moves in given position
-	*/
-	enum enumGenMoves : uint8_t {
-		CAPTURES,
-		TACTICALS,
-		QUIETS,
-		ALL,
-	};
+    /*
+    *    Generation mode:
+    *    <CAPTURES> - all pseudo-legal captures and queen promotions
+    *    <TACTICALS> - all pseudo-legal captures and all promotions
+    *    <QUIETS> - all pseudo-legal non-captures and promotions without queen promotions
+    *    <ALL> - all pseudo-legal moves in given position
+    */
+    enum enumGenMoves : uint8_t {
+        CAPTURES,
+        TACTICALS,
+        QUIETS,
+        ALL,
+    };
 
-	template <enumGenMoves Moves2Gen>
-	static void generatePseudoLegalMoves(const Position& pos, MoveList& move_list);
+    template <enumGenMoves Moves2Gen>
+    static void generatePseudoLegalMoves(const Position& pos, MoveList& move_list);
 
     template <enumGenMoves Moves2Gen>
     static void generateLegalMoves(Position& pos, MoveList& move_list);
 
-	template <enumGenMoves Moves2Gen>
-	_NODISCARD static Move32b getRandomLegalMove(Position& pos);
+    template <enumGenMoves Moves2Gen>
+    _NODISCARD static Move32b getRandomLegalMove(Position& pos);
 
-	_NODISCARD static bool isAnyCapture(Position& pos);
+    _NODISCARD static bool isAnyCapture(Position& pos);
 };

@@ -62,7 +62,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
     ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
 
     char filename[512];
-	const DWORD sz = GetModuleFileNameA(nullptr, filename, sizeof(filename));
+    const DWORD sz = GetModuleFileNameA(nullptr, filename, sizeof(filename));
 
     if (!sz) ASSERT(false, "Failed to get module filename");
 
@@ -80,7 +80,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
             ss << "setoption name SyzygyPath value " << syzygy_tb_path << ' ';
     }
 
-	const std::string& cmdline = ss.str();
+    const std::string& cmdline = ss.str();
     std::vector<char> cmdvec(cmdline.begin(), cmdline.end());
     cmdvec.push_back('\0');
 
