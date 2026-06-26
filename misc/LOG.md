@@ -1,3 +1,13 @@
+### [commit:98b169e] feature: Legal move generator
+```
+Score of leaf_legal_gen vs leaf_obv_base: 1979 - 1971 - 1550  [0.501] 5500
+...      leaf_legal_gen playing White: 1483 - 485 - 782  [0.681] 2750
+...      leaf_legal_gen playing Black: 496 - 1486 - 768  [0.320] 2750
+...      White vs Black: 2969 - 981 - 1550  [0.681] 5500
+Elo difference: 0.5 +/- 7.8, LOS: 55.1 %, DrawRatio: 28.2 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:2dd1cb8] feature: Obvious (single) move in Root
 ```
 Score of leaf_obv vs leaf_master: 1788 - 1717 - 1995  [0.506] 5500

@@ -461,22 +461,6 @@ _INLINE void generate(const Position& pos,
     }
 }
 
-_INLINE BitBoard getPinsMask(Square ksq, BitBoard pinners, const Position& pos) {
-    const BitBoard own_pieces = pos.getOwnPieces();
-    const BitBoard occ = pos.getOccupied();
-    BitBoard pins = BitBoard::Empty;
-
-    while (pinners) {
-        const Square sq(pinners.dropForward());
-        const BitBoard blockers = occ & onlyBetween(sq, ksq);
-
-        if (blockers.isSingleBit() and blockers & own_pieces) 
-            pins |= blockers;
-    }
-
-    return pins;
-}
-
 template <enumLegality LMode>
 _FORCEINLINE CacheKingRelated getCache(const Position& pos, enumColor side2move) {
     CacheKingRelated cache = {
@@ -488,18 +472,36 @@ _FORCEINLINE CacheKingRelated getCache(const Position& pos, enumColor side2move)
         BitBoard::Empty,
     };
 
-    static auto get_diag_pins_mask = [](Square ksq, const Position& pos) _LAMBDA_FORCEINLINE {
-        const enumColor side2move = pos.getTurn();
-        const BitBoard pinners = pos.getBishopsQueensBySide(!side2move) & 
-                                 SlidersAttacks::xRayBishopAttacks(ksq);
-        return getPinsMask(ksq, pinners, pos);
+    static const auto get_pins_mask = [](Square ksq, BitBoard pinners, const Position& pos) {
+        const BitBoard own_pieces = pos.getOwnPieces();
+        const BitBoard occ = pos.getOccupied();
+        BitBoard pins = BitBoard::Empty;
+
+        while (pinners) {
+            const Square sq(pinners.dropForward());
+            const BitBoard blockers = occ & onlyBetween(sq, ksq);
+
+            if (blockers.isSingleBit() and blockers & own_pieces) 
+                pins |= blockers;
+        }
+
+        return pins;
     };
 
-    static auto get_horizontal_vertical_pins_mask = [](Square ksq, const Position& pos) _LAMBDA_FORCEINLINE {
-        const enumColor side2move = pos.getTurn();
-        const BitBoard pinners = pos.getRooksQueensBySide(!side2move) & 
+    static const auto get_diag_pins_mask = [](Square ksq, 
+                                              const Position& pos) _LAMBDA_FORCEINLINE 
+    {
+        const BitBoard pinners = pos.getBishopsQueensBySide(pos.getOppositeTurn()) & 
+                                 SlidersAttacks::xRayBishopAttacks(ksq);
+        return get_pins_mask(ksq, pinners, pos);
+    };
+
+    static const auto get_horizontal_vertical_pins_mask = [](Square ksq, 
+                                                             const Position& pos) _LAMBDA_FORCEINLINE 
+    {
+        const BitBoard pinners = pos.getRooksQueensBySide(pos.getOppositeTurn()) & 
                                  SlidersAttacks::xRayRookAttacks(ksq);
-        return getPinsMask(ksq, pinners, pos);
+        return get_pins_mask(ksq, pinners, pos);
     };
 
     if constexpr (LMode == LEGAL) {
@@ -534,21 +536,14 @@ void generateByColor(const Position& pos,
         only_king_moves |= knight_checker;
 
     if (!only_king_moves) {
-        BitBoard base_pieces_mask = base_gen_mask;
-        BitBoard pin_mask = BitBoard::Universe;
+        const BitBoard check_cover_mask = check ? knight_checker ? knight_checker 
+                                                                 : inBetween(pos.getKingSquareBySide(Side), 
+                                                                             checkers.bitScanForward()) 
+                                                : BitBoard(BitBoard::Universe);
 
-        if (check) {
-            if (knight_checker) {
-                base_pieces_mask &= knight_checker;
-                pin_mask = knight_checker;
-            }
-            else {
-                pin_mask = inBetween(pos.getKingSquareBySide(Side), checkers.bitScanForward());
-                base_pieces_mask &= pin_mask;
-            }
-        }
+        generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, check_cover_mask, enemy_pieces, empties, cache);
 
-        generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, pin_mask, enemy_pieces, empties, cache);
+        const BitBoard base_pieces_mask = base_gen_mask & check_cover_mask;
 
         generate<Piece::KNIGHT, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
         generate<Piece::BISHOP, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
@@ -562,11 +557,9 @@ void generateByColor(const Position& pos,
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode>
 void generateMovesInMode(const Position& pos, MoveList& move_list) {
     const enumColor side2move = pos.getTurn();
-    const BitBoard enemy_pieces = pos.getOppositePieces(),
-                   occupied = pos.getOccupied(),
-                   checkers = LMode == PSEUDOLEGAL ? pos.getWeakestCheckers(side2move) 
-                                                   : pos.getCheckers(side2move);
-
+    const BitBoard  enemy_pieces = pos.getOppositePieces(),
+                    occupied = pos.getOccupied(),
+                    checkers = pos.getCheckers(side2move);
     const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 
     if (side2move == WHITE) {
