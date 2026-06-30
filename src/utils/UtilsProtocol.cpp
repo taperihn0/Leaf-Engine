@@ -20,6 +20,8 @@
 #include "TrainEntry.hpp"
 #include "StaticEval.hpp"
 #include "Tuning.hpp"
+#include <variant>
+#include <execution>
 
 namespace Utils
 {
@@ -222,62 +224,82 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
     _tuner.start(thread_count, spsa_log_path);
 }
 
-void UtilsProtocol::parsePerft() {
+void UtilsProtocol::parsePerft(std::istringstream& strm) {
 #if defined(DEBUG)
     static constexpr int DepthTestLimit = 4;
 #else
     static constexpr int DepthTestLimit = 6;
 #endif
 
-    bool status = true;
-    time_ms_t total_duration_ms = 0_ms;
+    std::string token;
+    strm >> std::skipws >> token;
 
-    for (const auto& test : PerftStandard) {
-        std::istringstream ss(static_cast<std::string>(test));
-        
-        std::string fen;
-        std::string token;
+    using variant_policy_t = std::variant<
+        std::execution::sequenced_policy,
+        std::execution::parallel_policy
+    >;
+    variant_policy_t var_policy;
 
-        for (int i = 0; i < 6; i++) {
-            ss >> std::skipws >> token;
-            fen += ' ' + token;
-        }
-
-        Position pos(fen);
-
-        while (ss >> std::skipws >> token) {
-            const auto depth = std::stoi(token.substr(1));
-            
-            if (depth > DepthTestLimit) break;
-
-            ss >> std::skipws >> token;
-            const auto nodes = std::stoull(token);
-
-            time_ms_t duration_ms;
-            const auto perft_nodes = pos.goPerft(depth, duration_ms);
-
-            total_duration_ms += duration_ms;
-
-            if (nodes != perft_nodes) {
-                std::cout << "Invalid node count for fen: " << fen << std::endl;
-                std::cout << "Got " << perft_nodes << ", but target is " << nodes << ' '
-                          << "at depth " << depth << std::endl;
-                status = false;
-                break;
-            }
-
-            std::cout << std::flush;
-        }
+    if (token == "-p") {
+        var_policy = std::execution::par;
+    }
+    else {
+        std::cout << "Unknown option for test_perft" << std::endl;
+        var_policy = std::execution::seq;
     }
 
-    const float total_sec_duration = total_duration_ms / 1000.f;
+    static const auto perft_on_set = [](const auto policy) {
+        std::atomic<bool> status = true;
+        std::atomic<time_ms_t> total_duration_ms = 0_ms;
 
-    if (status)
-        std::cout << "Perft suit test passed in " 
+        std::for_each(policy, PerftStandard.begin(), PerftStandard.end(), 
+            [&status, &total_duration_ms](std::string_view test) {
+                std::istringstream ss(static_cast<std::string>(test));
+                
+                std::string fen;
+                std::string token;
+
+                for (int i = 0; i < 6; i++) {
+                    ss >> std::skipws >> token;
+                    fen += ' ' + token;
+                }
+
+                Position pos(fen);
+
+                while (ss >> std::skipws >> token) {
+                    const auto depth = std::stoi(token.substr(1));
+                    
+                    if (depth > DepthTestLimit) break;
+
+                    ss >> std::skipws >> token;
+                    const auto nodes = std::stoull(token);
+
+                    time_ms_t duration_ms;
+                    const auto perft_nodes = pos.goPerft(depth, duration_ms);
+
+                    total_duration_ms.fetch_add(duration_ms);
+
+                    if (nodes != perft_nodes) {
+                        std::cout << "Invalid node count for fen: " << fen << std::endl;
+                        std::cout << "Got " << perft_nodes << ", but target is " << nodes << ' '
+                                  << "at depth " << depth << std::endl;
+                        status = false;
+                        break;
+                    }
+
+                    std::cout << std::flush;
+                }
+            }
+        );
+
+        const float total_sec_duration = total_duration_ms.load() / 1000.f;
+
+        std::cout << "Perft suit test " << (status.load() ? "passed" : "failed") << " in " 
                   << total_sec_duration << " seconds" << std::endl;
-    else
-        std::cout << "Perft suit test failed in " 
-                  << total_sec_duration << " seconds" << std::endl;
+
+    }; // perft_on_set
+
+    std::visit(perft_on_set, var_policy);
 }
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
@@ -321,7 +343,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "test_see")              seeTests();
         else if (token == "test_pack_on")          parsePackedFile(strm);
         else if (token == "test_extpack_on")       parseExtPackedFile(strm);
-        else if (token == "test_perft")            parsePerft();
+        else if (token == "test_perft")            parsePerft(strm);
         else if (token == "self_play")             parseSelfPlay(_collector, strm);
         else if (token == "load_openings")         GlobOpeningGenerator.load();
         else if (token == "view_positions")        parseShowPositions(strm);

@@ -88,10 +88,11 @@ void generatePawnCaptures(const Position& pos,
 
     BitBoard promoted = att & BackRank;
 
-    /* Handle pins for pawn promotions and east captures at the same time */
+    /* Handle pins for pawn promotions and west captures at the same time */
     if constexpr (LMode == LEGAL) {
         BitBoard pins = promoted & cache.diag_pinned_pcs.genShift<WestDiag>();
 
+        att ^= pins;
         promoted ^= pins;
         pins &= cache.bishop_att_from_ksq;
 
@@ -143,6 +144,7 @@ void generatePawnCaptures(const Position& pos,
     if constexpr (LMode == LEGAL) {
         BitBoard pins = promoted & cache.diag_pinned_pcs.genShift<EastDiag>();
 
+        att ^= pins;
         promoted ^= pins;
         pins &= cache.bishop_att_from_ksq;
 
@@ -254,22 +256,25 @@ void generatePawnPushes(const Position& pos,
     BitBoard pushable = pos.get<Piece::PAWN, Side>();
 
     // exclude pinned pawns that cannot move anyway
-    if constexpr (LMode == LEGAL)
+    if constexpr (LMode == LEGAL) {
         pushable &= ~cache.diag_pinned_pcs;
+    }
 
     pushable = pushable.genShift<Dir>();
     pushable &= empties;
 
     BitBoard promoted = pushable & BackRank;
 
-    if constexpr (LMode == LEGAL)
+    if constexpr (LMode == LEGAL) {
         promoted &= mask;
+    }
 
     /* Handle pinned pawns that are ready to promote.
     *  These pawns cannot be pushed anyway.
     */
-    if constexpr (LMode == LEGAL)
+    if constexpr (LMode == LEGAL) {
         promoted &= ~cache.hv_pinned_pcs.genShift<Dir>();
+    }
 
     pushable ^= promoted;
 
@@ -335,8 +340,9 @@ _FORCEINLINE void generatePawnMoves(const Position& pos,
                                     BitBoard empties,
                                     const CacheKingRelated& cache) 
 {
-    if constexpr (Moves2Gen != MoveGen::QUIETS)
+    if constexpr (Moves2Gen != MoveGen::QUIETS) {
         generatePawnCaptures<Moves2Gen, LMode, Side>(pos, move_list, mask, enemies, cache);
+    }
 
     generatePawnPushes<Moves2Gen, LMode, Side>(pos, move_list, mask, empties, cache);
 }
@@ -532,8 +538,9 @@ void generateByColor(const Position& pos,
     const BitBoard        knight_checker = checkers & pos.getKnightsBySide(!Side);
     bool                  only_king_moves = multiple_check;
 
-    if constexpr (!areCaptures)
+    if constexpr (!areCaptures) {
         only_king_moves |= knight_checker;
+    }
 
     if (!only_king_moves) {
         const BitBoard check_cover_mask = check ? knight_checker ? knight_checker 
@@ -629,6 +636,7 @@ Move32b MoveGen::getRandomLegalMove(Position& pos) {
 bool MoveGen::isAnyCapture(Position& pos) {
     MoveList ml;
     generateLegalMoves<MoveGen::CAPTURES>(pos, ml);
+    
     return ml.any([](MoveList::Entry en) {
         return en.move.isCapture();
     });

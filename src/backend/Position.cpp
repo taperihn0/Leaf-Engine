@@ -605,7 +605,8 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 
 _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
     return ((bishopsQueens & attacks<Piece::BISHOP>(sq, occ))
-            | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
+            | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) 
+            & occ;
 }
 
 _INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,
@@ -721,9 +722,11 @@ uint64_t Position::perft(unsigned depth) {
     uint64_t nodes = 0, child_nodes = 0;
 
     MoveList move_list;
-    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
+    MoveGen::generateLegalMoves<MoveGen::ALL>(*this, move_list);
 
     IrreversibleState state = getIrreversibleState();
+
+    std::stringstream ss;
 
     for (size_t i = 0; i < move_list.count(); i++) {
         Move32b move = move_list.getMove(i);
@@ -735,9 +738,8 @@ uint64_t Position::perft(unsigned depth) {
             nodes += child_nodes;
 
             if constexpr (Root) {
-                move.print();
-                std::cout << ": " << child_nodes << '\n';
-                std::cout << std::flush;
+                move.print(ss);
+                ss << ": " << child_nodes << '\n';
             }
         }
 
@@ -748,8 +750,9 @@ uint64_t Position::perft(unsigned depth) {
         time_ms_t duration_ms = my_timer.duration();
         duration_ms = duration_ms ? duration_ms : 1;
 
+        std::cout << ss.str();
         std::cout << "total nodes: " << nodes << " (" << duration_ms / 1000.f << " seconds, " 
-                  << nodes / duration_ms << "kN/sec.)" << '\n';
+                  << nodes / duration_ms << "kN/sec.)" << std::endl;
     }
 
     return nodes;
