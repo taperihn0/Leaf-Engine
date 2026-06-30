@@ -413,7 +413,7 @@ _INLINE void generate(const Position& pos,
     if constexpr (LMode == LEGAL and Pc != Piece::KNIGHT) {
         const BitBoard base_pin_pcs = Pc == Piece::BISHOP ? cache.diag_pinned_pcs :
                                       Pc == Piece::ROOK   ? cache.hv_pinned_pcs   :
-                                      /* Piece::QUEEN */     cache.pinned;
+                                      /* Piece::QUEEN */    cache.pinned;
 
         static auto get_pinned_queen_mask = [](Square sq, 
                                                const Position& pos, 
@@ -468,7 +468,7 @@ _INLINE void generate(const Position& pos,
 }
 
 template <enumLegality LMode>
-_FORCEINLINE CacheKingRelated getCache(const Position& pos, enumColor side2move) {
+CacheKingRelated getCache(const Position& pos, enumColor side2move) {
     CacheKingRelated cache = {
         /* cache.ksq = */ pos.getKingSquareBySide(side2move),
         BitBoard::Empty,
@@ -478,7 +478,10 @@ _FORCEINLINE CacheKingRelated getCache(const Position& pos, enumColor side2move)
         BitBoard::Empty,
     };
 
-    static const auto get_pins_mask = [](Square ksq, BitBoard pinners, const Position& pos) {
+    static const auto get_pins_mask = [](Square ksq, 
+                                         BitBoard pinners, 
+                                         const Position& pos) _LAMBDA_FORCEINLINE 
+    {
         const BitBoard own_pieces = pos.getOwnPieces();
         const BitBoard occ = pos.getOccupied();
         BitBoard pins = BitBoard::Empty;
@@ -568,7 +571,7 @@ void generateMovesInMode(const Position& pos, MoveList& move_list) {
                     occupied = pos.getOccupied(),
                     checkers = LMode == PSEUDOLEGAL ? pos.getWeakestCheckers(side2move) 
                                                     : pos.getCheckers(side2move);
-                                                    
+
     const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 
     if (side2move == WHITE) {
