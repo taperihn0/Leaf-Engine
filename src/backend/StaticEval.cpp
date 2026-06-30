@@ -132,7 +132,7 @@ _INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
 
     while (pawns) {
         const Square sq = pawns.dropForward();
-        res += _mg_pawn_tables[blackPerspectiveFlip(sq, side)];
+        res += _mg_pawn_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
     return Score(res);
@@ -144,7 +144,7 @@ _INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side)
 
     while (knights) {
         const Square sq = knights.dropForward();
-        res += _mg_knight_tables[blackPerspectiveFlip(sq, side)];
+        res += _mg_knight_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
     return Score(res);
@@ -156,7 +156,7 @@ _INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side)
 
     while (bishops) {
         const Square sq = bishops.dropForward();
-        res += _mg_bishop_tables[blackPerspectiveFlip(sq, side)];
+        res += _mg_bishop_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
     return Score(res);
@@ -168,7 +168,7 @@ _INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
 
     while (rooks) {
         const Square sq = rooks.dropForward();
-        res += _mg_rook_tables[blackPerspectiveFlip(sq, side)];
+        res += _mg_rook_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
     return Score(res);
@@ -180,7 +180,7 @@ _INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) 
 
     while (queens) {
         const Square sq = queens.dropForward();
-        res += _mg_queen_tables[blackPerspectiveFlip(sq, side)];
+        res += _mg_queen_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
     return res;
@@ -188,7 +188,7 @@ _INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) 
 
 _INLINE Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
     const Square ksq = pos.getKingSquareBySide(side);
-    return Score(_mg_king_tables[blackPerspectiveFlip(ksq, side)]);
+    return Score(_mg_king_tables[sqBlackPerspectiveFlip(ksq, side)]);
 }
 
 Score StaticEval::staticEval(const Position& pos) {

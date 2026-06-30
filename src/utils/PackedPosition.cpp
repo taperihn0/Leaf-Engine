@@ -115,7 +115,7 @@ bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos
     array1d<std::byte, _PackedPosBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pos._occupancy_mask;
 
-    for (size_t j = 0; j < _MaxNibbles; j++) {
+    for (size_t j = 0; j < MaxNibbles; j++) {
         mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pos._pieces[j]);
     }
 
@@ -145,7 +145,7 @@ bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
 
-    array1d<Nibble, _MaxNibbles> piece_mem;
+    array1d<Nibble, MaxNibbles> piece_mem;
 
     input.read(reinterpret_cast<char*>(piece_mem.data()), piece_bytes);
 
@@ -174,9 +174,9 @@ bool PackedPosition::readStatic(std::istream& input, PackedPosition& pos) {
     size_t piece_cnt = pos._occupancy_mask.popCount();
     pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
-    assert(bytes_left - sizeof(BitBoard) >= _MaxNibbles);
+    assert(bytes_left - sizeof(BitBoard) >= MaxNibbles);
 
-    input.read(reinterpret_cast<char*>(&pos._pieces), _MaxNibbles);
+    input.read(reinterpret_cast<char*>(&pos._pieces), MaxNibbles);
 
     return input.good();
 }
@@ -224,6 +224,31 @@ BitBoard PackedPosition::getOccupancy() const {
 
 uint8_t PackedPosition::getPieceCount() const {
     return _piece_cnt;
+}
+
+Turn PackedPosition::getTurn() const {
+    bool white_to_move = true;
+    const size_t piece_cnt = getPieceCount();
+
+    for (size_t i = 0; i < piece_cnt; i++) {
+        if (_pieces[i].lo == BLACK_KING_TO_MOVE) {
+            white_to_move = false;
+            break;
+        }
+
+        if (++i < piece_cnt) {
+            if (_pieces[i].hi == BLACK_KING_TO_MOVE) {
+                white_to_move = false;
+                break;
+            }   
+        }
+    }
+
+    return Turn(static_cast<enumColor>(white_to_move));
+}
+
+array1d<PackedPosition::Nibble, PackedPosition::MaxNibbles> PackedPosition::getNibbles() const {
+    return _pieces;
 }
 
 #define ROOK_WITH_CASTLING(color) (WHITE_ROOK_WITH_CASTLING + color)
@@ -307,7 +332,7 @@ ExtPackedPosition ExtPackedPosition::packed(const Position& pos) {
 
     packed._piece_cnt = 0;
 
-    for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
+    for (size_t i = 0; occupied and i < MaxNibbles; i++) {
         Nibble nibble;
         nibble.lo = 0;
         nibble.hi = 0;
@@ -375,37 +400,38 @@ uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position&
 }
 
 void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part) {
-        Square square = occupied.dropForward();
-        
-        ExtPackedPosition::SpecialMasks piece_flags;
-        Piece piece = ExtPackedPosition::pieceFromMask(nibble_part, piece_flags, square);
+    Square square = occupied.dropForward();
+    
+    ExtPackedPosition::SpecialMasks piece_flags;
+    Piece piece = ExtPackedPosition::pieceFromMask(nibble_part, piece_flags, square);
 
-        enumColor color = piece.color();
-        Piece::enumType piece_type = piece.type();
+    enumColor color = piece.color();
+    Piece::enumType piece_type = piece.type();
 
-        switch (piece_flags) {
-        case ExtPackedPosition::EN_PASSANT_PAWN: {
-            Square ep_sq = square + (color ? 8 : -8);
-            pos._ep_square = ep_sq;
-            break;
-        }
-        case ExtPackedPosition::WHITE_ROOK_WITH_CASTLING:
-        case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
-            Square::enumFile file = square.getFile();
+    switch (piece_flags) {
+    case ExtPackedPosition::EN_PASSANT_PAWN: {
+        Square ep_sq = square + (color ? 8 : -8);
+        pos._ep_square = ep_sq;
+        break;
+    }
+    case ExtPackedPosition::WHITE_ROOK_WITH_CASTLING:
+    case ExtPackedPosition::BLACK_ROOK_WITH_CASTLING: {
+        Square::enumFile file = square.getFile();
 
-            if (file == Square::FILE_A) 
-                pos._castling_rights[color].setQueenSide(true);
-            else if (file == Square::FILE_H)
-                pos._castling_rights[color].setKingSide(true);
-            else
-                assert(false);
+        if (file == Square::FILE_A) 
+            pos._castling_rights[color].setQueenSide(true);
+        else if (file == Square::FILE_H)
+            pos._castling_rights[color].setKingSide(true);
+        else
+            assert(false);
 
-            break;
-        }
-        case ExtPackedPosition::BLACK_KING_TO_MOVE:
-            pos._turn = BLACK;
-            break;
-        case ExtPackedPosition::NO_SPECIAL: break;
+        break;
+    }
+    case ExtPackedPosition::BLACK_KING_TO_MOVE:
+        pos._turn = BLACK;
+        break;
+    case ExtPackedPosition::NO_SPECIAL: 
+        break;
     }
 
     pos._piece_bb[color][piece_type].setBit(square);
@@ -421,7 +447,7 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
     pos._castling_rights[WHITE].clear();
     pos._castling_rights[BLACK].clear();
 
-    for (size_t i = 0; occupied and i < _MaxNibbles; i++) {
+    for (size_t i = 0; occupied and i < MaxNibbles; i++) {
         ExtPackedPosition::Nibble nibble = pack._pieces[i];
 
         placeNextPieceFromNibble(pos, occupied, nibble.lo);
@@ -486,7 +512,7 @@ bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes + _ClockBufferSize);
 
-    array1d<std::byte, _MaxNibbles + _ClockBufferSize> details_mem;
+    array1d<std::byte, MaxNibbles + _ClockBufferSize> details_mem;
     input.read(reinterpret_cast<char*>(details_mem.data()), piece_bytes + _ClockBufferSize);
 
     size_t i = 0;

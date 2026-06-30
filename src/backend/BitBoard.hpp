@@ -160,6 +160,8 @@ public:
         return _board & (1_ui64 << shift);
     }
 
+    _NODISCARD _INLINE BitBoard swapBytes() const;
+
     _NODISCARD _INLINE bool isEmptySq(Square sq) const {
         return !getBit(sq);
     }
@@ -304,6 +306,23 @@ _INLINE int BitBoard::bitScanReverse() const {
     return Index64[(bb * debruijn64) >> 58];
 }
 #endif
+
+_INLINE BitBoard BitBoard::swapBytes() const {
+#if defined(__GNUC__)
+    return __builtin_bswap64(_board);
+#elif defined(_MSC_VER)
+    return _byteswap_uint64(_board);
+#else
+    return ((_board & 0x00000000000000FFULL) << 56) |
+           ((_board & 0x000000000000FF00ULL) << 40) |
+           ((_board & 0x0000000000FF0000ULL) << 24) |
+           ((_board & 0x00000000FF000000ULL) << 8)  |
+           ((_board & 0x000000FF00000000ULL) >> 8)  |
+           ((_board & 0x0000FF0000000000ULL) >> 24) |
+           ((_board & 0x00FF000000000000ULL) >> 40) |
+           ((_board & 0xFF00000000000000ULL) >> 56);
+#endif
+}
 
 /* Rectangular lookup for in-between routines
 */

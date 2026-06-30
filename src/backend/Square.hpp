@@ -114,7 +114,7 @@ private:
 };
 
 // flipping square horizontally - a1 becomes a8 and vice versa.
-_NODISCARD static _INLINE Square verticalFlip(Square sq) {
+_NODISCARD static _INLINE Square sqVerticalFlip(Square sq) {
     return sq ^ 56;
 }
 
@@ -122,7 +122,7 @@ _NODISCARD static _INLINE Square verticalFlip(Square sq) {
 *  when 'side' is BLACK, 'sq' is unchanged.
 *  when 'side' is WHITE, 'sq' is flipped vertically.
 */
-_NODISCARD static _INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
+_NODISCARD static _INLINE Square sqBlackPerspectiveFlip(Square sq, enumColor side) {
     static array1d<int8_t, 2> ConvertVal = { 56, 0 };
     return sq ^ ConvertVal[side];
 }

@@ -61,6 +61,74 @@ bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
     return input.good();
 }
 
+BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entry) {
+    Position pos = PackedPosition::unpacked(entry.getPosition());
+    BitBoard rel_occ = pos.getOccupied();
+    const enumColor side2move = pos.getTurn();
+
+    if (side2move == BLACK) {
+        rel_occ = rel_occ.swapBytes();
+    }
+
+    BulletChessBoard bullet_entry;
+
+    // Occupancies
+    bullet_entry.occ = rel_occ;
+
+    // Nibbles
+    bullet_entry.pcs.fill(0);
+
+    BitBoard rel_own_pieces = pos.getOwnPieces();
+
+    if (side2move == BLACK) {
+        rel_own_pieces = rel_own_pieces.swapBytes();
+    }
+
+    for (size_t i = 0; rel_occ > 0; i++) {
+        const Square sq(rel_occ.dropForward());
+        const BitBoard bb(sq);
+
+        uint8_t opp_piece = bb & rel_own_pieces ? 0 : 1;
+        uint8_t val_piece = value(Piece::NONE);
+
+        const Square abs_sq = side2move == BLACK ? sqVerticalFlip(sq) : sq;
+
+        for (Piece::enumType pc : Piece::PieceTypeList) {
+            const BitBoard pc_bb = pos.get(pc, opp_piece ? !side2move : side2move);
+
+            if (pc_bb.isOccupiedSq(abs_sq)) {
+                val_piece = value(pc);
+                break;
+            }
+        }
+
+        ASSERT(val_piece != value(Piece::NONE), "No piece found");
+
+        const uint8_t mask = (opp_piece << 3) | val_piece;
+        bullet_entry.pcs[i / 2] |= mask << (4 * (i & 1));
+    }
+
+    // Score
+    const Score::int_t white_score = static_cast<Score::int_t>(entry.getWhiteScore());
+    bullet_entry.score = side2move == WHITE ? white_score : -white_score;
+
+    // Result
+    const uint8_t result = static_cast<uint8_t>(entry.getGameResult());
+    bullet_entry.result = side2move == WHITE ? result : 2 - result;
+
+    // King squares
+    if (side2move == WHITE) {
+        bullet_entry.ksq = pos.getKingBySide(WHITE);
+        bullet_entry.opp_ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
+    } 
+    else {
+        bullet_entry.ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
+        bullet_entry.opp_ksq = pos.getKingSquareBySide(BLACK);
+    }
+
+    return bullet_entry;
+}
+
 Score TrainingDataEntry::getWhiteScore() const {
     return _game_details.white_score;
 }

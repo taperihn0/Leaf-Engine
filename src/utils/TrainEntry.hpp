@@ -22,13 +22,28 @@
 
 namespace Utils {
 
+/* BulletChessBoard is direct mapping
+*  of bullet-format entry used in bullet while training.
+*/
+struct BulletChessBoard {
+    BitBoard occ;
+    array1d<uint8_t, 16> pcs;
+    int16_t score;
+    uint8_t result;
+    uint8_t ksq;
+    uint8_t opp_ksq;
+    array1d<std::byte, 3> __align;
+};
+
+static constexpr size_t BulletFormatSize = sizeof(BulletChessBoard);
+
 /* TrainingDataEntry is like bullet-format,
 *  but it stores results differently.
-*  Instead of storing relative results in respect
+*  Instead of storing relative position data in respect
 *  to current side to move, we just store absolute
-*  result of the game.
+*  position data.
 *  While parsing TrainingDataEntry to the actual bullet-format
-*  we need some logic for eventually fliping result value.
+*  we need some logic for eventually fliping saved values in respect to side to move.
 *  To do that, we need to get information about current side to move
 *  by checking which king is placed in 'TrainingDataEntry::PackedPosInfo::king_sq' square.
 */
@@ -48,6 +63,7 @@ public:
 
     static bool write(std::ostream& output, const TrainingDataEntry& entry);
     static bool read(std::istream& input, TrainingDataEntry& entry);
+    static BulletChessBoard toBulletFormat(const TrainingDataEntry& entry);
 
     PackedPosition getPosition() const;
     Score          getWhiteScore() const;
@@ -59,11 +75,11 @@ private:
         Result8b              result;
         Square                king_sq;
         Square                opp_king_sq;
-        // Bulletformat use relative game results, but 
-        // current training data entry uses absolute game results.
+        // Bulletformat use relative position data, but 
+        // current training data entry uses absolute position data.
         // Training data that was generated before adding this mark
         // might have this flag set to 'true'.
-        bool                  relative_result = false;
+        bool                  relative = false;
         array1d<std::byte, 2> __align;
     };
 #pragma pack(pop)

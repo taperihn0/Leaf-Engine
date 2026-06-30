@@ -33,11 +33,8 @@ public:
     explicit PackedPosition(const Position& pos);
 
     bool operator==(const PackedPosition& p) const;
-
     _INLINE bool operator!=(const PackedPosition& p) const { return !(*this == p); }
-
     bool operator==(const ExtPackedPosition& p) const;
-
     _INLINE bool operator!=(const ExtPackedPosition& p) const { return !(*this == p); }
 
     enum SpecialMasks : uint8_t {
@@ -88,7 +85,6 @@ public:
     static bool readStatic(std::istream& input, PackedPosition& pos);
 
     static PackedPosition packed(const Position& pos);
-
     static Position unpacked(const PackedPosition& pos);
 
     static std::vector<PackedPosition> fullRead(std::istream& input);
@@ -99,18 +95,22 @@ public:
     Square getOppKingSquare() const;
 
     BitBoard getOccupancy() const;
-
     uint8_t getPieceCount() const;
+
+    Turn getTurn() const;
+
+    static constexpr int MaxPiecesOnBoard = 32;
+    static constexpr int MaxNibbles       = MaxPiecesOnBoard / 2;
+
+    array1d<Nibble, MaxNibbles> getNibbles() const;
 
     static Piece pieceFromMask(uint8_t mask, SpecialMasks& flags, Square sq);
 protected:
-    static constexpr int _MaxPiecesOnBoard = 32;
-    static constexpr int _MaxNibbles       = _MaxPiecesOnBoard / 2;
-    static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + _MaxNibbles;
+    static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + MaxNibbles;
 
-    BitBoard                     _occupancy_mask;
-    array1d<Nibble, _MaxNibbles> _pieces;
-    uint8_t                      _piece_cnt;
+    BitBoard                    _occupancy_mask;
+    array1d<Nibble, MaxNibbles> _pieces;
+    uint8_t                     _piece_cnt;
 };
 
 // ExtPackedPosition implements custom position compression.
