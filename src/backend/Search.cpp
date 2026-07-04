@@ -598,9 +598,9 @@ bool Search::goSearch(Position& pos,
     NodeInfo* root = _tree_stack.getRootNode();
 
     const Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
-                                                                alpha, beta, 
-                                                                results.depth, 
-                                                                0);
+                                                             alpha, beta, 
+                                                             results.depth, 
+                                                             0);
 
     results.seldepth = std::max(results.seldepth, results.depth);
     
@@ -630,14 +630,14 @@ Score Search::nmSearch(Position& pos,
     assert(alpha < beta);
 
     if constexpr (Root) assert(!ply);
-    else                 assert(ply > 0);
+    else                assert(ply > 0);
 
     NodeInfo* const preroot = _tree_stack.getPreRootNode();
     node->side2move = pos.getTurn();
     node->pv_line_len = 0;
 
     static constexpr OrderType OrderPolicy = Root ? ONCE_GEN_LEGAL : STAGED;
-    static constexpr bool       IsPv        = NmNodeType & PV_NODE;
+    static constexpr bool      IsPv        = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1078,11 +1078,11 @@ Score Search::nmSearch(Position& pos,
     node->move_picker.clear<OrderPolicy>();
     node->move_picker.setHashMove(tt_move);
 
-    node->can_move           = false;
-    node->score           = Score::Undef;
-    node->move             = Move32b::Null;
-    node->best_move       = Move32b::Null;
-    node->best_score      = -Score::Infinity;
+    node->can_move       = false;
+    node->score          = Score::Undef;
+    node->move           = Move32b::Null;
+    node->best_move      = Move32b::Null;
+    node->best_score     = -Score::Infinity;
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
 
@@ -1372,8 +1372,8 @@ Score Search::nmSearch(Position& pos,
                     node->pv_line[0].score = node->best_score;
 
                     mem::memCopy(node->pv_line.data() + 1, 
-                            child_node->pv_line.data(), 
-                            child_node->pv_line_len * sizeof(PVInfo));
+                                 child_node->pv_line.data(), 
+                                 child_node->pv_line_len * sizeof(PVInfo));
 
                     node->pv_line_len = child_node->pv_line_len + 1;
                 }
@@ -1439,8 +1439,8 @@ Score Search::qSearch(Position& pos,
     assert(alpha < beta);
 
     static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
-    static constexpr bool       IsPv = QNodeType & PV_NODE; 
-    static constexpr bool       SeeNonExactScore = false;
+    static constexpr bool      IsPv = QNodeType & PV_NODE; 
+    static constexpr bool      SeeNonExactScore = false;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1547,10 +1547,10 @@ Score Search::qSearch(Position& pos,
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
     node->moves_searched = 0;
-    node->state             = pos.getIrreversibleState();
-    node->best_move         = Move32b::Null;
-    node->move             = Move32b::Null;
-    node->score             = Score::Undef;
+    node->state          = pos.getIrreversibleState();
+    node->best_move      = Move32b::Null;
+    node->move           = Move32b::Null;
+    node->score          = Score::Undef;
     node->best_score     = -Score::Infinity;
 
     int16_t move_score = UndefMoveScore;
@@ -1737,7 +1737,8 @@ _INLINE Score Search::evaluate(const Position& pos,
     assert(abs<int>(scaled_eval) < Score::MateBound - 100);
 
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-    const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) / static_cast<float>(HalfMovesEvalLimit);
+    const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) 
+                                / static_cast<float>(HalfMovesEvalLimit);
 
     const Score res_eval = static_cast<Score>(static_cast<Score>(scaled_eval) * clock_reduct);
 
@@ -1993,7 +1994,7 @@ bool Search::isInsufficientMaterial(const Position& pos) {
 
     // King + Knight versus King
     if (piece_cnt == 3 and
-        pos.getKnights() /*.popCount() == 1 */)
+        pos.getKnights() /* .popCount() == 1 */)
         return true;
 
     // King + Bishop versus King + Bishop with same-color Bishops
