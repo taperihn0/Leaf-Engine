@@ -579,8 +579,7 @@ void generateMovesInMode(const Position& pos, MoveList& move_list) {
     const enumColor side2move = pos.getTurn();
     const BitBoard  enemy_pieces = pos.getOppositePieces(),
                     occupied = pos.getOccupied(),
-                    checkers = LMode == PSEUDOLEGAL ? pos.getWeakestCheckers(side2move) 
-                                                    : pos.getCheckers(side2move);
+                    checkers = pos.getCheckers(side2move);
 
     const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 
