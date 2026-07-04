@@ -470,9 +470,9 @@ _INLINE void generate(const Position& pos,
     }
 }
 
-BitBoard getPinsMask(Square ksq, 
-                     BitBoard pinners, 
-                     const Position& pos) 
+_INLINE BitBoard getPinsMask(Square ksq, 
+                             BitBoard pinners, 
+                             const Position& pos) 
 {
     const BitBoard own_pieces = pos.getOwnPieces();
     const BitBoard occ = pos.getOccupied();
@@ -500,23 +500,23 @@ CacheKingRelated getCache(const Position& pos, enumColor side2move) {
         BitBoard::Empty,
     };
 
+    static const auto get_diag_pins_mask = [](Square ksq, 
+                                            const Position& pos) _LAMBDA_FORCEINLINE 
+    {
+        const BitBoard pinners = pos.getBishopsQueensBySide(pos.getOppositeTurn()) & 
+                                 SlidersAttacks::xRayBishopAttacks(ksq);
+        return getPinsMask(ksq, pinners, pos);
+    };
+
+    static const auto get_horizontal_vertical_pins_mask = [](Square ksq, 
+                                                            const Position& pos) _LAMBDA_FORCEINLINE 
+    {
+        const BitBoard pinners = pos.getRooksQueensBySide(pos.getOppositeTurn()) & 
+                                 SlidersAttacks::xRayRookAttacks(ksq);
+        return getPinsMask(ksq, pinners, pos);
+    };
+
     if constexpr (LMode == LEGAL) {
-        static const auto get_diag_pins_mask = [](Square ksq, 
-                                                const Position& pos) _LAMBDA_FORCEINLINE 
-        {
-            const BitBoard pinners = pos.getBishopsQueensBySide(pos.getOppositeTurn()) & 
-                                     SlidersAttacks::xRayBishopAttacks(ksq);
-            return getPinsMask(ksq, pinners, pos);
-        };
-
-        static const auto get_horizontal_vertical_pins_mask = [](Square ksq, 
-                                                                const Position& pos) _LAMBDA_FORCEINLINE 
-        {
-            const BitBoard pinners = pos.getRooksQueensBySide(pos.getOppositeTurn()) & 
-                                     SlidersAttacks::xRayRookAttacks(ksq);
-            return getPinsMask(ksq, pinners, pos);
-        };
-
         cache.bishop_att_from_ksq = SlidersAttacks::xRayBishopAttacks(cache.ksq);
         cache.rook_att_from_ksq = SlidersAttacks::xRayRookAttacks(cache.ksq);
         cache.diag_pinned_pcs = get_diag_pins_mask(cache.ksq, pos);
@@ -549,14 +549,21 @@ void generateByColor(const Position& pos,
     }
 
     if (!only_king_moves) {
-        const BitBoard check_cover_mask = check ? knight_checker ? knight_checker 
-                                                                 : inBetween(pos.getKingSquareBySide(Side), 
-                                                                             checkers.bitScanForward()) 
-                                                : BitBoard(BitBoard::Universe);
+        BitBoard check_cover_mask = BitBoard::Universe;
+        BitBoard base_pieces_mask = base_gen_mask;
+
+		if (check) {
+			if (knight_checker) {
+				check_cover_mask = knight_checker;
+            }
+            else  {
+				check_cover_mask = inBetween(pos.getKingSquareBySide(Side), checkers.bitScanForward());
+            }
+
+            base_pieces_mask &= check_cover_mask;
+		}
 
         generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, check_cover_mask, enemy_pieces, empties, cache);
-
-        const BitBoard base_pieces_mask = base_gen_mask & check_cover_mask;
 
         generate<Piece::KNIGHT, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
         generate<Piece::BISHOP, LMode, Side, areCaptures>(pos, move_list, base_pieces_mask, occupied, cache);
