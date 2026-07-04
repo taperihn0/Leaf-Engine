@@ -66,8 +66,8 @@ public:
     static BulletChessBoard toBulletFormat(const TrainingDataEntry& entry);
 
     PackedPosition getPosition() const;
-    Score          getWhiteScore() const;
-    Result8b       getGameResult() const;
+    Score getWhiteScore() const;
+    Result8b getGameResult() const;
 private:
 #pragma pack(push, 1)
     struct PackedPosInfo {

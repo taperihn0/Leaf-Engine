@@ -123,7 +123,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
     } 
     else {
         bullet_entry.ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
-        bullet_entry.opp_ksq = pos.getKingSquareBySide(BLACK);
+        bullet_entry.opp_ksq = pos.getKingSquareBySide(WHITE);
     }
 
     return bullet_entry;

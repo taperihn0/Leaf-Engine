@@ -30,10 +30,8 @@ std::vector<PositionFormat> fullReadOf(std::istream& input) {
 
     ASSERT(input, "Invalid input stream");
 
-    PositionFormat pack;
-
     // TODO: Optimize that 
-    while (PositionFormat::read(input, pack)) {
+    for (PositionFormat pack; PositionFormat::read(input, pack); ) {
         res.push_back(pack);
     }
 

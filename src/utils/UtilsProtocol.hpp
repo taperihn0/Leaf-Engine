@@ -44,6 +44,7 @@ private:
     void parseVerifySession(std::istringstream& strm);
     void parseSPSA(std::istringstream& strm);
     void parsePerft(std::istringstream& strm);
+    void parseBulletFormat(std::istringstream& strm);
     
     TournamentCollector _collector;
     SPSA_Tuning         _tuner;

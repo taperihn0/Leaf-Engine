@@ -271,6 +271,11 @@ public:
         _turn = col_to_move;
     }
 
+    _INLINE void setClock(uint8_t fullmove_clk, uint16_t halfmove_clk) {
+        _fullmove_count = fullmove_clk;
+        _halfmove_count = halfmove_clk;
+    }
+
     _NODISCARD _INLINE int getPiecesCount() const {
         return getOccupied().popCount();
     }
@@ -369,12 +374,12 @@ private:
     uint64_t perft(uint depth);
 
     array2d<BitBoard, 2, 6>     _piece_bb;
-    array1d<BitBoard, 2>         _occupied;
-    array1d<CastlingRights, 2>     _castling_rights;
-    array1d<Square, 2>             _king_sq;
-    Turn                         _turn;
-    Square                         _ep_square;
-    ZHash                         _zhash;
+    array1d<BitBoard, 2>        _occupied;
+    array1d<CastlingRights, 2>  _castling_rights;
+    array1d<Square, 2>          _king_sq;
+    Turn                        _turn;
+    Square                      _ep_square;
+    ZHash                       _zhash;
     uint8_t                     _halfmove_count;
     uint16_t                    _fullmove_count;
 };

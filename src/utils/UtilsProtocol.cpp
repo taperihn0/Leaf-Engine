@@ -102,10 +102,9 @@ bool verifyTrainData(std::ifstream& input,
 {
     ASSERTNOLOG(input.is_open());
 
-    TrainingDataEntry entry;
     verified_cnt = 0;
 
-    while (TrainingDataEntry::read(input, entry)) {
+    for (TrainingDataEntry entry; TrainingDataEntry::read(input, entry); ) {
         const PackedPosition pack = entry.getPosition();
         const Score white_score = entry.getWhiteScore();
         const TrainingDataEntry::Result8b game_result = entry.getGameResult();
@@ -137,9 +136,8 @@ bool verifyTrainData(std::ifstream& input,
 
 void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
     std::vector<std::filesystem::path> dirs;
-    std::string curr_dir;
 
-    while (strm >> std::skipws >> curr_dir) {
+    for (std::string curr_dir; strm >> std::skipws >> curr_dir; ) {
         dirs.emplace_back(curr_dir);
     }
 
@@ -222,6 +220,54 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
     strm >> std::skipws >> spsa_log_path;
 
     _tuner.start(thread_count, spsa_log_path);
+}
+
+void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
+    std::vector<std::filesystem::path> dirs;
+
+    for (std::string curr_dir; strm >> std::skipws >> curr_dir; ) {
+        dirs.emplace_back(curr_dir);
+    }
+
+    size_t total_formatted_positions = 0;
+
+    for (const auto& tournament_dir : dirs) {
+        for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
+            std::filesystem::path session_fp = "session" + std::to_string(session);
+
+            if (!std::filesystem::exists(tournament_dir / session_fp) or session_fp.empty())
+                continue;
+
+            for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getWhiteWinOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
+
+                    if (input) {
+                        total_formatted_positions += 0;
+                    }
+                }
+
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getBlackWinOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
+
+                    if (input) {
+                        total_formatted_positions += 0;
+                    }
+                }
+
+                {
+                    std::filesystem::path fp = tournament_dir / session_fp / getDrawOutputFile(id);
+                    std::ifstream input(fp, std::ios_base::binary);
+
+                    if (input) {
+                        total_formatted_positions += 0;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
@@ -349,6 +395,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "view_positions")        parseShowPositions(strm);
         else if (token == "verify_session")        parseVerifySession(strm);
         else if (token == "spsa")                  parseSPSA(strm);
+        else if (token == "to_bullet_format")      parseBulletFormat(strm);
 
 #if defined(_UCI_DEBUG_UTILS)
         else if (token == "see")                   parseSEE(strm);

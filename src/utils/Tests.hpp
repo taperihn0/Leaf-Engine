@@ -286,56 +286,75 @@ _INTERNAL bool packedPositionTests() {
         return false;
     }
 
-    static constexpr size_t PositionLimit = 400000;
     std::string line;
+    
+    const std::vector<std::string>& testset = getLichessUHO_Openings();
 
-    for (size_t i = 0; i < getCraftyOpenings().size(); i++) {
-        const std::string fen = static_cast<std::string>(getCraftyOpenings().at(i));
+    for (size_t i = 0; i < testset.size(); i++) {
+        const std::string fen = testset.at(i);
         
         Position pos(fen);
         std::cout << i << ": " << fen << '\n';
+        
+        /* PackedPosition tests */
+        {
+            PackedPosition packed = PackedPosition::packed(pos);
+            Position unpacked = PackedPosition::unpacked(packed);
 
-        ExtPackedPosition&& packed = ExtPackedPosition::packed(pos);
+            // we do not compare clock data, since it is not stored in regular packed position
+            unpacked.setClock(pos.getFullmoveClock(), pos.getHalfmoveClock());
 
-        if (ExtPackedPosition::unpacked(packed) != pos) {
-            pos.print();
-            ASSERT(false, "Failed to pack a position");
-            return false;
+            if (unpacked != pos) {
+                pos.print();
+                ASSERT(false, "Failed to pack a position");
+                return false;
+            }
         }
 
-        // checking read/write
-        tmp_stream.seekp(0, std::ios::beg);
-        ExtPackedPosition::write(tmp_stream, packed);
-        tmp_stream.flush();
+        /* ExtPackedPosition tests */
+        {
+            ExtPackedPosition packed = ExtPackedPosition::packed(pos);
 
-        tmp_stream.seekg(0, std::ios_base::beg);
-        tmp_stream.clear();
+            if (ExtPackedPosition::unpacked(packed) != pos) {
+                pos.print();
+                ASSERT(false, "Failed to pack extended position");
+                return false;
+            }
 
-        ExtPackedPosition read_packed;
-        ExtPackedPosition::read(tmp_stream, read_packed);
+            // checking read/write
+            tmp_stream.seekp(0, std::ios::beg);
+            ExtPackedPosition::write(tmp_stream, packed);
+            tmp_stream.flush();
 
-        if (packed != read_packed) {
-            pos.print();
-            ASSERT(false, "Failed to read/write a packed position");
-            return false;
-        }
+            tmp_stream.seekg(0, std::ios_base::beg);
+            tmp_stream.clear();
 
-        PackedPosition&& sfpack = PackedPosition::fromExt(packed);
+            ExtPackedPosition read_packed;
+            ExtPackedPosition::read(tmp_stream, read_packed);
 
-        tmp_stream.seekp(0, std::ios::beg);
-        PackedPosition::write(tmp_stream, sfpack);
-        tmp_stream.flush();
+            if (packed != read_packed) {
+                pos.print();
+                ASSERT(false, "Failed to read/write a packed position");
+                return false;
+            }
 
-        tmp_stream.seekg(0, std::ios_base::beg);
-        tmp_stream.clear();
+            PackedPosition sfpack = PackedPosition::fromExt(packed);
 
-        ExtPackedPosition read_sfpack;
-        PackedPosition::read(tmp_stream, read_sfpack);
+            tmp_stream.seekp(0, std::ios::beg);
+            PackedPosition::write(tmp_stream, sfpack);
+            tmp_stream.flush();
 
-        if (sfpack != read_sfpack) {
-            pos.print();
-            ASSERT(false, "Failed to read/write a binpack- packed position");
-            return false;
+            tmp_stream.seekg(0, std::ios_base::beg);
+            tmp_stream.clear();
+
+            ExtPackedPosition read_sfpack;
+            PackedPosition::read(tmp_stream, read_sfpack);
+
+            if (sfpack != read_sfpack) {
+                pos.print();
+                ASSERT(false, "Failed to read/write a binpack- packed position");
+                return false;
+            }
         }
     }
 
@@ -357,7 +376,7 @@ _INTERNAL void parseExtPackedFile(std::istringstream& strm) {
     std::vector<Position> full_positions;
     std::string line;
 
-    while (std::getline(input, line)) {
+    for (std::string line; std::getline(input, line); ) {
         full_positions.push_back(Position(line));
     }
 
@@ -414,7 +433,7 @@ _INTERNAL void parsePackedFile(std::istringstream& strm) {
     std::vector<Position> full_positions;
     std::string line;
 
-    while (std::getline(input, line)) {
+    for (std::string line; std::getline(input, line); ) {
         full_positions.push_back(Position(line));
     }
 

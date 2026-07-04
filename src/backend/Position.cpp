@@ -278,11 +278,11 @@ bool Position::make(Move32b& move) {
 bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
     const Square          org = move.getOrigin(),
                           dst = move.getTarget();
-    const bool              capture = move.isCapture(),
+    const bool            capture = move.isCapture(),
                           promotion = move.isPromotion();
     const Piece::enumType piece_t = move.getPiece();
-    const int              dir = _turn == WHITE ? 8 : -8;
-    const bool              pawn_push = piece_t == Piece::PAWN and !capture,
+    const int             dir = _turn == WHITE ? 8 : -8;
+    const bool            pawn_push = piece_t == Piece::PAWN and !capture,
                           double_pawn_push = pawn_push and (org - dst > 8 or dst - org > 8);
 
     // we've got double buffer for white- and black-perspective,
@@ -432,7 +432,7 @@ void Position::unmake(Move32b move, const IrreversibleState& prev_state) {
     const Piece::enumType piece_t = move.getPiece();
     const Square          org = move.getOrigin(),
                           dst = move.getTarget();
-    const bool              capture = move.isCapture(),
+    const bool            capture = move.isCapture(),
                           ep_capture = move.isEnPassant(),
                           promotion = move.isPromotion();
 

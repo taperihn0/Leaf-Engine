@@ -51,7 +51,13 @@ void OpeningGenerator::load() {
 
     std::cout << "Loading openings positions..." << std::endl;
 
-    std::for_each(getCraftyOpenings().begin(), getCraftyOpenings().end(), [&](const std::string_view& fen) {
+#if defined(_UHO_OPENING_SET)
+    const std::vector<std::string>& openingset = getLichessUHO_Openings();
+#else
+    const std::vector<std::string>& openingset = getCraftyOpenings();
+#endif
+
+    std::for_each(openingset.begin(), openingset.end(), [&](const std::string& fen) {
         const Position pos_from_fen(fen);
 
         _positions.push_back(GeneratedPosition{ 0, pos_from_fen });
@@ -126,9 +132,7 @@ void OpeningSuite::loadFromFile(const std::filesystem::path& path) {
         return;
     }
 
-    std::string line;
-
-    while (getline(openings_file, line)) {
+    for (std::string line; std::getline(openings_file, line); ) {
         const Position pos_from_line(line);
         _positions.push_back(std::move(pos_from_line));
     }

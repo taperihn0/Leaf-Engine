@@ -24,6 +24,11 @@
 #include <vector>
 #include <fstream>
 
+#if !defined(_CRAFTY_OPENING_SET) and \
+    !defined(_UHO_OPENING_SET)
+#define _CRAFTY_OPENING_SET
+#endif
+
 namespace Utils {
 
 class OpeningManBase

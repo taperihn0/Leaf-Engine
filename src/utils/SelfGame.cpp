@@ -240,10 +240,9 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
     if constexpr (EnableLog)
         labelLog(std::cout, ret_msg_label, cmd.str());
 
-    std::string line;
     std::string best_move_str;
 
-    while (readline(*player.proc_stdout, line)) {
+    for (std::string line; readline(*player.proc_stdout, line); ) {
 
         if constexpr (EnableLog)
             labelLog(std::cout, ret_msg_label, line);
@@ -256,9 +255,7 @@ Move32b SelfGame::getPlayerMove(SearchLimits limits,
         ss >> header;
 
         if (header == "info") {
-            std::string word;
-
-            while (ss >> word) {
+            for (std::string word; ss >> word; ) {
                 if (word == "score") {
                     std::string type;
                     int value;

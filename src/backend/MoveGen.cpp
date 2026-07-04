@@ -470,6 +470,25 @@ _INLINE void generate(const Position& pos,
     }
 }
 
+BitBoard getPinsMask(Square ksq, 
+                     BitBoard pinners, 
+                     const Position& pos) 
+{
+    const BitBoard own_pieces = pos.getOwnPieces();
+    const BitBoard occ = pos.getOccupied();
+    BitBoard pins = BitBoard::Empty;
+
+    while (pinners) {
+        const Square sq(pinners.dropForward());
+        const BitBoard blockers = occ & onlyBetween(sq, ksq);
+
+        if (blockers.isSingleBit() and blockers & own_pieces) 
+            pins |= blockers;
+    }
+
+    return pins;
+};
+
 template <enumLegality LMode>
 CacheKingRelated getCache(const Position& pos, enumColor side2move) {
     CacheKingRelated cache = {
@@ -482,31 +501,12 @@ CacheKingRelated getCache(const Position& pos, enumColor side2move) {
     };
 
     if constexpr (LMode == LEGAL) {
-        static const auto get_pins_mask = [](Square ksq, 
-                                            BitBoard pinners, 
-                                            const Position& pos) 
-        {
-            const BitBoard own_pieces = pos.getOwnPieces();
-            const BitBoard occ = pos.getOccupied();
-            BitBoard pins = BitBoard::Empty;
-
-            while (pinners) {
-                const Square sq(pinners.dropForward());
-                const BitBoard blockers = occ & onlyBetween(sq, ksq);
-
-                if (blockers.isSingleBit() and blockers & own_pieces) 
-                    pins |= blockers;
-            }
-
-            return pins;
-        };
-
         static const auto get_diag_pins_mask = [](Square ksq, 
                                                 const Position& pos) _LAMBDA_FORCEINLINE 
         {
             const BitBoard pinners = pos.getBishopsQueensBySide(pos.getOppositeTurn()) & 
                                      SlidersAttacks::xRayBishopAttacks(ksq);
-            return get_pins_mask(ksq, pinners, pos);
+            return getPinsMask(ksq, pinners, pos);
         };
 
         static const auto get_horizontal_vertical_pins_mask = [](Square ksq, 
@@ -514,7 +514,7 @@ CacheKingRelated getCache(const Position& pos, enumColor side2move) {
         {
             const BitBoard pinners = pos.getRooksQueensBySide(pos.getOppositeTurn()) & 
                                      SlidersAttacks::xRayRookAttacks(ksq);
-            return get_pins_mask(ksq, pinners, pos);
+            return getPinsMask(ksq, pinners, pos);
         };
 
         cache.bishop_att_from_ksq = SlidersAttacks::xRayBishopAttacks(cache.ksq);

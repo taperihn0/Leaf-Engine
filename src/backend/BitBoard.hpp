@@ -246,37 +246,36 @@ _INLINE int BitBoard::popCount() const {
 #endif
 }
 
-#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER) or defined(__GNUC__)
+
 _INLINE int BitBoard::bitScanForward() const {
     assert(_board != BitBoard::Empty);
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
     unsigned long s;
     _BitScanForward64(&s, _board);
     return static_cast<int>(s);
+#else
+    return __builtin_ctzll(_board);
+#endif
 }
 
 _INLINE int BitBoard::bitScanReverse() const {
     assert(_board != BitBoard::Empty);
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
     unsigned long s;
     _BitScanReverse64(&s, _board);
     return static_cast<int>(s);
-}
-
-#elif defined(__GNUC__)
-_INLINE int BitBoard::bitScanForward() const {
-    assert(_board != BitBoard::Empty);
-    return __builtin_ctzll(_board);
-}
-
-_INLINE int BitBoard::bitScanReverse() const {
-    assert(_board != BitBoard::Empty);
-    return __builtin_clzll(_board);
-}
 #else
+    return __builtin_clzll(_board);
+#endif
+}
+
+#else // different compiler
 
 // credits to:
 //  https://www.chessprogramming.org/BitScan
 
-static constexpr int Index64[64] = {
+static constexpr int BitScanIndex64[64] = {
     0, 47,  1, 56, 48, 27,  2, 60,
    57, 49, 41, 37, 28, 16,  3, 61,
    54, 58, 35, 52, 50, 42, 21, 44,
@@ -290,7 +289,7 @@ static constexpr int Index64[64] = {
 _INLINE int BitBoard::bitScanForward() const {
     static constexpr uint64_t debruijn64 = 0x03f79d71b4cb0a89_ui64;
     assert(_board != 0);
-    return Index64[((_board ^ (_board - 1)) * debruijn64) >> 58];
+    return BitScanIndex64[((_board ^ (_board - 1)) * debruijn64) >> 58];
 }
 
 _INLINE int BitBoard::bitScanReverse() const {
@@ -303,8 +302,9 @@ _INLINE int BitBoard::bitScanReverse() const {
     bb |= bb >> 8;
     bb |= bb >> 16;
     bb |= bb >> 32;
-    return Index64[(bb * debruijn64) >> 58];
+    return BitScanIndex64[(bb * debruijn64) >> 58];
 }
+
 #endif
 
 _INLINE BitBoard BitBoard::swapBytes() const {

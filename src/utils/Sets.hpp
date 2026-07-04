@@ -21,6 +21,7 @@
 #include "UtilsCommon.hpp"
 
 #include <string_view>
+#include <filesystem>
 
 namespace Utils {
 
@@ -355,9 +356,11 @@ _INTERNAL const std::vector<std::string_view> PerftStandard = {
     "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1 D4 43238 D5 674624 D6 11030083",
 };
 
-_INTERNAL std::vector<std::string_view> CraftyOpenings;
+_INTERNAL std::vector<std::string> CraftyOpenings;
 
 _INTERNAL void loadCraftyOpenings() {
+    ASSERT(CraftyOpenings.empty(), "Crafty openings already loaded");
+
     CraftyOpenings.reserve(2500);
     CraftyOpenings.shrink_to_fit();
 
@@ -2866,10 +2869,30 @@ _INTERNAL void loadCraftyOpenings() {
         CraftyOpenings.emplace_back(pos);
 }
 
-_INTERNAL std::vector<std::string_view>& getCraftyOpenings() {
+_INTERNAL const std::vector<std::string>& getCraftyOpenings() {
     if (CraftyOpenings.empty())
         loadCraftyOpenings();
     return CraftyOpenings;
+}
+
+static std::filesystem::path LichessUHOPath = "src/assets/books/UHO_Lichess_4852_v1.epd";
+_INTERNAL std::vector<std::string> LichessUHO_Openings;
+
+_INTERNAL void loadUHOOpenings() {
+    ASSERT(LichessUHO_Openings.empty(), "Lichess UHO openings already loaded");
+
+    std::ifstream input(LichessUHOPath.c_str());
+    std::string line;
+
+    for (std::string line; std::getline(input, line); ) {
+        LichessUHO_Openings.push_back(line);
+    }
+}
+
+_INTERNAL const std::vector<std::string>& getLichessUHO_Openings() {
+    if (LichessUHO_Openings.empty())
+        loadUHOOpenings();
+    return LichessUHO_Openings;
 }
 
 } // namespace Utils
