@@ -27,6 +27,8 @@
 #include "Memory.hpp"
 #include "Time.hpp"
 
+#include <numeric>
+
 class Position;
 struct NodeInfo;
 
@@ -271,7 +273,7 @@ public:
         _turn = col_to_move;
     }
 
-    _INLINE void setClock(uint8_t fullmove_clk, uint16_t halfmove_clk) {
+    _INLINE void setClock(uint16_t fullmove_clk, uint8_t halfmove_clk) {
         _fullmove_count = fullmove_clk;
         _halfmove_count = halfmove_clk;
     }
