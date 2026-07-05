@@ -1,3 +1,14 @@
+### [commit:e52f310] fix: Refactored and fixed legal move generator. 
+*Too little games to actually find out whether that results in any strength improvement.*
+```
+Score of leaf_legal_gen_final vs leaf_legal_gen: 1777 - 1801 - 1922  [0.498] 5500
+...      leaf_legal_gen_final playing White: 469 - 1337 - 944  [0.342] 2750
+...      leaf_legal_gen_final playing Black: 1308 - 464 - 978  [0.653] 2750
+...      White vs Black: 933 - 2645 - 1922  [0.344] 5500
+Elo difference: -1.5 +/- 7.4, LOS: 34.4 %, DrawRatio: 34.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:98b169e] feature: Legal move generator
 ```
 Score of leaf_legal_gen vs leaf_obv_base: 1979 - 1971 - 1550  [0.501] 5500

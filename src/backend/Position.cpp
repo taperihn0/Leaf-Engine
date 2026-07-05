@@ -722,7 +722,7 @@ uint64_t Position::perft(unsigned depth) {
     uint64_t nodes = 0, child_nodes = 0;
 
     MoveList move_list;
-    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(*this, move_list);
+    MoveGen::generateLegalMoves<MoveGen::ALL>(*this, move_list);
 
     IrreversibleState state = getIrreversibleState();
 
