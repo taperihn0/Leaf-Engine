@@ -491,8 +491,6 @@ void Position::unmake(Move32b move, const IrreversibleState& prev_state) {
     _ep_square = prev_state.ep_sq;
     _halfmove_count = prev_state.halfmove_count;
     _castling_rights = prev_state.castling_rights;
-
-    // TEMPORARY
     _zhash = prev_state.hash_key;
 }
 

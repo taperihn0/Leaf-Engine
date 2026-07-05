@@ -545,7 +545,7 @@ void generateByColor(const Position& pos,
     bool                  only_king_moves = multiple_check;
 
     if constexpr (!areCaptures) {
-        only_king_moves |= knight_checker;
+        only_king_moves |= static_cast<bool>(knight_checker);
     }
 
     if (!only_king_moves) {

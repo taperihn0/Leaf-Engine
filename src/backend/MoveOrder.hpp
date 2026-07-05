@@ -220,5 +220,5 @@ uint MoveOrder::getMovesLeft() {
 
 template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getTotalMoves() {
-    return _move_list.count();
+    return static_cast<uint>(_move_list.count());
 }

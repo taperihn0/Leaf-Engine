@@ -354,12 +354,12 @@ public:
     _NODISCARD IrreversibleState getIrreversibleState() const;
 
     struct IrreversibleState {
-        Square                        ep_sq;
+        Square                     ep_sq;
         uint8_t                    halfmove_count;
         array1d<CastlingRights, 2> castling_rights;
         // It is not really required to store previous hash key,
         // since it can be recomputed. But keep it here for simplicity and efficiency.
-        uint64_t                    hash_key;
+        uint64_t                   hash_key;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
