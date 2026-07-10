@@ -54,10 +54,10 @@ template <>
 Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const std::string& str) {
     ASSERT(str.size() == 4 or str.size() == 5, "Invalid move");
 
-    Square                  origin = Square::fromChar(str[0], str[1]),
+    Square                origin = Square::fromChar(str[0], str[1]),
                           target = Square::fromChar(str[2], str[3]);
     const Piece::enumType piece = pos.pieceOn(origin, pos.getTurn());
-    const bool              capture = pos.getOppositePieces().isOccupiedSq(target),
+    const bool            capture = pos.getOppositePieces().isOccupiedSq(target),
                           ep_capture = piece == Piece::PAWN and target == pos.getEnPassantSq(),
                           promotion = str.size() == 5,
                           short_castle = piece == Piece::KING and origin - target == -2,
@@ -65,8 +65,8 @@ Move32b Move32b::fromStr<Move32b::Notation::REGULAR>(const Position& pos, const 
     const Piece::enumType promo_piece = promotion ? Piece::typeFromChar(str[4]) : Piece::NONE;
 
     return createMove(pos, origin, target, piece, 
-                     capture, ep_capture, promotion, 
-                     short_castle, long_castle, promo_piece);
+                      capture, ep_capture, promotion, 
+                      short_castle, long_castle, promo_piece);
 }
 
 template <>
@@ -78,7 +78,7 @@ bool Move16b::isPackedCapture(const Position& pos) const {
 template <>
 template <>
 Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
-    Square       origin = Square::None,
+    Square     origin = Square::None,
                target = Square::None;
     char       chpromo = '\0';
     const bool capture = str.find('x') != std::string::npos or str.find('X') != std::string::npos,
@@ -266,17 +266,17 @@ Move32b unpackedMove(const Position& pos, Move16b move) {
     if (move.isNull()) 
         return Move32b::Null;
 
-    Square                  origin = move.getOrigin(),
+    Square                origin = move.getOrigin(),
                           target = move.getTarget();
     const Piece::enumType piece = pos.pieceOn(origin, pos.getTurn());
-    const bool              capture = pos.getOppositePieces().isOccupiedSq(target),
+    const bool            capture = pos.getOppositePieces().isOccupiedSq(target),
                           ep_capture = piece == Piece::PAWN and target == pos.getEnPassantSq(),
                           short_castle = piece == Piece::KING and origin - target == -2,
                           long_castle = piece == Piece::KING and origin - target == 2;
     const Piece::enumType promo_piece = move.getPromoPiece();
-    const bool              promotion = move.isPromotion();
-    const int              dir = pos.getTurn() == WHITE ? 8 : -8;
-    const int              pawn_start_rank = pos.getTurn() == WHITE ? 1 : 6;
+    const bool            promotion = move.isPromotion();
+    const int             dir = pos.getTurn() == WHITE ? 8 : -8;
+    const int             pawn_start_rank = pos.getTurn() == WHITE ? 1 : 6;
 
     if (piece == Piece::PAWN) {
         const bool double_push = target - origin == 2 * dir;

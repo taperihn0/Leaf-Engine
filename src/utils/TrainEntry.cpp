@@ -22,6 +22,37 @@
 
 namespace Utils {
 
+bool BulletChessBoard::write(std::ostream& output, const BulletChessBoard& bf) {
+    assert(output);
+
+    if (!output.write(reinterpret_cast<const char*>(&bf), sizeof(BulletChessBoard) /* = 32 */)) {
+        WARN("Failed to write raw bullet board from file");
+        return false;
+    }
+
+    return output.good();
+}
+
+bool BulletChessBoard::read(std::istream& input, BulletChessBoard& bf) {
+    assert(input);
+
+    if (!input.read(reinterpret_cast<char*>(&bf), sizeof(BulletChessBoard) /* = 32 */)) {
+        WARN("Failed to read raw bullet board from file");
+        return false;
+    }
+
+    return input.good();
+}
+
+bool BulletChessBoard::operator==(const BulletChessBoard& bf) const {
+    return occ == bf.occ and
+           pcs == bf.pcs and
+           score == bf.score and
+           result == bf.result and
+           ksq == bf.ksq and
+           opp_ksq == bf.opp_ksq;
+}
+
 TrainingDataEntry::TrainingDataEntry(const PackedPosition& packed, Score white_score, Result8b result)
     : _packed_pos(packed)
     , _game_details{ white_score, result, packed.getKingSquare(), packed.getOppKingSquare() }
@@ -31,16 +62,20 @@ TrainingDataEntry::TrainingDataEntry(const ExtPackedPosition& packed, Score whit
     : TrainingDataEntry(PackedPosition::fromExt(packed), white_score, result)
 {}
 
+bool TrainingDataEntry::operator==(const TrainingDataEntry& entry) const {
+    return _packed_pos == entry._packed_pos and _game_details == entry._game_details;
+}
+
 bool TrainingDataEntry::write(std::ostream& output, const TrainingDataEntry& entry) {
     assert(output);
 
     if (!PackedPosition::writeStatic(output, entry._packed_pos)) {
-        ASSERT(false, "Failed to write packed position of training entry to buffer");
+        WARN("Failed to write packed position of training entry to buffer");
         return false;
     }
 
     if (!output.write(reinterpret_cast<const char*>(&entry._game_details), sizeof(PackedPosInfo))) {
-        ASSERT(false, "Failed to write training data entry to the output file");
+        WARN("Failed to write training data entry to the output file");
         return false;
     }
 
@@ -54,7 +89,7 @@ bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
         return false;
 
     if (!input.read(reinterpret_cast<char*>(&entry._game_details), sizeof(PackedPosInfo))) {
-        ASSERT(false, "Failed to read training data game info from file");
+        WARN("Failed to read training data game info from file");
         return false;
     }
 
@@ -62,7 +97,7 @@ bool TrainingDataEntry::read(std::istream& input, TrainingDataEntry& entry) {
 }
 
 BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entry) {
-    Position pos = PackedPosition::unpacked(entry.getPosition());
+    const Position pos = PackedPosition::unpacked(entry.getPosition());
     BitBoard rel_occ = pos.getOccupied();
     const enumColor side2move = pos.getTurn();
 
@@ -118,7 +153,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
 
     // King squares
     if (side2move == WHITE) {
-        bullet_entry.ksq = pos.getKingBySide(WHITE);
+        bullet_entry.ksq = pos.getKingSquareBySide(WHITE);
         bullet_entry.opp_ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
     } 
     else {
@@ -137,7 +172,14 @@ TrainingDataEntry::Result8b TrainingDataEntry::getGameResult() const {
     return _game_details.result;
 }
 
-PackedPosition TrainingDataEntry::getPosition() const {
+_INLINE bool TrainingDataEntry::PackedPosInfo::operator==(const PackedPosInfo& info) const {
+    return white_score == info.white_score and
+           result == info.result and
+           king_sq == info.king_sq and
+           opp_king_sq == info.opp_king_sq;
+}
+
+const PackedPosition& TrainingDataEntry::getPosition() const {
     return _packed_pos;
 }
 

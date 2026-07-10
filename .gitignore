@@ -9,6 +9,7 @@ misc/selfplay_*
 misc/selfplay_legacy/
 misc/tmp
 misc/log
+scripts/assets/
 workspaces
 CMakePresets.json
 

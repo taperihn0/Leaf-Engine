@@ -26,6 +26,15 @@ namespace Utils {
 *  of bullet-format entry used in bullet while training.
 */
 struct BulletChessBoard {
+    BulletChessBoard() = default;
+
+    // read and write functions for direct read/write from stream
+    static bool write(std::ostream& output, const BulletChessBoard& bf);
+    static bool read(std::istream& input, BulletChessBoard& bf);
+
+    bool operator==(const BulletChessBoard& bf) const;
+    _INLINE bool operator!=(const BulletChessBoard& bf) const { return !(*this == bf); }
+
     BitBoard occ;
     array1d<uint8_t, 16> pcs;
     int16_t score;
@@ -34,8 +43,6 @@ struct BulletChessBoard {
     uint8_t opp_ksq;
     array1d<std::byte, 3> __align;
 };
-
-static constexpr size_t BulletFormatSize = sizeof(BulletChessBoard);
 
 /* TrainingDataEntry is like bullet-format,
 *  but it stores results differently.
@@ -61,16 +68,24 @@ public:
     TrainingDataEntry(const PackedPosition& packed, Score white_score, Result8b result);
     TrainingDataEntry(const ExtPackedPosition& packed, Score white_score, Result8b result);
 
+    bool operator==(const TrainingDataEntry& entry) const;
+    _INLINE bool operator!=(const TrainingDataEntry& entry) const { return !(*this == entry); }
+
     static bool write(std::ostream& output, const TrainingDataEntry& entry);
     static bool read(std::istream& input, TrainingDataEntry& entry);
     static BulletChessBoard toBulletFormat(const TrainingDataEntry& entry);
 
-    PackedPosition getPosition() const;
+    const PackedPosition& getPosition() const;
     Score getWhiteScore() const;
     Result8b getGameResult() const;
 private:
 #pragma pack(push, 1)
     struct PackedPosInfo {
+        PackedPosInfo() = default;
+
+        bool operator==(const PackedPosInfo& info) const;
+        _INLINE bool operator!=(const PackedPosInfo& info) const { return !(*this == info); }
+
         Score                 white_score;
         Result8b              result;
         Square                king_sq;

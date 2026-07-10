@@ -313,14 +313,14 @@ _INLINE BitBoard BitBoard::swapBytes() const {
 #elif defined(_MSC_VER)
     return _byteswap_uint64(_board);
 #else
-    return ((_board & 0x00000000000000FFULL) << 56) |
-           ((_board & 0x000000000000FF00ULL) << 40) |
-           ((_board & 0x0000000000FF0000ULL) << 24) |
-           ((_board & 0x00000000FF000000ULL) << 8)  |
-           ((_board & 0x000000FF00000000ULL) >> 8)  |
-           ((_board & 0x0000FF0000000000ULL) >> 24) |
-           ((_board & 0x00FF000000000000ULL) >> 40) |
-           ((_board & 0xFF00000000000000ULL) >> 56);
+    return ((_board & 0x00000000000000FF_ui64) << 56) |
+           ((_board & 0x000000000000FF00_ui64) << 40) |
+           ((_board & 0x0000000000FF0000_ui64) << 24) |
+           ((_board & 0x00000000FF000000_ui64) << 8)  |
+           ((_board & 0x000000FF00000000_ui64) >> 8)  |
+           ((_board & 0x0000FF0000000000_ui64) >> 24) |
+           ((_board & 0x00FF000000000000_ui64) >> 40) |
+           ((_board & 0xFF00000000000000_ui64) >> 56);
 #endif
 }
 

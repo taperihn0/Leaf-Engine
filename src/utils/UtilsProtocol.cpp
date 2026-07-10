@@ -270,6 +270,54 @@ void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
     }
 }
 
+void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
+    std::filesystem::path fp_bf;
+    strm >> std::skipws >> fp_bf;
+
+    std::ifstream input_bf(fp_bf);
+
+    if (!input_bf) {
+        std::cout << "Failed to open a file: " << fp_bf << std::endl;
+        return;
+    }
+
+    std::filesystem::path fen_fp;
+    strm >> std::skipws >> fen_fp;
+
+    std::ifstream input_fen(fen_fp);
+
+    if (!input_fen) {
+        std::cout << "Failed to open a file: " << fen_fp << std::endl;
+        return;
+    }
+
+    std::string fen;
+    BulletChessBoard bf_entry_valid;
+
+    static constexpr Score FixedScore = 120;
+
+    bool success = true;
+
+    while (BulletChessBoard::read(input_bf, bf_entry_valid) and std::getline(input_fen, fen)) {
+        const ExtPackedPosition packed = ExtPackedPosition::packed(Position(fen));
+        const TrainingDataEntry entry(packed, FixedScore, TrainingDataEntry::BLACK_WIN);
+        const BulletChessBoard bf_entry = TrainingDataEntry::toBulletFormat(entry);
+
+        if (bf_entry != bf_entry_valid) {
+            std::cout << "Bullet test failed" << std::endl;
+            success = false;
+            break;
+        }
+    }
+
+    if (success) {
+        std::cout << "Bullet test passed successfully" << std::endl;
+    }
+    else {
+        std::cout << "Bullet test failed: aborting" << std::endl;
+    }
+}
+
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
 #if defined(DEBUG)
     static constexpr int DepthTestLimit = 4;
@@ -390,6 +438,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "test_pack_on")          parsePackedFile(strm);
         else if (token == "test_extpack_on")       parseExtPackedFile(strm);
         else if (token == "test_perft")            parsePerft(strm);
+        else if (token == "test_bullet_format")    parseTestBulletFormat(strm);
         else if (token == "self_play")             parseSelfPlay(_collector, strm);
         else if (token == "load_openings")         GlobOpeningGenerator.load();
         else if (token == "view_positions")        parseShowPositions(strm);

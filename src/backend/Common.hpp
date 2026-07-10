@@ -178,8 +178,25 @@ inline constexpr size_t operator""_MB(ull mb_count) {
     return mb_count * 1024 * 1024;
 }
 
-#define ASSERT(s, msg) static_cast<void>((s) or ::releaseFailedAssertion(__FILE__, msg, __LINE__))
-#define ASSERTNOLOG(s) ASSERT(s, "Anonymous assertion failed")
+#if defined(DEBUG)
+#define WARN(msg) static_cast<void>(::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#else
+#define WARN(msg) static_cast<void>(0);
+#endif
+
+#define ASSERT(s, msg)         static_cast<void>((s) or ::xxassertutil::releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERTNOLOG(s)         ASSERT(s, "Anonymous assertion failed")
+#define WARNIFNOT(s, msg)      static_cast<void>((s) or ::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#define WARNIFNOTNOLOG(s, msg) WARNIFNOT(s, "Anonymous warning point")
+
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
+#define DEBUG_BREAK() __debugbreak()
+#else
+#define DEBUG_BREAK() __builtin_trap()
+#endif
+
+namespace xxassertutil
+{
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
     std::cout << text << '\n' << file << ", line " << line << std::endl;
@@ -187,8 +204,16 @@ _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view te
     return false;
 }
 
+_INTERNAL bool logWarnMessage(std::string_view file, std::string_view text, int line) {
+    std::cout << text << '\n' << file << ", line " << line << std::endl;
+    DEBUG_BREAK();
+    return false;
+}
+
+} // namespace xxassertutil
+
 static constexpr int MaxNodeMoves = 128;
-static constexpr int MaxDepth       = 96;
+static constexpr int MaxDepth     = 96;
 static constexpr int MaxSelDepth  = 128;
 static constexpr int MaxGameMoves = 1024;
 

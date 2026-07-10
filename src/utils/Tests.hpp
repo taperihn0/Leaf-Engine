@@ -285,8 +285,6 @@ _INTERNAL bool packedPositionTests() {
         ASSERT(false, "Failed to open file: src/assets/tmp/tmp.pck");
         return false;
     }
-
-    std::string line;
     
     const std::vector<std::string>& testset = getLichessUHO_Openings();
 
