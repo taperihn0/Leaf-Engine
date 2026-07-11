@@ -205,7 +205,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
     uint theta_minus_win_cnt = 0;
     uint draw_cnt = 0;
 
-    ASSERTNOLOG(id < static_cast<uint>(PlatformThreadLimit));
+    ASSERT_NOLOG(id < static_cast<uint>(PlatformThreadLimit));
     const enumLogLabel curr_thread_label = threadLabel(id);
 
     while (true) {

@@ -39,7 +39,7 @@ OpeningGenerator OpeningGenerator::create() {
     static bool created = false;
 
     if (created) {
-        ASSERT(false, "Singleton object already created");
+        FAILED("Singleton object already created");
     }
 
     return OpeningGenerator();
@@ -108,7 +108,7 @@ void OpeningGenerator::load() {
 
 const Position& OpeningGenerator::getRandomPosition(int& moves_done) const {
     if (_positions.empty()) {
-        ASSERT(false, "Openings are not loaded");
+        FAILED("Openings are not loaded");
     }
 
     const size_t random_index = random<size_t>(0, _positions.size() - 1);
@@ -128,7 +128,7 @@ void OpeningSuite::loadFromFile(const std::filesystem::path& path) {
     std::ifstream openings_file(path);
 
     if (!openings_file) {
-        ASSERT(false, "Failed to open " + path.string());
+        FAILED("Failed to open " + path.string());
         return;
     }
 
@@ -147,7 +147,7 @@ void OpeningSuite::loadFromVec(const std::vector<std::string_view>& fens) {
 
 const Position& OpeningSuite::getRandomPosition(int& moves_done) const {
     if (_positions.empty()) {
-        ASSERT(false, "Openings are not loaded");
+        FAILED("Openings are not loaded");
     }
 
     size_t random_index = random<size_t>(0, _positions.size() - 1);

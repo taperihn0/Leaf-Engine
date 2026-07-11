@@ -258,7 +258,7 @@ void MoveData<T>::print(std::ostream& os) const {
             Piece(BLACK, getPromoPiece()).print(os);
     }
 #else
-    ASSERT(false, "Printing moves in algebraic notation not supported");
+    FAILED("Printing moves in algebraic notation not supported");
 #endif
 }
 

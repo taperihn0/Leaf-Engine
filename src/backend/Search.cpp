@@ -260,7 +260,7 @@ TreeStack::TreeStack()
 }
 
 void TreeStack::clear(MoveOrderHistoryTables* history_buffer) {
-    ASSERTNOLOG(history_buffer);
+    ASSERT_NOLOG(history_buffer);
 
     for (int i = 0; i < static_cast<int>(_Count); i++) {
         NodeInfo& node = _stack.get()[i];

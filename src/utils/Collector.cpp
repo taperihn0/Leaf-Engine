@@ -156,7 +156,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
 
         const size_t total_positions_cnt = positions.size();
-        ASSERTNOLOG(total_positions_cnt == white_scores.size() and 
+        ASSERT_NOLOG(total_positions_cnt == white_scores.size() and 
                     total_positions_cnt == moves.size());
 
         if (*game_result == Game::GAME_INVALID) {

@@ -39,7 +39,7 @@ _INTERNAL bool packedPos2TrainingEntryFile(std::ifstream& pck_input,
         TrainingDataEntry entry(pack, white_score, game_result);
         
         if (!TrainingDataEntry::write(train_data_output, entry)) {
-            ASSERT(false, "Failed to write binary string buffer to given file");
+            FAILED("Failed to write binary string buffer to given file");
             return false;
         }
     }

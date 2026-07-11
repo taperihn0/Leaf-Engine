@@ -3,6 +3,7 @@ logs/spsa_log_*.txt
 misc/*.txt
 misc/*.key
 misc/selfplay/
+misc/selfplay_serialized/
 misc/spsa/
 misc/selfplay*/
 misc/selfplay_*

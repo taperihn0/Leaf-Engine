@@ -39,7 +39,7 @@ void Game::applyMove(Move32b move, time_ms_t think_time) {
         _time_left_sided[side2move] -= think_time;
     }
 
-    ASSERTNOLOG(_current_pos.make(move));
+    ASSERT_NOLOG(_current_pos.make(move));
 
     uint64_t key = _current_pos.getZobristKey();
     _pos_record.recordInfo(key, move);
@@ -156,7 +156,7 @@ std::string toStr(Game::Result game_result) {
     case Game::GAME_INVALID:
         return "invalid game";
     default:     
-        ASSERT(false, "No other game results");
+        FAILED("No other game results");
     }
 
     return "";

@@ -100,7 +100,7 @@ bool verifyTrainData(std::ifstream& input,
                      size_t& verified_cnt, 
                      TrainingDataEntry::Result8b expected_result) 
 {
-    ASSERTNOLOG(input.is_open());
+    ASSERT_NOLOG(input.is_open());
 
     verified_cnt = 0;
 
@@ -223,51 +223,73 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
 }
 
 void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
-    std::vector<std::filesystem::path> dirs;
+    std::filesystem::path selfplay_root;
+    strm >> std::skipws >> selfplay_root;
 
-    for (std::string curr_dir; strm >> std::skipws >> curr_dir; ) {
-        dirs.emplace_back(curr_dir);
+    if (!std::filesystem::exists(selfplay_root)) {
+        std::cerr << "Invalid selfplay directory root: " << selfplay_root << '\n';
+        return;
     }
 
-    size_t total_formatted_positions = 0;
+    std::filesystem::path bf_selfplay_root = selfplay_root;
+    bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_serialized");
 
-    for (const auto& tournament_dir : dirs) {
-        for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
-            std::filesystem::path session_fp = "session" + std::to_string(session);
-
-            if (!std::filesystem::exists(tournament_dir / session_fp) or session_fp.empty())
-                continue;
-
-            for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
-                {
-                    std::filesystem::path fp = tournament_dir / session_fp / getWhiteWinOutputFile(id);
-                    std::ifstream input(fp, std::ios_base::binary);
-
-                    if (input) {
-                        total_formatted_positions += 0;
-                    }
-                }
-
-                {
-                    std::filesystem::path fp = tournament_dir / session_fp / getBlackWinOutputFile(id);
-                    std::ifstream input(fp, std::ios_base::binary);
-
-                    if (input) {
-                        total_formatted_positions += 0;
-                    }
-                }
-
-                {
-                    std::filesystem::path fp = tournament_dir / session_fp / getDrawOutputFile(id);
-                    std::ifstream input(fp, std::ios_base::binary);
-
-                    if (input) {
-                        total_formatted_positions += 0;
-                    }
-                }
-            }
+    std::vector<std::filesystem::path> tdf_files;
+    
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
+        if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
+            tdf_files.push_back(entry.path());
         }
     }
+
+    std::atomic<bool> success = true;
+
+    std::for_each(std::execution::par, tdf_files.begin(), tdf_files.end(), [&](const auto& fp) {
+        std::cout << "Processing " << fp << std::endl;
+
+        const std::filesystem::path rfp = std::filesystem::relative(fp, selfplay_root);
+        const std::filesystem::path target = bf_selfplay_root / rfp;
+
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+            std::filesystem::create_directories(target.parent_path());
+        }
+
+        std::ifstream input(fp);
+
+        if (!input) {
+            std::cout << "Failed to open input file: " << fp << std::endl;
+            return;
+        }
+
+        std::ofstream output(target);
+
+        if (!output) {
+            std::cout << "Failed to open output file: " << target << std::endl;
+            return;
+        }
+
+        for (TrainingDataEntry entry; 
+             TrainingDataEntry::read(input, entry) and success.load(); ) 
+        {
+            const BulletChessBoard bullet_board = TrainingDataEntry::toBulletFormat(entry);
+
+            if (!BulletChessBoard::write(output, bullet_board)) {
+                std::cout << "Failed to write bullet board to output: " << target << std::endl;
+                success.store(false);
+                break;
+            }
+        }
+
+        if (!success.load())
+            std::cout << "Aborting from thread" << std::endl;
+    });
+
+    if (success.load()) 
+        std::cout << "Successfully serialized files to bullet format" << std::endl;
+    else 
+        std::cout << "Failed to serialize files to bullet format" << std::endl;
 }
 
 void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
@@ -421,16 +443,22 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
 
         strm >> std::skipws >> token;
 
+        // Standard UCI commands
              if (token == "uci")                   parseUCI();
         else if (token == "ucinewgame")            parseNewGame();
         else if (token == "position")               parsePosition(strm);
-        else if (token == "print")                 _pos.print();
         else if (token == "go")                    parseGo(strm);
         else if (token == "isready")               parseIsReady();
-        else if (token == "export_net")            parseNeuralNet(strm);
-        else if (token == "rewrite_header")        parseRewriteNet(strm);
         else if (token == "options")               parseShowOptions();
         else if (token == "setoption")             parseSetOptions(strm);
+        
+        // Utility commands
+        else if (token == "print")                 _pos.print();
+        else if (token == "export_net")            parseNeuralNet(strm);
+        else if (token == "rewrite_header")        parseRewriteNet(strm);
+        else if (token == "view_positions")        parseShowPositions(strm);
+
+        // Testing commands
         else if (token == "test_pack")             packedPositionTests();
         else if (token == "test_ccr_one_hour")     ccrOneHourTest();
         else if (token == "test_null_move")        nullMoveTest();
@@ -439,13 +467,20 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "test_extpack_on")       parseExtPackedFile(strm);
         else if (token == "test_perft")            parsePerft(strm);
         else if (token == "test_bullet_format")    parseTestBulletFormat(strm);
-        else if (token == "self_play")             parseSelfPlay(_collector, strm);
-        else if (token == "load_openings")         GlobOpeningGenerator.load();
-        else if (token == "view_positions")        parseShowPositions(strm);
         else if (token == "verify_session")        parseVerifySession(strm);
-        else if (token == "spsa")                  parseSPSA(strm);
+
+        // Load openings for 'self_play' or 'spsa'
+        else if (token == "load_openings")         GlobOpeningGenerator.load();
+
+        // Setup and start tournament
+        else if (token == "self_play")             parseSelfPlay(_collector, strm);
+        // Transform data to bullet format (bullet-trainer compatible)
         else if (token == "to_bullet_format")      parseBulletFormat(strm);
 
+        // Setup and start SPSA tuning
+        else if (token == "spsa")                  parseSPSA(strm);
+
+        // Debug commands
 #if defined(_UCI_DEBUG_UTILS)
         else if (token == "see")                   parseSEE(strm);
         else if (token == "nneval")                parseNNEval(strm);

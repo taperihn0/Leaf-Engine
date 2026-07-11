@@ -124,7 +124,7 @@ void* TunableParametersMap::getAddressOf(const std::string& str) {
     try {
         base = _addr.at(str);
     } catch (std::out_of_range&) {
-        ASSERT(false, "Invalid parameter option: " + str);
+        FAILED("Invalid parameter option: " + str);
         return nullptr;
     }
 

@@ -46,7 +46,7 @@ public:
                                                static_cast<ull>(relv_mask)));
 #else
         _declUnused(relv_mask & occ);
-        ASSERT(false, "BMI2 is not enabled: 'pextIndexHash' is unimplemented.");
+        FAILED("BMI2 is not enabled: 'pextIndexHash' is unimplemented.");
         return 0;
 #endif
     }

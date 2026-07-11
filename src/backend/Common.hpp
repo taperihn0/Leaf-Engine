@@ -179,15 +179,16 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 }
 
 #if defined(DEBUG)
-#define WARN(msg) static_cast<void>(::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#define WARN(msg)                static_cast<void>(::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
 #else
-#define WARN(msg) static_cast<void>(0);
+#define WARN(msg)                static_cast<void>(0);
 #endif
-
-#define ASSERT(s, msg)         static_cast<void>((s) or ::xxassertutil::releaseFailedAssertion(__FILE__, msg, __LINE__))
-#define ASSERTNOLOG(s)         ASSERT(s, "Anonymous assertion failed")
-#define WARNIFNOT(s, msg)      static_cast<void>((s) or ::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
-#define WARNIFNOTNOLOG(s, msg) WARNIFNOT(s, "Anonymous warning point")
+#define ASSERT(s, msg)           static_cast<void>((s) or ::xxassertutil::releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERT_NOLOG(s)          ASSERT(s, "Anonymous assertion failed")
+#define WARN_IFNOT(s, msg)       static_cast<void>((s) or ::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#define WARN_IFNOT_NOLOG(s, msg) WARN_IFNOT(s, "Anonymous warning point")
+#define FAILED(msg)              ASSERT(false, msg)
+#define FAILED_NOLOG()           ASSERT_NOLOG(false)
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 #define DEBUG_BREAK() __debugbreak()

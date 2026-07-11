@@ -256,18 +256,22 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
 
         strm >> std::skipws >> token;
 
+        // Standard UCI commands
              if (token == "uci")            parseUCI();
         else if (token == "ucinewgame")     parseNewGame();
         else if (token == "position")       parsePosition(strm);
-        else if (token == "print")          _pos.print();
         else if (token == "go")             parseGo(strm);
         else if (token == "isready")        parseIsReady();
-        else if (token == "export_net")     parseNeuralNet(strm);
-        else if (token == "rewrite_header") parseRewriteNet(strm);
         else if (token == "options")        parseShowOptions();
         else if (token == "setoption")      parseSetOptions(strm);
+
+        // Utility commands
+        else if (token == "export_net")     parseNeuralNet(strm);
+        else if (token == "rewrite_header") parseRewriteNet(strm);
+        else if (token == "print")          _pos.print();
         else if (token == "bench")          parseBench(strm);
 
+        // Debug commands
 #if defined(_UCI_DEBUG_UTILS)
         else if (token == "see")            parseSEE(strm);
         else if (token == "nneval")         parseNNEval(strm);
@@ -342,7 +346,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
             }
 
             _game.recordInfo(_pos.getZobristKey(), move);
-            ASSERTNOLOG(_pos.make(move));
+            ASSERT_NOLOG(_pos.make(move));
         }
     }
 }

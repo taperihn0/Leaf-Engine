@@ -88,7 +88,7 @@ _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) 
 }
 
 _FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERTNOLOG(1 <= id && id <= static_cast<uint>(PlatformThreadLimit));
+    ASSERT_NOLOG(1 <= id && id <= static_cast<uint>(PlatformThreadLimit));
     return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
 }
 
@@ -141,17 +141,17 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
 static constexpr int SelfPlaySessionCountLimit = 256;
 
 _INTERNAL std::filesystem::path getWhiteWinOutputFile(int thread_num) {
-    ASSERTNOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
     return "selfplay_white_win_thread_" + std::to_string(thread_num) + ".tdf";
 }
 
 _INTERNAL std::filesystem::path getBlackWinOutputFile(int thread_num) {
-    ASSERTNOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
     return "selfplay_black_win_thread_" + std::to_string(thread_num) + ".tdf";
 }
 
 _INTERNAL std::filesystem::path getDrawOutputFile(int thread_num) {
-    ASSERTNOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
     return "selfplay_draw_thread_" + std::to_string(thread_num) + ".tdf";
 }
 

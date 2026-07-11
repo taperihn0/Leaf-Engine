@@ -44,7 +44,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
 
     if (!CreatePipe(&h_stdout_rd, &h_stdout_wr, &sa_attr, 0) or
         !CreatePipe(&h_stdin_rd, &h_stdin_wr, &sa_attr, 0))
-        ASSERT(false, "Failed to create pipes");
+        FAILED("Failed to create pipes");
 
     SetHandleInformation(h_stdout_rd, HANDLE_FLAG_INHERIT, 0);
     SetHandleInformation(h_stdin_wr, HANDLE_FLAG_INHERIT, 0);
@@ -64,7 +64,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
     char filename[512];
     const DWORD sz = GetModuleFileNameA(nullptr, filename, sizeof(filename));
 
-    if (!sz) ASSERT(false, "Failed to get module filename");
+    if (!sz) FAILED("Failed to get module filename");
 
     const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
     
@@ -87,7 +87,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
     if (!CreateProcessA(nullptr, cmdvec.data(),
                         nullptr, nullptr, TRUE, 0, nullptr, nullptr, 
                         &si, &pi)) {
-        ASSERT(false, "Failed to CreateProcessA");
+        FAILED("Failed to CreateProcessA");
     }
 
     CloseHandle(h_stdout_wr);
@@ -130,7 +130,7 @@ void EngineProcess::initProc(EngineProcess& proc) {
     int in_pipe[2];
 
     if (pipe(out_pipe) == -1 or pipe(in_pipe) == -1) {
-        ASSERT(false, "Failed to create pipes");
+        FAILED("Failed to create pipes");
     }
 
     const pid_t pid = fork();

@@ -192,7 +192,7 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
         return false;
     }
 
-    ASSERTNOLOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
+    ASSERT_NOLOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
 
     return initLayerWeightsBiases(m);
 }
@@ -225,22 +225,22 @@ uint PackedNeuralNetwork::getAccumulatorSize() const {
 }
 
 uint PackedNeuralNetwork::getLayerSize(size_t layer_num) const {
-    ASSERTNOLOG(layer_num < _header.layer_count);
+    ASSERT_NOLOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
 const int16_t* PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
-    ASSERTNOLOG(layer_num < _header.layer_count);
+    ASSERT_NOLOG(layer_num < _header.layer_count);
     return _layer_weights[layer_num];
 }
 
 const int16_t* PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
-    ASSERTNOLOG(layer_num < _header.layer_count);
+    ASSERT_NOLOG(layer_num < _header.layer_count);
     return _layer_biases[layer_num];
 }
 
 size_t PackedNeuralNetwork::getLayerWeightsCount(size_t layer_num) const {
-    ASSERTNOLOG(layer_num + 1 < _header.layer_count);
+    ASSERT_NOLOG(layer_num + 1 < _header.layer_count);
 
     size_t weight_cnt = _header.layer_size[layer_num] * _header.layer_size[layer_num + 1];
 
@@ -251,7 +251,7 @@ size_t PackedNeuralNetwork::getLayerWeightsCount(size_t layer_num) const {
 }
 
 size_t PackedNeuralNetwork::getLayerBiasesCount(size_t layer_num) const {
-    ASSERTNOLOG(layer_num < _header.layer_count);
+    ASSERT_NOLOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
@@ -323,7 +323,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
         it += weight_cnt;
         byte_offset += weight_cnt * sizeof(int16_t);
 
-        ASSERTNOLOG(byte_offset <= _mem_size);
+        ASSERT_NOLOG(byte_offset <= _mem_size);
 
         size_t biases_cnt = _header.layer_size[layer_num + 1];
 
@@ -331,7 +331,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
         it += biases_cnt;
         byte_offset += biases_cnt * sizeof(int16_t);
 
-        ASSERTNOLOG(byte_offset <= _mem_size);
+        ASSERT_NOLOG(byte_offset <= _mem_size);
     }
 
     return true;

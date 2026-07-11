@@ -92,7 +92,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     }
 
     if (packet.train_data_spec != nullptr) {
-        ASSERTNOLOG(packet.train_data_spec->positions_buf != nullptr and
+        ASSERT_NOLOG(packet.train_data_spec->positions_buf != nullptr and
                     packet.train_data_spec->white_scores_buf != nullptr and
                     packet.train_data_spec->moves_buf != nullptr);
 
@@ -331,7 +331,7 @@ _FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResu
     case Game::DRAW_BY_ADJUCATION:       return DRAW_BY_ADJUCATION;
     }
 
-    ASSERTNOLOG(false);
+    ASSERT_NOLOG(false);
     return GAME_INVALID;
 }
 

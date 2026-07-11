@@ -282,7 +282,7 @@ _INTERNAL bool packedPositionTests() {
                             std::ios::in | std::ios::out | std::ios_base::binary);
 
     if (!tmp_stream) {
-        ASSERT(false, "Failed to open file: src/assets/tmp/tmp.pck");
+        FAILED("Failed to open file: src/assets/tmp/tmp.pck");
         return false;
     }
     
@@ -304,7 +304,7 @@ _INTERNAL bool packedPositionTests() {
 
             if (unpacked != pos) {
                 pos.print();
-                ASSERT(false, "Failed to pack a position");
+                FAILED("Failed to pack a position");
                 return false;
             }
         }
@@ -315,7 +315,7 @@ _INTERNAL bool packedPositionTests() {
 
             if (ExtPackedPosition::unpacked(packed) != pos) {
                 pos.print();
-                ASSERT(false, "Failed to pack extended position");
+                FAILED("Failed to pack extended position");
                 return false;
             }
 
@@ -332,7 +332,7 @@ _INTERNAL bool packedPositionTests() {
 
             if (packed != read_packed) {
                 pos.print();
-                ASSERT(false, "Failed to read/write a packed position");
+                FAILED("Failed to read/write a packed position");
                 return false;
             }
 
@@ -350,7 +350,7 @@ _INTERNAL bool packedPositionTests() {
 
             if (sfpack != read_sfpack) {
                 pos.print();
-                ASSERT(false, "Failed to read/write a binpack- packed position");
+                FAILED("Failed to read/write a binpack- packed position");
                 return false;
             }
         }
