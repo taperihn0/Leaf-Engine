@@ -30,10 +30,11 @@
 /* Turned off so far:
 *  #define _CUCKOO_DRAW
 */
+#define _CUCKOO_DRAW
 
-#if defined(_CUCKOO_DRAW)
-#error "No proper draw value handling"
-#endif
+//#if defined(_CUCKOO_DRAW)
+//#error "No proper draw value handling"
+//#endif
 
 _FORCEINLINE bool isTimeLimit(const SearchLimits& limits) {
     return limits.search_time;
@@ -667,40 +668,40 @@ Score Search::nmSearch(Position& pos,
 
 #else // Cuckoo further draw checking
 
+    node->cuckoo_check = false;
+
     if constexpr (!Root) {
 
         /* Repetition rule -
-        *  however, we could already check if there is any repetition out there in cuckoo tables.
+        *  we could already check if there is any repetition out there in cuckoo tables.
         *  If my parent searched for a repetition and failed, we probably don't have any repetition.
         */
-        if (!prev_node->cuckoo_check) {
-
+        if (!parent_node->cuckoo_check) {
             if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
                 results.rep_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
 
-                return Score::Draw;
+                return getDrawScore(node);
             }
         }
     }
 
     if constexpr (!Root and !IsPv) {
+        const Score draw_score = getDrawScore(node);
 
-        node->cuckoo_check = alpha < Score::Draw;
-
-        if (alpha < Score::Draw and canRepetitionDraw(pos, node, ply)) {
+        if (alpha < draw_score and canRepetitionDraw(pos, node, ply)) {
+            node->cuckoo_check = true;
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.cuckoo_rep_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
 
-            alpha = Score::Draw;
+            alpha = draw_score;
 
-            if (alpha >= beta) {
-                return beta;
-            }
+            if (alpha >= beta)
+                return alpha;
         }
     }
 
