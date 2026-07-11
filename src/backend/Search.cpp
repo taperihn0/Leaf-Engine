@@ -668,8 +668,6 @@ Score Search::nmSearch(Position& pos,
 
 #else // Cuckoo further draw checking
 
-    node->cuckoo_check = false;
-
     if constexpr (!Root) {
 
         /* Repetition rule -
@@ -692,8 +690,6 @@ Score Search::nmSearch(Position& pos,
         const Score draw_score = getDrawScore(node);
 
         if (alpha < draw_score and canRepetitionDraw(pos, node, ply)) {
-            node->cuckoo_check = true;
-
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.cuckoo_rep_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
