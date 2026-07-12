@@ -1900,7 +1900,7 @@ bool Search::canRepetitionDraw(const Position& pos,
     size_t idx = static_cast<size_t>(-1);
 
     for (int p = ply - 1; 
-         p >= 0 and p >= ply - pos.getHalfmoveClock(); 
+         p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 
          p -= 2) 
     {
         prev_node--;
