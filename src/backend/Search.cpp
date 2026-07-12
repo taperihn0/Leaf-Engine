@@ -643,22 +643,14 @@ Score Search::nmSearch(Position& pos,
     assert(IsPv or alpha == beta - 1);
 
     if constexpr (!Root) {
-
         if (pos.getHalfmoveClock() >= 100 or isInsufficientMaterial(pos))
             return getDrawScore(node);
     }
     
     NodeInfo* const parent_node = node - 1;
 
-#if !defined(_CUCKOO_DRAW) /* disable annoying warning in RELEASE builds */
-    _declUnused(parent_node);
-#endif // _CUCKOO_DRAW
-
-#if !defined(_CUCKOO_DRAW)
-
     if constexpr (!Root) {
         if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
-
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.rep_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
@@ -666,38 +658,16 @@ Score Search::nmSearch(Position& pos,
         }
     }
 
-#else // Cuckoo further draw checking
-
-    if constexpr (!Root) {
-
-        /* Repetition rule -
-        *  we could already check if there is any repetition out there in cuckoo tables.
-        *  If my parent searched for a repetition and failed, we probably don't have any repetition.
-        */
-        if (!parent_node->cuckoo_check) {
-            if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
-
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-                results.rep_cnt++;
-#endif // LEAF_COLLECT_SEARCH_STATS
-
-                return getDrawScore(node);
-            }
-        }
-    }
+#if defined(_CUCKOO_DRAW)
 
     if constexpr (!Root and !IsPv) {
         const Score draw_score = getDrawScore(node);
 
-        if (alpha < draw_score and canRepetitionDraw(pos, node, ply)) {
+        if (beta <= draw_score and canRepetitionDraw(pos, node, ply)) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.cuckoo_rep_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
-
-            alpha = draw_score;
-
-            if (alpha >= beta)
-                return alpha;
+            return draw_score;
         }
     }
 
@@ -1846,7 +1816,7 @@ void Search::refreshPVinTT(const Position& pos,
               -Score::MateBound, +Score::MateBound,
               depth);
 
-    ASSERTNOLOG(!tt_entry.move.isNull());
+    ASSERT_NOLOG(!tt_entry.move.isNull());
 
 #endif
 }
@@ -1930,7 +1900,7 @@ bool Search::canRepetitionDraw(const Position& pos,
     size_t idx = static_cast<size_t>(-1);
 
     for (int p = ply - 1; 
-         p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 
+         p >= 0 and p >= ply - pos.getHalfmoveClock(); 
          p -= 2) 
     {
         prev_node--;
@@ -1946,12 +1916,9 @@ bool Search::canRepetitionDraw(const Position& pos,
         assert(prev_node->side2move != node->side2move);
         assert(prev_node->state.hash_key);
 
-        const uint32_t move_hash = static_cast<uint32_t>(prev_node->state.hash_key ^ curr_hash);
-
-        if ((idx = CuckooTables::cuckooIndex1(move_hash), 
-                _cuckoo_tables.getMoveHash(idx) == move_hash) or
-            (idx = CuckooTables::cuckooIndex2(move_hash), 
-                _cuckoo_tables.getMoveHash(idx) == move_hash)) {
+        if (const uint32_t move_hash = static_cast<uint32_t>(prev_node->state.hash_key ^ curr_hash);
+            (idx = CuckooTables::cuckooIndex1(move_hash), _cuckoo_tables.getMoveHash(idx) == move_hash) or
+            (idx = CuckooTables::cuckooIndex2(move_hash), _cuckoo_tables.getMoveHash(idx) == move_hash)) {
 
             // simplified verification for obtained cuckoo move
 

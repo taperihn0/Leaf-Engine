@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Move.hpp"
+#include "Memory.hpp"
 
 class CuckooTables {
 public:
@@ -36,12 +37,12 @@ public:
 
     _FORCEINLINE uint32_t getMoveHash(size_t idx) const {
         assert(idx < _CuckooTableSize);
-        return _cuckoo_entry_buff[idx].move_hash;
+        return _cuckoo_entry_buff.get()[idx].move_hash;
     }
 
     _FORCEINLINE Move16b getMove16b(size_t idx) const {
         assert(idx < _CuckooTableSize);
-        return _cuckoo_entry_buff[idx].move16;
+        return _cuckoo_entry_buff.get()[idx].move16;
     }
 
     static _FORCEINLINE size_t getSize() {
@@ -54,15 +55,16 @@ private:
     static constexpr size_t _CuckooTableSize = 4096;
     static_assert(isExp2(_CuckooTableSize));
 
-    static constexpr uint    _KickThreshold = 216;
+    static constexpr uint   _KickThreshold = 216;
     static constexpr size_t _AccurateCount = 2212;
 
     struct CuckooEntry {
         uint32_t move_hash;
         Move16b  move16;
+        array1d<std::byte, 2> __align;
     };
 
-    std::unique_ptr<CuckooEntry[]> _cuckoo_entry_buff;
+    mem::AlignedUniquePtr<CuckooEntry> _cuckoo_entry_buff;
 };
 
 

@@ -70,7 +70,7 @@ public:
 
     static ZHash generateOnFly(const Position& pos);
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
     bool printXOR_Diff(uint64_t key_2);
 #endif
 

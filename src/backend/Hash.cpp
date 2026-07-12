@@ -89,7 +89,7 @@ ZHash ZHash::generateOnFly(const Position& pos) {
     return static_cast<ZHash>(key);
 }
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 bool ZHash::printXOR_Diff(uint64_t key_2) {
     std::cout << (_key ^ key_2) << ' ';
     return true;

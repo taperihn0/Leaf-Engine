@@ -23,7 +23,8 @@
 #include "Hash.hpp"
 
 CuckooTables::CuckooTables()
-    : _cuckoo_entry_buff(new CuckooEntry[_CuckooTableSize]) { 
+    : _cuckoo_entry_buff(
+        mem::makeAlignedUnique<CuckooEntry>(_CuckooTableSize, CachelineSize)) { 
     mem::memSet(_cuckoo_entry_buff.get(), 0, sizeof(CuckooEntry) * _CuckooTableSize);
 }
 
@@ -54,28 +55,29 @@ void CuckooTables::init() {
                         break;
                     }
 
-                    if (attacks.isOccupiedSq(to)) {
-                        uint32_t move_hash = static_cast<uint32_t>(ZHashMasks->piece_keys[side][piece][from] ^ 
-                                                                   ZHashMasks->piece_keys[side][piece][to] ^ 
-                                                                   ZHashMasks->black_key);
+                    if (!attacks.isOccupiedSq(to)) 
+                        continue;
 
-                        Move16b move16b = Move16b::makePackedSimple(from, to);
+                    uint32_t move_hash = static_cast<uint32_t>(ZHashMasks->piece_keys[side][piece][from] ^ 
+                                                               ZHashMasks->piece_keys[side][piece][to] ^ 
+                                                               ZHashMasks->black_key);
 
-                        size_t idx = cuckooIndex1(move_hash);
+                    Move16b move16b = Move16b::makePackedSimple(from, to);
 
-                        for (uint kick = 0; kick < _KickThreshold; kick++) {
-                            std::swap(_cuckoo_entry_buff[idx].move_hash, move_hash);
-                            std::swap(_cuckoo_entry_buff[idx].move16, move16b);
+                    size_t idx = cuckooIndex1(move_hash);
 
-                            ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()), 
-                                   "Invalid entry in cuckoo tables");
+                    for (uint kick = 0; kick < _KickThreshold; kick++) {
+                        std::swap(_cuckoo_entry_buff.get()[idx].move_hash, move_hash);
+                        std::swap(_cuckoo_entry_buff.get()[idx].move16, move16b);
 
-                            if (move16b.isNull())
-                                break;
+                        ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()), 
+                                "Invalid entry in cuckoo tables");
 
-                            idx = idx == cuckooIndex1(move_hash) ? cuckooIndex2(move_hash) 
-                                                                   : cuckooIndex1(move_hash);
-                        }
+                        if (move16b.isNull())
+                            break;
+
+                        idx = idx == cuckooIndex1(move_hash) ? cuckooIndex2(move_hash) 
+                                                             : cuckooIndex1(move_hash);
                     }
                 }
             }
@@ -89,8 +91,8 @@ void CuckooTables::validate() {
     size_t count = 0;
 
     for (size_t i = 0; i < _CuckooTableSize; i++) {
-        const uint32_t move_hash = _cuckoo_entry_buff[i].move_hash;
-        const Move16b move16b = _cuckoo_entry_buff[i].move16;
+        const uint32_t move_hash = _cuckoo_entry_buff.get()[i].move_hash;
+        const Move16b move16b = _cuckoo_entry_buff.get()[i].move16;
 
         ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()),
                "Invalid entry in cuckoo tables");
@@ -99,7 +101,7 @@ void CuckooTables::validate() {
             count++;
     }
 
-#ifdef _DEBUG
+#ifdef DEBUG
     const float fill_rate = static_cast<float>(count) / _AccurateCount;
     std::cout << "[CUCKOO TABLES STATS]\n total entries: " << count 
               << "\n fill rate: " << fill_rate * 100 << '%' << std::endl;
