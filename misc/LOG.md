@@ -1,3 +1,12 @@
+### [commit:99fe3c6] feature: reintroduced Cuckoo tables in search
+```
+Score of leaf_base vs leaf_cuckoo: 1747 - 1719 - 2034  [0.503] 5500
+...      leaf_base playing White: 1220 - 522 - 1008  [0.627] 2750
+...      leaf_base playing Black: 527 - 1197 - 1026  [0.378] 2750
+...      White vs Black: 2417 - 1049 - 2034  [0.624] 5500
+Elo difference: 1.8 +/- 7.3, LOS: 68.3 %, DrawRatio: 37.0 %
+```
+
 ### [commit:e52f310] fix: Refactored and fixed legal move generator. 
 *Too little games to actually find out whether that results in any strength improvement.*
 ```
