@@ -44,6 +44,7 @@
 #if defined(_MSC_VER)
 #undef min
 #undef max
+#undef FAILED
 #endif
 
 #if defined(__GNUC__)

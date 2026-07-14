@@ -331,7 +331,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->err_output.open(packet.err_log_dir, std::ios::app);
 
     if (!thread_common->err_output) {
-        labelLog(std::cout, LOG_INFO, "Failed to open " + std::string(packet.err_log_dir));
+        labelLog(std::cout, LOG_INFO, "Failed to error file open");
         return;
     }
 

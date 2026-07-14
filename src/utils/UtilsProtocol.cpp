@@ -245,7 +245,11 @@ void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
     std::atomic<bool> success = true;
 
     std::for_each(std::execution::par, tdf_files.begin(), tdf_files.end(), [&](const auto& fp) {
-        std::cout << "Processing " << fp << std::endl;
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+            std::cout << "Processing " << fp << std::endl;
+        }
 
         const std::filesystem::path rfp = std::filesystem::relative(fp, selfplay_root);
         const std::filesystem::path target = bf_selfplay_root / rfp;
@@ -256,7 +260,7 @@ void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
             std::filesystem::create_directories(target.parent_path());
         }
 
-        std::ifstream input(fp);
+        std::ifstream input(fp, std::ios_base::binary);
 
         if (!input) {
             std::cout << "Failed to open input file: " << fp << std::endl;
@@ -338,6 +342,77 @@ void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
     else {
         std::cout << "Bullet test failed: aborting" << std::endl;
     }
+}
+
+void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
+    std::filesystem::path selfplay_root;
+    strm >> std::skipws >> selfplay_root;
+
+    if (!std::filesystem::exists(selfplay_root)) {
+        std::cerr << "Invalid selfplay directory root: " << selfplay_root << '\n';
+        return;
+    }
+
+    std::filesystem::path bf_selfplay_root = selfplay_root;
+    bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_shuffled");
+
+    std::vector<std::filesystem::path> session_dirs;
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
+        if (entry.path().filename().string().find("session") == 0 and entry.is_directory()) {
+            session_dirs.push_back(entry.path());
+		}
+    }
+
+    std::for_each(std::execution::par, session_dirs.begin(), session_dirs.end(), [&](const auto& session_fp) {
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+			std::cout << "Processing " << session_fp << std::endl;
+        }
+
+        const std::filesystem::path rfp = std::filesystem::relative(session_fp, selfplay_root);
+        const std::filesystem::path target = (bf_selfplay_root / rfp).replace_extension(".tdf");
+
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+            std::filesystem::create_directories(target.parent_path());
+        }
+
+        std::ofstream output(target, std::ios_base::binary);
+
+        if (!output) {
+            std::cout << "Failed to open output file: " << target << std::endl;
+            return;
+        }
+
+        std::vector<BulletChessBoard> entries;
+
+        for (const auto& entry : std::filesystem::directory_iterator(session_fp)) {
+            if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
+                std::ifstream input(entry.path(), std::ios_base::binary);
+
+                if (!input) {
+                    std::cout << "Failed to open input file: " << entry.path() << std::endl;
+                    return;
+                }
+
+                for (BulletChessBoard entry; BulletChessBoard::read(input, entry); ) {
+                    entries.push_back(entry);
+                }
+            }
+        }
+
+        std::shuffle(entries.begin(), entries.end(), GlobMersenne);
+
+        for (const auto& entry : entries) {
+            if (!BulletChessBoard::write(output, entry)) {
+                std::cout << "Failed to write entry to output: " << target << std::endl;
+                return;
+            }
+		}
+    });
 }
 
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
@@ -476,6 +551,8 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "self_play")             parseSelfPlay(_collector, strm);
         // Transform data to bullet format (bullet-trainer compatible)
         else if (token == "to_bullet_format")      parseBulletFormat(strm);
+        // Shuffle bullet format data
+		else if (token == "shuffle_data")          parseDataShuffles(strm);
 
         // Setup and start SPSA tuning
         else if (token == "spsa")                  parseSPSA(strm);
