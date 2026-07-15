@@ -432,7 +432,7 @@ void UniversalChessInterface::parseRewriteNet(std::istringstream& strm) {
     header.dual_hl = nn::NetworkDualHiddenLayer;
     header.layer_size[0] = nn::NetworkInputSize;
     header.layer_size[1] = nn::NetworkHiddenLayerSize;
-    header.layer_size[2] = nn::NetworkOutputScale;
+    header.layer_size[2] = nn::NetworkOutputSize;
     header.layer_count = nn::NetworkLayerCount;
     
     bool status = nn::PackedNeuralNetwork::rewriteWithHeader(in_path, out_path, header);

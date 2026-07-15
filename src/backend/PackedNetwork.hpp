@@ -27,7 +27,7 @@ static constexpr std::string_view DevNetworksDir = "src/assets/nets";
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
-static constexpr size_t  NetworkHiddenLayerSize = 128;
+static constexpr size_t  NetworkHiddenLayerSize = 192;
 static constexpr size_t  NetworkOutputSize = 1;
 static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
