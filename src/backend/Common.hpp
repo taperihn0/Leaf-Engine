@@ -68,6 +68,7 @@
 #define _VERIFY_NN
 #define _UCI_DEBUG_UTILS
 #endif
+#define _UCI_DEBUG_UTILS
 
 #if defined(_MSC_VER)
 // using __forceinline by default - that came out to be more efficient

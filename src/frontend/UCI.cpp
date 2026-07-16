@@ -382,7 +382,7 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
     Square org = Square::fromChar(os[0], os[1]);
     Square dst = Square::fromChar(ds[0], ds[1]);
     int score = _pos.staticExchangeEval<false>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
-                                              _pos.pieceOn(org, _pos.getTurn()));
+                                               _pos.pieceOn(org, _pos.getTurn()));
     std::cout << score << std::endl;
 }
 
@@ -394,6 +394,8 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
 
     if (fen == "startpos")
         pos.setStartingPos();
+	else if (fen == "kiwipete")
+        pos.setByFEN(std::string(KiwipeteFEN));
     else
         pos.setByFEN(fen);
 
