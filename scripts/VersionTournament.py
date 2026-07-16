@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 # --- Tournament configurations ---
-GAMES_COUNT = 5500
+GAMES_COUNT = 8000
 THREAD_COUNT = 6
 TIME_CONTROL = "1+0.04"
 CMAKE_PRESET = "final"
