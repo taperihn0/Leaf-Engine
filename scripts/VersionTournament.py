@@ -8,13 +8,13 @@ from pathlib import Path
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
 THREAD_COUNT = 6
-TIME_CONTROL = "1+0.04"
+TIME_CONTROL = "1+0.05"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "src/assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
 ENGINE_NAME = "Leaf"
 SYZYGY_PATH = "src/assets/tb/Syzygy"
-ENGINE_0_NN_PATH = "/home/szymek/ChessEngines/src/assets/nets/publius_net128_0_h_c.bin"
+ENGINE_0_NN_PATH = "/home/szymek/ChessEngines/src/assets/nets/nn192_40_h.bin"
 ENGINE_1_NN_PATH = "/home/szymek/ChessEngines/src/assets/nets_copy/publius_net128_0_h.bin"
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
