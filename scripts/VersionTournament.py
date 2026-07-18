@@ -8,7 +8,7 @@ from pathlib import Path
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
 THREAD_COUNT = 6
-TIME_CONTROL = "1+0.05"
+TIME_CONTROL = "8+0.5"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "src/assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"

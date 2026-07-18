@@ -30,10 +30,10 @@
 
 #define _TESTCASE(cmp, expc, f, ...)                                                                         \
 {                                                                                                          \
-    ::Utils::_testcaseAssertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", (int)__LINE__, __VA_ARGS__); \
+    ::utils::_testcaseAssertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", (int)__LINE__, __VA_ARGS__); \
 }                                                                                                          \
 
-namespace Utils {
+namespace utils {
 
 template <typename T>
 bool equal(const T& a, const T& b) {
@@ -389,14 +389,14 @@ _INTERNAL void parseExtPackedFile(std::istringstream& strm) {
     }
 
     for (auto& full_pos : full_positions) {
-        Utils::ExtPackedPosition packed = Utils::ExtPackedPosition::packed(full_pos);
-        Utils::ExtPackedPosition::write(tmp_stream, packed);
+        utils::ExtPackedPosition packed = utils::ExtPackedPosition::packed(full_pos);
+        utils::ExtPackedPosition::write(tmp_stream, packed);
     }
 
     tmp_stream.flush();
     tmp_stream.seekg(0, std::ios::beg);
 
-    std::vector<Utils::ExtPackedPosition> packed_positions = Utils::ExtPackedPosition::fullRead(tmp_stream);
+    std::vector<utils::ExtPackedPosition> packed_positions = utils::ExtPackedPosition::fullRead(tmp_stream);
 
     ASSERT(packed_positions.size() == full_positions.size(), 
            "Position number does not match: "
@@ -404,9 +404,9 @@ _INTERNAL void parseExtPackedFile(std::istringstream& strm) {
            + std::to_string(full_positions.size()));
 
     for (size_t i = 0; i < packed_positions.size(); i++) {
-        Position unpack = Utils::ExtPackedPosition::unpacked(packed_positions[i]);
+        Position unpack = utils::ExtPackedPosition::unpacked(packed_positions[i]);
 
-        if (Utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
+        if (utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
             unpack.print();
             full_positions[i].print();
             std::cout << "Position number " << i << " does not match" << std::endl;
@@ -446,17 +446,17 @@ _INTERNAL void parsePackedFile(std::istringstream& strm) {
     }
 
     for (auto& full_pos : full_positions) {
-        Utils::PackedPosition sfpack = Utils::PackedPosition::packed(full_pos);
-        Utils::PackedPosition::write(tmp_stream, sfpack);
+        utils::PackedPosition sfpack = utils::PackedPosition::packed(full_pos);
+        utils::PackedPosition::write(tmp_stream, sfpack);
     }
 
     tmp_stream.flush();
     tmp_stream.seekg(0, std::ios_base::beg);
 
-    std::vector<Utils::PackedPosition> packed_positions = Utils::PackedPosition::fullRead(tmp_stream);
+    std::vector<utils::PackedPosition> packed_positions = utils::PackedPosition::fullRead(tmp_stream);
 
     for (size_t i = 0; i < packed_positions.size(); i++) {
-        if (packed_positions[i] != Utils::PackedPosition(full_positions[i])) {
+        if (packed_positions[i] != utils::PackedPosition(full_positions[i])) {
             full_positions[i].print();
             std::cout << "Position number " << i << " does not match (while sf-style packing)" << std::endl;
             return;
@@ -466,4 +466,4 @@ _INTERNAL void parsePackedFile(std::istringstream& strm) {
     std::cout << "Successfully packed all positions" << std::endl;
 }
 
-} // namespace Utils
+} // namespace utils

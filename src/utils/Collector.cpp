@@ -28,7 +28,7 @@
 #include <thread>
 #include <iomanip>
 
-namespace Utils
+namespace utils
 {
 
 bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
@@ -448,4 +448,4 @@ _FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos,
            internalFilterPolicy(internal_move, internal_total_positions_cnt);
 }
 
-} // namespace Utils
+} // namespace utils

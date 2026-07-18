@@ -21,6 +21,6 @@
 
 int main(int argc, const char* argv[]) {
     SlidersAttacks::initTables();
-    Utils::UtilsProtocol protocol;
+    utils::UtilsProtocol protocol;
     protocol.loop(argc, argv);
 }

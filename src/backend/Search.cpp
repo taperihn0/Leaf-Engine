@@ -26,15 +26,7 @@
 #endif
 
 #define _TT_PROBE_QSEARCH
-
-/* Turned off so far:
-*  #define _CUCKOO_DRAW
-*/
 #define _CUCKOO_DRAW
-
-//#if defined(_CUCKOO_DRAW)
-//#error "No proper draw value handling"
-//#endif
 
 _FORCEINLINE bool isTimeLimit(const SearchLimits& limits) {
     return limits.search_time;
@@ -223,7 +215,6 @@ void NodeInfo::clear() {
     moves_searched   = 0;
     move_index       = 0;
     bound            = TTBound::NONE;
-    cuckoo_check     = false;
     is_cut           = false;
 
     cluster.accum_cache.clearBuffers();

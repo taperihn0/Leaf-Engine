@@ -36,7 +36,7 @@
 #define INSPECT_SELFPLAY_MATCHES
 #endif
 
-namespace Utils {
+namespace utils {
 
 _INLINE size_t getIStreamBytesLeft(std::istream& input) {
     auto curr_bytes = input.tellg();
@@ -155,4 +155,4 @@ _INTERNAL std::filesystem::path getDrawOutputFile(int thread_num) {
     return "selfplay_draw_thread_" + std::to_string(thread_num) + ".tdf";
 }
 
-} // namespace Utils
+} // namespace utils

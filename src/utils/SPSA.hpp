@@ -26,7 +26,7 @@
 #include <fstream>
 #include <thread>
 
-namespace Utils {
+namespace utils {
 
 class SPSA_Tuning {
 public:
@@ -83,4 +83,4 @@ private:
     OpeningSuite _openings;
 };
 
-} // namespace Utils
+} // namespace utils

@@ -19,11 +19,12 @@
 #pragma once
 
 #include "Common.hpp"
+#include "utils/Paths.hpp"
 
 namespace nn {
 
-static constexpr std::string_view DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
-static constexpr std::string_view DevNetworksDir = "src/assets/nets";
+static std::filesystem::path DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
+static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDir(::utils::paths::enumDir::NETS_DIRECTORY);
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;

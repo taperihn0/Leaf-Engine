@@ -94,7 +94,7 @@ private:
          _queenside;
 };
 
-namespace Utils { class ExtPackedPosition; }
+namespace utils { class ExtPackedPosition; }
 
 /* Tunable Static Exchange Evaluation piece values.
 *  King score is fixed and not tuned.
@@ -111,7 +111,7 @@ inline constexpr int     SeeKingValue = 12000;
 // and game flags like castling
 class Position {
 public:
-    friend class Utils::ExtPackedPosition;
+    friend class utils::ExtPackedPosition;
     struct IrreversibleState;
 
     Position();

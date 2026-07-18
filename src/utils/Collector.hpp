@@ -23,7 +23,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace Utils
+namespace utils
 {
 
 /* Self-play tournament class with data collection system.
@@ -90,4 +90,4 @@ private:
 #endif
 };
 
-} // namespace Utils
+} // namespace utils

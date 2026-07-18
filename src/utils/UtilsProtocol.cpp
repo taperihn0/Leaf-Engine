@@ -23,7 +23,7 @@
 #include <variant>
 #include <execution>
 
-namespace Utils
+namespace utils
 {
 
 void UtilsProtocol::parseSelfPlay(TournamentCollector& collector, 
@@ -521,7 +521,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         // Standard UCI commands
              if (token == "uci")                   parseUCI();
         else if (token == "ucinewgame")            parseNewGame();
-        else if (token == "position")               parsePosition(strm);
+        else if (token == "position")              parsePosition(strm);
         else if (token == "go")                    parseGo(strm);
         else if (token == "isready")               parseIsReady();
         else if (token == "options")               parseShowOptions();
@@ -566,4 +566,4 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
     } while (command != "quit");
 }
 
-} // namespace Utils
+} // namespace utils

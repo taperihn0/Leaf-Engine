@@ -23,7 +23,7 @@
 #include "NetworkEval.hpp"
 #include "Sets.hpp"
 
-namespace Utils {
+namespace utils {
 
 std::vector<OpeningGenerator::GeneratedPosition> OpeningGenerator::_positions;
 
@@ -159,4 +159,4 @@ bool OpeningSuite::isEmpty() const {
     return _positions.empty();
 }
 
-} // namespace Utils
+} // namespace utils

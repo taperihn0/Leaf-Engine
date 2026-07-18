@@ -21,7 +21,7 @@
 #include "StaticEval.hpp"
 #include "Process.hpp"
 
-namespace Utils {
+namespace utils {
 
 template <bool EnableLog>
 SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0, 
@@ -361,4 +361,4 @@ template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<true>(EngineProc
                                                                       EngineProcess&, 
                                                                       GameSpecPacket&);
 
-} // namespace Utils
+} // namespace utils

@@ -22,7 +22,7 @@
 #include "Opening.hpp"
 #include "PackedPosition.hpp"
 
-namespace Utils {
+namespace utils {
 
 class EngineProcess;
 
@@ -89,4 +89,4 @@ bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result);
 bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result);
 bool isDraw(SelfGame::PlayerPerspectiveResult result);
 
-} // namespace Utils
+} // namespace utils

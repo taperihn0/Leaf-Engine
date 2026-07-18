@@ -552,7 +552,7 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
 
     timer.go();
 
-    std::for_each(Utils::BenchmarkSet.begin(), Utils::BenchmarkSet.end(), 
+    std::for_each(utils::BenchmarkSet.begin(), utils::BenchmarkSet.end(), 
         [&](const std::string_view& fen) {
             Position pos(fen);
 

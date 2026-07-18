@@ -23,7 +23,7 @@
 #include "StaticEval.hpp"
 #include "Memory.hpp"
 
-namespace Utils {
+namespace utils {
 
 _INTERNAL bool packedPos2TrainingEntryFile(std::ifstream& pck_input, 
                                            std::ofstream& train_data_output, 
@@ -47,4 +47,4 @@ _INTERNAL bool packedPos2TrainingEntryFile(std::ifstream& pck_input,
     return train_data_output.good();
 }
 
-} // namespace Utils
+} // namespace utils

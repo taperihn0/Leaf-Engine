@@ -18,7 +18,7 @@
 
 #include "PackedPosition.hpp"
 
-namespace Utils
+namespace utils
 {
 
 template <typename PositionFormat>
@@ -529,5 +529,5 @@ std::vector<ExtPackedPosition> ExtPackedPosition::fullRead(std::istream& input) 
     return fullReadOf<ExtPackedPosition>(input);
 }
 
-} // namespace Utils
+} // namespace utils
 
