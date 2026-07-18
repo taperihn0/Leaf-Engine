@@ -45,9 +45,9 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 }
 
 #if defined(_USE_EMBEDDED_NEURAL_NET)
-static constexpr std::string_view DefaultNeuralNetOptionPath = "<embedded:" DEFAULT_NEURAL_NET_FILE_NAME ">";
+static std::string_view DefaultNeuralNetOptionPath = "<embedded:" DEFAULT_NEURAL_NET_FILE_NAME ">";
 #else
-static constexpr std::string_view DefaultNeuralNetOptionPath = nn::DefaultNetworkFile;
+static std::filesystem::path DefaultNeuralNetOptionPath = nn::DefaultNetworkFile;
 #endif
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 

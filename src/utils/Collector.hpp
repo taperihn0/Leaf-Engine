@@ -35,8 +35,7 @@ public:
     struct TournamentPacket {
         size_t                games_count; 
         uint                  thread_count;
-        std::filesystem::path log_dir;
-        std::filesystem::path err_log_dir;
+        std::filesystem::path selfplay_filename;
         SearchLimits          limits;
     };
     
@@ -59,7 +58,8 @@ private:
         std::atomic<size_t> total_black_win_count;
         std::atomic<size_t> total_draw_count;
         size_t              total_thread_cnt;
-        std::ofstream       err_output;
+        std::filesystem::path 
+                            err_fp;
         std::mutex          err_output_lock;
     };
 

@@ -63,7 +63,7 @@ public:
     bool isValid() const;
 
     bool loadDefaultNet();
-    bool loadFromFile(std::string_view path);
+    bool loadFromFile(std::filesystem::path path);
 
     uint getAccumulatorSize() const;
     uint getLayerSize(size_t layer_num) const;

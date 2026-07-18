@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.hpp"
+#include "UtilsCommon.hpp"
 
 #include <filesystem>
 #include <unordered_map>
@@ -24,6 +24,10 @@ public:
 
     static ProjectPathsManager& getManager();
     const std::filesystem::path& getDir(enumDir dir) const;
+
+    static std::filesystem::path getWhiteWinOutputFileName(int thread_num);
+    static std::filesystem::path getBlackWinOutputFileName(int thread_num);
+    static std::filesystem::path getDrawOutputFileName(int thread_num);
 private:
     ProjectPathsManager();
     void initMapping();
@@ -33,6 +37,6 @@ private:
     std::filesystem::path _current_path;
 };
 
-extern const ProjectPathsManager& PathsManager;
+inline const ProjectPathsManager& PathsManager = ProjectPathsManager::getManager();
 
 } // namespace utils::paths

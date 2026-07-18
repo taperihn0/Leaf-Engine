@@ -98,7 +98,7 @@ bool PackedNeuralNetwork::isValid() const {
     return true;
 }
 
-bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
+bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     if (!UseEmbeddedNetwork) 
         releaseFileMapping();
 
@@ -146,7 +146,7 @@ bool PackedNeuralNetwork::loadFromFile(std::string_view path) {
         return false;
     }
 #else
-    _fd = open(path.data(), O_RDONLY);
+    _fd = open(path.c_str(), O_RDONLY);
     
     if (_fd == -1) {
         std::cout << ("Couldn't open() a file: " + static_cast<std::string>(path)) << std::endl;

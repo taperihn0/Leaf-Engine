@@ -1,9 +1,6 @@
 #include "Paths.hpp"
 
-namespace utils::paths
-{
-    
-const ProjectPathsManager& PathsManager = ProjectPathsManager::getManager();
+namespace utils::paths {
 
 ProjectPathsManager::ProjectPathsManager() 
     : _current_path(std::filesystem::current_path()) 
@@ -23,6 +20,24 @@ const std::filesystem::path& ProjectPathsManager::getDir(enumDir dir) const {
         throw std::out_of_range("ProjectPathsManager::getDir - no mapped dir found");
 
     return elem->second;
+}
+
+std::filesystem::path getWhiteWinOutputFileName(int thread_num) {
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    return std::filesystem::path("selfplay_white_win_thread_" + std::to_string(thread_num))
+                            .replace_extension(".tdf");
+}
+
+std::filesystem::path getBlackWinOutputFileName(int thread_num) {
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    return std::filesystem::path("selfplay_black_win_thread_" + std::to_string(thread_num))
+                            .replace_extension(".tdf");
+}
+
+std::filesystem::path getDrawOutputFileName(int thread_num) {
+    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    return std::filesystem::path("selfplay_draw_thread_" + std::to_string(thread_num))
+                            .replace_extension(".tdf");
 }
 
 void ProjectPathsManager::initMapping() {

@@ -24,6 +24,7 @@
 #include "PackedNetwork.hpp"
 #include "NetworkEval.hpp"
 #include "StaticEval.hpp"
+#include "Paths.hpp"
 
 #include <thread>
 #include <iomanip>
@@ -106,7 +107,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
     const float stddev = _NodesRandomFactor / 2.f * nodes_per_search;
     std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
-    std::mt19937 mt{GlobRandomSeed};
+    std::mt19937 mt{ GlobRandomSeed };
 
     for (size_t i = 0; 
          thr_data.commons->games_ended < thr_data.commons->games2play; 
@@ -137,7 +138,9 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         if (!engine0.isAlive() or !engine1.isAlive()) {
             {
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
-                labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Engine disconnected");
+
+                std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
+                labelLog(err_output, LOG_INFO | thread_label, "Engine disconnected");
             }
 
             engine0.waitForProcess();
@@ -157,11 +160,13 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         const size_t total_positions_cnt = positions.size();
         ASSERT_NOLOG(total_positions_cnt == white_scores.size() and 
-                    total_positions_cnt == moves.size());
+                     total_positions_cnt == moves.size());
 
         if (*game_result == Game::GAME_INVALID) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
-            labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Error: Invalid game");
+
+            std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
+            labelLog(err_output, LOG_INFO | thread_label, "Error: Invalid game");
             
             std::ostringstream ss;
             ss  << " nodes " << game_packet.limits.nodes
@@ -172,18 +177,18 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 << " winc "  << game_packet.limits.winc 
                 << " binc "  << game_packet.limits.binc;
 
-            labelLog(thr_data.commons->err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
+            labelLog(err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
 
             for (size_t i = 0; i < total_positions_cnt; i++) {
-                positions[i].print(thr_data.commons->err_output);
-                thr_data.commons->err_output << "Following move: ";
-                moves[i].print(thr_data.commons->err_output);
-                thr_data.commons->err_output << "\nWhite-POV Search Score: " 
+                positions[i].print(err_output);
+                err_output << "Following move: ";
+                moves[i].print(err_output);
+                err_output << "\nWhite-POV Search Score: " 
                                              << static_cast<int16_t>(white_scores.at(i))
                                              << '\n';
             }
 
-            thr_data.commons->err_output << std::endl;
+            err_output << std::endl;
             labelLog(std::cout, LOG_INFO | thread_label, "Invalid game occured");
             return false;
         }
@@ -327,13 +332,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->total_black_win_count = 0;
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = packet.thread_count;
-
-    thread_common->err_output.open(packet.err_log_dir, std::ios::app);
-
-    if (!thread_common->err_output) {
-        labelLog(std::cout, LOG_INFO, "Failed to error file open");
-        return;
-    }
+    thread_common->err_fp = packet.selfplay_filename / "err";
 
     if (GlobOpeningGenerator.isEmpty())
         GlobOpeningGenerator.load();
@@ -348,7 +347,9 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         PerThreadData per_thread_data;
 
         {
-            const std::filesystem::path fp = packet.log_dir / getWhiteWinOutputFile(id);
+            const std::filesystem::path fp = packet.selfplay_filename 
+                                                / paths::PathsManager.getWhiteWinOutputFileName(id);
+
             per_thread_data.output_white_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_white_win) {
@@ -356,8 +357,11 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
                 return;
             }
         }
+
         {
-            const std::filesystem::path fp = packet.log_dir / getBlackWinOutputFile(id);
+            const std::filesystem::path fp = packet.selfplay_filename 
+                                                / paths::PathsManager.getBlackWinOutputFileName(id);
+
             per_thread_data.output_black_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_black_win) {
@@ -365,8 +369,11 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
                 return;
             }
         }
+
         {
-            const std::filesystem::path fp = packet.log_dir / getDrawOutputFile(id);
+            const std::filesystem::path fp = packet.selfplay_filename 
+                                                / paths::PathsManager.getDrawOutputFileName(id);
+
             per_thread_data.output_draw.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_draw) {

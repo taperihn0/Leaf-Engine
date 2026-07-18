@@ -27,7 +27,8 @@ namespace utils
 {
 
 void UtilsProtocol::parseSelfPlay(TournamentCollector& collector, 
-                                  std::istringstream& strm) {
+                                  std::istringstream& strm) 
+{
     std::string token;
     strm >> std::skipws >> token;
 
@@ -49,16 +50,12 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
     const std::filesystem::path log_dir = token;
 
     strm >> std::skipws >> token;
-    const std::filesystem::path err_log_dir = token;
-
-    strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
     const TournamentCollector::TournamentPacket packet = {
         static_cast<size_t>(games_count),
         static_cast<uint>(thread_cnt),
         log_dir,
-        err_log_dir,
         limits,
     };
 
@@ -152,7 +149,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
 
             for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getWhiteWinOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getWhiteWinOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -170,7 +168,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                 }
 
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getBlackWinOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getBlackWinOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -188,7 +187,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                 }
 
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getDrawOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getDrawOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -356,22 +356,22 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
     std::filesystem::path bf_selfplay_root = selfplay_root;
     bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_shuffled");
 
-    std::vector<std::filesystem::path> session_dirs;
+    std::vector<std::filesystem::path> selfplay_dirs;
 
     for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
-        if (entry.path().filename().string().find("session") == 0 and entry.is_directory()) {
-            session_dirs.push_back(entry.path());
-		}
+        if (entry.path().filename().string().find("selfplay") == 0 and entry.is_directory()) {
+            selfplay_dirs.push_back(entry.path());
+        }
     }
 
-    std::for_each(std::execution::par, session_dirs.begin(), session_dirs.end(), [&](const auto& session_fp) {
+    std::for_each(std::execution::par, selfplay_dirs.begin(), selfplay_dirs.end(), [&](const auto& selfplay_fp) {
         {
             static std::mutex m;
             std::lock_guard lock(m);
-			std::cout << "Processing " << session_fp << std::endl;
+			std::cout << "Processing " << selfplay_fp << std::endl;
         }
 
-        const std::filesystem::path rfp = std::filesystem::relative(session_fp, selfplay_root);
+        const std::filesystem::path rfp = std::filesystem::relative(selfplay_fp, selfplay_root);
         const std::filesystem::path target = (bf_selfplay_root / rfp).replace_extension(".tdf");
 
         {
@@ -389,7 +389,7 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
 
         std::vector<BulletChessBoard> entries;
 
-        for (const auto& entry : std::filesystem::directory_iterator(session_fp)) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_fp)) {
             if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
                 std::ifstream input(entry.path(), std::ios_base::binary);
 

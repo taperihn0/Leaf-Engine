@@ -1,6 +1,8 @@
 logs/log.txt
 logs/spsa_log_*.txt
 data/selfplay/*
+data/selfplay_serialized/
+data/selfplay_shuffled/
 data/spsa/*
 data/training/*
 misc/*.txt
