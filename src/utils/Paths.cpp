@@ -60,7 +60,7 @@ void ProjectPathsManager::initMapping() {
 
     {
         const auto sets_dir = _current_path / "assets" / "nets";
-        emplaceMapping(enumDir::NETS_DIRECTORY, sets_dir, true);
+        emplaceMapping(enumDir::NETS_DIRECTORY, sets_dir);
     }
 
     {
