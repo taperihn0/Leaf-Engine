@@ -1,3 +1,13 @@
+### [commit:361f285] feature: new Neural Net with hidden layer of size 128
+```
+Score of leaf_nn128 vs leaf_base: 1308 - 1154 - 965  [0.522] 3427
+...      leaf_nn128 playing White: 892 - 244 - 577  [0.689] 1713
+...      leaf_nn128 playing Black: 416 - 910 - 388  [0.356] 1714
+...      White vs Black: 1802 - 660 - 965  [0.667] 3427
+Elo difference: 15.6 +/- 9.9, LOS: 99.9 %, DrawRatio: 28.2 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:99fe3c6] feature: reintroduced Cuckoo tables in search
 ```
 Score of leaf_base vs leaf_cuckoo: 1747 - 1719 - 2034  [0.503] 5500
