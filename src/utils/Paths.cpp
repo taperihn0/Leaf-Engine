@@ -1,3 +1,4 @@
+#include "UtilsCommon.hpp"
 #include "Paths.hpp"
 
 namespace utils::paths {

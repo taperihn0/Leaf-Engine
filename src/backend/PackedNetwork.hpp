@@ -19,7 +19,7 @@
 #pragma once
 
 #include "Common.hpp"
-#include "utils/Paths.hpp"
+#include "../utils/Paths.hpp"
 
 namespace nn {
 
@@ -28,7 +28,7 @@ static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDi
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
-static constexpr size_t  NetworkHiddenLayerSize = 192;
+static constexpr size_t  NetworkHiddenLayerSize = 160;
 static constexpr size_t  NetworkOutputSize = 1;
 static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
