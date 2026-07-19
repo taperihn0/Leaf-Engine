@@ -13,6 +13,8 @@ misc/log
 scripts/assets/
 workspaces
 CMakePresets.json
+data
+assets/
 
 build/
 
