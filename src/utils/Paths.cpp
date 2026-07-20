@@ -92,7 +92,12 @@ void ProjectPathsManager::emplaceMapping(enumDir key, const std::filesystem::pat
         throw std::runtime_error(dir.string() + " directory could not be found at the current directory");
 
     if (!required)
+#if !defined(_MSC_VER)
         std::filesystem::create_directories(dir);
+#else
+        // Working directory on Windows is just problematic, do not bother creating those directories
+        static_cast<void>(0);
+#endif
     else if (!std::filesystem::exists(dir))
         throw std::runtime_error(dir.string() + " directory could not be found at the current directory");
 
