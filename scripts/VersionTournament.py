@@ -8,7 +8,7 @@ from pathlib import Path
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
 THREAD_COUNT = 6
-TIME_CONTROL = "8+0.5"
+TIME_CONTROL = "1+0.04"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "/home/szymek/Source/Leaf/assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
@@ -96,14 +96,14 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
 
         # Engine 0 arguments
         "-engine", 
-        f"cmd={bin_0_dir.parent}", 
+        f"cmd={bin_0_dir}", 
         f"name={version_0_name}", 
         #f"initstr=export_net {ENGINE_0_NN_PATH}",
         f"initstr=setoption name SyzygyPath value {SYZYGY_PATH}",
 
         # Engine 1 arguments
         "-engine", 
-        f"cmd={bin_1_dir.parent}", 
+        f"cmd={bin_1_dir}", 
         f"name={version_1_name}", 
         #f"initstr=export_net {ENGINE_1_NN_PATH}",
         f"initstr=setoption name SyzygyPath value {SYZYGY_PATH}",
