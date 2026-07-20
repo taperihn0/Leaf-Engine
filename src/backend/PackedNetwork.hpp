@@ -28,7 +28,7 @@ static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDi
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
-static constexpr size_t  NetworkHiddenLayerSize = 160;
+static constexpr size_t  NetworkHiddenLayerSize = 128;
 static constexpr size_t  NetworkOutputSize = 1;
 static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
@@ -83,7 +83,7 @@ private:
     bool loadFromMemory(const void* m);
 
     bool initLayerWeightsBiases(const void* m);
-    void fromRVal(PackedNeuralNetwork&& network);
+    void fromRVal(PackedNeuralNetwork&& network) noexcept;
 
     void releaseFileMapping();
 

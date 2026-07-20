@@ -55,7 +55,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)),
         OptionClearHash(),
         OptionPath("SyzygyPath",    StringType("<empty>")),
-        OptionPath("NeuralNetPath", StringType(static_cast<std::string>(DefaultNeuralNetOptionPath))),
+        OptionPath("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string())),
         { // --- Tunable parameters ---
           // TODO: these may be floats aswell 
         OptionTunableParam(SpinType<double>(IidDepth,                      2.,  5.),    "IidDepth",                     2.),

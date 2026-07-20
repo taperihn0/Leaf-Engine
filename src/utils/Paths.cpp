@@ -89,12 +89,12 @@ void ProjectPathsManager::initMapping() {
 void ProjectPathsManager::emplaceMapping(enumDir key, const std::filesystem::path& dir, bool required) {
     if (std::filesystem::exists(dir) and 
         !std::filesystem::is_directory(dir))
-        throw std::runtime_error(std::string(dir) + " directory could not be found at the current directory");
+        throw std::runtime_error(dir.string() + " directory could not be found at the current directory");
 
     if (!required)
         std::filesystem::create_directories(dir);
     else if (!std::filesystem::exists(dir))
-        throw std::runtime_error(std::string(dir) + " directory could not be found at the current directory");
+        throw std::runtime_error(dir.string() + " directory could not be found at the current directory");
 
     _dir[key] = dir;
 }

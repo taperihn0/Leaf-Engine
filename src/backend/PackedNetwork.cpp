@@ -46,10 +46,12 @@ PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
     
     if (!network.loadDefaultNet()) {
         std::cout << "Failed to load default net" << std::endl;
+		throw std::runtime_error("Failed to load default net while initializing GlobPackedNetwork");
     }
 
     if (!network.isValid()) {
         std::cout << "Failed to initialize net" << std::endl;
+        throw std::runtime_error("Failed to initialize net while initializing GlobPackedNetwork");
     }
 
     return network;
@@ -58,6 +60,7 @@ PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
 PackedNeuralNetwork::PackedNeuralNetwork()
     : _mem_size(0)
     , _mem_buf(nullptr)
+    , _header{}
     , _bin_path(std::nullopt)
     , _layer_weights{}
     , _layer_biases{}
@@ -106,13 +109,13 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     _mem_size = 0;
 
 #if defined(_MSC_VER)
-    _fh = CreateFileA(path.data(), GENERIC_READ, FILE_SHARE_READ, 
+    _fh = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, 
                       nullptr, OPEN_EXISTING, 
                       FILE_ATTRIBUTE_READONLY | FILE_FLAG_SEQUENTIAL_SCAN,
                       nullptr);
 
     if (_fh == INVALID_HANDLE_VALUE) {
-        std::cout << ("Couldn't open() a file: " + static_cast<std::string>(path)) << std::endl;
+        std::cout << "Couldn't open() a file: " << path << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
@@ -121,8 +124,8 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     DWORD low_size = GetFileSize(_fh, &high_size);
 
     if (low_size == INVALID_FILE_SIZE) {
-        std::cout << ("Failed to retrieve file size via GetFileSize(): " 
-                      + static_cast<std::string>(path)) << std::endl;
+        std::cout << "Failed to retrieve file size via GetFileSize(): "  
+                  << path << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
@@ -130,8 +133,8 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     _maph = CreateFileMapping(_fh, nullptr, PAGE_READONLY, high_size, low_size, nullptr);
 
     if (_maph == INVALID_HANDLE_VALUE or _maph == nullptr) {
-        std::cout << ("Failed to create a memory maping for file: " 
-                      + static_cast<std::string>(path)) << std::endl;
+        std::cout << "Failed to create a memory maping for file: " 
+                  <<  path << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
@@ -140,8 +143,8 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     _mem_buf = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
 
     if (!_mem_buf) {
-        std::cout << ("Couldn't obtain file buffer for file: " 
-                      + static_cast<std::string>(path)) << std::endl;
+        std::cout << "Couldn't obtain file buffer for file: " 
+                  << path << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
         return false;
     }
@@ -149,14 +152,14 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     _fd = open(path.c_str(), O_RDONLY);
     
     if (_fd == -1) {
-        std::cout << ("Couldn't open() a file: " + static_cast<std::string>(path)) << std::endl;
+        std::cout << ("Couldn't open() a file: " + path.string()) << std::endl;
         return false;
     }
 
     struct stat st;
     if (fstat(_fd, &st) == -1) {
         close(_fd);
-        std::cout << ("Couldn't fstat() a file: " + static_cast<std::string>(path)) << std::endl;
+        std::cout << ("Couldn't fstat() a file: " + path.string()) << std::endl;
         return false;
     }
 
@@ -165,13 +168,13 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
 
     if (_mem_buf == MAP_FAILED) {
         close(_fd);
-        std::cout << ("Couldn't mmap() a file: " + static_cast<std::string>(path)) << std::endl;
+        std::cout << ("Couldn't mmap() a file: " + path.string()) << std::endl;
         return false;
     }
 #endif
 
     if (loadFromMemory(_mem_buf)) {
-        _bin_path = path;
+        _bin_path = path.string();
         return true;
     }
 
@@ -212,8 +215,8 @@ bool PackedNeuralNetwork::loadDefaultNet() {
     }
     else {
         std::filesystem::path devpath = DevNetworksDir;
-        devpath /= std::string(DefaultNetworkFile);
-        status = loadFromFile(std::string_view(devpath.string()));
+        devpath /= DefaultNetworkFile.string();
+        status = loadFromFile(devpath.string());
     }
 #endif
 
@@ -337,30 +340,20 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
     return true;
 }
 
-void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
+void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
 #if defined(_MSC_VER)
     _fh = network._fh;
     _maph = network._maph;
     _mem_buf = network._mem_buf;
     _mem_size = network._mem_size;
     _header = network._header;
-
-    network._mem_buf = nullptr;
-    network._mem_size = 0;
-
-    for (size_t i = 0; i < MaxLayerCount; i++) {
-        _layer_weights[i] = network._layer_weights[i];
-        _layer_biases[i] = network._layer_biases[i];
-        network._layer_weights[i] = nullptr;
-        network._layer_biases[i] = nullptr;
-    }
 #else
     _mem_buf = network._mem_buf;
     _mem_size = network._mem_size;
     _fd = network._fd;
     _header = network._header;
-
     network._fd = -1;
+#endif
     network._mem_buf = nullptr;
     network._mem_size = 0;
 
@@ -370,7 +363,6 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) {
         network._layer_weights[i] = nullptr;
         network._layer_biases[i] = nullptr;
     }
-#endif
 }
 
 void PackedNeuralNetwork::releaseFileMapping() {

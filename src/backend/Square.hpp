@@ -59,7 +59,9 @@ public:
         RANK_8
     };
 
-    Square() = default;
+    _FORCEINLINE Square() 
+        : _sq(None) {}
+
     _INLINE constexpr Square(uint_t sq)
         : _sq(sq) { 
         assert(isValid()); 
