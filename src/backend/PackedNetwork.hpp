@@ -19,11 +19,12 @@
 #pragma once
 
 #include "Common.hpp"
+#include "../utils/Paths.hpp"
 
 namespace nn {
 
-static constexpr std::string_view DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
-static constexpr std::string_view DevNetworksDir = "src/assets/nets";
+static std::filesystem::path DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
+static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDir(::utils::paths::enumDir::NETS_DIRECTORY);
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
@@ -62,7 +63,7 @@ public:
     bool isValid() const;
 
     bool loadDefaultNet();
-    bool loadFromFile(std::string_view path);
+    bool loadFromFile(std::filesystem::path path);
 
     uint getAccumulatorSize() const;
     uint getLayerSize(size_t layer_num) const;
@@ -82,7 +83,7 @@ private:
     bool loadFromMemory(const void* m);
 
     bool initLayerWeightsBiases(const void* m);
-    void fromRVal(PackedNeuralNetwork&& network);
+    void fromRVal(PackedNeuralNetwork&& network) noexcept;
 
     void releaseFileMapping();
 

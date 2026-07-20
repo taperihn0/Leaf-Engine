@@ -19,6 +19,7 @@ message(STATUS "CMake build type: ${CMAKE_BUILD_TYPE}")
 file(GLOB SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_SOURCE_DIR}/src/frontend/*.cpp"
 	"${CMAKE_SOURCE_DIR}/src/backend/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/utils/Paths.cpp"
 	"${CMAKE_SOURCE_DIR}/src/vendor/tbprobe.c"
 )
 
@@ -290,19 +291,19 @@ else ()
 endif ()
 
 configure_file(
-	"${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+	"${CMAKE_SOURCE_DIR}/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
 	"${DESTINATION_PATH}/${DEFAULT_NEURAL_NET_FILE_NAME}"
 	COPYONLY
 )
 
 configure_file(
-	"${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
+	"${CMAKE_SOURCE_DIR}/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
 	"${DESTINATION_PATH}/${CMAKE_BUILD_TYPE}/${DEFAULT_NEURAL_NET_FILE_NAME}"
 	COPYONLY
 )
 
 message(STATUS "Copying neural net file from:
-				${CMAKE_SOURCE_DIR}/src/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}
+				${CMAKE_SOURCE_DIR}/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}
 			as:
 				${DESTINATION_PATH}/${DEFAULT_NEURAL_NET_FILE_NAME}
 				${DESTINATION_PATH}/${CMAKE_BUILD_TYPE}/${DEFAULT_NEURAL_NET_FILE_NAME}")

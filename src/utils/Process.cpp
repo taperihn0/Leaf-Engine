@@ -20,7 +20,7 @@
 #include "backend/PackedNetwork.hpp"
 #include "backend/Tablebase.hpp"
 
-namespace Utils {
+namespace utils {
 
 #if defined(_MSC_VER)
 EngineProcess::~EngineProcess() {
@@ -205,4 +205,4 @@ void EngineProcess::syncUntilReady(enumLogLabel thread_label) {
     }
 }
 
-} // namespace Utils
+} // namespace utils

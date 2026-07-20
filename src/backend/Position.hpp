@@ -94,7 +94,7 @@ private:
          _queenside;
 };
 
-namespace Utils { class ExtPackedPosition; }
+namespace utils { class ExtPackedPosition; }
 
 /* Tunable Static Exchange Evaluation piece values.
 *  King score is fixed and not tuned.
@@ -111,7 +111,7 @@ inline constexpr int     SeeKingValue = 12000;
 // and game flags like castling
 class Position {
 public:
-    friend class Utils::ExtPackedPosition;
+    friend class utils::ExtPackedPosition;
     struct IrreversibleState;
 
     Position();
@@ -375,20 +375,20 @@ private:
     template <bool Root = true>
     uint64_t perft(uint depth);
 
-    array2d<BitBoard, 2, 6>     _piece_bb;
-    array1d<BitBoard, 2>        _occupied;
-    array1d<CastlingRights, 2>  _castling_rights;
-    array1d<Square, 2>          _king_sq;
-    Turn                        _turn;
-    Square                      _ep_square;
-    ZHash                       _zhash;
-    uint8_t                     _halfmove_count;
-    uint16_t                    _fullmove_count;
+    array2d<BitBoard, 2, 6>     _piece_bb = {};
+    array1d<BitBoard, 2>        _occupied = {};
+    array1d<CastlingRights, 2>  _castling_rights = {};
+    array1d<Square, 2>          _king_sq = { Square::None, Square::None };
+    Turn                        _turn = WHITE;
+    Square                      _ep_square = Square::None;
+    ZHash                       _zhash = ZHash::Undef;
+    uint8_t                     _halfmove_count = 0;
+    uint16_t                    _fullmove_count = 0;
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
-    return _queenside == rights._queenside
-        and _kingside == rights._kingside;
+    return _queenside == rights._queenside and 
+           _kingside == rights._kingside;
 }
 
 _INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {

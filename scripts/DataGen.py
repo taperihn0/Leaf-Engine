@@ -69,10 +69,9 @@ def main():
 
         log_msg(f"Launching Session {session_num}...")
 
-        safe_session_dir = session_dir.replace(os.sep, '/')
-        safe_err_file = err_file.replace(os.sep, '/')
+        safe_session_dir = f"session{session_num}"
         
-        input_cmds = f"self_play {games_per_session} {thread_count} {safe_session_dir} {safe_err_file} nodes {nodes}\n"
+        input_cmds = f"self_play {games_per_session} {thread_count} {safe_session_dir} nodes {nodes}\n"
         if (syzygy_path != "<empty>"):
             input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
 
@@ -94,7 +93,10 @@ def main():
 
         if exit_code != 0:
             log_msg(f"Crash (Code {exit_code}) in Session {session_num}.")
+
+            err_file = os.path.normpath(os.path.join(session_dir, "err"))
             time_now = datetime.now().strftime("%H:%M:%S")
+
             with open(err_file, "a", encoding="utf-8") as f:
                 f.write(f"[{time_now}] SCRIPT: Process exited with code {exit_code}\n")
             

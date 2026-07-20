@@ -144,7 +144,6 @@ struct NodeInfo {
     uint8_t                      move_index;
     TTBound                      bound;
     AccumulatorCluster           cluster;
-    bool                         cuckoo_check;
     array1d<PVInfo, MaxSelDepth> pv_line;
     uint16_t                     pv_line_len;
     bool                         is_cut;

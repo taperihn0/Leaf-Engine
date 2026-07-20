@@ -26,7 +26,7 @@
 #include "Opening.hpp"
 #include "SPSA.hpp"
 
-namespace Utils {
+namespace utils {
 
 /* 
 *  We define a superset of UCI procotol exclusive for 
@@ -39,16 +39,17 @@ public:
 
     void loop(int argc, const char* argv[]);
 private:
-    void parseSelfPlay(Utils::TournamentCollector& collector, std::istringstream& strm);
+    void parseSelfPlay(utils::TournamentCollector& collector, std::istringstream& strm);
     void parseShowPositions(std::istringstream& strm);
     void parseVerifySession(std::istringstream& strm);
     void parseSPSA(std::istringstream& strm);
     void parsePerft(std::istringstream& strm);
     void parseBulletFormat(std::istringstream& strm);
     void parseTestBulletFormat(std::istringstream& strm);
-    
+    void parseDataShuffles(std::istringstream& strm);
+
     TournamentCollector _collector;
     SPSA_Tuning         _tuner;
 };
 
-} // namespace Utils
+} // namespace utils

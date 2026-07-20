@@ -29,7 +29,7 @@
 #define _CRAFTY_OPENING_SET
 #endif
 
-namespace Utils {
+namespace utils {
 
 class OpeningManBase
 {
@@ -91,4 +91,4 @@ private:
     std::vector<Position> _positions;
 };
 
-} // namespace Utils
+} // namespace utils

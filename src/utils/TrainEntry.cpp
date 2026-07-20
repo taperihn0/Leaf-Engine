@@ -20,7 +20,7 @@
 
 #include <sstream>
 
-namespace Utils {
+namespace utils {
 
 bool BulletChessBoard::write(std::ostream& output, const BulletChessBoard& bf) {
     assert(output);
@@ -183,4 +183,4 @@ const PackedPosition& TrainingDataEntry::getPosition() const {
     return _packed_pos;
 }
 
-} // Utils
+} // utils

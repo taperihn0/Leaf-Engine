@@ -26,7 +26,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace Utils {
+namespace utils {
 
 static constexpr uint   IterCount = 6000;
 static constexpr int    A = IterCount / 10;
@@ -355,4 +355,4 @@ _INLINE int SPSA_Tuning::match(SearchLimits limits,
     return 0;
 }
 
-} // namespace Utils
+} // namespace utils

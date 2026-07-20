@@ -22,7 +22,7 @@
 
 #include <fstream>
 
-namespace Utils {
+namespace utils {
 
 class ExtPackedPosition;
 
@@ -153,4 +153,4 @@ private:
     ClockData _clock_data;
 };
 
-} // namespace Utils
+} // namespace utils

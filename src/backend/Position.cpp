@@ -42,7 +42,6 @@ Position::Position() {
     std::fill(_piece_bb[1].begin(), _piece_bb[1].end(), 0);
     _occupied[0] = BitBoard::Empty;
     _occupied[1] = BitBoard::Empty;
-    _zhash = BitBoard::Empty;
 }
 
 Position::Position(std::string init_fen) {

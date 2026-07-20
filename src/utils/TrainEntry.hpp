@@ -20,7 +20,7 @@
 
 #include "PackedPosition.hpp"
 
-namespace Utils {
+namespace utils {
 
 /* BulletChessBoard is direct mapping
 *  of bullet-format entry used in bullet while training.
@@ -105,4 +105,4 @@ private:
     PackedPosInfo  _game_details;
 };
 
-} // namespace Utils
+} // namespace utils

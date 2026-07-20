@@ -1,28 +1,27 @@
 logs/log.txt
 logs/spsa_log_*.txt
+data/selfplay/*
+data/selfplay_serialized/
+data/selfplay_shuffled/
+data/spsa/*
+data/training/*
 misc/*.txt
 misc/*.key
-misc/selfplay/
-misc/selfplay_serialized/
-misc/spsa/
-misc/selfplay*/
-misc/selfplay_*
-misc/selfplay_legacy/
 misc/tmp
 misc/log
+misc/final
 scripts/assets/
 workspaces
 CMakePresets.json
 data
-assets/
 
 build/
 
-src/assets/lichess/*
-src/assets/books/UHO_Lichess_4852_v1.epd
-src/assets/tmp/*
-src/assets/sets
-src/assets/tb
+assets/lichess/*
+assets/books/UHO_Lichess_4852_v1.epd
+assets/tmp/*
+assets/sets
+assets/tb
 **/*.zip
 
 **/tmp

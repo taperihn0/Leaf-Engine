@@ -41,9 +41,15 @@
 #include <unistd.h>
 #endif
 
+#if defined(LEAF_ENABLE_BMI2) and defined(__GNUC__)
+// PEXT instructions for GCC
+#include <x86gprintrin.h>
+#endif
+
 #if defined(_MSC_VER)
 #undef min
 #undef max
+#undef FAILED
 #endif
 
 #if defined(__GNUC__)

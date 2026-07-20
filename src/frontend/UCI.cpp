@@ -45,9 +45,9 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 }
 
 #if defined(_USE_EMBEDDED_NEURAL_NET)
-static constexpr std::string_view DefaultNeuralNetOptionPath = "<embedded:" DEFAULT_NEURAL_NET_FILE_NAME ">";
+static std::string_view DefaultNeuralNetOptionPath = "<embedded:" DEFAULT_NEURAL_NET_FILE_NAME ">";
 #else
-static constexpr std::string_view DefaultNeuralNetOptionPath = nn::DefaultNetworkFile;
+static std::filesystem::path DefaultNeuralNetOptionPath = nn::DefaultNetworkFile;
 #endif
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
@@ -55,7 +55,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)),
         OptionClearHash(),
         OptionPath("SyzygyPath",    StringType("<empty>")),
-        OptionPath("NeuralNetPath", StringType(static_cast<std::string>(DefaultNeuralNetOptionPath))),
+        OptionPath("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string())),
         { // --- Tunable parameters ---
           // TODO: these may be floats aswell 
         OptionTunableParam(SpinType<double>(IidDepth,                      2.,  5.),    "IidDepth",                     2.),
@@ -382,7 +382,7 @@ void UniversalChessInterface::parseSEE(std::istringstream& strm) {
     Square org = Square::fromChar(os[0], os[1]);
     Square dst = Square::fromChar(ds[0], ds[1]);
     int score = _pos.staticExchangeEval<false>(org, dst, _pos.pieceOn(dst, _pos.getOppositeTurn()), 
-                                              _pos.pieceOn(org, _pos.getTurn()));
+                                               _pos.pieceOn(org, _pos.getTurn()));
     std::cout << score << std::endl;
 }
 
@@ -394,6 +394,8 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
 
     if (fen == "startpos")
         pos.setStartingPos();
+	else if (fen == "kiwipete")
+        pos.setByFEN(std::string(KiwipeteFEN));
     else
         pos.setByFEN(fen);
 
@@ -550,7 +552,7 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
 
     timer.go();
 
-    std::for_each(Utils::BenchmarkSet.begin(), Utils::BenchmarkSet.end(), 
+    std::for_each(utils::BenchmarkSet.begin(), utils::BenchmarkSet.end(), 
         [&](const std::string_view& fen) {
             Position pos(fen);
 

@@ -23,11 +23,12 @@
 #include <variant>
 #include <execution>
 
-namespace Utils
+namespace utils
 {
 
 void UtilsProtocol::parseSelfPlay(TournamentCollector& collector, 
-                                  std::istringstream& strm) {
+                                  std::istringstream& strm) 
+{
     std::string token;
     strm >> std::skipws >> token;
 
@@ -49,16 +50,12 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
     const std::filesystem::path log_dir = token;
 
     strm >> std::skipws >> token;
-    const std::filesystem::path err_log_dir = token;
-
-    strm >> std::skipws >> token;
     SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
     const TournamentCollector::TournamentPacket packet = {
         static_cast<size_t>(games_count),
         static_cast<uint>(thread_cnt),
         log_dir,
-        err_log_dir,
         limits,
     };
 
@@ -152,7 +149,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
 
             for (uint id = 1; id <= static_cast<uint>(PlatformThreadLimit); id++) {
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getWhiteWinOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getWhiteWinOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -170,7 +168,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                 }
 
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getBlackWinOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getBlackWinOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -188,7 +187,8 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                 }
 
                 {
-                    std::filesystem::path fp = tournament_dir / session_fp / getDrawOutputFile(id);
+                    std::filesystem::path fp = tournament_dir / session_fp 
+                                                / paths::PathsManager.getDrawOutputFileName(id);
                     std::ifstream input(fp, std::ios_base::binary);
 
                     if (input) {
@@ -245,7 +245,11 @@ void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
     std::atomic<bool> success = true;
 
     std::for_each(std::execution::par, tdf_files.begin(), tdf_files.end(), [&](const auto& fp) {
-        std::cout << "Processing " << fp << std::endl;
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+            std::cout << "Processing " << fp << std::endl;
+        }
 
         const std::filesystem::path rfp = std::filesystem::relative(fp, selfplay_root);
         const std::filesystem::path target = bf_selfplay_root / rfp;
@@ -256,7 +260,7 @@ void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
             std::filesystem::create_directories(target.parent_path());
         }
 
-        std::ifstream input(fp);
+        std::ifstream input(fp, std::ios_base::binary);
 
         if (!input) {
             std::cout << "Failed to open input file: " << fp << std::endl;
@@ -338,6 +342,77 @@ void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
     else {
         std::cout << "Bullet test failed: aborting" << std::endl;
     }
+}
+
+void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
+    std::filesystem::path selfplay_root;
+    strm >> std::skipws >> selfplay_root;
+
+    if (!std::filesystem::exists(selfplay_root)) {
+        std::cerr << "Invalid selfplay directory root: " << selfplay_root << '\n';
+        return;
+    }
+
+    std::filesystem::path bf_selfplay_root = selfplay_root;
+    bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_shuffled");
+
+    std::vector<std::filesystem::path> selfplay_dirs;
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
+        if (entry.path().filename().string().find("selfplay") == 0 and entry.is_directory()) {
+            selfplay_dirs.push_back(entry.path());
+        }
+    }
+
+    std::for_each(std::execution::par, selfplay_dirs.begin(), selfplay_dirs.end(), [&](const auto& selfplay_fp) {
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+			std::cout << "Processing " << selfplay_fp << std::endl;
+        }
+
+        const std::filesystem::path rfp = std::filesystem::relative(selfplay_fp, selfplay_root);
+        const std::filesystem::path target = (bf_selfplay_root / rfp).replace_extension(".tdf");
+
+        {
+            static std::mutex m;
+            std::lock_guard lock(m);
+            std::filesystem::create_directories(target.parent_path());
+        }
+
+        std::ofstream output(target, std::ios_base::binary);
+
+        if (!output) {
+            std::cout << "Failed to open output file: " << target << std::endl;
+            return;
+        }
+
+        std::vector<BulletChessBoard> entries;
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_fp)) {
+            if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
+                std::ifstream input(entry.path(), std::ios_base::binary);
+
+                if (!input) {
+                    std::cout << "Failed to open input file: " << entry.path() << std::endl;
+                    return;
+                }
+
+                for (BulletChessBoard entry; BulletChessBoard::read(input, entry); ) {
+                    entries.push_back(entry);
+                }
+            }
+        }
+
+        std::shuffle(entries.begin(), entries.end(), GlobMersenne);
+
+        for (const auto& entry : entries) {
+            if (!BulletChessBoard::write(output, entry)) {
+                std::cout << "Failed to write entry to output: " << target << std::endl;
+                return;
+            }
+		}
+    });
 }
 
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
@@ -446,7 +521,7 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         // Standard UCI commands
              if (token == "uci")                   parseUCI();
         else if (token == "ucinewgame")            parseNewGame();
-        else if (token == "position")               parsePosition(strm);
+        else if (token == "position")              parsePosition(strm);
         else if (token == "go")                    parseGo(strm);
         else if (token == "isready")               parseIsReady();
         else if (token == "options")               parseShowOptions();
@@ -476,6 +551,8 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "self_play")             parseSelfPlay(_collector, strm);
         // Transform data to bullet format (bullet-trainer compatible)
         else if (token == "to_bullet_format")      parseBulletFormat(strm);
+        // Shuffle bullet format data
+		else if (token == "shuffle_data")          parseDataShuffles(strm);
 
         // Setup and start SPSA tuning
         else if (token == "spsa")                  parseSPSA(strm);
@@ -489,4 +566,4 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
     } while (command != "quit");
 }
 
-} // namespace Utils
+} // namespace utils

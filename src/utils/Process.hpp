@@ -31,7 +31,7 @@
 #include <ext/stdio_filebuf.h>
 #endif
 
-namespace Utils {
+namespace utils {
 
 class EngineProcess {
 public:
@@ -59,4 +59,4 @@ public:
     std::unique_ptr<std::istream> proc_stdout = nullptr;
 };
 
-} // namespace Utils
+} // namespace utils

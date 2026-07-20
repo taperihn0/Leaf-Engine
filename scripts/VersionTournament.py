@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 # --- Tournament configurations ---
-GAMES_COUNT = 5500
+GAMES_COUNT = 8000
 THREAD_COUNT = 6
 TIME_CONTROL = "1+0.04"
 CMAKE_PRESET = "final"
@@ -14,8 +14,6 @@ OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
 ENGINE_NAME = "Leaf"
 SYZYGY_PATH = "assets/tb/Syzygy"
-ENGINE_0_NN_PATH = "/home/szymek/Source/Leaf/src/assets/nets/nn128_60_h.bin"
-ENGINE_1_NN_PATH = "/home/szymek/ChessEngines/src/assets/nets_copy/publius_net128_0_h.bin"
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
 BINARY_PRESET_DIR = "Release" if CMAKE_PRESET == "final" or CMAKE_PRESET == "release" else "Debug"
@@ -98,14 +96,12 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
         "-engine", 
         f"cmd={bin_0_dir}", 
         f"name={version_0_name}", 
-        f"initstr=export_net {ENGINE_0_NN_PATH}",
         f"initstr=setoption name SyzygyPath value {SYZYGY_PATH}",
 
         # Engine 1 arguments
         "-engine", 
         f"cmd={bin_1_dir}", 
         f"name={version_1_name}", 
-        f"initstr=export_net {ENGINE_1_NN_PATH}",
         f"initstr=setoption name SyzygyPath value {SYZYGY_PATH}",
 
         # Configure common settings

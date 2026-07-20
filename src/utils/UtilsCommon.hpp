@@ -36,7 +36,7 @@
 #define INSPECT_SELFPLAY_MATCHES
 #endif
 
-namespace Utils {
+namespace utils {
 
 _INLINE size_t getIStreamBytesLeft(std::istream& input) {
     auto curr_bytes = input.tellg();
@@ -140,19 +140,4 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
 
 static constexpr int SelfPlaySessionCountLimit = 256;
 
-_INTERNAL std::filesystem::path getWhiteWinOutputFile(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
-    return "selfplay_white_win_thread_" + std::to_string(thread_num) + ".tdf";
-}
-
-_INTERNAL std::filesystem::path getBlackWinOutputFile(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
-    return "selfplay_black_win_thread_" + std::to_string(thread_num) + ".tdf";
-}
-
-_INTERNAL std::filesystem::path getDrawOutputFile(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
-    return "selfplay_draw_thread_" + std::to_string(thread_num) + ".tdf";
-}
-
-} // namespace Utils
+} // namespace utils

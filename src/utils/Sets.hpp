@@ -19,11 +19,12 @@
 #pragma once
 
 #include "UtilsCommon.hpp"
+#include "Paths.hpp"
 
 #include <string_view>
 #include <filesystem>
 
-namespace Utils {
+namespace utils {
 
 _INTERNAL const std::vector<std::string_view> BenchmarkSet = {
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -2875,7 +2876,8 @@ _INTERNAL const std::vector<std::string>& getCraftyOpenings() {
     return CraftyOpenings;
 }
 
-static std::filesystem::path LichessUHOPath = "src/assets/books/UHO_Lichess_4852_v1.epd";
+static std::filesystem::path LichessUHOPath = paths::PathsManager.getDir(paths::enumDir::OPENING_BOOKS_DIRECTORY) 
+                                                / "UHO_Lichess_4852_v1.epd";
 _INTERNAL std::vector<std::string> LichessUHO_Openings;
 
 _INTERNAL void loadUHOOpenings() {
@@ -2895,4 +2897,4 @@ _INTERNAL const std::vector<std::string>& getLichessUHO_Openings() {
     return LichessUHO_Openings;
 }
 
-} // namespace Utils
+} // namespace utils
