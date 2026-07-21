@@ -215,9 +215,9 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
 }
 
 _INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffer(size_t size, const void* data) {
-    const size_t align_size = size; // !!!
+    const size_t align_size = mem::getAlignedUpSize(size, CachelineSize);
 
-    auto aligned_ptr = mem::makeAlignedUnique<std::byte>(size, CachelineSize);
+    auto aligned_ptr = mem::makeAlignedUnique<std::byte>(align_size, CachelineSize);
 
     mem::memCopy(reinterpret_cast<void*>(aligned_ptr.get()), 
                  data, 

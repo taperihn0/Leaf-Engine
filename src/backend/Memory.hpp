@@ -28,6 +28,12 @@
 
 namespace mem {
 
+constexpr static _FORCEINLINE size_t getAlignedUpSize(size_t size, size_t align) {
+    if (size % align == 0)
+        return size;
+    return size + (align - size % align);
+}
+
 static _FORCEINLINE void prefetch(const void* addr) {
 #ifdef _ENABLE_PREFETCH
 #if defined(_MSC_VER) or defined(_INTEL_COMPILER)
