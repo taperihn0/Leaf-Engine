@@ -38,7 +38,7 @@ INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
 static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
 
-#else defined(_USE_EMBEDDED_NEURAL_NET) and defined(_MSC_VER)
+#elif defined(_USE_EMBEDDED_NEURAL_NET) and defined(_MSC_VER)
 /* Embed resources on MSVC */
 
 #include "win-embed/Resource.h"
@@ -178,9 +178,9 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     }
 
     _mem_size = static_cast<size_t>(st.st_size);
-    _mem_buf = mmap(nullptr, _mem_size, PROT_READ, MAP_PRIVATE, _fd, 0);
+    _file_mem_buf = mmap(nullptr, _mem_size, PROT_READ, MAP_PRIVATE, _fd, 0);
 
-    if (_mem_buf == MAP_FAILED) {
+    if (_file_mem_buf == MAP_FAILED) {
         close(_fd);
         std::cout << ("Couldn't mmap() a file: " + path.string()) << std::endl;
         return false;
@@ -215,6 +215,8 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
 }
 
 _INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffer(size_t size, const void* data) {
+    const size_t align_size = size; // !!!
+
     auto aligned_ptr = mem::makeAlignedUnique<std::byte>(size, CachelineSize);
 
     mem::memCopy(reinterpret_cast<void*>(aligned_ptr.get()), 
@@ -369,17 +371,15 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
 }
 
 void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
-#if defined(_MSC_VER)
-    _fh = network._fh;
-    _maph = network._maph;
     _file_mem_buf = network._file_mem_buf;
     _mem_size = network._mem_size;
     _header = network._header;
+
+#if defined(_MSC_VER)
+    _fh = network._fh;
+    _maph = network._maph;
 #else
-    _mem_buf = network._mem_buf;
-    _mem_size = network._mem_size;
     _fd = network._fd;
-    _header = network._header;
     network._fd = -1;
 #endif
     network._file_mem_buf = nullptr;
@@ -404,8 +404,8 @@ void PackedNeuralNetwork::releaseFileMapping() {
         CloseHandle(_maph);
     }
 #else
-    if (_fd != -1 and _mem_buf and _mem_buf != MAP_FAILED) {
-        munmap(_mem_buf, _mem_size);
+    if (_fd != -1 and _file_mem_buf.value() and _file_mem_buf.value() != MAP_FAILED) {
+        munmap(_file_mem_buf.value(), _mem_size);
         close(_fd);
     }
 #endif
