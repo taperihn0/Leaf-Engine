@@ -13,7 +13,7 @@ CMAKE_PRESET = "final"
 OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
 ENGINE_NAME = "Leaf"
-SYZYGY_PATH = "assets/tb/Syzygy"
+SYZYGY_PATH = "/home/Szymek/Source/Leaf/assets/tb/Syzygy"
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
 BINARY_PRESET_DIR = "Release" if CMAKE_PRESET == "final" or CMAKE_PRESET == "release" else "Debug"

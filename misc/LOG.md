@@ -1,3 +1,12 @@
+### [commit:573954f] feature: Tuning with new Neural Net
+```
+Score of leaf-nn128-tuned vs leaf-nn128: 972 - 769 - 1119  [0.535] 2860
+...      leaf-nn128-tuned playing White: 649 - 268 - 513  [0.633] 1430
+...      leaf-nn128-tuned playing Black: 323 - 501 - 606  [0.438] 1430
+...      White vs Black: 1150 - 591 - 1119  [0.598] 2860
+Elo difference: 24.7 +/- 9.9, LOS: 100.0 %, DrawRatio: 39.1 %
+```
+
 ### [commit:361f285] feature: new Neural Net with hidden layer of size 128
 ```
 Score of leaf_nn128 vs leaf_base: 1308 - 1154 - 965  [0.522] 3427
