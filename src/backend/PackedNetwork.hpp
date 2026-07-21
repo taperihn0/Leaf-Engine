@@ -19,7 +19,7 @@
 #pragma once
 
 #include "Common.hpp"
-#include "../utils/Paths.hpp"
+#include "utils/Paths.hpp"
 
 namespace nn {
 

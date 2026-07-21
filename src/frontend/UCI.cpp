@@ -484,7 +484,6 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
             _options.syzygy_opt.set(token);
             _UNUSED const bool status = SyzygyTablebase::get().loadSyzygyFile(token);
 
-#if defined(DEBUG)
             if (!status) {
                 std::cout << "Failed to load Syzygy Tablebase" << std::endl;
                 return;
@@ -493,7 +492,6 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
                 std::cout << "Loaded Syzygy Tablebase" << std::endl;
                 return;
             }
-#endif
         }
     }
 

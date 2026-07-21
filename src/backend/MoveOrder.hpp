@@ -40,7 +40,7 @@ public:
     MoveOrderHistoryTables() { clearQuietsHistory(); }
 
     _INLINE void clearQuietsHistory() {
-        mem::memSet(_quiets_history[0][0].data(), 0, sizeof(_quiets_history));
+        mem::memSet(dataOfArray3d(_quiets_history), 0, sizeof(_quiets_history));
     }
 private:
     array3d<int16_t, 2, 6, 64> _quiets_history;
@@ -48,8 +48,8 @@ private:
 };
 
 enum OrderType : uint8_t {
-    STAGED           = 1, // At nmSearch nodes
-    QUIESCENT       = 2, // At qSearch nodes
+    STAGED         = 1, // At nmSearch nodes
+    QUIESCENT      = 2, // At qSearch nodes
     ONCE_GEN_LEGAL = 3  // At root node
 };
 
@@ -57,15 +57,15 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(12.8698f);
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(3.67839f);
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(61.2721f);
-inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(287.847f);
-inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(324.501f);
-inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(125.384f);
-inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(102.62f);
-inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(180.545f);
-inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(953.077f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(13.2894f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(3.82573f);
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(35.8628f);
+inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(291.056f);
+inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(317.81f);
+inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(114.02f);
+inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(105.886f);
+inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(200.029f);
+inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(922.726f);
 
 /*  Static parameters in move ordering -
 *   These are not tuned.
@@ -92,9 +92,9 @@ public:
 
     template <OrderType Type, bool Root>
     _NODISCARD bool nextMove(const NodeInfo* node, 
-                               Position& pos, 
-                               Move32b& next_move,
-                               int16_t& move_score);
+                             Position& pos, 
+                             Move32b& next_move,
+                             int16_t& move_score);
 
     void setHashMove(Move32b m);
     void setKillerMove(Move32b m, uint64_t parent_hash);
@@ -127,8 +127,8 @@ private:
     void scoreQuiets(size_t first_ind, enumColor side);
 
     bool nextMoveFromOnceGen(Position& pos, 
-                               Move32b& next_move,
-                               int16_t& move_score);
+                             Move32b& next_move,
+                             int16_t& move_score);
 
     enum class enumStage : uint8_t {
         NONE,
@@ -154,8 +154,8 @@ private:
     size_t    _iterator    = 0;
     size_t    _quiets_ind  = 0;
 
-    Move32b     _hash_move       = Move32b::Null;
-    Move32b     _killer_move  = Move32b::Null;
+    Move32b _hash_move     = Move32b::Null;
+    Move32b _killer_move   = Move32b::Null;
     uint64_t _killer_move_parent_hash = 0;
 
     MoveList _move_list;
