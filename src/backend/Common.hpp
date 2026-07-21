@@ -116,8 +116,9 @@
 
 static constexpr size_t CachelineSize = 64;
 
-#if defined(__GNUC__) and !defined(DEBUG)
-// Loading embedded net do not work for debug builds
+#if (defined(__GNUC__) and !defined(DEBUG)) or \
+    (defined(_MSC_VER))                        \
+// Loading embedded net do not work for debug builds while compiling with GCC
 #define _USE_EMBEDDED_NEURAL_NET
 #endif
 

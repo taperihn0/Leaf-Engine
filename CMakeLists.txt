@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(Leaf)
+project(Leaf LANGUAGES CXX RC)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug
@@ -24,6 +24,17 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 )
 
 set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE CXX)
+
+if (MSVC)
+	set_source_files_properties(
+	    "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc"
+	    PROPERTIES
+	    LANGUAGE RC
+	)
+
+	list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc")
+	list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/src/backend/win-embed/WinEmbed.hpp")
+endif()
 
 if (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")

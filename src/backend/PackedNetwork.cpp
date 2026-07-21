@@ -24,7 +24,9 @@
 #include <fcntl.h>
 #endif
 
-#if defined(_USE_EMBEDDED_NEURAL_NET)
+#if defined(_USE_EMBEDDED_NEURAL_NET) and defined(__GNUC__) 
+/* Embed resources on GCC */
+
 #include "vendor/incbin.h"
 
 #undef INCBIN_PREFIX
@@ -35,6 +37,17 @@ INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
 static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
+
+#else defined(_USE_EMBEDDED_NEURAL_NET) and defined(_MSC_VER)
+/* Embed resources on MSVC */
+
+#include "win-embed/Resource.h"
+#include "win-embed/WinEmbed.hpp"
+
+static auto NeuralNetResource = rh::loadResource(IDR_NNUE);
+static const void* EmbeddedNetworkAddr = NeuralNetResource.data;
+static size_t EmbeddedNetworkSize = NeuralNetResource.size;
+
 #endif
 
 static bool UseEmbeddedNetwork = false;
@@ -58,8 +71,9 @@ PackedNeuralNetwork GlobPackedNetwork = []() -> PackedNeuralNetwork {
 }();
 
 PackedNeuralNetwork::PackedNeuralNetwork()
-    : _mem_size(0)
-    , _mem_buf(nullptr)
+    : _align_buf_handler(nullptr)
+    , _mem_size(0)
+    , _file_mem_buf(std::nullopt)
     , _header{}
     , _bin_path(std::nullopt)
     , _layer_weights{}
@@ -140,9 +154,9 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     }
 
     _mem_size = (static_cast<size_t>(high_size) << 32) | low_size;
-    _mem_buf = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
+    _file_mem_buf = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
 
-    if (!_mem_buf) {
+    if (!_file_mem_buf.value()) {
         std::cout << "Couldn't obtain file buffer for file: " 
                   << path << std::endl;
         std::cout << "Windows error code: " << GetLastError() << std::endl;
@@ -173,7 +187,7 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     }
 #endif
 
-    if (loadFromMemory(_mem_buf)) {
+    if (loadFromMemory(_file_mem_buf.value())) {
         _bin_path = path.string();
         return true;
     }
@@ -200,15 +214,29 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
     return initLayerWeightsBiases(m);
 }
 
+_INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffer(size_t size, const void* data) {
+    auto aligned_ptr = mem::makeAlignedUnique<std::byte>(size, CachelineSize);
+
+    mem::memCopy(reinterpret_cast<void*>(aligned_ptr.get()), 
+                 data, 
+                 size);
+
+	return aligned_ptr;
+}
+
 bool PackedNeuralNetwork::loadDefaultNet() {
     bool status = false;
 
 #if defined(_USE_EMBEDDED_NEURAL_NET)
     UseEmbeddedNetwork = true;
-    _mem_buf = nullptr;
+    _file_mem_buf = nullptr;
     _mem_size = EmbeddedNetworkSize;
-    _bin_path = DefaultNetworkFile;
-    status = loadFromMemory(EmbeddedNetworkAddr);
+
+    _align_buf_handler = createAlignedBuffer(_mem_size, EmbeddedNetworkAddr);
+    // now we can use aligned buffer as actual network mapping
+
+    _bin_path = DefaultNetworkFile.string();
+    status = loadFromMemory(_align_buf_handler.get());
 #else
     if (std::filesystem::exists(DefaultNetworkFile)) {
         status = loadFromFile(DefaultNetworkFile);
@@ -344,7 +372,7 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
 #if defined(_MSC_VER)
     _fh = network._fh;
     _maph = network._maph;
-    _mem_buf = network._mem_buf;
+    _file_mem_buf = network._file_mem_buf;
     _mem_size = network._mem_size;
     _header = network._header;
 #else
@@ -354,7 +382,7 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
     _header = network._header;
     network._fd = -1;
 #endif
-    network._mem_buf = nullptr;
+    network._file_mem_buf = nullptr;
     network._mem_size = 0;
 
     for (size_t i = 0; i < MaxLayerCount; i++) {
@@ -370,8 +398,8 @@ void PackedNeuralNetwork::releaseFileMapping() {
         return;
 
 #if defined(_MSC_VER)
-    if (_fh != INVALID_HANDLE_VALUE and _maph != INVALID_HANDLE_VALUE and _mem_buf) {
-        UnmapViewOfFile(_mem_buf);
+    if (_fh != INVALID_HANDLE_VALUE and _maph != INVALID_HANDLE_VALUE and _file_mem_buf.value_or(nullptr)) {
+        UnmapViewOfFile(_file_mem_buf.value());
         CloseHandle(_fh);
         CloseHandle(_maph);
     }

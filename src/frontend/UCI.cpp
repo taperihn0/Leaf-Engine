@@ -58,7 +58,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionPath("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string())),
         { // --- Tunable parameters ---
           // TODO: these may be floats aswell 
-        OptionTunableParam(SpinType<double>(IidDepth,                      2.,  5.),    "IidDepth",                     2.),
+        OptionTunableParam(SpinType<double>(IidDepth,                     2.,  5.),     "IidDepth",                     2.),
         OptionTunableParam(SpinType<double>(IidDepthDiv,                  8.,  14.),    "IidDepthDiv",                  2.),
         OptionTunableParam(SpinType<double>(RfpDepth,                     2.,  4.),     "RfpDepth",                     2.),
         OptionTunableParam(SpinType<double>(RazorDepth,                   2.,  4.),     "RazorDepth",                   2.),
@@ -537,7 +537,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseBench(std::istringstream& strm) {
-    static constexpr int BenchDepth = 9;
+    static constexpr int BenchDepth = 10;
 
     int depth = BenchDepth;
     strm >> std::skipws >> depth;

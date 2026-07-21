@@ -42,7 +42,7 @@ jobs:
               simd: ARCHITECTURE_ARM
               arch_exclusive: OFF
               bmi2: OFF
-              
+
 
     steps:
     - name: Checkout

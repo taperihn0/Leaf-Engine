@@ -20,6 +20,7 @@
 
 #include "Common.hpp"
 #include "utils/Paths.hpp"
+#include "Memory.hpp"
 
 namespace nn {
 
@@ -82,6 +83,9 @@ public:
 private:
     bool loadFromMemory(const void* m);
 
+    /* Create own aligned buffer for embedded network and return handler. */
+    mem::AlignedUniquePtr<std::byte> createAlignedBuffer(size_t size, const void* data);
+
     bool initLayerWeightsBiases(const void* m);
     void fromRVal(PackedNeuralNetwork&& network) noexcept;
 
@@ -94,8 +98,12 @@ private:
     int _fd = -1;
 #endif
 
+	/* We map embedded network onto our own aligned buffer 
+    *  to guarantee proper alignment for SIMD operations.
+    */
+	mem::AlignedUniquePtr<std::byte>	   _align_buf_handler;
     size_t                                 _mem_size;
-    void*                                  _mem_buf;
+    std::optional<void*>                   _file_mem_buf;
     Header                                 _header;
     std::optional<std::string>             _bin_path;
     array1d<const int16_t*, MaxLayerCount> _layer_weights;
