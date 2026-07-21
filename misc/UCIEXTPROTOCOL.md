@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This engine implements the standard Universal Chess Interface (UCI) protocol together with several custom extensions intended for development, testing, self-play data generation, neural network management and debugging.
+This engine implements the standard Universal Chess Interface (UCI) protocol together with several custom extensions intended for development, testing, self-play data generation, neural network management and debugging. *These might be outdated*
 
 All commands are case-sensitive.
 
