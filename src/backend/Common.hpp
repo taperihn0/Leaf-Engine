@@ -289,11 +289,16 @@ static thread_local uint GlobRandomSeed = GlobFixedSeed;
 static thread_local uint GlobRandomSeed = std::random_device{}();
 #endif
 
+_INLINE std::mt19937_64& getRandomEngine() {
+    static thread_local std::mt19937_64 engine(static_cast<uint64_t>(GlobRandomSeed));
+    return engine;
+}
+
 template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
 _INLINE T random(T l, T r) {
-    static thread_local std::mt19937 mersenne(GlobRandomSeed);
-    std::uniform_int_distribution<T> dist(l, r);
-    return dist(mersenne);
+    const uint64_t rand = getRandomEngine()();     
+    const uint64_t range = static_cast<uint64_t>(r - l + 1);
+    return static_cast<T>(l + static_cast<T>(rand % range));
 }
 
 template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
