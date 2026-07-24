@@ -57,15 +57,15 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(13.2894f);
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(3.82573f);
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(35.8628f);
-inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(291.056f);
-inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(317.81f);
-inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(114.02f);
-inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(105.886f);
-inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(200.029f);
-inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(922.726f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(12.7501f);
+inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(4.03226f);
+inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(54.0528f);
+inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(277.09f);
+inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(329.986f);
+inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(83.7102f);
+inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(112.354f);
+inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(233.922f);
+inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(944.733f);
 
 /*  Static parameters in move ordering -
 *   These are not tuned.

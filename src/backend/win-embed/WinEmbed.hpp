@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Windows.h>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 #include <stdexcept>
 #include <cstddef>
 

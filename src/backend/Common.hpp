@@ -35,9 +35,11 @@
 #include <filesystem>
 #include <optional>
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #include <windows.h>
-#else
+#endif
+
+#if defined(__GNUC__)
 #include <unistd.h>
 #endif
 
@@ -46,7 +48,7 @@
 #include <x86gprintrin.h>
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #undef min
 #undef max
 #undef FAILED
@@ -117,7 +119,7 @@
 static constexpr size_t CachelineSize = 64;
 
 #if (defined(__GNUC__) and !defined(DEBUG)) or \
-    (defined(_MSC_VER))                        \
+    defined(_MSC_VER)                          \
 // Loading embedded net do not work for debug builds while compiling with GCC
 #define _USE_EMBEDDED_NEURAL_NET
 #endif
@@ -203,8 +205,7 @@ inline constexpr size_t operator""_MB(ull mb_count) {
 #define DEBUG_BREAK() __builtin_trap()
 #endif
 
-namespace xxassertutil
-{
+namespace xxassertutil {
 
 _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
     std::cout << text << '\n' << file << ", line " << line << std::endl;
@@ -286,7 +287,7 @@ static std::mt19937 GlobMersenne(GlobFixedSeed);
 #if !defined(LEAF_BUILD_UTILS)
 static thread_local uint GlobRandomSeed = GlobFixedSeed;
 #else
-static thread_local uint GlobRandomSeed = std::random_device{}();
+static thread_local uint GlobRandomSeed = GlobFixedSeed; // !!! std::random_device{}();
 #endif
 
 _INLINE std::mt19937_64& getRandomEngine() {

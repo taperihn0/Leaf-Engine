@@ -91,7 +91,7 @@ private:
 
     void releaseFileMapping();
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
     HANDLE _fh = INVALID_HANDLE_VALUE;
     HANDLE _maph = INVALID_HANDLE_VALUE;
 #else

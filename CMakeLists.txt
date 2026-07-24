@@ -25,12 +25,20 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 
 set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE CXX)
 
-if (MSVC)
+if (WIN32)
+    enable_language(RC)
+
 	set_source_files_properties(
 	    "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc"
 	    PROPERTIES
 	    LANGUAGE RC
 	)
+    
+    set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} -I\"${CMAKE_SOURCE_DIR}\"")
+
+    set_property(SOURCE "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc"
+                 PROPERTY COMPILE_DEFINITIONS 
+                 "RESOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
 
 	list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc")
 	list(APPEND SOURCES "${CMAKE_SOURCE_DIR}/src/backend/win-embed/WinEmbed.hpp")

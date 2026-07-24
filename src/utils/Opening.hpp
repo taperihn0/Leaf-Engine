@@ -84,7 +84,11 @@ public:
     OpeningSuite(const std::filesystem::path& path);
 
     void loadFromFile(const std::filesystem::path& path);
-    void loadFromVec(const std::vector<std::string_view>& fens);
+
+    template <typename Str, typename = std::enable_if_t<
+        std::is_same_v<Str, std::string_view> or std::is_same_v<Str, std::string>>
+    >
+    void loadFromVec(const std::vector<Str>& fens);
     const Position& getRandomPosition(int& moves_done) const override;
     bool isEmpty() const override;
 private:

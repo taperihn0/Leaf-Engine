@@ -28,7 +28,7 @@
 
 namespace utils {
 
-static constexpr uint   IterCount = 6000;
+static constexpr uint   IterCount = 10000;
 static constexpr int    A = IterCount / 10;
 static constexpr double Alpha = 0.602;
 static constexpr double Gamma = 0.101;
@@ -58,7 +58,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 0.03 * option.rate;
+                        param.r = 0.028 * option.rate;
                         param.c = (param.max - param.min) / 12.;
 
                         return param;
@@ -75,12 +75,11 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     // Game parameters
     limits.depth = MaxDepth; // avoid depth overflow
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 4_s;
-    limits.winc = limits.binc = 100_ms;
+    limits.wtime = limits.btime = 6_s;
+    limits.winc = limits.binc = 150_ms;
 
-    // TODO: try bigger opening set, maybe Lichess UHO?
     if (_openings.isEmpty())
-        _openings.loadFromVec(NunnOpenings);
+        _openings.loadFromVec(getLichessUHO_Openings());
 
     std::ofstream log_file(spsa_log, std::ios_base::app);
 

@@ -138,8 +138,11 @@ void OpeningSuite::loadFromFile(const std::filesystem::path& path) {
     }
 }
 
-void OpeningSuite::loadFromVec(const std::vector<std::string_view>& fens) {
-    std::for_each(fens.begin(), fens.end(), [&](const std::string_view& fen) {
+template <typename Str, typename /* = std::enable_if_t<
+    std::is_same_v<T, std::string_view> or std::is_same_v<T, std::string>> */
+>
+void OpeningSuite::loadFromVec(const std::vector<Str>& fens) {
+    std::for_each(fens.begin(), fens.end(), [&](const Str& fen) {
         const Position pos(fen);
         _positions.push_back(std::move(pos));
     });
@@ -158,5 +161,8 @@ const Position& OpeningSuite::getRandomPosition(int& moves_done) const {
 bool OpeningSuite::isEmpty() const {
     return _positions.empty();
 }
+
+template void OpeningSuite::loadFromVec<std::string>(const std::vector<std::string>& fens);
+template void OpeningSuite::loadFromVec<std::string_view>(const std::vector<std::string_view>& fens);
 
 } // namespace utils

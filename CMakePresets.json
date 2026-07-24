@@ -95,7 +95,7 @@
 				"COLLECT_SEARCH_STATS": "OFF",
 				"INCLUDE_TESTS": "OFF",
 				"ENABLE_SIMD_AVX2": "ON",
-				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "OFF",
 				"ARCHITECTURE_ARM": "OFF",
 				"EXTENSION_BMI2": "ON"
 			}
@@ -110,11 +110,31 @@
 				"COLLECT_SEARCH_STATS": "OFF",
 				"BUILD_UTILS": "ON",
 				"ENABLE_SIMD_AVX2": "ON",
-				"ARCHITECTURE_EXCLUSIVE": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "OFF",
 				"ARCHITECTURE_ARM": "OFF",
 				"EXTENSION_BMI2": "ON"
 			}
-		}
+		},
+        {
+			"name": "final-mingw-w64",
+			"displayName": "Final-MinGW-w64",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/Release",
+			"cacheVariables": {
+				"CMAKE_SYSTEM_NAME": "Windows",
+				"CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
+				"CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
+				"CMAKE_RC_COMPILER": "x86_64-w64-mingw32-windres",
+				"CMAKE_EXE_LINKER_FLAGS": "-static -static-libgcc -static-libstdc++",
+                "CMAKE_BUILD_TYPE": "Release",
+				"COLLECT_SEARCH_STATS": "OFF",
+				"INCLUDE_TESTS": "OFF",
+				"ENABLE_SIMD_AVX2": "ON",
+				"ARCHITECTURE_EXCLUSIVE": "OFF",
+				"ARCHITECTURE_ARM": "OFF",
+				"EXTENSION_BMI2": "ON"
+			}
+        }
 	],
 	"buildPresets": [
 		{

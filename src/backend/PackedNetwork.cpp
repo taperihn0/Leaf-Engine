@@ -18,13 +18,16 @@
 
 #include "PackedNetwork.hpp"
 
-#if !defined(_MSC_VER)
-#include <sys/mman.h>
+#if defined(__GNUC__)
 #include <sys/stat.h>
 #include <fcntl.h>
 #endif
 
-#if defined(_USE_EMBEDDED_NEURAL_NET) and defined(__GNUC__) 
+#if defined(__GNUC__) and !defined(_WIN32)
+#include <sys/mman.h>
+#endif
+
+#if defined(_USE_EMBEDDED_NEURAL_NET) and !defined(_WIN32) 
 /* Embed resources on GCC */
 
 #include "vendor/incbin.h"
@@ -38,7 +41,7 @@ INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
 static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
 
-#elif defined(_USE_EMBEDDED_NEURAL_NET) and defined(_MSC_VER)
+#elif defined(_USE_EMBEDDED_NEURAL_NET) and defined(_WIN32)
 /* Embed resources on MSVC */
 
 #include "win-embed/Resource.h"
@@ -122,7 +125,7 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
     UseEmbeddedNetwork = false;
     _mem_size = 0;
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
     _fh = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, 
                       nullptr, OPEN_EXISTING, 
                       FILE_ATTRIBUTE_READONLY | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -163,7 +166,8 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
         return false;
     }
 #else
-    _fd = open(path.c_str(), O_RDONLY);
+    const std::string path_utf8 = path.string();
+    _fd = open(path_utf8.c_str(), O_RDONLY);
     
     if (_fd == -1) {
         std::cout << ("Couldn't open() a file: " + path.string()) << std::endl;
@@ -375,7 +379,7 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
     _mem_size = network._mem_size;
     _header = network._header;
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
     _fh = network._fh;
     _maph = network._maph;
 #else
@@ -397,7 +401,7 @@ void PackedNeuralNetwork::releaseFileMapping() {
     if (UseEmbeddedNetwork) 
         return;
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
     if (_fh != INVALID_HANDLE_VALUE and _maph != INVALID_HANDLE_VALUE and _file_mem_buf.value_or(nullptr)) {
         UnmapViewOfFile(_file_mem_buf.value());
         CloseHandle(_fh);
