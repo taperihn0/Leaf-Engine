@@ -872,9 +872,7 @@ Score Search::nmSearch(Position& pos,
     *  we're clamping improvement rate to range [-1., 1.]
     */
     if (!Root and !IsPv and !node->check) {
-
         if (node->eval.isValid() or depth <= DynImprovementDepth) {
-
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
                                                   node, preroot, 
