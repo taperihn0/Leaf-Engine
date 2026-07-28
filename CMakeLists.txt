@@ -103,7 +103,7 @@ else ()
 	message(FATAL_ERROR "Platform not recognised.")
 endif ()
 
-option(ARCHITECTURE_EXCLUSIVE "Tune code for specific architecture"  	   OFF)
+option(EXTENSION_FMA          "Include FMA instructions for newer CPUs"    OFF)
 option(ARCHITECTURE_ARM 	  "Specify ARM architecture"  				   OFF)
 option(EXTENSION_BMI2   	  "Specify BMI2 Extension Instruction Set"     OFF)
 
@@ -141,15 +141,15 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
 		set_target_properties(Leaf PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 	endif ()
 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
-
 	if (NOT MSVC)
-		if (ARCHITECTURE_EXCLUSIVE)
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-		endif ()
+        if (EXTENSION_FMA)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
+        endif ()
+
 		if (ARCHITECTURE_ARM)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
 		endif ()
+
 		if (EXTENSION_BMI2)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbmi2")
 			target_compile_definitions(Leaf PUBLIC LEAF_ENABLE_BMI2)
