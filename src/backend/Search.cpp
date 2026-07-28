@@ -1168,6 +1168,9 @@ Score Search::nmSearch(Position& pos,
             depth >= LmrDepth and
             node->moves_searched >= LmrMoveCount) 
         {    
+            move_reduction = LmrBaseReduction + LmrLogDepthMovesMult * std::log(depth) 
+                                                                     * std::log(node->moves_searched);
+            
             const Piece::enumType pc = node->move.getPiece();
 
             if (node->move.isQuiet() and !node->move.isPromotion()) {
@@ -1221,10 +1224,8 @@ Score Search::nmSearch(Position& pos,
             }
         }
 
-        const int extension = std::lroundf(move_extension);
         const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
-
-        const int reduct_depth = std::clamp(depth - 1 - reduction + extension, 0, depth - 1);
+        const int reduct_depth = std::clamp(depth - reduction, 0, depth - 1);
 
         child_node->is_cut = !node->is_cut;
 
@@ -1242,7 +1243,7 @@ Score Search::nmSearch(Position& pos,
             */
             const bool do_lmr = (depth >= LmrDepth and
                                  node->moves_searched >= LmrMoveCount and
-                                 reduction > 0);
+                                 reduct_depth < depth - 1);
         
             if (do_lmr) {
                 child_node->is_cut = true;
@@ -1267,6 +1268,7 @@ Score Search::nmSearch(Position& pos,
             full_depth_search = !do_lmr or node->score > alpha;
         }
 
+        const int extension = std::lroundf(move_extension);
         const int ext_depth = std::min(depth - 1 + extension, std::max(MaxDepth - ply, 0));
 
         if (full_depth_search and !full_window_search) {

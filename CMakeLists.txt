@@ -141,6 +141,8 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
 		set_target_properties(Leaf PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 	endif ()
 
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
+
 	if (NOT MSVC)
 		if (ARCHITECTURE_EXCLUSIVE)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
