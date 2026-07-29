@@ -13,3 +13,5 @@
 13. Provide some docs about commands
 14. Train bigger net: 160, 192 or 256 HL
 15. Clean SIMD code (loads)
+16. Improve README (version-strength tables) & explain commands
+17. Update commands docs
