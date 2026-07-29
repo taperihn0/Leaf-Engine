@@ -7,9 +7,9 @@
 ## 🏗️ Architecture & Features
 
 - ♟️ **Traditional Alpha-Beta Search Framework** – Principal Variation Search platform with handcrafted heuristics.
-- 🧠 **NNUE Evaluation** – Lightning-fast evaluation featuring **handwritten SIMD code (AVX2/NEON) for the Lizard SCReLU** activation function.
-- ⚡ **Custom Move Generator** – A highly efficient, bitboard-based generator supporting both **pseudo-legal** and **fully legal** move generation.
-- 📦 **Embedded Neural Network** – Network weights are seamlessly injected directly into the executable, requiring no external `.bin` files to run.
+- 🧠 **NNUE Evaluation** – Own evaluation featuring **handwritten SIMD code (AVX2/NEON) for the Lizard SCReLU** activation function.
+- ⚡ **Custom Move Generator** – A Bitboard-based generator supporting both **pseudo-legal** and **fully legal** move generation.
+- 📦 **Embedded Neural Network** – Network weights embedded into the executable, requiring no external `.bin` files to run.
 - 📚 **Syzygy Tablebase Support** – Endgame tablebase probing using **[Fathom](https://github.com/jdart1/Fathom/tree/master)** library.
 - ⚙️ **Multithreaded SPSA Tuning** – A built-in parallelized framework for automated search parameter optimization.
 - 🗄️ **Custom Data Collector** – A fully integrated pipeline generating self-play data for neural network training.
@@ -40,6 +40,8 @@ Ready-to-use, compiled binaries for both Windows and Linux are available in the 
 Leaf utilizes a custom binary format for its NNUE weights built upon `.bin` format utilized in **[Bullet](https://github.com/jw1912/bullet/tree/main)** trainer.
 - **Architecture:** Simple **(768->128)x2->1** architecture.
 - **Data Pipeline:** Full support for custom dataset generation exported in the [bullet-format](https://github.com/jw1912/bullet/blob/main/docs/3-data.md) (>200 million positions evaluated so far). There are some plans to use more optimized data packs.
+
+Initial train data was generated on randomized 7k nodes limit with generated openings in selfplay.
 
 ---
 
@@ -72,6 +74,7 @@ whose tutorials were an introduction to the chess programming world and which he
 my previous engine from scratch.
 * **[ChessProgramming Wiki Team](https://www.chessprogramming.org/Main_Page)** 
 for the entire knowledge concentrated in one place.
+* **[Publius Chess Engine, especially Paweł Kozioł](https://github.com/nescitus/publius)** for providing starting-ground net.
 * **As well as all the helpful developers from Engine Programming Discord Group.**
 
 ## 📜 License
