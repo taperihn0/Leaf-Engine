@@ -5,6 +5,7 @@
 #endif
 #include <stdexcept>
 #include <cstddef>
+#include "Resource.h"
 
 namespace rh {
 
@@ -15,12 +16,16 @@ struct EmbeddedResource {
 
 _INTERNAL EmbeddedResource loadResource(int id)
 {
-    HRSRC res = FindResource(nullptr,
+    HMODULE hmodule = GetModuleHandle(NULL);
+
+    HRSRC res = FindResource(hmodule,
                              MAKEINTRESOURCE(id),
                              RT_RCDATA);
 
-    if (!res)
-        throw std::runtime_error("FindResource failed");
+    if (!res) {
+        DWORD err = GetLastError();
+        throw std::runtime_error("FindResource failed with error code: " + std::to_string(err));
+    }
 
     DWORD size = SizeofResource(nullptr, res);
     HGLOBAL handle = LoadResource(nullptr, res);

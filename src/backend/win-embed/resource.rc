@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "Resource.h"
 
 IDR_NNUE RCDATA "assets/nets/nn128_60_h.bin"
