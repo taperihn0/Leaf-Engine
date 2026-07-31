@@ -24,5 +24,7 @@
 
 int main(int argc, const char* argv[]) {
     auto uci = std::make_unique<UniversalChessInterface>();
+    uci->init();
     uci->loop(argc, argv);
+    uci->finish();
 }
