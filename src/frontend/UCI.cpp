@@ -52,7 +52,7 @@ static std::filesystem::path DefaultNeuralNetOptionPath = nn::DefaultNetworkFile
 
 UniversalChessInterface::Options UniversalChessInterface::_options = { 
         // --- Regular parameters ---
-        OptionHash(SpinType<ll>(DefaultTTSizeMb, 1, 512)),
+        OptionHash(SpinType<ll>(DefaultTTSizeMb / 1_MB, 1, 512)),
         OptionClearHash(),
         OptionPath("SyzygyPath",    StringType("<empty>")),
         OptionPath("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string())),
@@ -227,6 +227,15 @@ UniversalChessInterface::UniversalChessInterface()
     : _search(TranspositionTable(DefaultTTSizeMb))
     , _pos(StartposFEN)
 {}
+
+void UniversalChessInterface::init() {
+#if defined(_WIN32)
+    mem::enableLargePagesPrivilegeWin32();
+#endif
+    SlidersAttacks::initTables();
+}
+
+void UniversalChessInterface::finish() {}
 
 void UniversalChessInterface::loop(int argc, const char* argv[]) {
     // C-style streams aren't used there

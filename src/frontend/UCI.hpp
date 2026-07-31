@@ -21,12 +21,16 @@
 #include "backend/Position.hpp"
 #include "backend/Search.hpp"
 #include "backend/Game.hpp"
+#include "backend/Run.hpp"
 #include "Options.hpp"
 
-class UniversalChessInterface {
+class UniversalChessInterface : public EngineRun {
 public:
     UniversalChessInterface();
     ~UniversalChessInterface() = default;
+
+    void init() override;
+    void finish() override;
 
     static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
     static std::vector<OptionTunableParam>& getTunableOptions();

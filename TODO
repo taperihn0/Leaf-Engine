@@ -1,17 +1,23 @@
-1. Create config file
-2. Cleanup after successfull cuckoo implementation
-3. Checkout some possible leaftovers after new changes
-4. Simplify paths passing in commands in utils
-5. Experiment with lmr formula and parameters
-6. Checkmate standpat
-7. Use mate_thread in search
-8. Experiment with fixed-float arithmetics in search
-9. Implement ProbCut
-10. Improve poor move ordering
-11. Reevaluate dataset
-12. Cleanup Utils
-13. Provide some docs about commands
-14. Train bigger net: 160, 192 or 256 HL
-15. Clean SIMD code (loads)
-16. Improve README (version-strength tables) & explain commands
-17. Update commands docs
+* Create config file
+* Cleanup after successfull cuckoo implementation
+* Checkout some possible leaftovers after new changes
+* Simplify paths passing in commands in utils
+* Experiment with lmr formula and parameters
+* Checkmate standpat
+* Use mate_thread in search
+* Experiment with fixed-float arithmetics in search
+* Implement ProbCut
+* Improve poor move ordering
+* Reevaluate dataset
+* Cleanup Utils
+* Provide some docs about commands
+* Train bigger net: 160, 192 or 256 HL
+* Clean SIMD code (loads)
+* Improve README (version-strength tables) & explain commands
+* Update commands docs
+* Return value in RFP tuned formula
+* Try to update Zobrish Key only when move is legal, in an if (legal) branch.
+* Include node type in history bonuses
+* Recapture heuristic (in move order try to apply capture that captures last moved piece)
+* You've got special ZobristKey datatype instead of uint64_t.
+

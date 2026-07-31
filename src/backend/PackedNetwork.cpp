@@ -110,8 +110,7 @@ bool PackedNeuralNetwork::isValid() const {
 
         if (!i) continue;
 
-        if (!_layer_weights[i - 1] or
-            !_layer_biases[i - 1])
+        if (!_layer_weights[i - 1] or !_layer_biases[i - 1])
             return false;
     }
 

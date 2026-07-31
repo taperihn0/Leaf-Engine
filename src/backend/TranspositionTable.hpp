@@ -77,7 +77,7 @@ struct alignas(BucketTargetSize) Bucket {
 static_assert(sizeof(Bucket) == BucketTargetSize);
 static_assert(sizeof(Bucket) == alignof(Bucket));
 
-static constexpr size_t DefaultTTSizeMb = 1_MB;
+static constexpr size_t DefaultTTSizeMb = 256_MB;
 
 class TranspositionTable {
 public:
@@ -117,7 +117,7 @@ public:
     void newGeneration();
     void clearHashfull();
 private:
-    mem::AlignedUniquePtr<Bucket> 
+    mem::PageAlignedUniquePtr<Bucket> 
             _mem;
     size_t  _buckets_cnt;
     uint8_t _buckets_pow_2;

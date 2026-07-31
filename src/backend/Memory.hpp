@@ -20,6 +20,10 @@
 
 #include "Simd.hpp"
 
+#if defined(__GNUC__) and !defined(_WIN32)
+#include <sys/mman.h>
+#endif
+
 #include <memory>
 #include <cstddef>
 
@@ -60,15 +64,19 @@ _INLINE void* alignedMemset(void* dst, uint8_t ch, size_t cnt) {
     std::byte* d = reinterpret_cast<std::byte*>(dst);
 
 #if defined (LEAF_SIMD_AVX512)
-    ASSERT(cnt % AlignmentBound == 0, "Size must be a multiple of 64");
+    if (cnt % AlignmentBound != 0) {
+        throw std::invalid_argument("Size must be a multiple of 64 for AVX512 alignment");
+    }
     __m512i pack8i_ch = _mm512_set1_epi8(ch);
 
     for (size_t i = 0; i < cnt; i += 64) {
-        _mm512_store_si512(reinterpret_cast<__m512*>(d + i), pack8i_ch);
+        _mm512_store_si512(reinterpret_cast<__m512i*>(d + i), pack8i_ch);
     }
 
 #elif defined (LEAF_SIMD_AVX2)
-    ASSERT(cnt % AlignmentBound == 0, "Size must be a multiple of 32");
+    if (cnt % AlignmentBound != 0) {
+        throw std::invalid_argument("Size must be a multiple of 32 for AVX2 alignment");
+    }
     __m256i pack4i_ch = _mm256_set1_epi8(ch);
 
     for (size_t i = 0; i < cnt; i += 32) {
@@ -76,7 +84,9 @@ _INLINE void* alignedMemset(void* dst, uint8_t ch, size_t cnt) {
     }
 
 #elif defined (LEAF_SIMD_SSE4_2)
-    ASSERT(cnt % AlignmentBound == 0, "Size must be a multiple of 16");
+    if (cnt % AlignmentBound != 0) {
+        throw std::invalid_argument("Size must be a multiple of 16 for SSE4.2 alignment");
+    }
     __m128i pack2i_ch = _mm_set1_epi8(ch);
 
     for (size_t i = 0; i < cnt; i += 16) {
@@ -95,18 +105,109 @@ _NODISCARD _INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined(_WIN32)
     void* m = _aligned_malloc(size, alignment);
 #else
-    ASSERT(size % alignment == 0, "Size must be multiple of alignment for some platforms");
+    if (size % alignment != 0) {
+        throw std::invalid_argument("Size must be a multiple of alignment for POSIX systems");
+    }
+
     void* m = std::aligned_alloc(alignment, size);
 #endif
-    ASSERT(m, "Failed to allocate memory");
+
+    if (!m) {
+        throw std::bad_alloc();
+    }
+    
     return m;
 }
 
-_INLINE void alignedFree(void* block) {
+_INLINE void alignedFree(void* m) {
 #if defined(_WIN32)
-    _aligned_free(block);
+    _aligned_free(m);
 #else
-    std::free(block);
+    std::free(m);
+#endif
+}
+
+#if defined(_WIN32)
+bool enableLargePagesPrivilegeWin32() {
+    HANDLE htoken;
+
+    if (!OpenProcessToken(GetCurrentProcess(), 
+                          TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &htoken)) {
+        throw std::runtime_error("Failed to `OpenProcessToken`")
+    }
+
+    TOKEN_PRIVILEGES tp;
+    LUID luid;
+
+    if (!LookupPrivilegeValue(nullptr, SE_LOCK_MEMORY_NAME, &luid)) {
+        CloseHandle(htoken);
+        throw std::runtime_error("Failed to `LookupPrivilegeValue`")
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    BOOL result = AdjustTokenPrivileges(htoken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr);
+    DWORD error = GetLastError();
+    CloseHandle(htoken);
+
+    if (!result or error != ERROR_SUCCESS) {
+        throw std::runtime_error("`AdjustTokenPrivileges` somehow failed");
+    }
+
+    return true;
+}
+#endif
+
+_NODISCARD _INLINE void* pageAlignedMalloc(size_t size) {
+    if (size == 0) {
+        throw std::invalid_argument("Invalid allocation size: " + std::to_string(size));
+    }
+
+#if defined(_WIN32)
+    void* m = VirtualAlloc(nullptr, size, 
+                           MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, 
+                           PAGE_READWRITE);
+    
+    if (!m) {
+        m = VirtualAlloc(nullptr, size, 
+                         MEM_COMMIT | MEM_RESERVE, 
+                         PAGE_READWRITE);
+    }
+    
+    if (!m)
+        throw std::bad_alloc();
+    
+    return m;
+
+#else
+    void* m = mmap(nullptr, size, PROT_READ | PROT_WRITE, 
+                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+                   
+    if (m == MAP_FAILED) {
+        m = mmap(nullptr, size, PROT_READ | PROT_WRITE, 
+                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    }
+    
+    if (m == MAP_FAILED)
+        throw std::bad_alloc();
+
+    return m;
+#endif
+}
+
+_INLINE void pageAlignedFree(void* m, size_t size) { 
+    if (!m) return;
+
+#if defined(_WIN32)
+    if (!VirtualFree(m, 0, MEM_RELEASE)) {
+        throw std::runtime_error("Failed to execute `VirtualFree`");
+    }
+#else
+    if (munmap(m, size) != 0) {
+        throw std::runtime_error("Failed to execute `munmap`");
+    }
 #endif
 }
 
@@ -122,9 +223,41 @@ template <typename T>
 using AlignedUniquePtr = std::unique_ptr<T, AlignedDeleter<T>>;
 
 template <typename T>
-_NODISCARD AlignedUniquePtr<T> makeAlignedUnique(size_t count, size_t alignment = alignof(T)) {
+_NODISCARD _INTERNAL AlignedUniquePtr<T> makeAlignedUnique(size_t count, size_t alignment = alignof(T)) {
     T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
     return AlignedUniquePtr<T>(p);
+}
+
+template <typename T>
+class PageDeleter {
+public:
+    PageDeleter() = delete;
+
+    PageDeleter(const PageDeleter&) noexcept = default;
+    PageDeleter(PageDeleter&&) noexcept = default;
+
+    PageDeleter& operator=(const PageDeleter&) noexcept = default;
+    PageDeleter& operator=(PageDeleter&&) noexcept = default;
+
+    explicit PageDeleter(size_t size) noexcept
+        : _size(size) {}
+
+    void operator()(T* p) const {
+        if (p != nullptr)
+            pageAlignedFree(reinterpret_cast<T*>(p), _size);
+    }
+private:
+    size_t _size;
+};
+
+template <typename T>
+using PageAlignedUniquePtr = std::unique_ptr<T, PageDeleter<T>>;
+
+template <typename T>
+_NODISCARD _INTERNAL PageAlignedUniquePtr<T> makePageAlignedUnique(size_t count) {
+    const size_t size = sizeof(T) * count;
+    T* p = reinterpret_cast<T*>(pageAlignedMalloc(size));
+    return PageAlignedUniquePtr<T>(p, mem::PageDeleter<T>(size));
 }
 
 } // namespace mem

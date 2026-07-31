@@ -106,6 +106,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
 
     assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(biases_base) % AlignmentBound == 0);
     assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
