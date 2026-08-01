@@ -1,3 +1,13 @@
+### [commit:f1afef4] feature: Tweak RFP margin with quiet history score
+```
+Score of leaf-rfp-tweaks vs leaf-base: 755 - 689 - 762  [0.515] 2206
+...      leaf-rfp-tweaks playing White: 676 - 72 - 355  [0.774] 1103
+...      leaf-rfp-tweaks playing Black: 79 - 617 - 407  [0.256] 1103
+...      White vs Black: 1293 - 151 - 762  [0.759] 2206
+Elo difference: 10.4 +/- 11.7, LOS: 95.9 %, DrawRatio: 34.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:9578a53] feature: Large pages
 ```
 Score of leaf-large-page vs leaf-master: 2313 - 2277 - 3260  [0.502] 7850

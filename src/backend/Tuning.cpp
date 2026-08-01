@@ -118,6 +118,7 @@ void TunableParametersMap::createMapping() {
     _addr["SeeRookValue"] = &SeeRookValue;
     _addr["SeeQueenValue"] = &SeeQueenValue;
     _addr["SeeValuePrune"] = &SeeValuePrune;
+    _addr["RfpQuietPenaltyMult"] = &RfpQuietPenaltyMult;
 };
 
 void* TunableParametersMap::getAddressOf(const std::string& str) {

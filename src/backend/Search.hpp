@@ -265,6 +265,7 @@ inline _P_CONSTEXPR int AspirationMaxWindow = roundi<float>(736.662f);
 inline _P_CONSTEXPR int AspirationCount = roundi<float>(3.4091f);
 inline _P_CONSTEXPR int AspirationWidenRate = roundi<float>(4.68001f);
 inline _P_CONSTEXPR int SeeValuePrune = roundi<float>(-8.86404f);
+inline _P_CONSTEXPR int RfpQuietPenaltyMult = roundi<float>(19.f);
 
 /* Static parameters -
 *  These are not tuned.

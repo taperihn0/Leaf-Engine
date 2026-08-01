@@ -914,7 +914,7 @@ Score Search::nmSearch(Position& pos,
 
             if (parent_node->move.isQuiet() and !parent_node->move.isQueenPromotion()) {
                 const int unorm_score = node->move_picker.getPositiveNormQuietScore(parent_node->move, parent_node->side2move);
-                quiet_penalty = unorm_score * 19 / 8192;
+                quiet_penalty = unorm_score * RfpQuietPenaltyMult / 8192;
             }
 
             const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
