@@ -110,7 +110,10 @@ public:
 
     void skipQuiets();
 
-    int16_t getQuietScore(Move32b move, enumColor side);
+    // Returns history score of move in range [-MaxQuietsHistory, +MaxQuietsHistory]
+    int16_t getQuietScore(Move32b move, enumColor side) const;
+    // Same as `getQuietScore`, but returns score in range [0, +2MaxQuietsHistory]
+    int16_t getPositiveNormQuietScore(Move32b move, enumColor side) const;
 
     static float getQuietDepthReduction(int16_t quiet_score);
     static float getCaptureDepthReduction(int16_t capture_score);
@@ -154,8 +157,8 @@ private:
     size_t    _iterator    = 0;
     size_t    _quiets_ind  = 0;
 
-    Move32b _hash_move     = Move32b::Null;
-    Move32b _killer_move   = Move32b::Null;
+    Move32b  _hash_move     = Move32b::Null;
+    Move32b  _killer_move   = Move32b::Null;
     uint64_t _killer_move_parent_hash = 0;
 
     MoveList _move_list;
@@ -196,10 +199,14 @@ _INLINE void MoveOrder::skipQuiets() {
     _iterator = _move_list.count();
 }
 
-_INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) {
+_INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) const {
     const Piece::uint_t piece_ind = value(move.getPiece());
     const Square dst = move.getTarget();
     return _tables->_quiets_history[side][piece_ind][dst];
+}
+
+_INLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColor side) const {
+    return getQuietScore(move, side) + MaxQuietsHistory;
 }
 
 _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {

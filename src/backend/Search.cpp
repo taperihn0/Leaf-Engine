@@ -903,18 +903,25 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RfpDepth and
-            !beta.isMateScore() and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            pos.getNonPawnMaterial(node->side2move) > 0)
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
                                                   node, preroot, 
                                                   node->side2move, results);
             }
+            
+            int16_t quiet_penalty = 0;
+
+            if (parent_node->move.isQuiet() and !parent_node->move.isQueenPromotion()) {
+                const int unorm_score = node->move_picker.getPositiveNormQuietScore(parent_node->move, parent_node->side2move);
+                quiet_penalty = unorm_score * 22 / 8192;
+            }
 
             const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
+            const Score rfp_margin = quiet_penalty + static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth);
 
-            if (node->eval - static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth) >= beta) {
+            if (node->eval - rfp_margin >= beta) {
                 const Score reduced_eval = (static_cast<int>(node->eval) * RfpEvalWeight + 
                                             static_cast<int>(beta) * RfpBetaWeight) / 32;
                 return reduced_eval;

@@ -252,8 +252,8 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
         /* Since quiet move history value is in range [-MaxQuietsHistory, +MaxQuietsHistory],
         *  we shift so that we got non-negative actual score.
         */
-        const int16_t* quiet_value = &_tables->_quiets_history[side][piece][dst];
-        *score = *quiet_value + MaxQuietsHistory;
+        const int16_t quiet_value = _tables->_quiets_history[side][piece][dst];
+        *score = quiet_value + MaxQuietsHistory;
     }
 }
 
