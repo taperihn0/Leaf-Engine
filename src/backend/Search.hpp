@@ -184,7 +184,7 @@ private:
 
 inline _P_CONSTEXPR int IidDepth = roundi<float>(2.6917f);
 inline _P_CONSTEXPR int IidDepthDiv = roundi<float>(12.0625f);
-inline _P_CONSTEXPR int RfpDepth = roundi<float>(4.21208f);
+inline _P_CONSTEXPR int RfpDepth = roundi<float>(5.21208f);
 inline _P_CONSTEXPR int RazorDepth = roundi<float>(1.55689f);
 inline _P_CONSTEXPR int FutilityDepth = roundi<float>(4.80804f);
 inline _P_CONSTEXPR int LmrDepth = roundi<float>(1.87427f);

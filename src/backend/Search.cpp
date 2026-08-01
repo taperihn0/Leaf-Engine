@@ -806,8 +806,7 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
-            !alpha.isMateScore() and
-            !tt_entry.score.isMateScore())
+            !alpha.isMateScore())
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -905,7 +904,7 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RfpDepth and
             !beta.isMateScore() and
-            !tt_entry.score.isMateScore())
+            (tt_move.isNull() or tt_move.isQuiet()))
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 

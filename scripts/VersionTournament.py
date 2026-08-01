@@ -8,13 +8,13 @@ from pathlib import Path
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
 THREAD_COUNT = 6
-TIME_CONTROL = "1+0.04"
+TIME_CONTROL = "3+0.04"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
 ENGINE_NAME = "Leaf"
 SYZYGY_PATH = "/home/Szymek/Source/Leaf/assets/tb/Syzygy"
-TT_MB_SIZE = 32
+TT_MB_SIZE = 4
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
 BINARY_PRESET_DIR = "Release" if CMAKE_PRESET == "final" or CMAKE_PRESET == "release" else "Debug"

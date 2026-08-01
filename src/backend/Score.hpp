@@ -120,8 +120,8 @@ public:
         return "cp " + std::to_string(_raw);
     }
     
-    static constexpr int_t Draw          = 0,
-                           Mate          = 32000,
+    static constexpr int_t Draw       = 0,
+                           Mate       = 32000,
                            MateBound  = Mate - MaxDepth,
                            Infinity   = maxof<int_t>(),
                            Undef      = 32500;

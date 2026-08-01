@@ -1,3 +1,13 @@
+### [commit:9578a53] feature: Large pages
+```
+Score of leaf-large-page vs leaf-master: 2313 - 2277 - 3260  [0.502] 7850
+...      leaf-large-page playing White: 1862 - 433 - 1630  [0.682] 3925
+...      leaf-large-page playing Black: 451 - 1844 - 1630  [0.323] 3925
+...      White vs Black: 3706 - 884 - 3260  [0.680] 7850
+Elo difference: 1.6 +/- 5.9, LOS: 70.2 %, DrawRatio: 41.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:573954f] feature: Tuning with new Neural Net
 ```
 Score of leaf-nn128-tuned vs leaf-nn128: 972 - 769 - 1119  [0.535] 2860
