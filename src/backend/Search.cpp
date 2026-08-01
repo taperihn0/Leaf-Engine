@@ -902,8 +902,7 @@ Score Search::nmSearch(Position& pos,
     */
     if constexpr (!Root and !IsPv) {
         if (!node->check and
-            depth <= RfpDepth and
-            pos.getNonPawnMaterial(node->side2move) > 0)
+            depth <= RfpDepth)
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -915,7 +914,7 @@ Score Search::nmSearch(Position& pos,
 
             if (parent_node->move.isQuiet() and !parent_node->move.isQueenPromotion()) {
                 const int unorm_score = node->move_picker.getPositiveNormQuietScore(parent_node->move, parent_node->side2move);
-                quiet_penalty = unorm_score * 22 / 8192;
+                quiet_penalty = unorm_score * 28 / 8192;
             }
 
             const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
