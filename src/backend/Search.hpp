@@ -147,6 +147,7 @@ struct NodeInfo {
     array1d<PVInfo, MaxSelDepth> pv_line;
     uint16_t                     pv_line_len;
     bool                         is_cut;
+    bool                         mate_thread;
 };
 
 class TreeStack {
@@ -369,6 +370,8 @@ private:
                    SearchResults& results);
 
     Score correctedEvalScore(Score eval, Score score);
+
+    int16_t getRfpQuietHistPenalty(NodeInfo* parent_node);
 
     int getNullSearchDepth(Score eval, Score beta, int depth);
     int getNullVerifyDepth(int nm_depth);

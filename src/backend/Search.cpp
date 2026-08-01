@@ -216,6 +216,7 @@ void NodeInfo::clear() {
     move_index       = 0;
     bound            = TTBound::NONE;
     is_cut           = false;
+    mate_thread      = false;
 
     cluster.accum_cache.clearBuffers();
     cluster.next_cluster = nullptr;
@@ -417,6 +418,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     preroot->move = preroot->best_move = game.getMoveCount() > 0 ? game.getCurrentMove() 
                                                                  : Move32b::Null;
     preroot->side2move = !pos.getTurn();
+    preroot->mate_thread = false;
 
     NodeInfo* root = _tree_stack.getRootNode();
 
@@ -639,6 +641,7 @@ Score Search::nmSearch(Position& pos,
     }
     
     NodeInfo* const parent_node = node - 1;
+    NodeInfo* const grand_node = Root ? nullptr : node - 2 ;
 
     if constexpr (!Root) {
         if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
@@ -794,8 +797,13 @@ Score Search::nmSearch(Position& pos,
     node->eval = tt_entry.eval;
     node->state = pos.getIrreversibleState();
     node->improving_rate = 0.f;
+    node->mate_thread = false;
 
     Score corr_eval = Score::Undef;
+
+    Move32b ttm32b = unpackedMove(pos, tt_entry.move);
+    Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
+                                                : Move32b::Null;
 
     /* Razoring -
     *  if we're at lower depth and the eval is really low
@@ -805,7 +813,8 @@ Score Search::nmSearch(Position& pos,
     */
     if constexpr (!Root and !IsPv) {
         if (!node->check and
-            depth <= RazorDepth)
+            depth <= RazorDepth and
+            (tt_move.isNull() or tt_move.isQuiet()))
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -813,9 +822,10 @@ Score Search::nmSearch(Position& pos,
                                                   node->side2move, results);
             }
             
+            const int razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * 10;
             corr_eval = correctedEvalScore(node->eval, tt_entry.score);
 
-            if (corr_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
+            if (corr_eval + razor_margin < alpha) {
                 const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
                                                                          alpha - 1, alpha,
                                                                          depth - 1,
@@ -827,10 +837,6 @@ Score Search::nmSearch(Position& pos,
             }
         }
     }
-
-    Move32b ttm32b = unpackedMove(pos, tt_entry.move);
-    Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-                                                : Move32b::Null;
 
     /* Internal Iterative Deepening -
     *  done only in PV Nodes. When no hash move is found for said node, 
@@ -902,6 +908,7 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RfpDepth and
+            !grand_node->mate_thread and
             (tt_move.isNull() or tt_move.isQuiet()))
         {
             if (!node->eval.isValid()) {
@@ -910,12 +917,7 @@ Score Search::nmSearch(Position& pos,
                                                   node->side2move, results);
             }
             
-            int16_t quiet_penalty = 0;
-
-            if (parent_node->move.isQuiet() and !parent_node->move.isQueenPromotion()) {
-                const int unorm_score = node->move_picker.getPositiveNormQuietScore(parent_node->move, parent_node->side2move);
-                quiet_penalty = unorm_score * RfpQuietPenaltyMult / 8192;
-            }
+            const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
             const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
             const Score rfp_margin = quiet_penalty + static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth);
@@ -929,8 +931,7 @@ Score Search::nmSearch(Position& pos,
     }
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
-
-    bool mate_thread = false;
+    node->mate_thread = false;
 
     _P_STATIC _P_CONSTEXPR 
     float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
@@ -1023,7 +1024,7 @@ Score Search::nmSearch(Position& pos,
                     return score;
                 }
                 else if (score <= -Score::MateBound) {
-                    mate_thread = true;
+                    node->mate_thread = true;
                 }
             }
         }
@@ -1074,7 +1075,7 @@ Score Search::nmSearch(Position& pos,
         *  at shallow depths, skip moves that aren't like to rise alpha.
         */
         if (!node->check and
-            !mate_thread and
+            !node->mate_thread and
             depth <= FutilityDepth and
             node->moves_searched >= FutilityMoveCount and
             node->can_move and
@@ -1158,7 +1159,7 @@ Score Search::nmSearch(Position& pos,
                 move_extension += MoveCheckExtensionBase + 
                                     node->improving_rate / ImprovingExtensionRate;
 
-            if (mate_thread)
+            if (node->mate_thread)
                 move_extension += MateThreadExtensionBase + 
                                     node->improving_rate / ImprovingExtensionMateRate;
         }
@@ -1723,6 +1724,18 @@ _FORCEINLINE Score Search::correctedEvalScore(Score eval, Score score) {
 
     const Score tt_eval_diff = score - eval;
     return eval + tt_eval_diff / TTEvalCorrRate;
+}
+
+_FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
+    const Move32b prev_move = parent_node->move;
+
+    if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
+        const int unorm_score = parent_node->move_picker.getPositiveNormQuietScore(prev_move, 
+                                                                                   parent_node->side2move);
+        return unorm_score * RfpQuietPenaltyMult / 8192;
+    }
+
+    return 0;
 }
 
 _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
