@@ -151,6 +151,8 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     if (entry->depth < node_depth) {
         out_entry.move = entry->move;
         out_entry.eval = entry->eval;
+        //out_entry.score = entry->score.isMateScore() ? entry->score : Score::Undef;
+        //return entry->score.isMateScore();
         return false;
     }
 

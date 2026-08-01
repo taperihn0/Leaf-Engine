@@ -1,5 +1,4 @@
 * Create config file
-* Cleanup after successfull cuckoo implementation
 * Checkout some possible leaftovers after new changes
 * Simplify paths passing in commands in utils
 * Experiment with lmr formula and parameters
@@ -12,7 +11,6 @@
 * Cleanup Utils
 * Provide some docs about commands
 * Train bigger net: 160, 192 or 256 HL
-* Clean SIMD code (loads)
 * Improve README (version-strength tables) & explain commands
 * Update commands docs
 * Return value in RFP tuned formula

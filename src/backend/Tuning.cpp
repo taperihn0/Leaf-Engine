@@ -26,6 +26,8 @@ void TunableParametersMap::createMapping() {
     _addr["IidDepth"] = &IidDepth;
     _addr["IidDepthDiv"] = &IidDepthDiv;
     _addr["RfpDepth"] = &RfpDepth;
+    _addr["RfpEvalWeight"] = &RfpEvalWeight;
+    _addr["RfpBetaWeight"] = &RfpBetaWeight;
     _addr["RazorDepth"] = &RazorDepth;
     _addr["FutilityDepth"] = &FutilityDepth;
     _addr["LmrDepth"] = &LmrDepth;

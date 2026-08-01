@@ -57,9 +57,9 @@ struct TTEntry {
     uint16_t key16;
     uint8_t  key18 : 2;
     uint8_t  generation : 6;
-    TTBound     bound : 2;
+    TTBound  bound : 2;
     uint8_t  depth : 6;
-    Score     score;
+    Score    score;
     Move16b  move;
     Score    eval;
 };

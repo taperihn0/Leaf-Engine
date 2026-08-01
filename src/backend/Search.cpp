@@ -478,7 +478,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         const Move32b   prev_best_move      = d > 1 ? root->best_move          : Move32b::Null;
 
         // Adjust contempt factor based on a corrected evaluation
-        const Score corr_eval = adjustEvalScore(eval, prev_best_score);
+        const Score corr_eval = correctedEvalScore(eval, prev_best_score);
 
         _contempt = unstable ? 0 : static_cast<Score::int_t>(corr_eval / ContemptDiv);
 
@@ -805,7 +805,9 @@ Score Search::nmSearch(Position& pos,
     */
     if constexpr (!Root and !IsPv) {
         if (!node->check and
-            depth <= RazorDepth)
+            depth <= RazorDepth and
+            !alpha.isMateScore() and
+            !tt_entry.score.isMateScore())
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -813,7 +815,7 @@ Score Search::nmSearch(Position& pos,
                                                   node->side2move, results);
             }
             
-            corr_eval = adjustEvalScore(node->eval, tt_entry.score);
+            corr_eval = correctedEvalScore(node->eval, tt_entry.score);
 
             if (corr_eval + RazorBaseDelta + RazorMultDelta * depth < alpha) {
                 const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
@@ -871,9 +873,8 @@ Score Search::nmSearch(Position& pos,
     /* Dynamic Improving implementation -
     *  we're clamping improvement rate to range [-1., 1.]
     */
-    if (!Root and !IsPv and !node->check) {
-
-        if (node->eval.isValid() or depth <= DynImprovementDepth) {
+    if constexpr (!Root and !IsPv) {
+        if (!node->check and (node->eval.isValid() or depth <= DynImprovementDepth)) {
 
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -903,7 +904,8 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RfpDepth and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            !beta.isMateScore() and
+            !tt_entry.score.isMateScore())
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -914,7 +916,8 @@ Score Search::nmSearch(Position& pos,
             const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
 
             if (node->eval - static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth) >= beta) {
-                const Score reduced_eval = (node->eval + beta) / 2;
+                const Score reduced_eval = (static_cast<int>(node->eval) * RfpEvalWeight + 
+                                            static_cast<int>(beta) * RfpBetaWeight) / 32;
                 return reduced_eval;
             }
         }
@@ -943,7 +946,7 @@ Score Search::nmSearch(Position& pos,
 
         if (!node->check and 
             depth >= NullDepth and
-             pos.getNonPawnMaterial() > 0) {
+            pos.getNonPawnMaterial() > 0) {
 
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -1147,10 +1150,12 @@ Score Search::nmSearch(Position& pos,
         
         if (depth <= ExtensionDepth) {
             if (child_node->check)
-                move_extension += MoveCheckExtensionBase + node->improving_rate / ImprovingExtensionRate;
+                move_extension += MoveCheckExtensionBase + 
+                                    node->improving_rate / ImprovingExtensionRate;
 
             if (mate_thread)
-                move_extension += MateThreadExtensionBase + node->improving_rate / ImprovingExtensionMateRate;
+                move_extension += MateThreadExtensionBase + 
+                                    node->improving_rate / ImprovingExtensionMateRate;
         }
 
         move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
@@ -1195,7 +1200,7 @@ Score Search::nmSearch(Position& pos,
                 if (move_score != UndefMoveScore) 
                     move_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
-                move_reduction -= move_extension * QuietExtensionReduction;
+                move_reduction -= move_extension * move_extension * QuietExtensionReduction;
                 move_reduction -= node->improving_rate * QuietImprovingReductionRate;
                 move_reduction /= QuietTotalReductionRate;
             }
@@ -1218,7 +1223,7 @@ Score Search::nmSearch(Position& pos,
                 if (move_score != UndefMoveScore and !node->move.isPromotion())
                     move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
-                move_reduction -= move_extension * CaptureExtensionReduction;
+                move_reduction -= move_extension * move_extension * CaptureExtensionReduction;
                 move_reduction -= node->improving_rate * CaptureImprovingReductionRate;
                 move_reduction /= CaptureTotalReductionRate;
             }
@@ -1705,7 +1710,7 @@ _INLINE Score Search::evaluate(const Position& pos,
     return res_eval;
 }
 
-_FORCEINLINE Score Search::adjustEvalScore(Score eval, Score score) {
+_FORCEINLINE Score Search::correctedEvalScore(Score eval, Score score) {
     assert(eval.isValid());
 
     if (!score.isValid() or eval.isMateScore())

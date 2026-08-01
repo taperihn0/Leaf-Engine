@@ -184,7 +184,7 @@ private:
 
 inline _P_CONSTEXPR int IidDepth = roundi<float>(2.6917f);
 inline _P_CONSTEXPR int IidDepthDiv = roundi<float>(12.0625f);
-inline _P_CONSTEXPR int RfpDepth = roundi<float>(5.21208f);
+inline _P_CONSTEXPR int RfpDepth = roundi<float>(4.21208f);
 inline _P_CONSTEXPR int RazorDepth = roundi<float>(1.55689f);
 inline _P_CONSTEXPR int FutilityDepth = roundi<float>(4.80804f);
 inline _P_CONSTEXPR int LmrDepth = roundi<float>(1.87427f);
@@ -194,6 +194,8 @@ inline _P_CONSTEXPR int NullReduction = roundi<float>(35.4356f);
 inline _P_CONSTEXPR int LmrMoveCount = roundi<float>(4.68328f);
 inline _P_CONSTEXPR int RazorMultDelta = roundi<float>(10.2223f);
 inline _P_CONSTEXPR int RfpMultDelta = roundi<float>(113.653f);
+inline _P_CONSTEXPR int RfpEvalWeight = roundi<float>(16.f);
+inline _P_CONSTEXPR int RfpBetaWeight = roundi<float>(16.f);
 inline _P_CONSTEXPR int FutilityMoveCount = roundi<float>(10.8672f);
 inline _P_CONSTEXPR int FutilityDelta = roundi<float>(22.8808f);
 inline _P_CONSTEXPR int RazorBaseDelta = roundi<float>(119.431f);
@@ -216,7 +218,7 @@ inline _P_CONSTEXPR int ImprovingExtensionRate = roundi<float>(6.64036f);
 inline _P_CONSTEXPR int QuietNotPvNodeReduction = roundi<float>(19.8129f);
 inline _P_CONSTEXPR int QuietCutNodeReduction = roundi<float>(2.41664f);
 inline _P_CONSTEXPR int QuietCheckReduction = roundi<float>(59.3266f);
-inline _P_CONSTEXPR int QuietExtensionReduction = roundi<float>(38.4389f);
+inline _P_CONSTEXPR int QuietExtensionReduction = roundi<float>(19.4389f);
 inline _P_CONSTEXPR int QuietPawnMoveReduction = roundi<float>(6.08098f);
 inline _P_CONSTEXPR int QuietImprovingReductionRate = roundi<float>(3.68642f);
 inline _P_CONSTEXPR int QuietHashCapReduction = roundi<float>(22.385f);
@@ -227,7 +229,7 @@ inline _P_CONSTEXPR int CaptureCutNodeReduction = roundi<float>(12.3796f);
 inline _P_CONSTEXPR int CaptureCheckReduction = roundi<float>(35.2899f);
 inline _P_CONSTEXPR int CaptureHashCapReduction = roundi<float>(32.1251f);
 inline _P_CONSTEXPR int CaptureKillerMoveReduction = roundi<float>(33.5878f);
-inline _P_CONSTEXPR int CaptureExtensionReduction = roundi<float>(31.8489f);
+inline _P_CONSTEXPR int CaptureExtensionReduction = roundi<float>(15.8489f);
 inline _P_CONSTEXPR int CaptureImprovingReductionRate = roundi<float>(5.63286f);
 inline _P_CONSTEXPR int CaptureTotalReductionRate = roundi<float>(54.3614f);
 inline _P_CONSTEXPR int HalfMovesEvalLimit = roundi<float>(11.8268f);
@@ -365,7 +367,7 @@ private:
                    enumColor side2move, 
                    SearchResults& results);
 
-    Score adjustEvalScore(Score eval, Score score);
+    Score correctedEvalScore(Score eval, Score score);
 
     int getNullSearchDepth(Score eval, Score beta, int depth);
     int getNullVerifyDepth(int nm_depth);
