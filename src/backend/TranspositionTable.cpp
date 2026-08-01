@@ -31,7 +31,7 @@ TTEntry::TTEntry()
 {}
 
 TranspositionTable::TranspositionTable(size_t mb_size)
-    : _mem(mem::makePageAlignedUnique<Bucket>(mb_size / sizeof(Bucket)))
+    : _mem(getPageAlignedMemoryHandle(mb_size / sizeof(Bucket)))
 {
     ASSERT(isExp2(mb_size), "Transposition table must be size of 2 power");
     ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
@@ -44,7 +44,7 @@ void TranspositionTable::resize(size_t size_mb) {
     ASSERT(isExp2(size_mb), "Transposition table must be size of 2 power");
 
     const size_t bucket_cnt = size_mb / sizeof(Bucket);
-    _mem = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
+    _mem = getPageAlignedMemoryHandle(bucket_cnt);
     
     ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
     _buckets_cnt = size_mb / sizeof(Bucket);
@@ -200,4 +200,16 @@ void TranspositionTable::newGeneration() {
 
 void TranspositionTable::clearHashfull() {
     _hits = 0;
+}
+
+mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
+    auto m = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
+
+#if defined(__GNUC__)
+    if (madvise(m.get(), bucket_cnt * sizeof(Bucket), MADV_RANDOM) != 0) {
+        throw std::runtime_error("Failed to configure memory region with `madvise`");
+    }
+#endif
+
+    return m;
 }

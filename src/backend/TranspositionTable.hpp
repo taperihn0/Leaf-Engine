@@ -117,6 +117,8 @@ public:
     void newGeneration();
     void clearHashfull();
 private:
+    mem::PageAlignedUniquePtr<Bucket> getPageAlignedMemoryHandle(size_t bucket_cnt);
+
     mem::PageAlignedUniquePtr<Bucket> 
             _mem;
     size_t  _buckets_cnt;
