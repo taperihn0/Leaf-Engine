@@ -100,11 +100,11 @@ namespace utils { class ExtPackedPosition; }
 *  King score is fixed and not tuned.
 */
 
-inline _P_CONSTEXPR int SeePawnValue = roundi<float>(96.1278f);
-inline _P_CONSTEXPR int SeeKnightValue = roundi<float>(272.796f);
-inline _P_CONSTEXPR int SeeBishopValue = roundi<float>(304.701f);
-inline _P_CONSTEXPR int SeeRookValue = roundi<float>(523.41f);
-inline _P_CONSTEXPR int SeeQueenValue = roundi<float>(896.114f);
+_PARAM_ATTRIBS int SeePawnValue = roundi<float>(96.1278f);
+_PARAM_ATTRIBS int SeeKnightValue = roundi<float>(272.796f);
+_PARAM_ATTRIBS int SeeBishopValue = roundi<float>(304.701f);
+_PARAM_ATTRIBS int SeeRookValue = roundi<float>(523.41f);
+_PARAM_ATTRIBS int SeeQueenValue = roundi<float>(896.114f);
 inline constexpr int    SeeKingValue = 12000;
 
 // internal board state, including piece distribution 

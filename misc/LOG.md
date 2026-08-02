@@ -1,3 +1,13 @@
+### [commit:a93f286] feature: Tweak Razoring conditions and margin
+```
+Score of leaf-razor-tweaks vs leaf-rfp-tweaks: 889 - 824 - 654  [0.514] 2367
+...      leaf-razor-tweaks playing White: 89 - 730 - 365  [0.229] 1184
+...      leaf-razor-tweaks playing Black: 800 - 94 - 289  [0.798] 1183
+...      White vs Black: 183 - 1530 - 654  [0.215] 2367
+Elo difference: 9.5 +/- 11.9, LOS: 94.2 %, DrawRatio: 27.6 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:f1afef4] feature: Tweak RFP margin with quiet history score
 ```
 Score of leaf-rfp-tweaks vs leaf-base: 755 - 689 - 762  [0.515] 2206

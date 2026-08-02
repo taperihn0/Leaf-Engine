@@ -208,7 +208,7 @@ void NodeInfo::clear() {
     best_move = move = Move32b::Null;
     score            = Score::Undef;
     eval             = Score::Undef;
-    improving_rate   = 0.f;
+    improving   = 0.f;
     can_move         = false;
     best_score       = Score::Undef;
     check            = false;
@@ -796,10 +796,10 @@ Score Search::nmSearch(Position& pos,
     node->move = Move32b::Null;
     node->eval = tt_entry.eval;
     node->state = pos.getIrreversibleState();
-    node->improving_rate = 0.f;
+    node->improving = 0.f;
     node->mate_thread = false;
 
-    Score corr_eval = Score::Undef;
+    int32_t corr_eval = Score::Undef;
 
     Move32b ttm32b = unpackedMove(pos, tt_entry.move);
     Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
@@ -807,13 +807,15 @@ Score Search::nmSearch(Position& pos,
 
     /* Razoring -
     *  if we're at lower depth and the eval is really low
-    *  it means there is high probability no move can increase the alpha bar.
+    *  it means there is high probability no move can increase the beta bar.
     *  To ensure our intuition, we dive into quiescence search to verify the position.
     *  If we fail low, we've got a cutoff.
     */
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
+            beta < 1500 and
+            !tt_entry.score.isMateScore() and
             (tt_move.isNull() or tt_move.isQuiet()))
         {
             if (!node->eval.isValid()) {
@@ -822,16 +824,16 @@ Score Search::nmSearch(Position& pos,
                                                   node->side2move, results);
             }
             
-            const int razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * 10;
-            corr_eval = correctedEvalScore(node->eval, tt_entry.score);
+            const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
+            corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
-            if (corr_eval + razor_margin < alpha) {
+            if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
                 const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
-                                                                         alpha - 1, alpha,
+                                                                         beta - 1, beta,
                                                                          depth - 1,
                                                                          ply);
                 
-                if (qscore < alpha) {
+                if (qscore < beta) {
                     return qscore;
                 }
             }
@@ -878,8 +880,7 @@ Score Search::nmSearch(Position& pos,
     *  we're clamping improvement rate to range [-1., 1.]
     */
     if constexpr (!Root and !IsPv) {
-        if (!node->check and (node->eval.isValid() or depth <= DynImprovementDepth)) {
-
+        if (!node->check and (node->eval.isValid() or depth <= DynamicImprovementDepth)) {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
                                                   node, preroot, 
@@ -895,8 +896,8 @@ Score Search::nmSearch(Position& pos,
         
             if (prev_eval_node) {
                 const Score diff = node->eval - prev_eval_node->eval;
-                node->improving_rate = std::clamp(prev_eval_node->improving_rate + static_cast<float>(diff) / ImprovingRate, 
-                                                  -1.f, 1.f);
+                node->improving = std::clamp(prev_eval_node->improving + static_cast<float>(diff) / ImprovingRate, 
+                                             -1.f, 1.f);
             }
         }
     }
@@ -908,8 +909,7 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RfpDepth and
-            !grand_node->mate_thread and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            !grand_node->mate_thread)
         {
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -919,30 +919,18 @@ Score Search::nmSearch(Position& pos,
             
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
-            const float rfp_improving_scale = -node->improving_rate / RfpImprovingSink + 1.f;
-            const Score rfp_margin = quiet_penalty + static_cast<Score::int_t>(rfp_improving_scale * RfpMultDelta * depth);
+            const float rfp_improving_scale = -node->improving / RfpImprovingSink + 1.f;
+            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth);
 
-            if (node->eval - rfp_margin >= beta) {
-                const Score reduced_eval = (static_cast<int>(node->eval) * RfpEvalWeight + 
-                                            static_cast<int>(beta) * RfpBetaWeight) / 32;
+            if (node->eval - std::max<int16_t>(rfp_margin, 12) >= beta) {
+                const Score reduced_eval = (static_cast<int32_t>(node->eval) * RfpEvalWeight + 
+                                            static_cast<int32_t>(beta)       * RfpBetaWeight) / 32;
                 return reduced_eval;
             }
         }
     }
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
-    node->mate_thread = false;
-
-    _P_STATIC _P_CONSTEXPR 
-    float MaxMoveExtension = static_cast<float>(MaxMoveExtensionRate) / MaxMoveExtensionDiv;
-    _P_STATIC _P_CONSTEXPR
-    float MoveCheckExtensionBase = static_cast<float>(MoveCheckExtensionRate) / MoveCheckExtensionDiv;
-    _P_STATIC _P_CONSTEXPR 
-    float MateThreadExtensionBase = static_cast<float>(MateThreadFracExtensionRate) / MateThreadFracExtensionDiv;
-    _P_STATIC _P_CONSTEXPR
-    float SingularExtension = static_cast<float>(SingularExtensionRate) / SingularExtensionDiv;
-    _P_STATIC _P_CONSTEXPR
-    float SingularBetaReduction = static_cast<float>(SingularBetaExtensionRate) / SingularBetaExtensionDiv;
 
     /* Null Move Pruning -
     *  if we're doing so well even after not making a move, we must be winning here.
@@ -960,7 +948,7 @@ Score Search::nmSearch(Position& pos,
                                                   node->side2move, results);
             }
 
-            const double nmp_improving_scale = -node->improving_rate / NullImprovingSink + 1.; // TODO: float
+            const double nmp_improving_scale = -node->improving / NullImprovingSink + 1.; // TODO: float
 
             if (node->eval - static_cast<Score::int_t>(nmp_improving_scale * NullMargin * depth) >= beta) 
             {    
@@ -1044,6 +1032,12 @@ Score Search::nmSearch(Position& pos,
         
     node->move_picker.clear<OrderPolicy>();
     node->move_picker.setHashMove(tt_move);
+
+    _LC_PARAM_ATTRIBS float MaxMoveExtension = 1.f * MaxMoveExtensionRate / MaxMoveExtensionDiv;
+    _LC_PARAM_ATTRIBS float MoveCheckExtensionBase = 1.f * MoveCheckExtensionRate / MoveCheckExtensionDiv;
+    _LC_PARAM_ATTRIBS float MateThreadExtensionBase = 1.f * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
+    _LC_PARAM_ATTRIBS float SingularExtension = 1.f * SingularExtensionRate / SingularExtensionDiv;
+    _LC_PARAM_ATTRIBS float SingularBetaReduction = 1.f * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     node->can_move       = false;
     node->score          = Score::Undef;
@@ -1157,11 +1151,11 @@ Score Search::nmSearch(Position& pos,
         if (depth <= ExtensionDepth) {
             if (child_node->check)
                 move_extension += MoveCheckExtensionBase + 
-                                    node->improving_rate / ImprovingExtensionRate;
+                                    node->improving / ImprovingExtensionRate;
 
             if (node->mate_thread)
                 move_extension += MateThreadExtensionBase + 
-                                    node->improving_rate / ImprovingExtensionMateRate;
+                                    node->improving / ImprovingExtensionMateRate;
         }
 
         move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
@@ -1207,7 +1201,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
                 move_reduction -= move_extension * move_extension * QuietExtensionReduction;
-                move_reduction -= node->improving_rate * QuietImprovingReductionRate;
+                move_reduction -= node->improving * QuietImprovingReductionRate;
                 move_reduction /= QuietTotalReductionRate;
             }
             else {
@@ -1230,7 +1224,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
                 move_reduction -= move_extension * move_extension * CaptureExtensionReduction;
-                move_reduction -= node->improving_rate * CaptureImprovingReductionRate;
+                move_reduction -= node->improving * CaptureImprovingReductionRate;
                 move_reduction /= CaptureTotalReductionRate;
             }
         }
@@ -1560,8 +1554,6 @@ Score Search::qSearch(Position& pos,
             continue;
         }
 
-        child_node->is_cut = !node->is_cut;
-
         node->score = -qSearch<QNodeType>(pos, limits, results, child_node,
                                           -beta, -alpha,
                                           depth - 1,
@@ -1638,7 +1630,7 @@ _FORCEINLINE bool Search::isTablebaseScore(Score score) const {
     /* We are calculating TablebaseLowestWinScore dynamically to
     *  match current TablebaseScoreScale which may vary while tuning.
     */ 
-    const _P_STATIC _P_CONSTEXPR int TablebaseLowestWinScore = 
+    const _LC_PARAM_ATTRIBS int TablebaseLowestWinScore = 
                                                     TablebaseScoreScale 
                                                       * (TablebaseWinScore 
                                                         - MaxSelDepth 

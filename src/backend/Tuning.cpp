@@ -36,6 +36,7 @@ void TunableParametersMap::createMapping() {
     _addr["NullDepth"] = &NullDepth;
     _addr["LmrMoveCount"] = &LmrMoveCount;
     _addr["RazorMultDelta"] = &RazorMultDelta;
+    _addr["RazorCutDelta"] = &RazorCutDelta;
     _addr["RfpMultDelta"] = &RfpMultDelta;
     _addr["FutilityDelta"] = &FutilityDelta;
     _addr["FutilityMoveCount"] = &FutilityMoveCount;
@@ -47,7 +48,7 @@ void TunableParametersMap::createMapping() {
     _addr["RfpImprovingSink"] = &RfpImprovingSink;
     _addr["NullMargin"] = &NullMargin;
     _addr["NullImprovingSink"] = &NullImprovingSink;
-    _addr["DynImprovementDepth"] = &DynImprovementDepth;
+    _addr["DynamicImprovementDepth"] = &DynamicImprovementDepth;
     _addr["TTEvalCorrRate"] = &TTEvalCorrRate;
     _addr["NextDepthTimeRed"] = &NextDepthTimeRed;
     _addr["UnstableMatMargin"] = &UnstableMatMargin;

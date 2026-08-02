@@ -102,6 +102,10 @@
 #define _ENABLE_TUNING
 #endif
 
+/*  _P_CONSTEXPR macro expands to constexpr when _ENABLE_TUNING macro is not defined.
+*   On _ENABLE_TUNING defined tuning mode is turned on and _P_CONSTEXPR and _P_STATIC are empty.
+*/
+
 #if defined(_ENABLE_TUNING)
 #define _P_CONSTEXPR
 #define _P_STATIC
@@ -109,6 +113,9 @@
 #define _P_CONSTEXPR constexpr
 #define _P_STATIC    static
 #endif
+
+#define _PARAM_ATTRIBS    inline _P_CONSTEXPR
+#define _LC_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
 
 #if defined(__GNUC__) and defined(LEAF_ARCHITECTURE_X86)
 #define _GNU_TARGET_BMI2_AVX2 [[gnu::target("bmi2", "avx2")]]

@@ -57,15 +57,15 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-inline _P_CONSTEXPR int QuietMoveScoreReductionRate = roundi<float>(12.7501f);
-inline _P_CONSTEXPR int QuietMoveScoreReductionDiv = roundi<float>(4.03226f);
-inline _P_CONSTEXPR int CaptureMoveScoreReductionDiv = roundi<float>(54.0528f);
-inline _P_CONSTEXPR int KnightCapturedScore = roundi<float>(277.09f);
-inline _P_CONSTEXPR int BishopCapturedScore = roundi<float>(329.986f);
-inline _P_CONSTEXPR int ToKnightPromoScore = roundi<float>(83.7102f);
-inline _P_CONSTEXPR int ToBishopPromoScore = roundi<float>(112.354f);
-inline _P_CONSTEXPR int ToRookPromoScore = roundi<float>(233.922f);
-inline _P_CONSTEXPR int ToQueenPromoScore = roundi<float>(944.733f);
+_PARAM_ATTRIBS int QuietMoveScoreReductionRate = roundi<float>(12.7501f);
+_PARAM_ATTRIBS int QuietMoveScoreReductionDiv = roundi<float>(4.03226f);
+_PARAM_ATTRIBS int CaptureMoveScoreReductionDiv = roundi<float>(54.0528f);
+_PARAM_ATTRIBS int KnightCapturedScore = roundi<float>(277.09f);
+_PARAM_ATTRIBS int BishopCapturedScore = roundi<float>(329.986f);
+_PARAM_ATTRIBS int ToKnightPromoScore = roundi<float>(83.7102f);
+_PARAM_ATTRIBS int ToBishopPromoScore = roundi<float>(112.354f);
+_PARAM_ATTRIBS int ToRookPromoScore = roundi<float>(233.922f);
+_PARAM_ATTRIBS int ToQueenPromoScore = roundi<float>(944.733f);
 
 /*  Static parameters in move ordering -
 *   These are not tuned.
