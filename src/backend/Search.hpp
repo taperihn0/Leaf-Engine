@@ -183,7 +183,7 @@ private:
 
 _PARAM_ATTRIBS int IidDepth = roundi<float>(2.6917f);
 _PARAM_ATTRIBS int IidDepthDiv = roundi<float>(12.0625f);
-_PARAM_ATTRIBS int RfpDepth = roundi<float>(4.21208f);
+_PARAM_ATTRIBS int RfpDepth = roundi<float>(5.21208f);
 _PARAM_ATTRIBS int RazorDepth = roundi<float>(1.55689f);
 _PARAM_ATTRIBS int FutilityDepth = roundi<float>(3.80804f);
 _PARAM_ATTRIBS int LmrDepth = roundi<float>(1.87427f);
