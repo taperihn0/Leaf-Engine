@@ -1,3 +1,13 @@
+### [commit:af5e4ac] feature: Another Razoring & RFP tweaks
+```
+Score of leaf-razor-2-tweak vs leaf-razor-tweak: 402 - 394 - 547  [0.503] 1343
+...      leaf-razor-2-tweak playing White: 284 - 114 - 274  [0.626] 672
+...      leaf-razor-2-tweak playing Black: 118 - 280 - 273  [0.379] 671
+...      White vs Black: 564 - 232 - 547  [0.624] 1343
+Elo difference: 2.1 +/- 14.3, LOS: 61.2 %, DrawRatio: 40.7 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:a93f286] feature: Tweak Razoring conditions and margin
 ```
 Score of leaf-razor-tweaks vs leaf-rfp-tweaks: 889 - 824 - 654  [0.514] 2367

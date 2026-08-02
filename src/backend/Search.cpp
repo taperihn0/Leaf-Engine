@@ -814,7 +814,7 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
-            beta < 2000 and
+            beta < RazorBetaLimit and
             !tt_entry.score.isMateScore() and
             (tt_move.isNull() or tt_move.isQuiet()))
         {
@@ -923,7 +923,7 @@ Score Search::nmSearch(Position& pos,
             const float rfp_improving_scale = -node->improving / RfpImprovingSink + 1.f;
             const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth);
 
-            if (node->eval - std::max<int16_t>(rfp_margin, 6) >= beta) {
+            if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
                 const Score reduced_eval = (static_cast<int32_t>(node->eval) * RfpEvalWeight + 
                                             static_cast<int32_t>(beta)       * RfpBetaWeight) / 32;
                 return reduced_eval;

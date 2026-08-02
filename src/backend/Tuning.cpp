@@ -37,7 +37,9 @@ void TunableParametersMap::createMapping() {
     _addr["LmrMoveCount"] = &LmrMoveCount;
     _addr["RazorMultDelta"] = &RazorMultDelta;
     _addr["RazorCutDelta"] = &RazorCutDelta;
+    _addr["RazorBetaLimit"] = &RazorBetaLimit;
     _addr["RfpMultDelta"] = &RfpMultDelta;
+    _addr["RfpMarginThreshold"] = &RfpMarginThreshold;
     _addr["FutilityDelta"] = &FutilityDelta;
     _addr["FutilityMoveCount"] = &FutilityMoveCount;
     _addr["RazorBaseDelta"] = &RazorBaseDelta;
