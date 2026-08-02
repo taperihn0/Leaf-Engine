@@ -1084,8 +1084,7 @@ Score Search::nmSearch(Position& pos,
                 node->can_move and
                 !child_node->check and
                 node->move.isQuiet() and
-                !node->move.isQueenPromotion() and
-                alpha.isMateScore())
+                !node->move.isQueenPromotion())
             {
                 if (!node->eval.isValid()) {
                     node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -1095,7 +1094,7 @@ Score Search::nmSearch(Position& pos,
 
                 const int32_t unorm_score = static_cast<int32_t>(node->move_picker.getPositiveNormQuietScore(node->move, 
                                                                                                              node->side2move));
-                const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 26 / 8192;
+                const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 18 / 8192;
 
                 if (node->eval + futility_margin < alpha) {
                     node->score = alpha;
