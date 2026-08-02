@@ -1065,44 +1065,54 @@ Score Search::nmSearch(Position& pos,
 
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
-        
-        /* Futility Pruning -
-        *  at shallow depths, skip moves that aren't like to rise alpha.
-        */
-        if (!node->check and
-            !node->mate_thread and
-            depth <= FutilityDepth and
-            node->moves_searched >= FutilityMoveCount and
-            node->can_move and
-            node->move.isQuiet() and
-            !node->move.isQueenPromotion())
-        {
-            if (!node->eval.isValid()) {
-                node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                  node, preroot, 
-                                                  node->side2move, results);
-            }
-
-            if (node->eval + FutilityDelta * depth * depth < alpha) {
-                node->score = alpha;
-
-                if (node->score > node->best_score) {
-                    node->best_score = node->score;
-                    node->best_move = node->move;
-                }
-                
-                node->move_picker.skipQuiets();
-                continue;
-            }
-        }
 
         if (!pos.make(node->move, accum_cache)) {
             pos.unmake(node->move, node->state);
             continue;
         }
 
-        node->can_move = true;
         child_node->check = pos.isInCheck(!node->side2move);
+
+        /* Futility Pruning -
+        *  at shallow depths, skip moves that aren't like to rise alpha.
+        */
+        if constexpr (!Root and !IsPv) {
+            if (!node->check and
+                !node->mate_thread and
+                depth <= FutilityDepth and
+                node->moves_searched >= FutilityMoveCount and
+                node->can_move and
+                !child_node->check and
+                node->move.isQuiet() and
+                !node->move.isQueenPromotion() and
+                alpha.isMateScore())
+            {
+                if (!node->eval.isValid()) {
+                    node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+                                                      node, preroot, 
+                                                      node->side2move, results);
+                }
+
+                const int32_t unorm_score = static_cast<int32_t>(node->move_picker.getPositiveNormQuietScore(node->move, 
+                                                                                                             node->side2move));
+                const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 18 / 8192;
+
+                if (node->eval + futility_margin < alpha) {
+                    node->score = alpha;
+
+                    if (node->score > node->best_score) {
+                        node->best_score = node->score;
+                        node->best_move = node->move;
+                    }
+                    
+                    node->move_picker.skipQuiets();
+                    pos.unmake(node->move, node->state);
+                    continue;
+                }
+            }
+        }
+
+        node->can_move = true;
 
         float move_extension = 0.f;
         float move_reduction = 0.f;
