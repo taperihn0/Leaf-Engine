@@ -933,6 +933,10 @@ Score Search::nmSearch(Position& pos,
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
+    const int non_pawn_material_s2m = pos.getNonPawnMaterialOnFly(node->side2move);
+    const int non_pawn_material_os2m = pos.getNonPawnMaterialOnFly(!node->side2move);
+    const int non_pawn_material = non_pawn_material_s2m + non_pawn_material_os2m;
+
     /* Null Move Pruning -
     *  if we're doing so well even after not making a move, we must be winning here.
     *  So we can do beta cutoff.
@@ -941,7 +945,7 @@ Score Search::nmSearch(Position& pos,
 
         if (!node->check and 
             depth >= NullDepth and
-            pos.getNonPawnMaterialOnFly() > 0) {
+            non_pawn_material > 0) {
 
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -1071,16 +1075,17 @@ Score Search::nmSearch(Position& pos,
             continue;
         }
 
-        child_node->check = pos.isInCheck(!node->side2move);
+        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
 
         /* Futility Pruning -
         *  at shallow depths, skip moves that aren't like to rise alpha.
         */
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
-                !child_node->check and
+                !gives_check and
                 !node->mate_thread and
-                node->can_move)
+                node->can_move and
+                non_pawn_material_s2m > 0)
             {
                 bool pruned = false;
 
@@ -1088,7 +1093,7 @@ Score Search::nmSearch(Position& pos,
 
                 if (depth <= 1 and
                     node->move.isQuiet() and
-                    unorm_score < MaxAbsQuietsHistory / 256 and
+                    unorm_score < MaxAbsQuietsHistory / 128 and
                     !pruned)
                     pruned = true;
 
@@ -1166,7 +1171,7 @@ Score Search::nmSearch(Position& pos,
         }
         
         if (depth <= ExtensionDepth) {
-            if (child_node->check)
+            if (gives_check)
                 move_extension += MoveCheckExtensionBase + 
                                     node->improving / ImprovingExtensionRate;
 
