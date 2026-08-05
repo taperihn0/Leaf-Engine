@@ -1091,12 +1091,6 @@ Score Search::nmSearch(Position& pos,
 
                 const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
 
-                if (depth <= 1 and
-                    node->move.isQuiet() and
-                    unorm_score < MaxAbsQuietsHistory / 128 and
-                    !pruned)
-                    pruned = true;
-
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
                     node->move.isQuiet() and
