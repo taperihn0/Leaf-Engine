@@ -941,7 +941,7 @@ Score Search::nmSearch(Position& pos,
 
         if (!node->check and 
             depth >= NullDepth and
-            pos.getNonPawnMaterial() > 0) {
+            pos.getNonPawnMaterialOnFly() > 0) {
 
             if (!node->eval.isValid()) {
                 node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
@@ -1077,34 +1077,41 @@ Score Search::nmSearch(Position& pos,
         *  at shallow depths, skip moves that aren't like to rise alpha.
         */
         if constexpr (!Root and !IsPv) {
-            if (!node->check and
-                !node->mate_thread and
-                depth <= FutilityDepth and
-                node->moves_searched >= FutilityMoveCount and
-                node->can_move and
+            if (!node->check and 
                 !child_node->check and
-                node->move.isQuiet() and
-                !node->move.isQueenPromotion())
+                !node->mate_thread and
+                node->can_move)
             {
-                if (!node->eval.isValid()) {
-                    node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                      node, preroot, 
-                                                      node->side2move, results);
-                }
+                bool pruned = false;
 
-                const int32_t unorm_score = static_cast<int32_t>(node->move_picker.getPositiveNormQuietScore(node->move, 
-                                                                                                             node->side2move));
-                const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 18 / 8192;
+                const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
 
-                if (node->eval + futility_margin < alpha) {
-                    node->score = alpha;
+                if (depth <= 1 and
+                    node->move.isQuiet() and
+                    unorm_score < MaxAbsQuietsHistory / 256 and
+                    !pruned)
+                    pruned = true;
 
-                    if (node->score > node->best_score) {
-                        node->best_score = node->score;
-                        node->best_move = node->move;
+                if (depth <= FutilityDepth and
+                    node->moves_searched >= FutilityMoveCount and
+                    node->move.isQuiet() and
+                    !pruned) 
+                {
+                    if (!node->eval.isValid()) {
+                        node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+                                                          node, preroot, 
+                                                          node->side2move, results);
                     }
-                    
-                    node->move_picker.skipQuiets();
+
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 26 / 8192;
+
+                    if (node->eval + futility_margin < alpha) {
+                        node->move_picker.skipQuiets();
+                        pruned = true;
+                    }
+                }
+            
+                if (pruned) {
                     pos.unmake(node->move, node->state);
                     continue;
                 }

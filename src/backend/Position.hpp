@@ -285,8 +285,8 @@ public:
     _NODISCARD int getOnBoardMaterial(enumColor side) const;
     _NODISCARD int getOnBoardMaterial() const;
 
-    _NODISCARD int getNonPawnMaterial(enumColor side) const;
-    _NODISCARD int getNonPawnMaterial() const;
+    _NODISCARD int getNonPawnMaterialOnFly(enumColor side) const;
+    _NODISCARD int getNonPawnMaterialOnFly() const;
 
     // returns true whether square is attacked by any opposide-color piece excluding enemy king
     _NODISCARD bool isAttackedSquare(Square sq, enumColor side) const;

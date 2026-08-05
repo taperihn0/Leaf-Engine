@@ -72,7 +72,7 @@ _PARAM_ATTRIBS int ToQueenPromoScore = roundi<float>(944.733f);
 */
 
 inline constexpr int MaxQuietsHistoryExp2 = 13;
-inline constexpr int MaxQuietsHistory     = 1 << MaxQuietsHistoryExp2;
+inline constexpr int MaxAbsQuietsHistory  = 1 << MaxQuietsHistoryExp2;
 inline constexpr int PawnCapturedScore    = 100;
 inline constexpr int RookCapturedScore    = 500;
 inline constexpr int QueenCapturedScore   = 900;
@@ -86,7 +86,14 @@ inline constexpr int QueenCapturedScore   = 900;
 
 class MoveOrder {
 public:
-    MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
+    enum class enumStage {
+        STAGE_UNKNOWN,
+        STAGE_PRIORITY_MOVES,
+        STAGE_CAPTURES,
+        STAGE_QUIETS
+    };
+
+    explicit MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
 
     void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
 
@@ -110,7 +117,7 @@ public:
 
     void skipQuiets();
 
-    // Returns history score of move in range [-MaxQuietsHistory, +MaxQuietsHistory]
+    // Returns history score of move in range [-MaxAbsQuietsHistory, +MaxAbsQuietsHistory]
     int16_t getQuietScore(Move32b move, enumColor side) const;
     // Same as `getQuietScore`, but returns score in range [0, +2MaxQuietsHistory]
     int16_t getPositiveNormQuietScore(Move32b move, enumColor side) const;
@@ -123,6 +130,9 @@ public:
 
     template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
     _NODISCARD uint getTotalMoves();
+
+    _NODISCARD enumStage getStage() const;
+
 private:
     bool nextFromList(Move32b& move, int16_t& score, size_t end_idx = maxof<size_t>());
 
@@ -133,7 +143,7 @@ private:
                              Move32b& next_move,
                              int16_t& move_score);
 
-    enum class enumStage : uint8_t {
+    enum class enumPrivateStage : uint8_t {
         NONE,
         FIRST_STAGE,
         ONCEGEN_HASH_MOVE,
@@ -153,9 +163,9 @@ private:
 
     MoveOrderHistoryTables* _tables;
 
-    enumStage _stage       = enumStage::NONE;
-    size_t    _iterator    = 0;
-    size_t    _quiets_ind  = 0;
+    enumPrivateStage _stage = enumPrivateStage::NONE;
+    size_t    _iterator     = 0;
+    size_t    _quiets_ind   = 0;
 
     Move32b  _hash_move     = Move32b::Null;
     Move32b  _killer_move   = Move32b::Null;
@@ -184,7 +194,7 @@ _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
 
 template <OrderType Type>
 _INLINE void MoveOrder::clear() {
-    _stage = enumStage::FIRST_STAGE;
+    _stage = enumPrivateStage::FIRST_STAGE;
     _iterator = 0;
     _quiets_ind = 0;
     _hash_move = Move32b::Null;
@@ -206,11 +216,11 @@ _INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) const {
 }
 
 _INLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColor side) const {
-    return getQuietScore(move, side) + MaxQuietsHistory;
+    return getQuietScore(move, side) + MaxAbsQuietsHistory;
 }
 
 _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-    const int16_t centered_score = quiet_score - MaxQuietsHistory;
+    const int16_t centered_score = quiet_score - MaxAbsQuietsHistory;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
     return centered_score < 0 ? val : -val;
@@ -228,4 +238,31 @@ uint MoveOrder::getMovesLeft() {
 template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getTotalMoves() {
     return static_cast<uint>(_move_list.count());
+}
+
+_NODISCARD _FORCEINLINE MoveOrder::enumStage MoveOrder::getStage() const {
+    switch (_stage) {
+    case enumPrivateStage::NONE:
+    case enumPrivateStage::FIRST_STAGE:
+    case enumPrivateStage::STAGED_CAPTURES:
+    case enumPrivateStage::STAGED_QUIETS:
+    case enumPrivateStage::ONCEGEN_ALL:
+    return enumStage::STAGE_UNKNOWN;
+    
+    case enumPrivateStage::ONCEGEN_HASH_MOVE:
+    case enumPrivateStage::STAGED_HASH_MOVE:
+    case enumPrivateStage::STAGED_KILLER:
+        return enumStage::STAGE_PRIORITY_MOVES;    
+        
+    case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
+    case enumPrivateStage::STAGED_PICK_CAPTURES:
+        return enumStage::STAGE_CAPTURES;
+
+    case enumPrivateStage::ONCEGEN_PICK_QUIETS:
+    case enumPrivateStage::STAGED_PICK_QUIETS:
+        return enumStage::STAGE_QUIETS;
+
+    default:
+        return enumStage::STAGE_UNKNOWN;
+    }
 }

@@ -251,22 +251,22 @@ bool Position::operator==(const Position& pos) const {
 }
 
 int Position::getOnBoardMaterial(enumColor side) const {
-    return getPawnsBySide(side).popCount() * PawnValue + getNonPawnMaterial(side);
+    return getPawnsBySide(side).popCount() * PawnValue + getNonPawnMaterialOnFly(side);
 }
 
 int Position::getOnBoardMaterial() const {
     return getOnBoardMaterial(WHITE) + getOnBoardMaterial(BLACK);
 }
 
-int Position::getNonPawnMaterial(enumColor side) const {
+int Position::getNonPawnMaterialOnFly(enumColor side) const {
     return getQueensBySide(side).popCount() * QueenValue +
            getRooksBySide(side).popCount() * RookValue +
            getBishopsBySide(side).popCount() * BishopValue +
            getKnightsBySide(side).popCount() * KnightValue;
 }
 
-int Position::getNonPawnMaterial() const {
-    return getNonPawnMaterial(WHITE) + getNonPawnMaterial(BLACK);
+int Position::getNonPawnMaterialOnFly() const {
+    return getNonPawnMaterialOnFly(WHITE) + getNonPawnMaterialOnFly(BLACK);
 }
 
 bool Position::make(Move32b& move) {

@@ -52,11 +52,11 @@ bool MoveOrder::nextMove(const NodeInfo* node,
     }
 
     switch (_stage) {
-    case enumStage::FIRST_STAGE:
-        _stage = enumStage::STAGED_HASH_MOVE;
+    case enumPrivateStage::FIRST_STAGE:
+        _stage = enumPrivateStage::STAGED_HASH_MOVE;
         [[fallthrough]];
-    case enumStage::STAGED_HASH_MOVE:
-        _stage = enumStage::STAGED_CAPTURES;
+    case enumPrivateStage::STAGED_HASH_MOVE:
+        _stage = enumPrivateStage::STAGED_CAPTURES;
 
         if (!_hash_move.isNull()) {
             next_move = _hash_move;
@@ -64,28 +64,28 @@ bool MoveOrder::nextMove(const NodeInfo* node,
         }
 
         [[fallthrough]];
-    case enumStage::STAGED_CAPTURES:
+    case enumPrivateStage::STAGED_CAPTURES:
         MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
 
         scoreCaptures(0, pos);
 
-        _stage = enumStage::STAGED_PICK_CAPTURES;
+        _stage = enumPrivateStage::STAGED_PICK_CAPTURES;
 
         [[fallthrough]];
-    case enumStage::STAGED_PICK_CAPTURES:
+    case enumPrivateStage::STAGED_PICK_CAPTURES:
         if (nextFromList(next_move, move_score))
             return true;
         
         if constexpr (Type == QUIESCENT)
             return false;
 
-        _stage = enumStage::STAGED_KILLER;
+        _stage = enumPrivateStage::STAGED_KILLER;
 
         [[fallthrough]];
-    case enumStage::STAGED_KILLER:
+    case enumPrivateStage::STAGED_KILLER:
         assert(Type != QUIESCENT);
 
-        _stage = enumStage::STAGED_QUIETS;
+        _stage = enumPrivateStage::STAGED_QUIETS;
         _quiets_ind = _iterator;
         
         {
@@ -108,15 +108,15 @@ bool MoveOrder::nextMove(const NodeInfo* node,
         }
 
         [[fallthrough]];
-    case enumStage::STAGED_QUIETS:
+    case enumPrivateStage::STAGED_QUIETS:
         assert(Type != QUIESCENT);
 
         MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-        _stage = enumStage::STAGED_PICK_QUIETS;
+        _stage = enumPrivateStage::STAGED_PICK_QUIETS;
 
         [[fallthrough]];
-    case enumStage::STAGED_PICK_QUIETS:
+    case enumPrivateStage::STAGED_PICK_QUIETS:
         assert(Type != QUIESCENT);
         {
             const enumColor side = pos.getTurn();
@@ -139,13 +139,13 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
     const Piece::uint_t piece = value(move.getPiece());
     const Square dst = move.getTarget();
 
-    const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxQuietsHistory));
+    const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxAbsQuietsHistory));
     const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
 
     _tables->_quiets_history[side][piece][dst] += 
-        static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxQuietsHistory);
+        static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxAbsQuietsHistory);
 
-    assert(abs(quiet_value) <= MaxQuietsHistory);
+    assert(abs(quiet_value) <= MaxAbsQuietsHistory);
 }
 
 void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
@@ -249,11 +249,11 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
         const Piece::uint_t piece = value(move->getPiece());
         const Square dst = move->getTarget();
 
-        /* Since quiet move history value is in range [-MaxQuietsHistory, +MaxQuietsHistory],
+        /* Since quiet move history value is in range [-MaxAbsQuietsHistory, +MaxQuietsHistory],
         *  we shift so that we got non-negative actual score.
         */
         const int16_t quiet_value = _tables->_quiets_history[side][piece][dst];
-        *score = quiet_value + MaxQuietsHistory;
+        *score = quiet_value + MaxAbsQuietsHistory;
     }
 }
 
@@ -262,18 +262,18 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
                                     int16_t& move_score)
 {
     switch (_stage) {
-    case enumStage::FIRST_STAGE:
-        _stage = enumStage::ONCEGEN_HASH_MOVE;
+    case enumPrivateStage::FIRST_STAGE:
+        _stage = enumPrivateStage::ONCEGEN_HASH_MOVE;
         [[fallthrough]];
-    case enumStage::ONCEGEN_HASH_MOVE:
-        _stage = enumStage::ONCEGEN_ALL;
+    case enumPrivateStage::ONCEGEN_HASH_MOVE:
+        _stage = enumPrivateStage::ONCEGEN_ALL;
 
         if (!_hash_move.isNull())
             next_move = _hash_move;
         
         [[fallthrough]];
-    case enumStage::ONCEGEN_ALL:
-        _stage = enumStage::ONCEGEN_PICK_CAPTURES;
+    case enumPrivateStage::ONCEGEN_ALL:
+        _stage = enumPrivateStage::ONCEGEN_PICK_CAPTURES;
 
         MoveGen::generateLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
         scoreCaptures(0, pos);
@@ -290,15 +290,15 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
             return true;
 
         [[fallthrough]];
-    case enumStage::ONCEGEN_PICK_CAPTURES:
+    case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
         // Search for another capture only, stop at quiets
         if (nextFromList(next_move, move_score, _quiets_ind))
             return true;
 
-        _stage = enumStage::ONCEGEN_PICK_QUIETS;
+        _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
 
         [[fallthrough]];
-    case enumStage::ONCEGEN_PICK_QUIETS:
+    case enumPrivateStage::ONCEGEN_PICK_QUIETS:
         return nextFromList(next_move, move_score);
     default:
         assert(false);
