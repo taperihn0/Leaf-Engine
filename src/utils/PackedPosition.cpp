@@ -426,7 +426,7 @@ void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupi
         break;
     }
     case ExtPackedPosition::BLACK_KING_TO_MOVE:
-        pos._turn = BLACK;
+        pos._s2m = BLACK;
         break;
     case ExtPackedPosition::NO_SPECIAL: 
         break;
@@ -440,7 +440,7 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
     BitBoard occupied = pack.getOccupancy();
 
     pos._ep_square = Square::None;
-    pos._turn = WHITE;
+    pos._s2m = WHITE;
 
     pos._castling_rights[WHITE].clear();
     pos._castling_rights[BLACK].clear();

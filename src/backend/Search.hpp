@@ -131,7 +131,7 @@ struct NodeInfo {
 
     enumColor                    side2move;
     MoveOrder                    move_picker;
-    Position::IrreversibleState  state;
+    Position::ReversibleState  state;
     Move32b                      move;
     Move32b                      best_move;
     Score                        score;

@@ -795,7 +795,7 @@ Score Search::nmSearch(Position& pos,
 
     node->move = Move32b::Null;
     node->eval = tt_entry.eval;
-    node->state = pos.getIrreversibleState();
+    node->state = pos.getReversibleState();
     node->improving = 0.f;
     node->mate_thread = false;
 
@@ -920,10 +920,6 @@ Score Search::nmSearch(Position& pos,
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
-    const int non_pawn_material_s2m = pos.getNonPawnMaterialOnFly(node->side2move);
-    const int non_pawn_material_os2m = pos.getNonPawnMaterialOnFly(!node->side2move);
-    const int non_pawn_material = non_pawn_material_s2m + non_pawn_material_os2m;
-
     /* Null Move Pruning -
     *  if we're doing so well even after not making a move, we must be winning here.
     *  So we can do beta cutoff.
@@ -932,7 +928,7 @@ Score Search::nmSearch(Position& pos,
 
         if (!node->check and 
             depth >= NullDepth and
-            non_pawn_material > 0) {
+            pos.getNonPawnMaterial() > 0) {
 
             const double nmp_improving_scale = -node->improving / NullImprovingSink + 1.; // TODO: float
 
@@ -1057,16 +1053,19 @@ Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                non_pawn_material_s2m > 0)
+                pos.getNonPawnMaterial(node->side2move) > 0)
             {
                 const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
 
+                /* Move Count Based pruning -
+                *  prune quiet moves that come last
+                */
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
                     node->move.isQuiet() and
                     !alpha.isMateScore()) 
                 {
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 10 / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 13 / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1494,7 +1493,7 @@ Score Search::qSearch(Position& pos,
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
     node->moves_searched = 0;
-    node->state          = pos.getIrreversibleState();
+    node->state          = pos.getReversibleState();
     node->best_move      = Move32b::Null;
     node->move           = Move32b::Null;
     node->score          = Score::Undef;

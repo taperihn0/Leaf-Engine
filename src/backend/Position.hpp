@@ -112,7 +112,7 @@ inline constexpr int    SeeKingValue = 12000;
 class Position {
 public:
     friend class utils::ExtPackedPosition;
-    struct IrreversibleState;
+    struct ReversibleState;
 
     Position();
     explicit Position(std::string init_fen);
@@ -225,11 +225,11 @@ public:
     }
 
     _NODISCARD _INLINE BitBoard getOppositePieces() const {
-        return getBySide(!_turn);
+        return getBySide(!_s2m);
     }
 
     _NODISCARD _INLINE BitBoard getOwnPieces() const {
-        return getBySide(_turn);
+        return getBySide(_s2m);
     }
 
     _NODISCARD _INLINE BitBoard getEmpties() const {
@@ -237,11 +237,11 @@ public:
     }
 
     _NODISCARD _INLINE Turn getTurn() const {
-        return _turn;
+        return _s2m;
     }
 
     _NODISCARD _INLINE Turn getOppositeTurn() const {
-        return !_turn;
+        return !_s2m;
     }
 
     _NODISCARD _INLINE Square getEnPassantSq() const {
@@ -258,7 +258,7 @@ public:
     }
 
     _NODISCARD _INLINE CastlingRights getOwnCastling() const {
-        return _castling_rights[_turn];
+        return _castling_rights[_s2m];
     }
 
     _NODISCARD _INLINE uint8_t getHalfmoveClock() const {
@@ -270,7 +270,7 @@ public:
     }
 
     _INLINE void setTurn(enumColor col_to_move) {
-        _turn = col_to_move;
+        _s2m = col_to_move;
     }
 
     _INLINE void setClock(uint16_t fullmove_clk, uint8_t halfmove_clk) {
@@ -282,11 +282,15 @@ public:
         return getOccupied().popCount();
     }
 
+    _NODISCARD int getOnBoardMaterialOnFly(enumColor side) const;
+    _NODISCARD int getOnBoardMaterialOnFly() const;
     _NODISCARD int getOnBoardMaterial(enumColor side) const;
     _NODISCARD int getOnBoardMaterial() const;
 
     _NODISCARD int getNonPawnMaterialOnFly(enumColor side) const;
     _NODISCARD int getNonPawnMaterialOnFly() const;
+    _NODISCARD int getNonPawnMaterial(enumColor side) const;
+    _NODISCARD int getNonPawnMaterial() const;
 
     // returns true whether square is attacked by any opposide-color piece excluding enemy king
     _NODISCARD bool isAttackedSquare(Square sq, enumColor side) const;
@@ -331,10 +335,10 @@ public:
     // returns whether move is legal or pseudo-legal
     _NODISCARD bool make(Move32b& move);
     _NODISCARD bool make(Move32b& move, nn::AccumulatorCache* accum_cache);
-    void unmake(Move32b move, const IrreversibleState& prev_state);
+    void unmake(Move32b move, const ReversibleState& prev_state);
 
-    void makeNull(IrreversibleState& state, nn::AccumulatorCache* accum_cache);
-    void unmakeNull(const IrreversibleState& prev_state);
+    void makeNull(ReversibleState& state, nn::AccumulatorCache* accum_cache);
+    void unmakeNull(const ReversibleState& prev_state);
 
     _NODISCARD uint64_t likelyZobristKeyAfterMove(Move32b& move) const;
 
@@ -351,15 +355,16 @@ public:
                            Piece::enumType target, 
                            Piece::enumType att) const;
 
-    _NODISCARD IrreversibleState getIrreversibleState() const;
+    _NODISCARD ReversibleState getReversibleState() const;
 
-    struct IrreversibleState {
+    struct ReversibleState {
         Square                     ep_sq;
         uint8_t                    halfmove_count;
         array1d<CastlingRights, 2> castling_rights;
         // It is not really required to store previous hash key,
         // since it can be recomputed. But keep it here for simplicity and efficiency.
         uint64_t                   hash_key;
+        array1d<int16_t, 2>        non_pawn_material;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
@@ -379,11 +384,12 @@ private:
     array1d<BitBoard, 2>        _occupied = {};
     array1d<CastlingRights, 2>  _castling_rights = {};
     array1d<Square, 2>          _king_sq = { Square::None, Square::None };
-    Turn                        _turn = WHITE;
+    Turn                        _s2m = WHITE;
     Square                      _ep_square = Square::None;
     ZHash                       _zhash = ZHash::Undef;
     uint8_t                     _halfmove_count = 0;
     uint16_t                    _fullmove_count = 0;
+    array1d<int16_t, 2>         _non_pawn_material = {};
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
@@ -476,11 +482,12 @@ _INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
         | _piece_bb[col_type][Piece::KING];
 }
 
-_INLINE Position::IrreversibleState Position::getIrreversibleState() const {
-    return Position::IrreversibleState{ _ep_square, 
-                                        _halfmove_count,
-                                        _castling_rights, 
-                                        getZobristKey() };
+_INLINE Position::ReversibleState Position::getReversibleState() const {
+    return Position::ReversibleState{ _ep_square, 
+                                      _halfmove_count,
+                                      _castling_rights, 
+                                      _zhash,
+                                      _non_pawn_material };
 }
 
 _INLINE void Position::clearPieces() {
