@@ -799,6 +799,12 @@ Score Search::nmSearch(Position& pos,
     node->improving = 0.f;
     node->mate_thread = false;
 
+    if (!node->eval.isValid()) {
+        node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+                                          node, preroot, 
+                                          node->side2move, results);
+    }
+
     int32_t corr_eval = Score::Undef;
 
     Move32b ttm32b = unpackedMove(pos, tt_entry.move);
@@ -817,13 +823,7 @@ Score Search::nmSearch(Position& pos,
             beta < RazorBetaLimit and
             !tt_entry.score.isMateScore() and
             (tt_move.isNull() or tt_move.isQuiet()))
-        {
-            if (!node->eval.isValid()) {
-                node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                  node, preroot, 
-                                                  node->side2move, results);
-            }
-            
+        {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
             corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
@@ -869,10 +869,6 @@ Score Search::nmSearch(Position& pos,
             ttm32b = unpackedMove(pos, iid_entry.move);
             tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
                                                 : Move32b::Null;
-
-            if (!tt_move.isNull() and iid_entry.eval.isValid()) {
-                node->eval = iid_entry.eval;
-            }
         }
     }
 
@@ -880,18 +876,15 @@ Score Search::nmSearch(Position& pos,
     *  we're clamping improvement rate to range [-1., 1.]
     */
     if constexpr (!Root and !IsPv) {
-        if (!node->check and (node->eval.isValid() or depth <= DynamicImprovementDepth)) {
-            if (!node->eval.isValid()) {
-                node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                  node, preroot, 
-                                                  node->side2move, results);
-            }
-
+        if (!node->check) {
             const NodeInfo* prev_eval_node = nullptr;
 
-            if (node - preroot > 2 and (node - 2)->eval.isValid())
-                prev_eval_node = node - 2;
-            else if (node - preroot > 4 and (node - 4)->eval.isValid())
+            if (const NodeInfo* s2m_node = node - 2; 
+                node - preroot > 2 and s2m_node->eval.isValid() and !s2m_node->mate_thread)
+                prev_eval_node = s2m_node;
+
+            else if (const NodeInfo* s2m_node = node - 4; 
+                     node - preroot > 4 and s2m_node->eval.isValid() and !s2m_node->mate_thread)
                 prev_eval_node = node - 4;
         
             if (prev_eval_node) {
@@ -911,13 +904,7 @@ Score Search::nmSearch(Position& pos,
             depth <= RfpDepth and
             !grand_node->mate_thread and
             (tt_move.isNull() or tt_move.isQuiet()))
-        {
-            if (!node->eval.isValid()) {
-                node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                  node, preroot, 
-                                                  node->side2move, results);
-            }
-            
+        {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
             const float rfp_improving_scale = -node->improving / RfpImprovingSink + 1.f;
@@ -946,12 +933,6 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             non_pawn_material > 0) {
-
-            if (!node->eval.isValid()) {
-                node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                  node, preroot, 
-                                                  node->side2move, results);
-            }
 
             const double nmp_improving_scale = -node->improving / NullImprovingSink + 1.; // TODO: float
 
@@ -1070,54 +1051,39 @@ Score Search::nmSearch(Position& pos,
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
 
-        if (!pos.make(node->move, accum_cache)) {
-            pos.unmake(node->move, node->state);
-            continue;
-        }
-
-        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
-
         /* Futility Pruning -
         *  at shallow depths, skip moves that aren't like to rise alpha.
         */
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
-                !gives_check and
                 !node->mate_thread and
-                node->can_move and
                 non_pawn_material_s2m > 0)
             {
-                bool pruned = false;
-
                 const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
 
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
                     node->move.isQuiet() and
-                    !pruned) 
+                    !alpha.isMateScore()) 
                 {
-                    if (!node->eval.isValid()) {
-                        node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
-                                                          node, preroot, 
-                                                          node->side2move, results);
-                    }
-
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 26 / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 10 / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
-                        pruned = true;
+                        continue;
                     }
-                }
-            
-                if (pruned) {
-                    pos.unmake(node->move, node->state);
-                    continue;
                 }
             }
         }
 
+        if (!pos.make(node->move, accum_cache)) {
+            pos.unmake(node->move, node->state);
+            continue;
+        }
+
         node->can_move = true;
+
+        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
 
         float move_extension = 0.f;
         float move_reduction = 0.f;
