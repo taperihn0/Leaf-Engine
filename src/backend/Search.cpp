@@ -906,8 +906,7 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RfpDepth and
             !grand_node->mate_thread and
-            (tt_move.isNull() or tt_move.isQuiet()) and
-            pos.getNonPawnMaterial() > 0)
+            (tt_move.isNull() or tt_move.isQuiet()))
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
@@ -915,7 +914,7 @@ Score Search::nmSearch(Position& pos,
             const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
-                const Score reduced_eval = (static_cast<int32_t>(node->eval) * RfpEvalWeight + 
+                const Score reduced_eval = (static_cast<int32_t>(node->eval) * (32 - RfpEvalWeight) + 
                                             static_cast<int32_t>(beta)       * RfpBetaWeight) / 32;
                 return reduced_eval;
             }
@@ -1448,19 +1447,23 @@ Score Search::qSearch(Position& pos,
     node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
 #endif // _TT_PROBE_QSEARCH
 
+    node->check = pos.isInCheck(!node->side2move);
+
     /* Delta Pruning -
     *  when no move has any chance to raise alpha
     *  then prune all of the branches.
     */
-    //if (node->eval + QMaterialDelta < alpha)
-    //    return alpha;
+    if (node->eval + QMaterialDelta < alpha and
+        pos.getNonPawnMaterial() > 0 and
+        !node->check)
+        return alpha;
     
     /* Standing Pat Cutoff -
     *  when we're already above the beta, we can make a cutoff.
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) 
-            return node->eval;
+            return (beta + 3 * static_cast<int16_t>(node->eval)) / 4;
 
         alpha = node->eval;
     }
@@ -1510,26 +1513,14 @@ Score Search::qSearch(Position& pos,
         _tt.prefetchBucket(next_hash);
 #endif // _TT_PREFETCH_QSEARCH
 
+        /* Static Exchange Evaluation Pruning -
+        *  ignore losing captures, as they aren't likely to rise alpha anyway.
+        */
         if constexpr (!IsPv) {
-            if (pos.getNonPawnMaterial() > 0) {
-                int16_t delta_margin = 180;
-
-                if (node->move.isCapture())
-                    delta_margin += pieceValue(node->move.getCaptured(pos));
-
-                if (node->move.isPromotion())
-                    delta_margin += pieceValue(node->move.getPromoPiece());
-
-                if (node->eval + delta_margin < alpha)
-                    continue;
-            }
-
-            /* Static Exchange Evaluation Pruning -
-            *  ignore losing captures, as they aren't likely to rise alpha anyway.
-            */
             if (node->move.isCapture() and
                 !node->move.isEnPassant() and
-                !node->move.isPromotion())
+                !node->move.isPromotion() and
+                !node->check)
             {
                 const Square org = node->move.getOrigin();
                 const Square dst = node->move.getTarget();
