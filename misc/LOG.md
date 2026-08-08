@@ -1,3 +1,13 @@
+### [commit:7df7f05] feature: disable Delta pruning on pawn eg & search tweaks
+```
+Score of leaf-pruning-tweak vs leaf-razor-2-tweak: 473 - 447 - 1005  [0.507] 1925
+...      leaf-pruning-tweak playing White: 347 - 137 - 479  [0.609] 963
+...      leaf-pruning-tweak playing Black: 126 - 310 - 526  [0.404] 962
+...      White vs Black: 657 - 263 - 1005  [0.602] 1925
+Elo difference: 4.7 +/- 10.7, LOS: 80.4 %, DrawRatio: 52.2 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:af5e4ac] feature: Another Razoring & RFP tweaks
 ```
 Score of leaf-razor-2-tweak vs leaf-razor-tweak: 402 - 394 - 547  [0.503] 1343

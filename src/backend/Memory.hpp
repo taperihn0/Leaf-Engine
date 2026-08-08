@@ -57,48 +57,12 @@ _INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
 
 _INLINE void memSet(void* dst, uint8_t ch, size_t cnt) {
     std::byte* d = reinterpret_cast<std::byte*>(dst);
-    std::fill(d, d + cnt, std::byte(ch));
+    fill(d, d + cnt, std::byte(ch));
 }
 
-_INLINE void* alignedMemset(void* dst, uint8_t ch, size_t cnt) {
-    std::byte* d = reinterpret_cast<std::byte*>(dst);
-
-#if defined (LEAF_SIMD_AVX512)
-    if (cnt % AlignmentBound != 0) {
-        throw std::invalid_argument("Size must be a multiple of 64 for AVX512 alignment");
-    }
-    __m512i pack8i_ch = _mm512_set1_epi8(ch);
-
-    for (size_t i = 0; i < cnt; i += 64) {
-        _mm512_store_si512(reinterpret_cast<__m512i*>(d + i), pack8i_ch);
-    }
-
-#elif defined (LEAF_SIMD_AVX2)
-    if (cnt % AlignmentBound != 0) {
-        throw std::invalid_argument("Size must be a multiple of 32 for AVX2 alignment");
-    }
-    __m256i pack4i_ch = _mm256_set1_epi8(ch);
-
-    for (size_t i = 0; i < cnt; i += 32) {
-        _mm256_store_si256(reinterpret_cast<__m256i*>(d + i), pack4i_ch);
-    }
-
-#elif defined (LEAF_SIMD_SSE4_2)
-    if (cnt % AlignmentBound != 0) {
-        throw std::invalid_argument("Size must be a multiple of 16 for SSE4.2 alignment");
-    }
-    __m128i pack2i_ch = _mm_set1_epi8(ch);
-
-    for (size_t i = 0; i < cnt; i += 16) {
-        _mm_store_si128(reinterpret_cast<__m128i*>(d + i), pack2i_ch);
-    }
-
-#else
-    _declUnused(d);
-    memSet(dst, ch, cnt);
-#endif
-
-    return dst;
+template <typename T, typename Tv>
+_FORCEINLINE void fill(T* first, T* last, const Tv& value) {
+    std::fill(first, last, value);
 }
 
 _NODISCARD _INLINE void* alignedMalloc(size_t size, size_t alignment) {
@@ -128,12 +92,12 @@ _INLINE void alignedFree(void* m) {
 }
 
 #if defined(_WIN32)
-bool enableLargePagesPrivilegeWin32() {
+_INTERNAL bool enableLargePagesPrivilegeWin32() {
     HANDLE htoken;
-
+    
     if (!OpenProcessToken(GetCurrentProcess(), 
                           TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &htoken)) {
-        throw std::runtime_error("Failed to `OpenProcessToken`")
+        throw std::runtime_error("Failed to `OpenProcessToken`");
     }
 
     TOKEN_PRIVILEGES tp;
@@ -141,7 +105,7 @@ bool enableLargePagesPrivilegeWin32() {
 
     if (!LookupPrivilegeValue(nullptr, SE_LOCK_MEMORY_NAME, &luid)) {
         CloseHandle(htoken);
-        throw std::runtime_error("Failed to `LookupPrivilegeValue`")
+        throw std::runtime_error("Failed to `LookupPrivilegeValue`");
     }
 
     tp.PrivilegeCount = 1;
@@ -153,14 +117,14 @@ bool enableLargePagesPrivilegeWin32() {
     CloseHandle(htoken);
 
     if (!result or error != ERROR_SUCCESS) {
-        throw std::runtime_error("`AdjustTokenPrivileges` somehow failed");
+        throw std::runtime_error("`AdjustTokenPrivileges` somehow failed, error code: " + std::to_string(error));
     }
 
     return true;
 }
 #endif
 
-_NODISCARD _INLINE void* pageAlignedMalloc(size_t size) {
+_NODISCARD _INLINE void* largePageAlignedMalloc(size_t size) {
     if (size == 0) {
         throw std::invalid_argument("Invalid allocation size: " + std::to_string(size));
     }
@@ -184,7 +148,7 @@ _NODISCARD _INLINE void* pageAlignedMalloc(size_t size) {
 #else
     void* m = mmap(nullptr, size, PROT_READ | PROT_WRITE, 
                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-                   
+                  
     if (m == MAP_FAILED) {
         m = mmap(nullptr, size, PROT_READ | PROT_WRITE, 
                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -201,6 +165,8 @@ _INLINE void pageAlignedFree(void* m, size_t size) {
     if (!m) return;
 
 #if defined(_WIN32)
+    _declUnused(size);
+
     if (!VirtualFree(m, 0, MEM_RELEASE)) {
         throw std::runtime_error("Failed to execute `VirtualFree`");
     }
@@ -256,7 +222,7 @@ using PageAlignedUniquePtr = std::unique_ptr<T, PageDeleter<T>>;
 template <typename T>
 _NODISCARD _INTERNAL PageAlignedUniquePtr<T> makePageAlignedUnique(size_t count) {
     const size_t size = sizeof(T) * count;
-    T* p = reinterpret_cast<T*>(pageAlignedMalloc(size));
+    T* p = reinterpret_cast<T*>(largePageAlignedMalloc(size));
     return PageAlignedUniquePtr<T>(p, mem::PageDeleter<T>(size));
 }
 

@@ -37,8 +37,8 @@ void CastlingRights::printByColor(enumColor col_type) const {
 }
 
 Position::Position() {
-    std::fill(_piece_bb[0].begin(), _piece_bb[0].end(), 0);
-    std::fill(_piece_bb[1].begin(), _piece_bb[1].end(), 0);
+    BitBoard* p = dataOfArray2d(_piece_bb);
+    mem::fill(p, p + countOfArray2d(_piece_bb), 0);
     _occupied[0] = BitBoard::Empty;
     _occupied[1] = BitBoard::Empty;
 }

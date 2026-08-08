@@ -223,7 +223,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    std::fill(pv_line.begin(), pv_line.end(), PVInfo{ Move16b::Null, Score::Undef });
+    mem::fill(pv_line.begin(), pv_line.end(), PVInfo{ Move16b::Null, Score::Undef });
     pv_line_len = 0;
 }
 
@@ -1390,10 +1390,10 @@ Score Search::qSearch(Position& pos,
 
     node->side2move = pos.getTurn();
 
-    if (isInsufficientMaterial(pos))
+    if (isInsufficientMaterial(pos)) {
         return getDrawScore(node);
-
-    if ((results.nodes_cnt & CheckNodeCount) == 0 and !isTimeLeft(limits)) {
+    }
+    else if ((results.nodes_cnt & CheckNodeCount) == 0 and !isTimeLeft(limits)) {
         return -Score::Undef;
     }
     

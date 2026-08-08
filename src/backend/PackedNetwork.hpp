@@ -25,7 +25,8 @@
 namespace nn {
 
 static std::filesystem::path DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
-static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDir(::utils::paths::enumDir::NETS_DIRECTORY);
+static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDir(
+                                                ::utils::paths::enumDir::NETS_DIRECTORY);
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;

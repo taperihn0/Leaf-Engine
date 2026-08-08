@@ -54,7 +54,7 @@ void TranspositionTable::resize(size_t size_mb) {
 }
 
 void TranspositionTable::clear() {
-    mem::alignedMemset(_mem.get(), 0, _buckets_cnt * sizeof(Bucket));
+    mem::memSet(_mem.get(), 0, _buckets_cnt * sizeof(Bucket));
     _generation = 0;
     _hits = 0;
 }
@@ -207,7 +207,7 @@ void TranspositionTable::clearHashfull() {
 mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
     auto m = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) and !defined(_WIN32)
     if (madvise(m.get(), bucket_cnt * sizeof(Bucket), MADV_RANDOM) != 0) {
         throw std::runtime_error("Failed to configure memory region with `madvise`");
     }

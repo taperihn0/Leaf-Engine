@@ -236,7 +236,12 @@ UniversalChessInterface::UniversalChessInterface()
 
 void UniversalChessInterface::init() {
 #if defined(_WIN32)
-    mem::enableLargePagesPrivilegeWin32();
+    try {
+        mem::enableLargePagesPrivilegeWin32();
+    }
+    catch (const std::runtime_error& e) {
+        std::cout << "Failed to setup LargePages Privileges: " << e.what() << std::endl;
+    }
 #endif
     SlidersAttacks::initTables();
 }
