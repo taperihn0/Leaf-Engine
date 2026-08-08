@@ -210,7 +210,7 @@ _INLINE void MoveOrder::skipQuiets() {
 }
 
 _INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) const {
-    const Piece::uint_t piece_ind = value(move.getPiece());
+    const Piece::uint_t piece_ind = index(move.getPiece());
     const Square dst = move.getTarget();
     return _tables->_quiets_history[side][piece_ind][dst];
 }

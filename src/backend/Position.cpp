@@ -21,7 +21,6 @@
 #include "MoveGen.hpp"
 #include "Search.hpp"
 #include "Accumulator.hpp"
-#include "StaticEval.hpp"
 
 #include <sstream>
 
@@ -292,14 +291,6 @@ bool Position::make(Move32b& move) {
     return make(move, &tmp_accum_cache);
 }
 
-static array1d<const int*, 5> PieceValue = {
-    reinterpret_cast<const int*>(&PawnValue), 
-    reinterpret_cast<const int*>(&KnightValue), 
-    reinterpret_cast<const int*>(&BishopValue), 
-    reinterpret_cast<const int*>(&RookValue), 
-    reinterpret_cast<const int*>(&QueenValue),
-};
-
 bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
     const Square          org = move.getOrigin(),
                           dst = move.getTarget();
@@ -343,7 +334,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
             _zhash ^= ZHashMasks->piece_keys[!_s2m][captured][dst];
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst, captured, !_s2m);
-            _non_pawn_material[!_s2m] -= captured != Piece::PAWN ? *PieceValue[value(captured)] : 0;
+            _non_pawn_material[!_s2m] -= captured != Piece::PAWN ? *PieceValue[index(captured)] : 0;
 
             const Square right_corner_opp = _s2m == BLACK ? Square::SQ_H1 : Square::SQ_H8,
                          left_corner_opp = _s2m == BLACK ? Square::SQ_A1 : Square::SQ_A8;
@@ -373,7 +364,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _s2m);
         accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, promo_piece_t, _s2m);
 
-        _non_pawn_material[_s2m] += *PieceValue[value(promo_piece_t)];
+        _non_pawn_material[_s2m] += *PieceValue[index(promo_piece_t)];
     }
     else { // if not a promotion - just move a piece on its own bitboard 
         _piece_bb[_s2m][piece_t].moveBit(org, dst);
@@ -488,7 +479,7 @@ void Position::unmake(Move32b move, const ReversibleState& prev_state) {
             _occupied[!_s2m].setBit(dst - dir);
         }
         else {
-            const Piece::enumType captured = move.getCapturedMoved();
+            const Piece::enumType captured = move.getCapturedAfterMove();
 
             assert(captured != Piece::NONE);
             _piece_bb[!_s2m][captured].setBit(dst);

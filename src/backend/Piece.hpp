@@ -20,6 +20,7 @@
 
 #include "Common.hpp"
 #include "Color.hpp"
+#include "StaticEval.hpp"
 
 class Piece {
 public:
@@ -111,10 +112,14 @@ _INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
     return os;
 }
 
-_NODISCARD _INLINE constexpr Piece::uint_t value(Piece::enumType p) {
+_NODISCARD _FORCEINLINE constexpr Piece::uint_t index(Piece::enumType p) {
     return static_cast<Piece::uint_t>(p);
 }
 
-_NODISCARD _INLINE constexpr bool isSlider(Piece::enumType p) {
+_NODISCARD _FORCEINLINE constexpr bool isSlider(Piece::enumType p) {
     return p >= Piece::BISHOP and p <= Piece::QUEEN;
+}
+
+_NODISCARD _FORCEINLINE int pieceValue(Piece::enumType p) {
+    return *PieceValue[index(p)];
 }

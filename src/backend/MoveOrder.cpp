@@ -136,7 +136,7 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
     static_assert(Sign == -1 or Sign == 1);
     assert(_tables != nullptr);
 
-    const Piece::uint_t piece = value(move.getPiece());
+    const Piece::uint_t piece = index(move.getPiece());
     const Square dst = move.getTarget();
 
     const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxAbsQuietsHistory));
@@ -218,10 +218,10 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
         *score = 0;
 
         if (move->isEnPassant()) {
-            *score = *CaptureScore[Piece::PAWN] - value(Piece::PAWN);
+            *score = *CaptureScore[Piece::PAWN] - index(Piece::PAWN);
         }
         else if (move->isCapture()) {
-            const Piece::uint_t piece_ind = value(move->getPiece());
+            const Piece::uint_t piece_ind = index(move->getPiece());
             const Piece::uint_t vic = move->getCaptured(pos);
             *score = *CaptureScore[vic] - piece_ind;
         }
@@ -230,7 +230,7 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
         *  is obviously a tactical move.
         */
         if (move->isPromotion()) {
-            const Piece::uint_t promo = value(move->getPromoPiece());
+            const Piece::uint_t promo = index(move->getPromoPiece());
             *score += *PromotionScore[promo];
         }
     }
@@ -246,7 +246,7 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 
         assert(move->isQuiet());
 
-        const Piece::uint_t piece = value(move->getPiece());
+        const Piece::uint_t piece = index(move->getPiece());
         const Square dst = move->getTarget();
 
         /* Since quiet move history value is in range [-MaxAbsQuietsHistory, +MaxQuietsHistory],

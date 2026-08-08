@@ -18,6 +18,7 @@
 
 #include "StaticEval.hpp"
 #include "Search.hpp"
+#include "Position.hpp"
 
 Score StaticEval::evaluateEndgame(const Position& pos) {
     const int piece_cnt = pos.getPiecesCount();

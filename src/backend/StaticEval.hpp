@@ -18,18 +18,28 @@
 
 #pragma once
 
-#include "Position.hpp"
 #include "Score.hpp"
+#include "Color.hpp"
 
 /* 
 *  Static evaluation utilities.
 */
+
+class Position;
 
 _PARAM_ATTRIBS int PawnValue   = 100;
 _PARAM_ATTRIBS int KnightValue = 300;
 _PARAM_ATTRIBS int BishopValue = 300;
 _PARAM_ATTRIBS int RookValue   = 500;
 _PARAM_ATTRIBS int QueenValue  = 900;
+
+inline array1d<const int*, 5> PieceValue = {
+    reinterpret_cast<const int*>(&PawnValue), 
+    reinterpret_cast<const int*>(&KnightValue), 
+    reinterpret_cast<const int*>(&BishopValue), 
+    reinterpret_cast<const int*>(&RookValue), 
+    reinterpret_cast<const int*>(&QueenValue),
+};
 
 class StaticEval {
 public:

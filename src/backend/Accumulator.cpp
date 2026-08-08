@@ -28,12 +28,12 @@ int Accumulator::featureIndex(Square sq,
 {
     if constexpr (Perspective == BLACK) {
         return static_cast<int>(!side) * 64 * 6 
-            + value(piece_type) * 64 
+            + index(piece_type) * 64 
             + static_cast<int>(sqVerticalFlip(sq));
     }
 
     return static_cast<int>(side) * 64 * 6 
-        + value(piece_type) * 64 
+        + index(piece_type) * 64 
         + static_cast<int>(sq);
 }
 

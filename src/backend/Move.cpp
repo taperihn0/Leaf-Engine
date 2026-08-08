@@ -76,6 +76,12 @@ bool Move16b::isPackedCapture(const Position& pos) const {
 }
 
 template <>
+bool Move16b::isPackedEnPassant(const Position& pos) const {
+    const Square dst = getTarget();
+    return pos.getEnPassantSq() == dst;
+}
+
+template <>
 template <>
 Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, const std::string& str) {
     Square     origin = Square::None,
@@ -181,6 +187,15 @@ enumColor MoveData<T>::getPieceColor(const Position& pos) const {
 
 template <typename T>
 Piece::enumType MoveData<T>::getCaptured(const Position& pos) const {
+    if constexpr (is_same<T, uint32_t>) {
+        if (isEnPassant()) 
+            return Piece::PAWN;
+    }
+    else {
+        if (isPackedEnPassant(pos)) 
+            return Piece::PAWN;
+    }
+
     const Square dst = getTarget();
     return pos.pieceOn(dst, pos.getOppositeTurn());
 }

@@ -86,6 +86,8 @@ public:
 
     _NODISCARD bool isPackedCapture(const Position& pos) const;
 
+    _NODISCARD bool isPackedEnPassant(const Position& pos) const;
+
     _NODISCARD _INLINE Square getOrigin() const {
         return _rmove & ORIGIN;
     }
@@ -174,7 +176,7 @@ public:
 
     // use this field only after making a move -
     // captured piece is saved only in making a move
-    _NODISCARD _INLINE Piece::enumType getCapturedMoved() const {
+    _NODISCARD _INLINE Piece::enumType getCapturedAfterMove() const {
         static_assert(is_same<T, uint32_t>);
         return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 22);
     }
@@ -232,14 +234,14 @@ public:
     static constexpr T Null = 0;
 private:
     enum enumLayout : uint32_t {
-        ORIGIN          = 0x3f,
-        TARGET          = 0xfc0,
-        PROMO_PIECE      = 0x7000,
-        CAPTURE          = 0x8000,
-        EP_CAPTURE      = 0x10000,
+        ORIGIN        = 0x3f,
+        TARGET        = 0xfc0,
+        PROMO_PIECE   = 0x7000,
+        CAPTURE       = 0x8000,
+        EP_CAPTURE    = 0x10000,
         SHORT_CASTLE  = 0x20000,
-        LONG_CASTLE      = 0x40000,
-        PERFORMER      = 0x380000,
+        LONG_CASTLE   = 0x40000,
+        PERFORMER     = 0x380000,
         CAPTURED      = 0x1C00000,
         LEGALLY_MOVED = 0x2000000
     };

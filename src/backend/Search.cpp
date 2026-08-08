@@ -26,6 +26,7 @@
 #endif
 
 #define _TT_PROBE_QSEARCH
+#define _TT_PREFETCH_QSEARCH
 #define _CUCKOO_DRAW
 
 _FORCEINLINE bool isTimeLimit(const SearchLimits& limits) {
@@ -1425,7 +1426,7 @@ Score Search::qSearch(Position& pos,
     const bool exact_hit = (!IsPv and tt_hit) or
                            ( IsPv and tt_hit and tt_entry.bound == TTBound::EXACT);
 
-    if (exact_hit and depth <= QProbeDepth) {
+    if (exact_hit) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
         results.tt_cut_cnt++;
         results.qtt_cut_cnt++;
@@ -1451,13 +1452,13 @@ Score Search::qSearch(Position& pos,
     *  when no move has any chance to raise alpha
     *  then prune all of the branches.
     */
-    if (node->eval + QMaterialDelta < alpha)
-        return alpha;
+    //if (node->eval + QMaterialDelta < alpha)
+    //    return alpha;
     
     /* Standing Pat Cutoff -
     *  when we're already above the beta, we can make a cutoff.
     */
-    else if (node->eval > alpha) {
+    if (node->eval > alpha) {
         if (node->eval >= beta) 
             return node->eval;
 
@@ -1498,20 +1499,34 @@ Score Search::qSearch(Position& pos,
     node->best_score     = -Score::Infinity;
 
     int16_t move_score = UndefMoveScore;
+
     for (node->move_index = 0;
          node->move_picker.nextMove<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
          node->move_index++) 
     {
         
-#if defined(_TT_PROBE_QSEARCH)    
+#if defined(_TT_PREFETCH_QSEARCH)    
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
-#endif // _TT_PROBE_QSEARCH
+#endif // _TT_PREFETCH_QSEARCH
 
-        /* Static Exchange Evaluation Pruning -
-        *  ignore losing captures, as they aren't likely to rise alpha anyway.
-        */
         if constexpr (!IsPv) {
+            if (pos.getNonPawnMaterial() > 0) {
+                int16_t delta_margin = 180;
+
+                if (node->move.isCapture())
+                    delta_margin += pieceValue(node->move.getCaptured(pos));
+
+                if (node->move.isPromotion())
+                    delta_margin += pieceValue(node->move.getPromoPiece());
+
+                if (node->eval + delta_margin < alpha)
+                    continue;
+            }
+
+            /* Static Exchange Evaluation Pruning -
+            *  ignore losing captures, as they aren't likely to rise alpha anyway.
+            */
             if (node->move.isCapture() and
                 !node->move.isEnPassant() and
                 !node->move.isPromotion())
@@ -1521,9 +1536,9 @@ Score Search::qSearch(Position& pos,
                 const Piece::enumType vic = node->move.getCaptured(pos);
                 const Piece::enumType piece = node->move.getPiece();
 
-                const int capt_see_score = pos.staticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
+                const int see_score = pos.staticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
 
-                if (capt_see_score < SeeValuePrune)
+                if (see_score < SeeValuePrune)
                     continue;
             }
         }

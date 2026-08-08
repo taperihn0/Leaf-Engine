@@ -124,7 +124,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         const BitBoard bb(sq);
 
         uint8_t opp_piece = bb & rel_own_pieces ? 0 : 1;
-        uint8_t val_piece = value(Piece::NONE);
+        uint8_t val_piece = index(Piece::NONE);
 
         const Square abs_sq = side2move == BLACK ? sqVerticalFlip(sq) : sq;
 
@@ -132,12 +132,12 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
             const BitBoard pc_bb = pos.get(pc, opp_piece ? !side2move : side2move);
 
             if (pc_bb.isOccupiedSq(abs_sq)) {
-                val_piece = value(pc);
+                val_piece = index(pc);
                 break;
             }
         }
 
-        ASSERT(val_piece != value(Piece::NONE), "No piece found");
+        ASSERT(val_piece != index(Piece::NONE), "No piece found");
 
         const uint8_t mask = (opp_piece << 3) | val_piece;
         bullet_entry.pcs[i / 2] |= mask << (4 * (i & 1));
