@@ -881,14 +881,12 @@ Score Search::nmSearch(Position& pos,
 
             if (const NodeInfo* s2m_node = node - 2; 
                 node - preroot > 2 and 
-                s2m_node->eval.isValid() and 
-                !s2m_node->mate_thread)
+                s2m_node->eval.isValid())
                 prev_eval_node = s2m_node;
 
             else if (const NodeInfo* s2m_node = node - 4; 
                      node - preroot > 4 and 
-                     s2m_node->eval.isValid() and 
-                     !s2m_node->mate_thread)
+                     s2m_node->eval.isValid())
                 prev_eval_node = node - 4;
         
             if (prev_eval_node) {
@@ -907,7 +905,8 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RfpDepth and
             !grand_node->mate_thread and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            (tt_move.isNull() or tt_move.isQuiet()) and
+            pos.getNonPawnMaterial() > 0)
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
@@ -967,6 +966,10 @@ Score Search::nmSearch(Position& pos,
                 pos.unmakeNull(node->state);
                 next_cluster->prev_cluster = curr_cluster;
 
+                if (score <= -Score::MateBound) {
+                    node->mate_thread = true;
+                }
+
                 const Score nm_score = score;
 
                 /* Unless Null Move Pruning is not handled properly in the endgame, 
@@ -988,17 +991,8 @@ Score Search::nmSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
                 }
 
-                if (score >= beta) {
-                    _tt.write(hash,
-                              nm_depth, ply,
-                              TTBound::LOWERBOUND,
-                              nm_score, packedMove(tt_move), node->eval,
-                              results);
-                    
+                if (score >= beta) {                    
                     return score;
-                }
-                else if (score <= -Score::MateBound) {
-                    node->mate_thread = true;
                 }
             }
         }
@@ -1057,7 +1051,6 @@ Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                pos.getNonPawnMaterial(node->side2move) > 0 and
                 alpha < Score::MateBound)
             {
                 const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
@@ -1067,9 +1060,10 @@ Score Search::nmSearch(Position& pos,
                 */
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
-                    node->move.isQuiet()) 
+                    node->move.isQuiet() and
+                    pos.getNonPawnMaterial() > 0) 
                 {
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 8 / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 9 / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
