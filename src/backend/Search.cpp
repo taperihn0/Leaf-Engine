@@ -1463,7 +1463,7 @@ Score Search::qSearch(Position& pos,
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) 
-            return (beta + 3 * static_cast<int16_t>(node->eval)) / 4;
+            return node->eval;
 
         alpha = node->eval;
     }
