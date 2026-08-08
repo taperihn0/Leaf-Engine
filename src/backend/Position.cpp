@@ -251,11 +251,13 @@ bool Position::operator==(const Position& pos) const {
 }
 
 int Position::getOnBoardMaterialOnFly(enumColor side) const {
-    return getPawnsBySide(side).popCount() * PawnValue + getNonPawnMaterialOnFly(side);
+    return getPawnsBySide(side).popCount() * PawnValue + 
+           getNonPawnMaterialOnFly(side);
 }
 
 int Position::getOnBoardMaterialOnFly() const {
-    return getOnBoardMaterialOnFly(WHITE) + getOnBoardMaterialOnFly(BLACK);
+    return getOnBoardMaterialOnFly(WHITE) + 
+           getOnBoardMaterialOnFly(BLACK);
 }
 
 int Position::getOnBoardMaterial(enumColor side) const {

@@ -110,7 +110,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionTunableParam(SpinType<double>(CaptureImprovingReductionRate,1., 15.),     "CaptureImprovingReductionRate",1.6),
         OptionTunableParam(SpinType<double>(CaptureTotalReductionRate,    20.,80.),     "CaptureTotalReductionRate",    1.4),
         OptionTunableParam(SpinType<double>(HalfMovesEvalLimit,           5., 40.),     "HalfMovesEvalLimit",           1.),
-        OptionTunableParam(SpinType<double>(NullVerifyDepth,              2., 10.),     "NullVerifyDepth",              1.3),
+        OptionTunableParam(SpinType<double>(NullVerifyDepth,              5., 16.),     "NullVerifyDepth",              1.3),
         OptionTunableParam(SpinType<double>(MoveCheckExtensionRate,       8., 16.),     "MoveCheckExtensionRate",       1.8),
         OptionTunableParam(SpinType<double>(MoveCheckExtensionDiv,        8., 16.),     "MoveCheckExtensionDiv",        1.8),
         OptionTunableParam(SpinType<double>(ImprovingExtensionMateRate,   4., 16.),     "ImprovingExtensionMateRate",   1.3),

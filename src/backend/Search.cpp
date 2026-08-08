@@ -495,7 +495,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         Score beta = +Score::Mate;
 
         if (!prev_best_score.isMateScore() and
-             !isTablebaseScore(prev_best_score)) 
+            !isTablebaseScore(prev_best_score)) 
         {
             const Score::int_t prev_best_score_abs = abs<Score::int_t>(static_cast<Score::int_t>(prev_best_score));
             aspiration_win += sq(prev_best_score_abs) / AspirationWindowScoreDiv;
@@ -880,11 +880,15 @@ Score Search::nmSearch(Position& pos,
             const NodeInfo* prev_eval_node = nullptr;
 
             if (const NodeInfo* s2m_node = node - 2; 
-                node - preroot > 2 and s2m_node->eval.isValid() and !s2m_node->mate_thread)
+                node - preroot > 2 and 
+                s2m_node->eval.isValid() and 
+                !s2m_node->mate_thread)
                 prev_eval_node = s2m_node;
 
             else if (const NodeInfo* s2m_node = node - 4; 
-                     node - preroot > 4 and s2m_node->eval.isValid() and !s2m_node->mate_thread)
+                     node - preroot > 4 and 
+                     s2m_node->eval.isValid() and 
+                     !s2m_node->mate_thread)
                 prev_eval_node = node - 4;
         
             if (prev_eval_node) {
@@ -928,12 +932,13 @@ Score Search::nmSearch(Position& pos,
 
         if (!node->check and 
             depth >= NullDepth and
-            pos.getNonPawnMaterial() > 0) {
+            pos.getNonPawnMaterial() > 0 and
+            !beta.isMateScore()) {
 
             const double nmp_improving_scale = -node->improving / NullImprovingSink + 1.; // TODO: float
+            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth);
 
-            if (node->eval - static_cast<Score::int_t>(nmp_improving_scale * NullMargin * depth) >= beta) 
-            {    
+            if (node->eval - nmp_margin >= beta) {    
                 assert(parent_node->move != Move32b::Null);
                 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -969,8 +974,7 @@ Score Search::nmSearch(Position& pos,
                 */
 
                 if (score >= beta and
-                    nm_depth >= NullVerifyDepth and
-                    !score.isMateScore())
+                    nm_depth >= NullVerifyDepth)
                 {
                     const int verify_depth = getNullVerifyDepth(nm_depth);
 
@@ -1053,19 +1057,19 @@ Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                pos.getNonPawnMaterial(node->side2move) > 0)
+                pos.getNonPawnMaterial(node->side2move) > 0 and
+                alpha < Score::MateBound)
             {
                 const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
 
                 /* Move Count Based pruning -
-                *  prune quiet moves that come last
+                *  prune quiet moves that come last.
                 */
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
-                    node->move.isQuiet() and
-                    !alpha.isMateScore()) 
+                    node->move.isQuiet()) 
                 {
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 13 / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 8 / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1104,7 +1108,7 @@ Score Search::nmSearch(Position& pos,
                 !tt_entry.score.isMateScore()) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-                const Score singular_beta = std::max<int>(-Score::MateBound + 100, 
+                const Score singular_beta = std::max<int>(-Score::MateBound / 2, 
                                                           static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
 
                 child_node->is_cut = !node->is_cut;
