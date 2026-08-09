@@ -1,3 +1,13 @@
+### [commit:d918019] feature: slightly modified Futility parameters & -march=x86-64-v3 flag
+```
+Score of leaf-pruning-tweak vs leaf-razor-2-tweak: 670 - 340 - 547  [0.606] 1557
+...      leaf-pruning-tweak playing White: 356 - 140 - 283  [0.639] 779
+...      leaf-pruning-tweak playing Black: 314 - 200 - 264  [0.573] 778
+...      White vs Black: 556 - 454 - 547  [0.533] 1557
+Elo difference: 74.8 +/- 14.0, LOS: 100.0 %, DrawRatio: 35.1 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:7df7f05] feature: disable Delta pruning on pawn eg & search tweaks
 ```
 Score of leaf-pruning-tweak vs leaf-razor-2-tweak: 473 - 447 - 1005  [0.507] 1925

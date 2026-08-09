@@ -704,19 +704,24 @@ int Position::staticExchangeEval(Square org,
     while (from != BitBoard::Empty) {
         i++;
         gain[i] = -gain[i - 1] + *SeePieceValue[vic];
+        
         if constexpr (!ExactScore) {
             if (std::max(-gain[i - 1], gain[i]) < 0)
                 break;
         }
+
         attacks ^= from;
         occ ^= from;
+
         if (from & xray) {
             attacks |= xRayAttackers(occ, sq, bishopsQueens, rooksQueens);
         }
+
         if (att == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
             gain[i] += *SeePieceValue[Piece::QUEEN] - *SeePieceValue[Piece::PAWN];
             att = Piece::QUEEN;
         }
+
         side2move = !side2move;
         vic = att;
         from = getWeakestAttacker(attacks, side2move, att);
