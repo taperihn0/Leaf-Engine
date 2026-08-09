@@ -209,7 +209,7 @@ void NodeInfo::clear() {
     best_move = move = Move32b::Null;
     score            = Score::Undef;
     eval             = Score::Undef;
-    improving   = 0.f;
+    improving        = 0.f;
     can_move         = false;
     best_score       = Score::Undef;
     check            = false;
@@ -917,8 +917,8 @@ Score Search::nmSearch(Position& pos,
             const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
-                const Score reduced_eval = (static_cast<int32_t>(node->eval) * (32 - RfpEvalWeight) + 
-                                            static_cast<int32_t>(beta)       * RfpBetaWeight) / 32;
+                const Score reduced_eval = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
+                                            static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
                 return reduced_eval;
             }
         }
@@ -1066,7 +1066,7 @@ Score Search::nmSearch(Position& pos,
                     node->move.isQuiet() and
                     pos.getNonPawnMaterial() > 0) 
                 {
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * 9 / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1459,14 +1459,14 @@ Score Search::qSearch(Position& pos,
     if (node->eval + QMaterialDelta < alpha and
         pos.getNonPawnMaterial() > 0 and
         !node->check)
-        return alpha;
+        return (alpha * (26) + node->eval * (6)) / 32;
     
     /* Standing Pat Cutoff -
     *  when we're already above the beta, we can make a cutoff.
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) 
-            return node->eval;
+            return (beta * (8) + node->eval * (24)) / 32;
 
         alpha = node->eval;
     }

@@ -122,7 +122,10 @@ _INTERNAL SpinType<T>::SpinType(ValType def, ValType mi, ValType ma)
 
 template <typename T>
 _INTERNAL void SpinType<T>::setCurrentValue(ValType val) {
-    curr_value = std::clamp(val, min_value, max_value);
+    if (val < min_value or val > max_value)
+        throw std::runtime_error("Value is outside min-max bounds");
+
+    curr_value = val;
 }
 
 template <typename T>

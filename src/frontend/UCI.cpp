@@ -71,19 +71,16 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionTunableParam(SpinType<double>(RazorBetaLimit,               1000.,2000.), "RazorBetaLimit",               0.5),
         OptionTunableParam(SpinType<double>(RfpMultDelta,                 10., 220.),   "RfpMultDelta",                 0.4),
         OptionTunableParam(SpinType<double>(RfpMarginThreshold,           1.,  30.),    "RfpMarginThreshold",           1.2),
-        OptionTunableParam(SpinType<double>(RfpEvalWeight,                8.,  28.),    "RfpEvalWeight",                1.0),
-        OptionTunableParam(SpinType<double>(RfpBetaWeight,                8.,  28),     "RfpBetaWeight",                1.0),
+        OptionTunableParam(SpinType<double>(RfpReturnValueWeight,         4.,  128.),   "RfpReturnValueWeight",         0.5),
         OptionTunableParam(SpinType<double>(FutilityMoveCount,            1.,  16.),    "FutilityMoveCount",            0.5),
         OptionTunableParam(SpinType<double>(FutilityDelta,                2.,  50.),    "FutilityDelta",                0.7),
         OptionTunableParam(SpinType<double>(RazorBaseDelta,               20., 500.),   "RazorBaseDelta",               0.4),
         OptionTunableParam(SpinType<double>(QMaterialDelta,               700.,1200.),  "QMaterialDelta",               0.6),
-        OptionTunableParam(SpinType<double>(QProbeDepth,                  -5., 1.),     "QProbeDepth",                  1.1),
         OptionTunableParam(SpinType<double>(NNEvalScale,                  7.,  17.),    "NNEvalScale",                  1.3),
         OptionTunableParam(SpinType<double>(ImprovingRate,                30., 90.),    "ImprovingRate" ,               0.6),
         OptionTunableParam(SpinType<double>(RfpImprovingSink,             1.,  10.),    "RfpImprovingSink",             1.2),
         OptionTunableParam(SpinType<double>(NullMargin,                   1,   28.),    "NullMargin",                   0.4),
         OptionTunableParam(SpinType<double>(NullImprovingSink ,           1.,  10.),    "NullImprovingSink",            1.2),
-        OptionTunableParam(SpinType<double>(DynamicImprovementDepth,      6.,  16.),    "DynamicImprovementDepth",      1.4),
         OptionTunableParam(SpinType<double>(TTEvalCorrRate,               1.,  4.),     "TTEvalCorrRate",               0.2),
         OptionTunableParam(SpinType<double>(NullDiffScale,                800.,1300.),  "NullDiffScale",                0.5),
         OptionTunableParam(SpinType<double>(NullDepth,                    2.,  5.),     "NullDepth",                    1.3),
@@ -483,13 +480,23 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
         if (token == "value") {
             strm >> std::skipws >> token;
             
-            const ll val = std::stoi(token);
+            ll val = std::stoi(token);
 
-            _options.hash_opt.set(val);
+            try {
+                _options.hash_opt.set(val);
+            } 
+            catch (const std::runtime_error&) {
+                val = std::clamp(val, 
+                                 _options.hash_opt.value.min_value, 
+                                 _options.hash_opt.value.max_value);
+
+                _options.hash_opt.set(val);
+            }
+
             _search.resizeHashTT(_options.hash_opt.getCurrentValue() * 1_MB);
         }
     }
-
+    
     if (option == "SyzygyPath") {
         strm >> std::skipws >> token;
         
