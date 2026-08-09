@@ -223,7 +223,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    const PVInfo* p = dataOfArray1d(pv_line);
+    PVInfo* p = dataOfArray1d(pv_line);
 
     mem::fill(p, p + countOfArray1d(pv_line), 
               PVInfo{ Move16b::Null, Score::Undef });
