@@ -894,9 +894,9 @@ Score Search::nmSearch(Position& pos,
                 prev_eval_node = node - 4;
         
             if (prev_eval_node) {
-                const Score diff = node->eval - prev_eval_node->eval;
-                node->improving = std::clamp(prev_eval_node->improving + static_cast<float>(diff) / ImprovingRate, 
-                                             -1.f, 1.f);
+                const int32_t diff = static_cast<int32_t>(node->eval - prev_eval_node->eval);
+                node->improving = std::clamp(prev_eval_node->improving + diff * 8192 / ImprovingRate, 
+                                             -8192, 8192);
             }
         }
     }
@@ -913,8 +913,8 @@ Score Search::nmSearch(Position& pos,
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
-            const float rfp_improving_scale = -node->improving / RfpImprovingSink + 1.f;
-            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth);
+            const int32_t rfp_improving_scale = -node->improving / RfpImprovingSink + 8192;
+            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / 8192);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
                 const Score reduced_eval = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
@@ -937,8 +937,8 @@ Score Search::nmSearch(Position& pos,
             pos.getNonPawnMaterial() > 0 and
             !beta.isMateScore()) {
 
-            const double nmp_improving_scale = -node->improving / NullImprovingSink + 1.; // TODO: float
-            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth);
+            const int32_t nmp_improving_scale = -node->improving / NullImprovingSink + 8192;
+            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / 8192);
 
             if (node->eval - nmp_margin >= beta) {    
                 assert(parent_node->move != Move32b::Null);
@@ -1133,11 +1133,11 @@ Score Search::nmSearch(Position& pos,
         if (depth <= ExtensionDepth) {
             if (gives_check)
                 move_extension += MoveCheckExtensionBase + 
-                                    node->improving / ImprovingExtensionRate;
+                                    node->improving / (ImprovingExtensionRate * 8192);
 
             if (node->mate_thread)
                 move_extension += MateThreadExtensionBase + 
-                                    node->improving / ImprovingExtensionMateRate;
+                                    node->improving / (ImprovingExtensionMateRate * 8192);
         }
 
         move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
@@ -1183,7 +1183,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction += MoveOrder::getQuietDepthReduction(move_score);
 
                 move_reduction -= move_extension * move_extension * QuietExtensionReduction;
-                move_reduction -= node->improving * QuietImprovingReductionRate;
+                move_reduction -= node->improving * QuietImprovingReductionRate / 8192;
                 move_reduction /= QuietTotalReductionRate;
             }
             else {
@@ -1206,7 +1206,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
 
                 move_reduction -= move_extension * move_extension * CaptureExtensionReduction;
-                move_reduction -= node->improving * CaptureImprovingReductionRate;
+                move_reduction -= node->improving * CaptureImprovingReductionRate / 8192;
                 move_reduction /= CaptureTotalReductionRate;
             }
         }

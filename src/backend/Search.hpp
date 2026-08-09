@@ -136,7 +136,7 @@ struct NodeInfo {
     Move32b                      best_move;
     Score                        score;
     Score                        eval;
-    float                        improving;
+    int32_t                      improving;
     bool                         can_move;
     Score                        best_score;
     bool                         check;
