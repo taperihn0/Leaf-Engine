@@ -1456,7 +1456,7 @@ Score Search::qSearch(Position& pos,
     *  when no move has any chance to raise alpha
     *  then prune all of the branches.
     */
-    if (node->eval + QMaterialDelta < alpha and
+    if (node->eval + QMaterialDelta < alpha and 
         pos.getNonPawnMaterial() > 0 and
         !node->check)
         return (alpha * (30) + node->eval * (2)) / 32;
