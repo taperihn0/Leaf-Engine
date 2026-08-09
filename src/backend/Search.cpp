@@ -1459,14 +1459,14 @@ Score Search::qSearch(Position& pos,
     if (node->eval + QMaterialDelta < alpha and
         pos.getNonPawnMaterial() > 0 and
         !node->check)
-        return (alpha * (26) + node->eval * (6)) / 32;
+        return (alpha * (30) + node->eval * (2)) / 32;
     
     /* Standing Pat Cutoff -
     *  when we're already above the beta, we can make a cutoff.
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) 
-            return (beta * (8) + node->eval * (24)) / 32;
+            return (beta * (2) + node->eval * (30)) / 32;
 
         alpha = node->eval;
     }
