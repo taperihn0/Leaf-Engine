@@ -202,7 +202,7 @@ _PARAM_ATTRIBS int FutilityDelta = roundi<float>(22.8808f);
 _PARAM_ATTRIBS int FutilityScoreMult = roundi<float>(9.f);
 _PARAM_ATTRIBS int RazorBaseDelta = roundi<float>(119.431f);
 _PARAM_ATTRIBS int QMaterialDelta = roundi<float>(1106.39f);
-_PARAM_ATTRIBS int NNEvalScale = roundi<float>(13.7321f);
+_PARAM_ATTRIBS int NNEvalScale = roundi<float>(8.7321f);
 _PARAM_ATTRIBS int ImprovingRate = roundi<float>(39.2507f);
 _PARAM_ATTRIBS int RfpImprovingSink = roundi<float>(1.86056f);
 _PARAM_ATTRIBS int NullMargin = roundi<float>(4.33824f);
@@ -278,6 +278,7 @@ inline constexpr bool   UseSyzygyTablebase = _USE_SYZYGY_TB;
 inline constexpr bool   UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
 inline constexpr double MinTimeBranchFactor = 1.;
 inline constexpr double MaxTimeBranchFactor = 5.;
+inline constexpr int    FixedPointMult = 65536;
 
 class Search {
 public:

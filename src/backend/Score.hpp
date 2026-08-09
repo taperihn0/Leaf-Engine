@@ -93,6 +93,10 @@ public:
         return _raw;
     }
 
+    _INLINE explicit operator int64_t() const {
+        return _raw;
+    }
+
     _INLINE explicit operator float() const {
         return static_cast<float>(_raw);
     }

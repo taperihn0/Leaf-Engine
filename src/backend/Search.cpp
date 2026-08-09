@@ -209,7 +209,7 @@ void NodeInfo::clear() {
     best_move = move = Move32b::Null;
     score            = Score::Undef;
     eval             = Score::Undef;
-    improving        = 0.f;
+    improving        = 0;
     can_move         = false;
     best_score       = Score::Undef;
     check            = false;
@@ -800,7 +800,7 @@ Score Search::nmSearch(Position& pos,
     node->move = Move32b::Null;
     node->eval = tt_entry.eval;
     node->state = pos.getReversibleState();
-    node->improving = 0.f;
+    node->improving = 0;
     node->mate_thread = false;
 
     if (!node->eval.isValid()) {
@@ -877,7 +877,7 @@ Score Search::nmSearch(Position& pos,
     }
 
     /* Dynamic Improving implementation -
-    *  we're clamping improvement rate to range [-1., 1.]
+    *  we're clamping improvement rate to range [-FixedPointMult, +FixedPointMult]
     */
     if constexpr (!Root and !IsPv) {
         if (!node->check) {
@@ -895,8 +895,8 @@ Score Search::nmSearch(Position& pos,
         
             if (prev_eval_node) {
                 const int32_t diff = static_cast<int32_t>(node->eval - prev_eval_node->eval);
-                node->improving = std::clamp(prev_eval_node->improving + diff * 8192 / ImprovingRate, 
-                                             -8192, 8192);
+                node->improving = std::clamp(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
+                                             -FixedPointMult, FixedPointMult);
             }
         }
     }
@@ -913,8 +913,8 @@ Score Search::nmSearch(Position& pos,
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
-            const int32_t rfp_improving_scale = -node->improving / RfpImprovingSink + 8192;
-            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / 8192);
+            const int32_t rfp_improving_scale = -node->improving / RfpImprovingSink + FixedPointMult;
+            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / FixedPointMult);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
                 const Score reduced_eval = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
@@ -937,8 +937,8 @@ Score Search::nmSearch(Position& pos,
             pos.getNonPawnMaterial() > 0 and
             !beta.isMateScore()) {
 
-            const int32_t nmp_improving_scale = -node->improving / NullImprovingSink + 8192;
-            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / 8192);
+            const int32_t nmp_improving_scale = -node->improving / NullImprovingSink + FixedPointMult;
+            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
 
             if (node->eval - nmp_margin >= beta) {    
                 assert(parent_node->move != Move32b::Null);
@@ -1016,11 +1016,11 @@ Score Search::nmSearch(Position& pos,
     node->move_picker.clear<OrderPolicy>();
     node->move_picker.setHashMove(tt_move);
 
-    _LC_PARAM_ATTRIBS float MaxMoveExtension = 1.f * MaxMoveExtensionRate / MaxMoveExtensionDiv;
-    _LC_PARAM_ATTRIBS float MoveCheckExtensionBase = 1.f * MoveCheckExtensionRate / MoveCheckExtensionDiv;
-    _LC_PARAM_ATTRIBS float MateThreadExtensionBase = 1.f * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
-    _LC_PARAM_ATTRIBS float SingularExtension = 1.f * SingularExtensionRate / SingularExtensionDiv;
-    _LC_PARAM_ATTRIBS float SingularBetaReduction = 1.f * SingularBetaExtensionRate / SingularBetaExtensionDiv;
+    _LC_PARAM_ATTRIBS int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
+    _LC_PARAM_ATTRIBS int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
+    _LC_PARAM_ATTRIBS int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
+    _LC_PARAM_ATTRIBS int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
+    _LC_PARAM_ATTRIBS int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     node->can_move       = false;
     node->score          = Score::Undef;
@@ -1085,8 +1085,8 @@ Score Search::nmSearch(Position& pos,
 
         const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
 
-        float move_extension = 0.f;
-        float move_reduction = 0.f;
+        int32_t move_extension = 0;
+        int32_t move_reduction = 0;
 
         /* Singular Move Extension -
         *  when we got some relatively strong move from TT,
@@ -1133,14 +1133,14 @@ Score Search::nmSearch(Position& pos,
         if (depth <= ExtensionDepth) {
             if (gives_check)
                 move_extension += MoveCheckExtensionBase + 
-                                    node->improving / (ImprovingExtensionRate * 8192);
+                                    node->improving / ImprovingExtensionRate;
 
             if (node->mate_thread)
                 move_extension += MateThreadExtensionBase + 
-                                    node->improving / (ImprovingExtensionMateRate * 8192);
+                                    node->improving / ImprovingExtensionMateRate;
         }
 
-        move_extension = std::clamp(move_extension, 0.f, MaxMoveExtension);
+        move_extension = std::clamp<int32_t>(move_extension, 0, MaxMoveExtension);
 
         bool full_depth_search = !IsPv and !(node->moves_searched > 0);
         bool full_window_search = IsPv and !node->moves_searched;
@@ -1155,63 +1155,66 @@ Score Search::nmSearch(Position& pos,
             depth >= LmrDepth and
             node->moves_searched >= LmrMoveCount) 
         {    
-            move_reduction = LmrBaseReduction + LmrLogDepthMovesMult * std::log(depth) 
-                                                                     * std::log(node->moves_searched);
+            move_reduction = (LmrBaseReduction + 
+                              LmrLogDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
+                              FixedPointMult;
             
             const Piece::enumType pc = node->move.getPiece();
 
             if (node->move.isQuiet() and !node->move.isPromotion()) {
                 if constexpr (!IsPv) 
-                    move_reduction += QuietNotPvNodeReduction;
+                    move_reduction += QuietNotPvNodeReduction * FixedPointMult;
 
                 if (node->is_cut) 
-                    move_reduction -= QuietCutNodeReduction;
+                    move_reduction -= QuietCutNodeReduction * FixedPointMult;
 
                 if (node->check) 
-                    move_reduction -= QuietCheckReduction;
+                    move_reduction -= QuietCheckReduction * FixedPointMult;
 
                 if (pc == Piece::PAWN) 
-                    move_reduction -= QuietPawnMoveReduction;
+                    move_reduction -= QuietPawnMoveReduction * FixedPointMult;
 
                 if (!tt_move.isNull() and tt_move.isCapture())
-                    move_reduction += QuietHashCapReduction;
+                    move_reduction += QuietHashCapReduction * FixedPointMult;
 
                 if (!killer.isNull() and node->move == killer) 
-                    move_reduction -= QuietKillerMoveReduction;
+                    move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
                 if (move_score != UndefMoveScore) 
-                    move_reduction += MoveOrder::getQuietDepthReduction(move_score);
+                    move_reduction += MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
 
-                move_reduction -= move_extension * move_extension * QuietExtensionReduction;
-                move_reduction -= node->improving * QuietImprovingReductionRate / 8192;
+                move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
+                                    QuietExtensionReduction / FixedPointMult;
+                move_reduction -= node->improving * QuietImprovingReductionRate;
                 move_reduction /= QuietTotalReductionRate;
             }
             else {
                 if constexpr (!IsPv)
-                    move_reduction += CaptureNotPvNodeReduction;
+                    move_reduction += CaptureNotPvNodeReduction * FixedPointMult;
 
                 if (node->is_cut)
-                    move_reduction -= CaptureCutNodeReduction;
+                    move_reduction -= CaptureCutNodeReduction * FixedPointMult;
 
                 if (node->check)
-                    move_reduction -= CaptureCheckReduction;
+                    move_reduction -= CaptureCheckReduction * FixedPointMult;
 
                 if (!tt_move.isNull() and tt_move.isCapture())
-                    move_reduction += CaptureHashCapReduction;
+                    move_reduction += CaptureHashCapReduction * FixedPointMult;
 
                 if (!killer.isNull() and node->move == killer)
-                    move_reduction -= CaptureKillerMoveReduction;
+                    move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
                 if (move_score != UndefMoveScore and !node->move.isPromotion())
-                    move_reduction += MoveOrder::getCaptureDepthReduction(move_score);
+                    move_reduction += MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
 
-                move_reduction -= move_extension * move_extension * CaptureExtensionReduction;
-                move_reduction -= node->improving * CaptureImprovingReductionRate / 8192;
+                move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
+                                    CaptureExtensionReduction / FixedPointMult;
+                move_reduction -= node->improving * CaptureImprovingReductionRate;
                 move_reduction /= CaptureTotalReductionRate;
             }
         }
 
-        const int reduction = std::clamp<int>(std::lroundf(move_reduction), 0, depth - 1);
+        const int reduction = std::clamp<int>((move_reduction + FixedPointMult / 2) / FixedPointMult, 0, depth - 1);
         const int reduct_depth = std::clamp(depth - reduction, 0, depth - 1);
 
         child_node->is_cut = !node->is_cut;
@@ -1255,7 +1258,7 @@ Score Search::nmSearch(Position& pos,
             full_depth_search = !do_lmr or node->score > alpha;
         }
 
-        const int extension = std::lroundf(move_extension);
+        const int extension = (move_extension + FixedPointMult / 2) / FixedPointMult;
         const int ext_depth = std::min(depth - 1 + extension, std::max(MaxDepth - ply, 0));
 
         if (full_depth_search and !full_window_search) {
@@ -1682,18 +1685,17 @@ _INLINE Score Search::evaluate(const Position& pos,
 #endif
 
     const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
-    const int scaled_eval = 8 * static_cast<int>(eval) / NNEvalScale; // TODO: float precision, then round
-
+    const int64_t unscaled_eval = NNEvalScale * 4096 * static_cast<int64_t>(eval);
+    const int32_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
+ 
     // Assert we won't overflow into mate score
-    assert(abs<int>(scaled_eval) < Score::MateBound - 100);
-
+    assert(abs<int16_t>(scaled_eval) < Score::MateBound - 100);
+ 
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-    const float clock_reduct = std::clamp<int>(halfmoves_left, 0, HalfMovesEvalLimit) 
-                                / static_cast<float>(HalfMovesEvalLimit);
-
-    const Score res_eval = static_cast<Score>(static_cast<Score>(scaled_eval) * clock_reduct);
-
-    return res_eval;
+    const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
+    const Score result = static_cast<Score>(scaled_eval * clock_mult / HalfMovesEvalLimit);
+ 
+    return result;
 }
 
 _FORCEINLINE Score Search::correctedEvalScore(Score eval, Score score) {
