@@ -16,32 +16,27 @@ jobs:
             - os: ubuntu-latest
               arch: x64-sse4-popcnt
               simd: ENABLE_SIMD_SSE4_2
-              arch_exclusive: OFF
-              bmi2: OFF
+              architecture: ARCHITECTURE_X86_64_LEGACY
 
             - os: ubuntu-latest
               arch: x64-avx2
               simd: ENABLE_SIMD_AVX2
-              arch_exclusive: OFF
-              bmi2: ON
+              architecture: ARCHITECTURE_X86_64_V3
 
             - os: windows-latest
               arch: x64-sse4-popcnt
               simd: ENABLE_SIMD_SSE4_2
-              arch_exclusive: OFF
-              bmi2: OFF
+              architecture: ARCHITECTURE_X86_64_LEGACY
 
             - os: windows-latest
               arch: x64-avx2
               simd: ENABLE_SIMD_AVX2
-              arch_exclusive: OFF
-              bmi2: ON
+              architecture: ARCHITECTURE_X86_64_V3
 
             - os: ubuntu-24.04-arm
               arch: arm64
-              simd: ARCHITECTURE_ARM
-              arch_exclusive: OFF
-              bmi2: OFF
+              simd: ENABLE_SIMD_NEON
+              architecture: ARCHITECTURE_ARM
 
 
     steps:
@@ -58,8 +53,7 @@ jobs:
         cmake -B ${{ github.workspace }}/build 
         -DCMAKE_BUILD_TYPE=Release 
         -D${{ matrix.simd }}=ON
-        -DARCHITECTURE_EXCLUSIVE=${{ matrix.arch_exclusive }}
-        -DEXTENSION_BMI2=${{ matrix.bmi2 }}
+        -D${{ matrix.architecture }}=ON
 
     - name: Build Project
       run: cmake --build ${{ github.workspace }}/build --config Release --parallel

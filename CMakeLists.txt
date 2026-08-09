@@ -103,16 +103,20 @@ else ()
 	message(FATAL_ERROR "Platform not recognised.")
 endif ()
 
-option(EXTENSION_FMA          "Include FMA instructions for newer CPUs"    OFF)
-option(ARCHITECTURE_ARM 	  "Specify ARM architecture"  				   OFF)
-option(EXTENSION_BMI2   	  "Specify BMI2 Extension Instruction Set"     OFF)
+option(ARCHITECTURE_ARM 	      "Specify ARM architecture"  		      OFF)
+option(ARCHITECTURE_X86_64_V3     "Specify x86-64-v3 target archiecture"  OFF)
+option(ARCHITECTURE_X86_64_LEGACY "Specify x86-64-v1 target archiecture"  OFF)
 
-if (MSVC AND EXTENSION_BMI2)
-	message(WARNING "EXTENSION_BMI2 is ignored on MSVC. Try enabling ENABLE_SIMD_AVX2 or ENABLE_SIMD_AVX512 instead.")
+if (ARCHITECTURE_X86_64_V3 AND ARCHITECTURE_X86_64_LEGACY)
+    message(FATAL_ERROR "Pick only one architecture flag.")
 endif ()
 
-if (ARCHITECTURE_ARM AND EXTENSION_BMI2)
-	message(WARNING "EXTENSION_BMI2 is not implemented on ARM architecture. Ignoring.")
+if (MSVC AND (ARCHITECTURE_X86_64_V3 OR ARCHITECTURE_X86_64_LEGACY))
+	message(WARNING "ARCHITECTURE flags are ignored on MSVC.")
+endif ()
+
+if (ARCHITECTURE_ARM AND (ARCHITECTURE_X86_64_V3 OR ARCHITECTURE_X86_64_LEGACY))
+	message(FATAL_ERROR "ARCHITECTURE_ARM is not compatible with ARCHITECTURE_X86_64_V*.")
 endif ()
 
 if (ARCHITECTURE_ARM)
@@ -142,18 +146,14 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
 	endif ()
 
 	if (NOT MSVC)
-        if (EXTENSION_FMA)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
+        if (ARCHITECTURE_X86_64_V3)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v3")
+            target_compile_definitions(Leaf PUBLIC LEAF_ENABLE_BMI2)
+        elseif (ARCHITECTURE_X86_64_LEGACY)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v1")
+        elseif (ARCHITECTURE_ARM)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
         endif ()
-
-		if (ARCHITECTURE_ARM)
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
-		endif ()
-
-		if (EXTENSION_BMI2)
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbmi2")
-			target_compile_definitions(Leaf PUBLIC LEAF_ENABLE_BMI2)
-		endif ()
 
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
@@ -194,9 +194,18 @@ option(ENABLE_SIMD_SSE4_2 "Enable SSE 4.2 optimizations on x86" OFF)
 option(ENABLE_SIMD_AVX    "Enable AVX optimizations on x86"	    OFF)
 option(ENABLE_SIMD_AVX2   "Enable AVX2 optimizations on x86"    OFF)
 option(ENABLE_SIMD_AVX512 "Enable AVX512 optimizations on x86"  OFF)
-option(FORCE_PURE         "Disable SIMD optimizations"			OFF)
+option(ENABLE_SIMD_NEON   "Enable ARM NEON optimizations"       OFF)
+option(FORCE_PURE         "Disable SIMD optimizations"		    OFF)
 
-if (ARCHITECTURE_ARM AND NOT FORCE_PURE)
+if (ARCHITECTURE_ARM AND (
+    ENABLE_SIMD_SSE2   OR
+    ENABLE_SIMD_SSE3   OR
+    ENABLE_SIMD_SSSE3  OR
+    ENABLE_SIMD_SSE4_1 OR
+    ENABLE_SIMD_SSE4_2 OR
+    ENABLE_SIMD_AVX    OR
+    ENABLE_SIMD_AVX2   OR
+    ENABLE_SIMD_AVX512))
 	message(WARNING "ARCHITECTURE_ARM do not support x86 SIMD extension set.")
 endif ()
 
@@ -265,7 +274,6 @@ elseif (ENABLE_SIMD_AVX)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
 	else ()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v3")
 	endif ()
 
 	message(STATUS "SIMD optimizations enabled - AVX instruction set")
@@ -277,7 +285,6 @@ elseif (ENABLE_SIMD_AVX2)
 		target_compile_definitions(Leaf PUBLIC LEAF_ENABLE_BMI2)
 	else ()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v3")
 	endif ()
 
 	message(STATUS "SIMD optimizations enabled - AVX2 instruction set")
@@ -289,7 +296,6 @@ elseif (ENABLE_SIMD_AVX512)
 		target_compile_definitions(Leaf PUBLIC LEAF_ENABLE_BMI2)
 	else ()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mavx512bw -mavx512dq")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v3")
 	endif ()
 
 	message(STATUS "SIMD optimizations enabled - AVX512 instruction set")

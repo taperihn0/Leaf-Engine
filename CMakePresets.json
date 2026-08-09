@@ -1,171 +1,177 @@
 {
-	"version": 3,
-	"configurePresets": [
-		{
-			"name": "debug",
-			"displayName": "Debug",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Debug",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"COLLECT_SEARCH_STATS": "ON",
-				"INCLUDE_TESTS": "ON",
-				"FORCE_PURE": "ON",
-				"EXTENSION_FMA": "OFF",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "release",
-			"displayName": "Release",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "OFF",
-				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_AVX2": "ON", 
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "relwithdebinfo",
-			"displayName": "RelWithDebInfo",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/RelWithDebInfo",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
-				"COLLECT_SEARCH_STATS": "ON",
-				"INCLUDE_TESTS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "debugutils",
-			"displayName": "DebugUtils",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Utils/Debug",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"COLLECT_SEARCH_STATS": "ON",
-				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
-				"EXTENSION_FMA": "OFF",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "relwithdebinfoutils",
-			"displayName": "ReleaseWithDebInfoUtils",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Utils/Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "ON",
-				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SSE4_2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "releaseutils",
-			"displayName": "ReleaseUtils",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Utils/Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "OFF",
-				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_SEE4_2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF"
-			}
-		},
-		{
-			"name": "final",
-			"displayName": "Final",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "OFF",
-				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_AVX2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF",
-				"EXTENSION_BMI2": "ON"
-			}
-		},
-		{
-			"name": "finalutils",
-			"displayName": "FinalUtils",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Utils/Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "OFF",
-				"BUILD_UTILS": "ON",
-				"ENABLE_SIMD_AVX2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF",
-				"EXTENSION_BMI2": "ON"
-			}
-		},
+    "version": 3,
+    "configurePresets": [
         {
-			"name": "final-mingw-w64",
-			"displayName": "Final-MinGW-w64",
-			"generator": "Ninja",
-			"binaryDir": "${sourceDir}/build/Release",
-			"cacheVariables": {
-				"CMAKE_SYSTEM_NAME": "Windows",
-				"CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
-				"CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
-				"CMAKE_RC_COMPILER": "x86_64-w64-mingw32-windres",
-				"CMAKE_EXE_LINKER_FLAGS": "-static -static-libgcc -static-libstdc++",
+            "name": "debug",
+            "displayName": "Debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "COLLECT_SEARCH_STATS": "ON",
+                "INCLUDE_TESTS": "ON",
+                "FORCE_PURE": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-				"COLLECT_SEARCH_STATS": "OFF",
-				"INCLUDE_TESTS": "OFF",
-				"ENABLE_SIMD_AVX2": "ON",
-				"EXTENSION_FMA": "ON",
-				"ARCHITECTURE_ARM": "OFF",
-				"EXTENSION_BMI2": "ON"
-			}
+                "COLLECT_SEARCH_STATS": "OFF",
+                "INCLUDE_TESTS": "OFF",
+                "ENABLE_SIMD_AVX2": "ON", 
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "displayName": "RelWithDebInfo",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/RelWithDebInfo",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "COLLECT_SEARCH_STATS": "ON",
+                "INCLUDE_TESTS": "ON",
+                "ENABLE_SIMD_SSE4_2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "debugutils",
+            "displayName": "DebugUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "COLLECT_SEARCH_STATS": "ON",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_SSE4_2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "relwithdebinfoutils",
+            "displayName": "ReleaseWithDebInfoUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "ON",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_SSE4_2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "releaseutils",
+            "displayName": "ReleaseUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_SEE4_2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "final",
+            "displayName": "Final",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "INCLUDE_TESTS": "OFF",
+                "ENABLE_SIMD_AVX2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "finalutils",
+            "displayName": "FinalUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_AVX2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
+            "name": "final-mingw-w64",
+            "displayName": "Final-MinGW-w64",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "Windows",
+                "CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
+                "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
+                "CMAKE_RC_COMPILER": "x86_64-w64-mingw32-windres",
+                "CMAKE_EXE_LINKER_FLAGS": "-static -static-libgcc -static-libstdc++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "INCLUDE_TESTS": "OFF",
+                "ENABLE_SIMD_AVX2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
         }
-	],
-	"buildPresets": [
-		{
-			"name": "debug",
-			"configurePreset": "debug",
-			"targets": [ "Leaf" ]
-		},
-		{
-			"name": "release",
-			"configurePreset": "release",
-			"targets": [ "Leaf" ]
-		},
-		{
-			"name": "debugutils",
-			"configurePreset": "debugutils",
-			"targets": [ "LeafUtils" ]
-		},
-		{
-			"name": "releaseutils",
-			"configurePreset": "releaseutils",
-			"targets": [ "LeafUtils" ]
-		},
-		{
-			"name": "final",
-			"configurePreset": "final",
-			"targets": [ "Leaf" ]
-		},
-		{
-			"name": "finalutils",
-			"configurePreset": "finalutils",
-			"targets": [ "LeafUtils" ]
-		}
-	]
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "targets": [ "Leaf" ]
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "targets": [ "Leaf" ]
+        },
+        {
+            "name": "debugutils",
+            "configurePreset": "debugutils",
+            "targets": [ "LeafUtils" ]
+        },
+        {
+            "name": "releaseutils",
+            "configurePreset": "releaseutils",
+            "targets": [ "LeafUtils" ]
+        },
+        {
+            "name": "final",
+            "configurePreset": "final",
+            "targets": [ "Leaf" ]
+        },
+        {
+            "name": "finalutils",
+            "configurePreset": "finalutils",
+            "targets": [ "LeafUtils" ]
+        }
+    ]
 }
