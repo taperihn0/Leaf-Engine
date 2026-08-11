@@ -1134,8 +1134,7 @@ Score Search::nmSearch(Position& pos,
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and 
-                        !score.isMateScore()) {
+                else if (score >= beta and !score.isMateScore()) {
                     pos.unmake(node->move, node->state);
                     const Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                 / (singular_depth + 1);

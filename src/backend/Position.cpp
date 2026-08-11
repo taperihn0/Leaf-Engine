@@ -676,7 +676,7 @@ int Position::staticExchangeEval(Square org,
                                  int threshold) const 
 {
     if (!ExactScore and *SeePieceValue[target] > *SeePieceValue[attacker])
-        return threshold + 1;
+        return *SeePieceValue[target] - *SeePieceValue[attacker];
     
     array1d<int, 32> gain;
     int i = 0;

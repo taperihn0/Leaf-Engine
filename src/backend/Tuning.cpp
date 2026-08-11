@@ -63,7 +63,6 @@ void TunableParametersMap::createMapping() {
     _addr["QuietHashCapReduction"] = &QuietHashCapReduction;
     _addr["QuietKillerMoveReduction"] = &QuietKillerMoveReduction;
     _addr["QuietMoveScoreReductionRate"] = &QuietMoveScoreReductionRate;
-    _addr["QuietMoveScoreReductionDiv"] = &QuietMoveScoreReductionDiv;
     _addr["QuietTotalReductionRate"] = &QuietTotalReductionRate;
     _addr["CaptureNotPvNodeReduction"] = &CaptureNotPvNodeReduction;
     _addr["CaptureCutNodeReduction"] = &CaptureCutNodeReduction;
