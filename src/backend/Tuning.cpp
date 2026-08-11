@@ -117,7 +117,7 @@ void TunableParametersMap::createMapping() {
     _addr["SeeBishopValue"] = &SeeBishopValue;
     _addr["SeeRookValue"] = &SeeRookValue;
     _addr["SeeQueenValue"] = &SeeQueenValue;
-    _addr["SeeValuePrune"] = &SeeValuePrune;
+    _addr["QSeePruningThreshold"] = &QSeePruningThreshold;
     _addr["RfpQuietPenaltyMult"] = &RfpQuietPenaltyMult;
 };
 

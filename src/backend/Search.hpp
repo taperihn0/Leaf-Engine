@@ -264,7 +264,7 @@ _PARAM_ATTRIBS int AspirationWindowScoreDiv = roundi<float>(5208.23f);
 _PARAM_ATTRIBS int AspirationMaxWindow = roundi<float>(736.662f);
 _PARAM_ATTRIBS int AspirationCount = roundi<float>(3.4091f);
 _PARAM_ATTRIBS int AspirationWidenRate = roundi<float>(4.68001f);
-_PARAM_ATTRIBS int SeeValuePrune = roundi<float>(-8.86404f);
+_PARAM_ATTRIBS int QSeePruningThreshold = roundi<float>(-8.86404f);
 _PARAM_ATTRIBS int RfpQuietPenaltyMult = roundi<float>(19.f);
 
 /* Static parameters -

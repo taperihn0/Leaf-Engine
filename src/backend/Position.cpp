@@ -656,23 +656,27 @@ uint64_t Position::goPerft(uint depth, time_ms_t& duration_ms) {
     return nodes_cnt;
 }
 
-static constexpr array1d<const int*, 6> SeePieceValue = {
+static constexpr int NonePieceValue = 0;
+
+static constexpr array1d<const int*, 7> SeePieceValue = {
     &SeePawnValue,
     &SeeKnightValue,
     &SeeBishopValue,
     &SeeRookValue,
     &SeeQueenValue,
-    &SeeKingValue
+    &SeeKingValue,
+    &NonePieceValue
 };
 
 template <bool ExactScore>
 int Position::staticExchangeEval(Square org, 
                                  Square sq, 
                                  Piece::enumType target, 
-                                 Piece::enumType attacker) const 
+                                 Piece::enumType attacker,
+                                 int threshold) const 
 {
     if (!ExactScore and *SeePieceValue[target] > *SeePieceValue[attacker])
-        return 1;
+        return threshold + 1;
     
     array1d<int, 32> gain;
     int i = 0;
@@ -706,7 +710,7 @@ int Position::staticExchangeEval(Square org,
         gain[i] = -gain[i - 1] + *SeePieceValue[vic];
         
         if constexpr (!ExactScore) {
-            if (std::max(-gain[i - 1], gain[i]) < 0)
+            if (std::max(-gain[i - 1], gain[i]) < threshold)
                 break;
         }
 
@@ -733,6 +737,15 @@ int Position::staticExchangeEval(Square org,
     }
 
     return gain[0];
+}
+
+bool Position::badStaticExchangeEval(Move32b move, int threshold) const {
+    const Square org = move.getOrigin();
+    const Square dst = move.getTarget();
+    const Piece::enumType vic = move.isCapture() ? move.getCaptured(*this) : Piece::enumType::NONE;
+    const Piece::enumType piece = move.getPiece();
+
+    return staticExchangeEval<false>(org, dst, vic, piece, threshold) <= threshold;
 }
 
 template <bool Root>
@@ -793,8 +806,8 @@ int _StaticExchangeEval_unittest(const Position& pos, Square org, Square sq,
     return pos.staticExchangeEval<ExactScore>(org, sq, target, attacker);
 }
 
-template int Position::staticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType) const;
-template int Position::staticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType) const;
+template int Position::staticExchangeEval<false>(Square, Square, Piece::enumType, Piece::enumType, int) const;
+template int Position::staticExchangeEval<true>(Square, Square, Piece::enumType, Piece::enumType, int) const;
 
 template int _StaticExchangeEval_unittest<false>(const Position&, Square, Square, Piece::enumType, Piece::enumType);
 template int _StaticExchangeEval_unittest<true>(const Position&, Square, Square, Piece::enumType, Piece::enumType);

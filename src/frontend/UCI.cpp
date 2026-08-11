@@ -141,7 +141,7 @@ UniversalChessInterface::Options UniversalChessInterface::_options = {
         OptionTunableParam(SpinType<double>(QuietMoveScoreReductionRate,  1., 25.),     "QuietMoveScoreReductionRate",  0.9),
         OptionTunableParam(SpinType<double>(QuietMoveScoreReductionDiv,   1., 15.),     "QuietMoveScoreReductionDiv",   0.9),
         OptionTunableParam(SpinType<double>(CaptureMoveScoreReductionDiv, 30.,120.),    "CaptureMoveScoreReductionDiv", 1.2),
-        OptionTunableParam(SpinType<double>(SeeValuePrune,                -150., 80.),  "SeeValuePrune",                1.2),
+        OptionTunableParam(SpinType<double>(QSeePruningThreshold,                -150., 80.),  "QSeePruningThreshold",                1.2),
         OptionTunableParam(SpinType<double>(RfpQuietPenaltyMult,          10.,  40.),   "RfpQuietPenaltyMult",          1.1),
         OptionTunableParam(SpinType<double>(KnightCapturedScore,          260., 350.),  "KnightCapturedScore",          1.3),
         OptionTunableParam(SpinType<double>(BishopCapturedScore,          260., 350.),  "BishopCapturedScore",          1.3),

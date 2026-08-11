@@ -122,7 +122,13 @@ bool MoveOrder::nextMove(const NodeInfo* node,
             const enumColor side = pos.getTurn();
             scoreQuiets(_iterator, side);
         }
-        return nextFromList(next_move, move_score);
+
+        if (nextFromList(next_move, move_score)) {
+            move_score += MaxAbsQuietsHistory;
+            return true;
+        }
+
+        return false;
     default:
         assert(false);
         break;
@@ -299,7 +305,11 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
-        return nextFromList(next_move, move_score);
+        if (nextFromList(next_move, move_score)) {
+            move_score += MaxAbsQuietsHistory;
+            return true;
+        }
+        return false;
     default:
         assert(false);
         break;
@@ -310,4 +320,4 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
 template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
 template bool MoveOrder::nextMove<QUIESCENT, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<ONCE_GEN_LEGAL, true> (const NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<ONCE_GEN_LEGAL, true>(const NodeInfo*, Position&, Move32b&, int16_t&);

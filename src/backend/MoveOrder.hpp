@@ -25,8 +25,6 @@
 class TreeStack;
 class MoveOrder;
 
-static constexpr int16_t UndefMoveScore = minof<int16_t>();
-
 /* It is basically a part of MoveOrder interface.
 *  It contains tables used in move ordering with history data, for instance 
 *  piece-square or from-to tables.
@@ -132,7 +130,6 @@ public:
     _NODISCARD uint getTotalMoves();
 
     _NODISCARD enumStage getStage() const;
-
 private:
     bool nextFromList(Move32b& move, int16_t& score, size_t end_idx = maxof<size_t>());
 
@@ -220,7 +217,7 @@ _INLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColor sid
 }
 
 _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-    const int16_t centered_score = quiet_score - MaxAbsQuietsHistory;
+    const int16_t centered_score = quiet_score - 2 * MaxAbsQuietsHistory;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
     return centered_score < 0 ? val : -val;

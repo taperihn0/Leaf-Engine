@@ -1,3 +1,13 @@
+### [commit:fe1ec28] feature: fixed-point arithmetic in Search
+```
+Score of leaf-fp vs leaf-arch-v3: 291 - 275 - 340  [0.509] 906
+...      leaf-fp playing White: 54 - 235 - 164  [0.300] 453
+...      leaf-fp playing Black: 237 - 40 - 176  [0.717] 453
+...      White vs Black: 94 - 472 - 340  [0.291] 906
+Elo difference: 6.1 +/- 17.9, LOS: 74.9 %, DrawRatio: 37.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:d918019] feature: slightly modified Futility parameters & -march=x86-64-v3 flag
 ```
 Score of leaf-pruning-tweak vs leaf-razor-2-tweak: 670 - 340 - 547  [0.606] 1557

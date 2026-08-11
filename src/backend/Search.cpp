@@ -1030,12 +1030,15 @@ Score Search::nmSearch(Position& pos,
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
 
-    int16_t move_score = UndefMoveScore;
+    int16_t move_score = Score::Undef;
 
     for (node->move_index = 0; 
          node->move_picker.nextMove<OrderPolicy, Root>(node, pos, node->move, move_score);
          node->move_index++) 
     {
+        /* Singular Move -
+        *  return obvious move that is the only one in root
+        */
         if constexpr (Root and OrderPolicy == ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
                 node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
@@ -1056,7 +1059,20 @@ Score Search::nmSearch(Position& pos,
                 !node->mate_thread and
                 alpha < Score::MateBound)
             {
-                const int32_t unorm_score = move_score + MaxAbsQuietsHistory;
+                if (depth <= 2 and
+                    node->move != tt_move and
+                    node->move != killer and
+                    node->eval + 10 * depth < alpha and
+                    pos.getNonPawnMaterial() > 0)
+                {
+                        if (node->move.isCapture() and
+                            pos.badStaticExchangeEval(node->move, -185 * depth))
+                        continue;
+                    else if (!node->move.isCapture() and
+                             move_score < MaxAbsQuietsHistory * 3 / 4 and
+                             pos.badStaticExchangeEval(node->move, -105 * depth))
+                        continue;
+                }
 
                 /* Move Count Based pruning -
                 *  prune quiet moves that come last.
@@ -1066,7 +1082,8 @@ Score Search::nmSearch(Position& pos,
                     node->move.isQuiet() and
                     pos.getNonPawnMaterial() > 0) 
                 {
-                    const int32_t futility_margin = FutilityDelta * depth * depth + unorm_score * FutilityScoreMult / 8192;
+                    const int32_t futility_margin = FutilityDelta * depth * depth + 
+                                                    (move_score - MaxAbsQuietsHistory) * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1180,7 +1197,7 @@ Score Search::nmSearch(Position& pos,
                 if (!killer.isNull() and node->move == killer) 
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
-                if (move_score != UndefMoveScore) 
+                if (move_score != Score::Undef) 
                     move_reduction += MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
@@ -1204,7 +1221,7 @@ Score Search::nmSearch(Position& pos,
                 if (!killer.isNull() and node->move == killer)
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
-                if (move_score != UndefMoveScore and !node->move.isPromotion())
+                if (move_score != Score::Undef and !node->move.isPromotion())
                     move_reduction += MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
@@ -1390,7 +1407,6 @@ Score Search::qSearch(Position& pos,
 
     static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
     static constexpr bool      IsPv = QNodeType & PV_NODE; 
-    static constexpr bool      SeeNonExactScore = false;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1507,7 +1523,7 @@ Score Search::qSearch(Position& pos,
     node->score          = Score::Undef;
     node->best_score     = -Score::Infinity;
 
-    int16_t move_score = UndefMoveScore;
+    int16_t move_score = Score::Undef;
 
     for (node->move_index = 0;
          node->move_picker.nextMove<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
@@ -1524,20 +1540,10 @@ Score Search::qSearch(Position& pos,
         */
         if constexpr (!IsPv) {
             if (node->move.isCapture() and
-                !node->move.isEnPassant() and
                 !node->move.isPromotion() and
-                !node->check)
-            {
-                const Square org = node->move.getOrigin();
-                const Square dst = node->move.getTarget();
-                const Piece::enumType vic = node->move.getCaptured(pos);
-                const Piece::enumType piece = node->move.getPiece();
-
-                const int see_score = pos.staticExchangeEval<SeeNonExactScore>(org, dst, vic, piece);
-
-                if (see_score < SeeValuePrune)
-                    continue;
-            }
+                !node->check and
+                pos.badStaticExchangeEval(node->move, QSeePruningThreshold))
+                continue;
         }
 
         if (!pos.make(node->move, accum_cache)) {

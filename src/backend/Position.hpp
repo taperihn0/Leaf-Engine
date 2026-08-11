@@ -105,7 +105,7 @@ _PARAM_ATTRIBS int SeeKnightValue = roundi<float>(272.796f);
 _PARAM_ATTRIBS int SeeBishopValue = roundi<float>(304.701f);
 _PARAM_ATTRIBS int SeeRookValue = roundi<float>(523.41f);
 _PARAM_ATTRIBS int SeeQueenValue = roundi<float>(896.114f);
-inline constexpr int    SeeKingValue = 12000;
+inline constexpr int SeeKingValue = 12000;
 
 // internal board state, including piece distribution 
 // and game flags like castling
@@ -353,7 +353,10 @@ public:
     int staticExchangeEval(Square org, 
                            Square sq, 
                            Piece::enumType target, 
-                           Piece::enumType att) const;
+                           Piece::enumType att,
+                           int threshold = 0) const;
+
+    bool badStaticExchangeEval(Move32b move, int threshold = 0) const;
 
     _NODISCARD ReversibleState getReversibleState() const;
 
