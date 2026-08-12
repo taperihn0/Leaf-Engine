@@ -55,7 +55,7 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-_PARAM_ATTRIBS int QuietMoveScoreReductionRate = roundi<float>(23.7501f);
+_PARAM_ATTRIBS int QuietMoveScoreReductionRate = roundi<float>(97.7501f);
 _PARAM_ATTRIBS int CaptureMoveScoreReductionDiv = roundi<float>(54.0528f);
 _PARAM_ATTRIBS int KnightCapturedScore = roundi<float>(277.09f);
 _PARAM_ATTRIBS int BishopCapturedScore = roundi<float>(329.986f);
@@ -119,7 +119,7 @@ public:
     // Same as `getQuietScore`, but returns score in range [0, +2MaxQuietsHistory]
     int16_t getPositiveNormQuietScore(Move32b move, enumColor side) const;
 
-    static float getQuietDepthReduction(int16_t quiet_score);
+    static int32_t getQuietDepthReduction(int16_t quiet_score);
     static float getCaptureDepthReduction(int16_t capture_score);
 
     template <OrderType Type, typename = std::enable_if_t<Type == ONCE_GEN_LEGAL>>
@@ -215,10 +215,10 @@ _FORCEINLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColo
     return getQuietScore(move, side) + MaxAbsQuietsHistory;
 }
 
-_FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
+_FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
     const int32_t centered_score = quiet_score - 420 * MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const float val = QuietMoveScoreReductionRate * rt / 4;
+    const int32_t val = QuietMoveScoreReductionRate * rt / 16;
     return centered_score < 0 ? val : -val;
 }
 
