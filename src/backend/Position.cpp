@@ -675,8 +675,11 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
-    if (!ExactScore and *SeePieceValue[target] > *SeePieceValue[attacker])
-        return *SeePieceValue[target] - *SeePieceValue[attacker];
+    if constexpr (!ExactScore) {
+        if (const int gain = *SeePieceValue[target] - *SeePieceValue[attacker]; 
+            target != Piece::enumType::NONE and gain >= threshold)
+            return gain;
+    }
     
     array1d<int, 32> gain;
     int i = 0;
@@ -745,7 +748,7 @@ bool Position::badStaticExchangeEval(Move32b move, int threshold) const {
     const Piece::enumType vic = move.isCapture() ? move.getCaptured(*this) : Piece::enumType::NONE;
     const Piece::enumType piece = move.getPiece();
 
-    return staticExchangeEval<false>(org, dst, vic, piece, threshold) <= threshold;
+    return staticExchangeEval<false>(org, dst, vic, piece, threshold) < threshold;
 }
 
 template <bool Root>

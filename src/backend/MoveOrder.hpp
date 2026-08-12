@@ -216,7 +216,7 @@ _FORCEINLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColo
 }
 
 _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-    const int32_t centered_score = quiet_score - 260 * MaxAbsQuietsHistory / 256;
+    const int32_t centered_score = quiet_score - 256 * MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = QuietMoveScoreReductionRate * rt / 16;
     return centered_score < 0 ? val : -val;
