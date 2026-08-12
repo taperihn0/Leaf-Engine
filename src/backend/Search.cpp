@@ -1069,8 +1069,8 @@ Score Search::nmSearch(Position& pos,
                             pos.badStaticExchangeEval(node->move, -185 * depth))
                         continue;
                     else if (!node->move.isCapture() and
-                             move_score < MaxAbsQuietsHistory * 3 / 4 and
-                             pos.badStaticExchangeEval(node->move, -105 * depth))
+                             move_score < MaxAbsQuietsHistory / 2 and
+                             pos.badStaticExchangeEval(node->move, -115 * depth))
                         continue;
                 }
 
