@@ -1059,18 +1059,18 @@ Score Search::nmSearch(Position& pos,
                 !node->mate_thread and
                 alpha < Score::MateBound)
             {
-                if (false and depth <= 2 and
+                if (depth <= 2 and
                     node->move != tt_move and
                     node->move != killer and
-                    node->eval + 20 * depth < alpha and
+                    node->eval + 8 * depth < alpha and
                     pos.getNonPawnMaterial() > 0)
                 {
                         if (node->move.isCapture() and
-                            pos.badStaticExchangeEval(node->move, -195 * depth))
+                            pos.badStaticExchangeEval(node->move, -175 * depth))
                         continue;
                     else if (!node->move.isCapture() and
                              move_score < MaxAbsQuietsHistory / 4 and
-                             pos.badStaticExchangeEval(node->move, -125 * depth))
+                             pos.badStaticExchangeEval(node->move, -105 * depth))
                         continue;
                 }
 
