@@ -123,12 +123,7 @@ bool MoveOrder::nextMove(const NodeInfo* node,
             scoreQuiets(_iterator, side);
         }
 
-        if (nextFromList(next_move, move_score)) {
-            move_score += MaxAbsQuietsHistory;
-            return true;
-        }
-
-        return false;
+        return nextFromList(next_move, move_score);
     default:
         assert(false);
         break;
@@ -145,11 +140,12 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
     const Piece::uint_t piece = index(move.getPiece());
     const Square dst = move.getTarget();
 
-    const int16_t bonus = std::min(sq(static_cast<int16_t>(depth)), static_cast<int16_t>(MaxAbsQuietsHistory));
-    const ll quiet_value = static_cast<ll>(_tables->_quiets_history[side][piece][dst]);
+    const int32_t bonus = std::min(sq(depth), MaxAbsQuietsHistory);
+    const int32_t quiet_value = static_cast<int32_t>(_tables->_quiets_history[side][piece][dst]);
 
-    _tables->_quiets_history[side][piece][dst] += 
-        static_cast<int16_t>(Sign * bonus - (quiet_value * bonus) / MaxAbsQuietsHistory);
+    _tables->_quiets_history[side][piece][dst] += static_cast<int16_t>(
+        Sign * bonus - quiet_value * bonus / MaxAbsQuietsHistory
+    );
 
     assert(abs(quiet_value) <= MaxAbsQuietsHistory);
 }
@@ -305,11 +301,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
-        if (nextFromList(next_move, move_score)) {
-            move_score += MaxAbsQuietsHistory;
-            return true;
-        }
-        return false;
+        return nextFromList(next_move, move_score);
     default:
         assert(false);
         break;

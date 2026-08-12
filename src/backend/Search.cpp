@@ -1229,7 +1229,7 @@ Score Search::nmSearch(Position& pos,
                 move_reduction /= CaptureTotalReductionRate;
             }
         }
-
+        
         const int reduction = std::clamp<int>((move_reduction + FixedPointMult / 2) / FixedPointMult, 0, depth - 1);
         const int reduct_depth = std::clamp(depth - reduction, 0, depth - 1);
 

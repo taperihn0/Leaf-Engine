@@ -63,7 +63,6 @@ _PARAM_ATTRIBS int ToKnightPromoScore = roundi<float>(83.7102f);
 _PARAM_ATTRIBS int ToBishopPromoScore = roundi<float>(112.354f);
 _PARAM_ATTRIBS int ToRookPromoScore = roundi<float>(233.922f);
 _PARAM_ATTRIBS int ToQueenPromoScore = roundi<float>(944.733f);
-constexpr int QuietMoveScoreReductionDiv = 4;
 
 /*  Static parameters in move ordering -
 *   These are not tuned.
@@ -202,24 +201,24 @@ _INLINE void MoveOrder::clear() {
     _move_list.clear();
 }
 
-_INLINE void MoveOrder::skipQuiets() {
+_FORCEINLINE void MoveOrder::skipQuiets() {
     _iterator = _move_list.count();
 }
 
-_INLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) const {
+_FORCEINLINE int16_t MoveOrder::getQuietScore(Move32b move, enumColor side) const {
     const Piece::uint_t piece_ind = index(move.getPiece());
     const Square dst = move.getTarget();
     return _tables->_quiets_history[side][piece_ind][dst];
 }
 
-_INLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColor side) const {
+_FORCEINLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColor side) const {
     return getQuietScore(move, side) + MaxAbsQuietsHistory;
 }
 
 _FORCEINLINE float MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-    const int16_t centered_score = quiet_score - 246 * MaxAbsQuietsHistory / 128;
+    const int32_t centered_score = quiet_score - 420 * MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const float val = QuietMoveScoreReductionRate * rt / QuietMoveScoreReductionDiv;
+    const float val = QuietMoveScoreReductionRate * rt / 4;
     return centered_score < 0 ? val : -val;
 }
 
