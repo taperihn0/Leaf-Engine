@@ -1066,11 +1066,11 @@ Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0)
                 {
                         if (node->move.isCapture() and
-                            pos.badStaticExchangeEval(node->move, -175 * depth))
+                            pos.badStaticExchangeEval(node->move, -165 * depth))
                         continue;
                     else if (!node->move.isCapture() and
                              move_score < MaxAbsQuietsHistory / 4 and
-                             pos.badStaticExchangeEval(node->move, -105 * depth))
+                             pos.badStaticExchangeEval(node->move, -95 * depth))
                         continue;
                 }
 
