@@ -45,9 +45,9 @@ void TunableParametersMap::createMapping() {
     _addr["QMaterialDelta"] = &QMaterialDelta;
     _addr["NNEvalScale"] = &NNEvalScale;
     _addr["ImprovingRate"] = &ImprovingRate;
-    _addr["RfpImprovingSink"] = &RfpImprovingSink;
+    _addr["RfpImprovingSinkMult"] = &RfpImprovingSinkMult;
     _addr["NullMargin"] = &NullMargin;
-    _addr["NullImprovingSink"] = &NullImprovingSink;
+    _addr["NullImprovingSinkMult"] = &NullImprovingSinkMult;
     _addr["TTEvalCorrRate"] = &TTEvalCorrRate;
     _addr["NextDepthTimeRed"] = &NextDepthTimeRed;
     _addr["UnstableMatMargin"] = &UnstableMatMargin;
@@ -69,7 +69,7 @@ void TunableParametersMap::createMapping() {
     _addr["CaptureCheckReduction"] = &CaptureCheckReduction;
     _addr["CaptureHashCapReduction"] = &CaptureHashCapReduction;
     _addr["CaptureKillerMoveReduction"] = &CaptureKillerMoveReduction;
-    _addr["CaptureMoveScoreReductionDiv"] = &CaptureMoveScoreReductionDiv;
+    _addr["CaptureMoveScoreReductionRate"] = &CaptureMoveScoreReductionRate;
     _addr["CaptureExtensionReduction"] = &CaptureExtensionReduction;
     _addr["CaptureImprovingReductionRate"] = &CaptureImprovingReductionRate;
     _addr["CaptureTotalReductionRate"] = &CaptureTotalReductionRate;

@@ -55,14 +55,15 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-_PARAM_ATTRIBS int QuietMoveScoreReductionRate = roundi<float>(51.7501f);
-_PARAM_ATTRIBS int CaptureMoveScoreReductionDiv = roundi<float>(54.0528f);
+_PARAM_ATTRIBS int QuietMoveScoreReductionRate = roundi<float>(2420.3636f);
+_PARAM_ATTRIBS int CaptureMoveScoreReductionRate = roundi<float>(11.2373f);
 _PARAM_ATTRIBS int KnightCapturedScore = roundi<float>(277.09f);
 _PARAM_ATTRIBS int BishopCapturedScore = roundi<float>(329.986f);
 _PARAM_ATTRIBS int ToKnightPromoScore = roundi<float>(83.7102f);
 _PARAM_ATTRIBS int ToBishopPromoScore = roundi<float>(112.354f);
 _PARAM_ATTRIBS int ToRookPromoScore = roundi<float>(233.922f);
 _PARAM_ATTRIBS int ToQueenPromoScore = roundi<float>(944.733f);
+_PARAM_ATTRIBS int QuietDepthShiftMult = roundi<float>(256.f);
 
 /*  Static parameters in move ordering -
 *   These are not tuned.
@@ -216,14 +217,15 @@ _FORCEINLINE int16_t MoveOrder::getPositiveNormQuietScore(Move32b move, enumColo
 }
 
 _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(int16_t quiet_score) {
-    const int32_t centered_score = quiet_score - 256 * MaxAbsQuietsHistory / 256;
+    const int32_t centered_score = quiet_score - QuietDepthShiftMult * MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const int32_t val = QuietMoveScoreReductionRate * rt / 16;
+    const int32_t val = QuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
 
 _FORCEINLINE float MoveOrder::getCaptureDepthReduction(int16_t capture_score) {
-    return static_cast<float>(capture_score / CaptureMoveScoreReductionDiv);
+    // TODO: better fixed-point formula
+    return static_cast<float>(CaptureMoveScoreReductionRate * capture_score / 128);
 }
 
 template <OrderType Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
@@ -243,7 +245,7 @@ _NODISCARD _FORCEINLINE MoveOrder::enumStage MoveOrder::getStage() const {
     case enumPrivateStage::STAGED_CAPTURES:
     case enumPrivateStage::STAGED_QUIETS:
     case enumPrivateStage::ONCEGEN_ALL:
-    return enumStage::STAGE_UNKNOWN;
+        return enumStage::STAGE_UNKNOWN;
     
     case enumPrivateStage::ONCEGEN_HASH_MOVE:
     case enumPrivateStage::STAGED_HASH_MOVE:

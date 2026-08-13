@@ -913,13 +913,13 @@ Score Search::nmSearch(Position& pos,
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
-            const int32_t rfp_improving_scale = -node->improving / RfpImprovingSink + FixedPointMult;
+            const int32_t rfp_improving_scale = RfpImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / FixedPointMult);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
-                const Score reduced_eval = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
-                                            static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
-                return reduced_eval;
+                const Score rfp_value = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
+                                         static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
+                return rfp_value;
             }
         }
     }
@@ -937,8 +937,8 @@ Score Search::nmSearch(Position& pos,
             pos.getNonPawnMaterial() > 0 and
             !beta.isMateScore()) {
 
-            const int32_t nmp_improving_scale = -node->improving / NullImprovingSink + FixedPointMult;
-            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
+            const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
+            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / (2 * FixedPointMult));
 
             if (node->eval - nmp_margin >= beta) {    
                 assert(parent_node->move != Move32b::Null);
@@ -1059,18 +1059,18 @@ Score Search::nmSearch(Position& pos,
                 !node->mate_thread and
                 alpha < Score::MateBound)
             {
-                if (depth <= 2 and
+                if (depth <= SeePruneDepth and
                     node->move != tt_move and
                     node->move != killer and
-                    node->eval + 8 * depth < alpha and
+                    node->eval + SeePruneMarginMult * depth < alpha and
                     pos.getNonPawnMaterial() > 0)
                 {
                         if (node->move.isCapture() and
-                            pos.badStaticExchangeEval(node->move, -165 * depth))
+                            pos.badStaticExchangeEval(node->move, SeeCapturePruneThreshold * depth))
                         continue;
                     else if (!node->move.isCapture() and
-                             move_score < MaxAbsQuietsHistory / 4 and
-                             pos.badStaticExchangeEval(node->move, -95 * depth))
+                             move_score < SeeQuietScoreThreshold and
+                             pos.badStaticExchangeEval(node->move, SeeQuietPruneThreshold * depth))
                         continue;
                 }
 
@@ -1148,12 +1148,10 @@ Score Search::nmSearch(Position& pos,
         
         if (depth <= ExtensionDepth) {
             if (gives_check)
-                move_extension += MoveCheckExtensionBase + 
-                                    node->improving / ImprovingExtensionRate;
-
+                move_extension += MoveCheckExtensionBase + node->improving * ImprovingExtensionRate / 256;
+                
             if (node->mate_thread)
-                move_extension += MateThreadExtensionBase + 
-                                    node->improving / ImprovingExtensionMateRate;
+                move_extension += MateThreadExtensionBase + node->improving * ImprovingExtensionMateRate / 256;
         }
 
         move_extension = std::clamp<int32_t>(move_extension, 0, MaxMoveExtension);
@@ -1170,14 +1168,14 @@ Score Search::nmSearch(Position& pos,
             !full_window_search and 
             depth >= LmrDepth and
             node->moves_searched >= LmrMoveCount) 
-        {    
-            move_reduction = (LmrBaseReduction + 
-                              LmrLogDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
-                              FixedPointMult;
-            
+        {                
             const Piece::enumType pc = node->move.getPiece();
 
             if (node->move.isQuiet() and !node->move.isPromotion()) {
+                move_reduction = (LmrBaseQuietReduction + 
+                                  LmrLogQuietDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
+                                  FixedPointMult;
+
                 if constexpr (!IsPv) 
                     move_reduction += QuietNotPvNodeReduction * FixedPointMult;
 
@@ -1205,6 +1203,10 @@ Score Search::nmSearch(Position& pos,
                 move_reduction /= QuietTotalReductionRate;
             }
             else {
+                move_reduction = (LmrBaseCaptureReduction + 
+                                  LmrLogCaptureDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
+                                  FixedPointMult;
+
                 if constexpr (!IsPv)
                     move_reduction += CaptureNotPvNodeReduction * FixedPointMult;
 
@@ -1476,15 +1478,20 @@ Score Search::qSearch(Position& pos,
     */
     if (node->eval + QMaterialDelta < alpha and 
         pos.getNonPawnMaterial() > 0 and
-        !node->check)
-        return (alpha * (30) + node->eval * (2)) / 32;
+        !node->check) 
+    {
+        const Score delta_value = (alpha * (128 - QDeltaPruningEvalWeight) + node->eval * QDeltaPruningEvalWeight) / 128;
+        return delta_value;
+    }
     
     /* Standing Pat Cutoff -
     *  when we're already above the beta, we can make a cutoff.
     */
     if (node->eval > alpha) {
-        if (node->eval >= beta) 
-            return (beta * (2) + node->eval * (30)) / 32;
+        if (node->eval >= beta) {
+            const Score beta_cutoff_value = (beta * (128 - QBetaCutoffEvalWeight) + node->eval * QBetaCutoffEvalWeight) / 128;
+            return beta_cutoff_value;
+        }
 
         alpha = node->eval;
     }
