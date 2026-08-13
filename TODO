@@ -13,7 +13,6 @@
 * Train bigger net: 160, 192 or 256 HL
 * Improve README (version-strength tables) & explain commands
 * Update commands docs
-* Return value in RFP tuned formula
 * Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 * Include node type in history bonuses
 * Recapture heuristic (in move order try to apply capture that captures last moved piece)

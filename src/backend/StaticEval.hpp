@@ -34,12 +34,12 @@ _DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 300.f, 270.f, 340.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 500.f, 450.f, 550.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 900.f, 820.f, 980.f, 1.1f);
 
-inline array1d<const int*, 5> PieceValue = {
-    reinterpret_cast<const int*>(&PawnValue), 
-    reinterpret_cast<const int*>(&KnightValue), 
-    reinterpret_cast<const int*>(&BishopValue), 
-    reinterpret_cast<const int*>(&RookValue), 
-    reinterpret_cast<const int*>(&QueenValue),
+inline array1d<const int32_t*, 5> PieceValue = {
+    reinterpret_cast<const int32_t*>(&PawnValue), 
+    reinterpret_cast<const int32_t*>(&KnightValue), 
+    reinterpret_cast<const int32_t*>(&BishopValue), 
+    reinterpret_cast<const int32_t*>(&RookValue), 
+    reinterpret_cast<const int32_t*>(&QueenValue),
 };
 
 class StaticEval {

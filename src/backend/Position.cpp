@@ -656,9 +656,9 @@ uint64_t Position::goPerft(uint depth, time_ms_t& duration_ms) {
     return nodes_cnt;
 }
 
-static constexpr int NonePieceValue = 0;
+static constexpr int32_t NonePieceValue = 0;
 
-static constexpr array1d<const int*, 7> SeePieceValue = {
+static constexpr array1d<const int32_t*, 7> SeePieceValue = {
     &SeePawnValue,
     &SeeKnightValue,
     &SeeBishopValue,

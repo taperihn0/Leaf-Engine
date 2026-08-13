@@ -252,7 +252,6 @@ _DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 535.727f, 400.f, 650.f, 0.
 _DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 8.8357f, 1.f, 15.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(TablebaseProbeDepth, int32_t, 7.33313f, 2.f, 16.f, 2.f);
 _DEFINE_TUNABLE_PARAMETER(TablebasePieceCountLimit, int32_t, 5.63201f, 2.f, 10.f, 1.7f);
-_DEFINE_TUNABLE_PARAMETER(TablebaseWinScore, int32_t, 31036.8f, 30000.f, 31500.f, 0.1f);
 _DEFINE_TUNABLE_PARAMETER(TablebasePieceDiffMult, int32_t, 105.374f, 10.f, 250.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(TablebaseScoreScale, int32_t, 17.0653f, 8.f, 20.f, 1.5f);
 _DEFINE_TUNABLE_PARAMETER(AspirationSearchDepth, int32_t, 4.42753f, 2.f, 5.f, 1.5f);
@@ -278,16 +277,17 @@ _DEFINE_TUNABLE_PARAMETER(QBetaCutoffEvalWeight, int32_t, 120.f, 0.f, 128.f, 0.6
 *  These are not tuned.
 */
 
-inline constexpr int    SingularExtensionDiv = 16;
-inline constexpr int    SingularBetaExtensionDiv = 32;
-inline constexpr int    CheckNodeCount = 2048;
-inline constexpr bool   UseSyzygyTablebase = _USE_SYZYGY_TB;
-inline constexpr bool   UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
-inline constexpr double MinTimeBranchFactor = 1.;
-inline constexpr double MaxTimeBranchFactor = 5.;
-inline constexpr int    FixedPointMult = 65536;
-inline constexpr int    CaptureTotalReductionRate = 256;
-inline constexpr int    QuietTotalReductionRate = 256;
+inline constexpr int32_t SingularExtensionDiv = 16;
+inline constexpr int32_t SingularBetaExtensionDiv = 32;
+inline constexpr int32_t CheckNodeCount = 2048;
+inline constexpr bool    UseSyzygyTablebase = _USE_SYZYGY_TB;
+inline constexpr bool    UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
+inline constexpr double  MinTimeBranchFactor = 1.;
+inline constexpr double  MaxTimeBranchFactor = 5.;
+inline constexpr int32_t FixedPointMult = 65536;
+inline constexpr int32_t CaptureTotalReductionRate = 256;
+inline constexpr int32_t QuietTotalReductionRate = 256;
+inline constexpr int32_t TablebaseWinScore = 31000;
 
 class Search {
 public:

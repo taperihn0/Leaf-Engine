@@ -70,11 +70,11 @@ _DEFINE_TUNABLE_PARAMETER(ToQueenPromoScore, int32_t, 944.733f, 700.f, 1020.f, 1
 *   These are not tuned.
 */
 
-inline constexpr int MaxQuietsHistoryExp2 = 13;
-inline constexpr int MaxAbsQuietsHistory  = 1 << MaxQuietsHistoryExp2;
-inline constexpr int PawnCapturedScore    = 100;
-inline constexpr int RookCapturedScore    = 500;
-inline constexpr int QueenCapturedScore   = 900;
+inline constexpr int32_t MaxQuietsHistoryExp2 = 13;
+inline constexpr int32_t MaxAbsQuietsHistory  = 1 << MaxQuietsHistoryExp2;
+inline constexpr int32_t PawnCapturedScore    = 100;
+inline constexpr int32_t RookCapturedScore    = 500;
+inline constexpr int32_t QueenCapturedScore   = 900;
 
 /*
 *   MoveOrder<STAGED>:
