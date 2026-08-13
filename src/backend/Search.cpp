@@ -809,8 +809,6 @@ Score Search::nmSearch(Position& pos,
                                           node->side2move, results);
     }
 
-    int32_t corr_eval = Score::Undef;
-
     Move32b ttm32b = unpackedMove(pos, tt_entry.move);
     Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
                                                 : Move32b::Null;
@@ -825,11 +823,12 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RazorDepth and
             beta < RazorBetaLimit and
+            !grand_node->mate_thread and 
             !tt_entry.score.isMateScore() and
             (tt_move.isNull() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
-            corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
+            int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
             if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
                 const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,

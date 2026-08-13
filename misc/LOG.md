@@ -1,3 +1,13 @@
+### [commit:cb9be55] feature: Tuned parameters
+```
+Score of leaf-see-prune-2 vs leaf-fp-base: 144 - 134 - 167  [0.511] 445
+...      leaf-see-prune-2 playing White: 20 - 116 - 86  [0.284] 222
+...      leaf-see-prune-2 playing Black: 124 - 18 - 81  [0.738] 223
+...      White vs Black: 38 - 240 - 167  [0.273] 445
+Elo difference: 7.8 +/- 25.5, LOS: 72.6 %, DrawRatio: 37.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:cf721f3] feature: changed tunable parameters values - now rounding errors are smaller
 ```
 Score of leaf-see-prune-2 vs leaf-fp-base: 160 - 153 - 222  [0.507] 535
