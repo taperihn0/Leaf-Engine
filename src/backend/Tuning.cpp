@@ -63,7 +63,7 @@ void TunableParametersMap::createMapping() {
     _addr["QuietHashCapReduction"] = &QuietHashCapReduction;
     _addr["QuietKillerMoveReduction"] = &QuietKillerMoveReduction;
     _addr["QuietMoveScoreReductionRate"] = &QuietMoveScoreReductionRate;
-    _addr["QuietTotalReductionRate"] = &QuietTotalReductionRate;
+    //_addr["QuietTotalReductionRate"] = &QuietTotalReductionRate;
     _addr["CaptureNotPvNodeReduction"] = &CaptureNotPvNodeReduction;
     _addr["CaptureCutNodeReduction"] = &CaptureCutNodeReduction;
     _addr["CaptureCheckReduction"] = &CaptureCheckReduction;
@@ -72,7 +72,7 @@ void TunableParametersMap::createMapping() {
     _addr["CaptureMoveScoreReductionRate"] = &CaptureMoveScoreReductionRate;
     _addr["CaptureExtensionReduction"] = &CaptureExtensionReduction;
     _addr["CaptureImprovingReductionRate"] = &CaptureImprovingReductionRate;
-    _addr["CaptureTotalReductionRate"] = &CaptureTotalReductionRate;
+    //_addr["CaptureTotalReductionRate"] = &CaptureTotalReductionRate;
     _addr["HalfMovesEvalLimit"] = &HalfMovesEvalLimit;
     _addr["NullVerifyDepth"] = &NullVerifyDepth;
     _addr["MoveCheckExtensionRate"] = &MoveCheckExtensionRate ;

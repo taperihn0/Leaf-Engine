@@ -110,9 +110,7 @@ public:
     void updateQuietEntry(Move32b move, enumColor side, int depth);
     void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
     
-    template <OrderType Type>
     void clear();
-
     void skipQuiets();
 
     // Returns history score of move in range [-MaxAbsQuietsHistory, +MaxAbsQuietsHistory]
@@ -189,16 +187,12 @@ _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
     return _killer_move;
 }
 
-template <OrderType Type>
 _INLINE void MoveOrder::clear() {
     _stage = enumPrivateStage::FIRST_STAGE;
     _iterator = 0;
     _quiets_ind = 0;
     _hash_move = Move32b::Null;
-
-    if constexpr (Type == QUIESCENT)
-        _killer_move = Move32b::Null;
-
+    _killer_move = Move32b::Null;
     _move_list.clear();
 }
 

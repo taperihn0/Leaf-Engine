@@ -1013,7 +1013,7 @@ Score Search::nmSearch(Position& pos,
         killer = Move32b::Null;
     }
         
-    node->move_picker.clear<OrderPolicy>();
+    node->move_picker.clear();
     node->move_picker.setHashMove(tt_move);
 
     _LC_PARAM_ATTRIBS int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
@@ -1480,7 +1480,8 @@ Score Search::qSearch(Position& pos,
         pos.getNonPawnMaterial() > 0 and
         !node->check) 
     {
-        const Score delta_value = (alpha * (128 - QDeltaPruningEvalWeight) + node->eval * QDeltaPruningEvalWeight) / 128;
+        const Score delta_value = (static_cast<int32_t>(alpha)      * (128 - QDeltaPruningEvalWeight) + 
+                                   static_cast<int32_t>(node->eval) * QDeltaPruningEvalWeight) / 128;
         return delta_value;
     }
     
@@ -1489,14 +1490,15 @@ Score Search::qSearch(Position& pos,
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) {
-            const Score beta_cutoff_value = (beta * (128 - QBetaCutoffEvalWeight) + node->eval * QBetaCutoffEvalWeight) / 128;
+            const Score beta_cutoff_value = (static_cast<int32_t>(beta)       * (128 - QBetaCutoffEvalWeight) + 
+                                             static_cast<int32_t>(node->eval) * QBetaCutoffEvalWeight) / 128;
             return beta_cutoff_value;
         }
 
         alpha = node->eval;
     }
 
-    node->move_picker.clear<QuiescentOrderPolicy>();
+    node->move_picker.clear();
 
     Move32b tt_move = Move32b::Null;
 
