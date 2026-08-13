@@ -101,11 +101,11 @@ namespace utils { class ExtPackedPosition; }
 *  King score is fixed and not tuned.
 */
 
-_DEFINE_TUNABLE_PARAMETER(SeePawnValue, int32_t, 96.1278f, 80.f, 120.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeKnightValue, int32_t, 272.796f, 250.f, 350.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeBishopValue, int32_t, 304.701f, 250.f, 350.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeRookValue, int32_t, 523.41f, 450.f, 550.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeQueenValue, int32_t, 896.114f, 830.f, 970.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeePawnValue, int32_t, 101.302f, 80.f, 120.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeeKnightValue, int32_t, 289.053f, 250.f, 350.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeeBishopValue, int32_t, 298.37f, 250.f, 350.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeeRookValue, int32_t, 529.411f, 450.f, 550.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeeQueenValue, int32_t, 873.446f, 830.f, 970.f, 1.1f);
 
 inline constexpr int32_t SeeKingValue = 12000;
 

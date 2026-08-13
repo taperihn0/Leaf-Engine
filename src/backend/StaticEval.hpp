@@ -28,11 +28,11 @@
 
 class Position;
 
-_DEFINE_TUNABLE_PARAMETER(PawnValue, int32_t, 100.f, 80.f, 120.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(KnightValue, int32_t, 300.f, 260.f, 340.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 300.f, 270.f, 340.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 500.f, 450.f, 550.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 900.f, 820.f, 980.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(PawnValue, int32_t, 96.1884f, 80.f, 120.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(KnightValue, int32_t, 304.315f, 260.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 305.347f, 270.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 489.203f, 450.f, 550.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 916.466f, 820.f, 980.f, 1.1f);
 
 inline array1d<const int32_t*, 5> PieceValue = {
     reinterpret_cast<const int32_t*>(&PawnValue), 

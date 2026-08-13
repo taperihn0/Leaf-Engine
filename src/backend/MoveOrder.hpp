@@ -56,15 +56,15 @@ enum OrderType : uint8_t {
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.3636f, 2300.f, 2500.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.2373f, 7.f, 15.f, 0.6f);
-_DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 256.f, 200.f, 300.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(KnightCapturedScore, int32_t, 277.09f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(BishopCapturedScore, int32_t, 329.986f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToKnightPromoScore, int32_t, 83.7102f, 50.f, 200.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToBishopPromoScore, int32_t, 112.354f, 50.f, 300.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToRookPromoScore, int32_t, 233.922f, 150.f, 500.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToQueenPromoScore, int32_t, 944.733f, 700.f, 1020.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(KnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(BishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(ToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(ToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(ToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(ToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
 
 /*  Static parameters in move ordering -
 *   These are not tuned.

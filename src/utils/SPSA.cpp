@@ -28,10 +28,12 @@
 
 namespace utils {
 
-static constexpr uint   IterCount = 10000;
+static constexpr uint   IterCount = 6000;
 static constexpr int    A = IterCount / 10;
 static constexpr double Alpha = 0.602;
 static constexpr double Gamma = 0.101;
+
+static constexpr float FloatEpsilon = 10e-5f;
 
 std::atomic<int> curr_iter;
 std::mutex       param_mutex;
@@ -58,7 +60,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
                         param.value = option.getCurrentValue();
                         param.min = option.value.min_value;
                         param.max = option.value.max_value;
-                        param.r = 0.028 * option.rate;
+                        param.r = 0.04 * option.rate;
                         param.c = (param.max - param.min) / 12.;
 
                         return param;
@@ -75,8 +77,8 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     // Game parameters
     limits.depth = MaxDepth; // avoid depth overflow
     limits.nodes = 0; // no node limit
-    limits.wtime = limits.btime = 6_s;
-    limits.winc = limits.binc = 150_ms;
+    limits.wtime = limits.btime = 8_s;
+    limits.winc = limits.binc = 80_ms;
 
     if (_openings.isEmpty())
         _openings.loadFromVec(getLichessUHO_Openings());
@@ -235,7 +237,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             SPSA_PackedParameter packed;
                             packed.name = &param.name;
                             packed.value = param.value + param.delta * param.ck;
-                            packed.value = std::clamp(packed.value, param.min, param.max);
+                            packed.value = std::clamp(packed.value, param.min + FloatEpsilon, param.max - FloatEpsilon);
                             return packed;
                        });
         std::transform(theta.begin(), theta.end(),
@@ -244,7 +246,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             SPSA_PackedParameter packed;
                             packed.name = &param.name;
                             packed.value = param.value - param.delta * param.ck;
-                            packed.value = std::clamp(packed.value, param.min, param.max);
+                            packed.value = std::clamp(packed.value, param.min + FloatEpsilon, param.max - FloatEpsilon);
                             return packed;
                        });
 

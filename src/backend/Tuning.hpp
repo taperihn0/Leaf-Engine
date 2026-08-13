@@ -40,12 +40,16 @@ public:
         float step_rate;
     };
 
-    std::unordered_map<std::string, ParameterInfo>::iterator begin();
-    std::unordered_map<std::string, ParameterInfo>::iterator end();
-    std::unordered_map<std::string, ParameterInfo>::const_iterator cbegin() const;
-    std::unordered_map<std::string, ParameterInfo>::const_iterator cend() const;
+    using iterator = std::vector<std::pair<std::string, ParameterInfo>>::iterator;
+    using const_iterator = std::vector<std::pair<std::string, ParameterInfo>>::const_iterator;
+
+    iterator begin();
+    iterator end();
+    const_iterator cbegin() const;
+    const_iterator cend() const;
 private:
     std::unordered_map<std::string, ParameterInfo> _params;
+    std::vector<std::pair<std::string, ParameterInfo>> _order;
 };
 
 inline TunableParametersMap GlobParamMapping;
