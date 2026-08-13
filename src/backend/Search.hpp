@@ -191,7 +191,7 @@ _DEFINE_TUNABLE_PARAMETER(LmrBaseQuietReduction, int32_t, 164.885f, 130.f, 190.f
 _DEFINE_TUNABLE_PARAMETER(LmrLogQuietDepthMovesMult, int32_t, 68.363f, 50.f, 90.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(LmrBaseCaptureReduction, int32_t, 132.546f, 110.f, 150.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(LmrLogCaptureDepthMovesMult, int32_t, 58.315f, 40.f, 76.f, 0.4f);
-_DEFINE_TUNABLE_PARAMETER(NullReduction, int32_t, 37.8394f, 15.f, 51.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(NullDepthMult, int32_t, 55.1882f, 35.f, 75.f, 0.7f);
 _DEFINE_TUNABLE_PARAMETER(LmrMoveCount, int32_t, 5.13746f, 1.f, 16.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(RazorMultDelta, int32_t, 8.95066f, 5.f, 40.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(RazorCutDelta, int32_t, 12.5004f, 5.f, 35.f, 1.f);
@@ -241,7 +241,7 @@ _DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionRate, int32_t, 10.4043f, 10.f, 
 _DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionDiv, int32_t, 16.7514f, 12.f, 26.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 14.2369f, 10.f, 30.f, 1.7f);
 _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionDiv, int32_t, 10.0644f, 10.f, 18.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(NullVerifyDepthMult, int32_t, 3.95481f, 1.f, 12.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(NullVerifyDepthMult, int32_t, 15.8f, 6.f, 25.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(ExtensionDepth, int32_t, 15.9831f, 4.f, 32.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepth, int32_t, 3.4227f, 2.f, 8.f, 1.9f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 2.21081f, 1.f, 4.f, 1.2f);

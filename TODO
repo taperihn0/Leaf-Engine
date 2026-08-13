@@ -17,4 +17,6 @@
 * Include node type in history bonuses
 * Recapture heuristic (in move order try to apply capture that captures last moved piece)
 * You've got special ZobristKey datatype instead of uint64_t.
-
+* Better search explosion handling
+* Experiment with correctedEvalScore
+* More fixed endgames

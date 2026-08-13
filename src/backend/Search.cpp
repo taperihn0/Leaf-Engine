@@ -645,7 +645,7 @@ Score Search::nmSearch(Position& pos,
     }
     
     NodeInfo* const parent_node = node - 1;
-    NodeInfo* const grand_node = Root ? nullptr : node - 2 ;
+    NodeInfo* const grandparent_node = Root ? nullptr : node - 2 ;
 
     if constexpr (!Root) {
         if (isRepetitionCycle<IsPv>(pos, game, node, ply, results)) {
@@ -823,7 +823,7 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RazorDepth and
             beta < RazorBetaLimit and
-            !grand_node->mate_thread and 
+            !grandparent_node->mate_thread and 
             !tt_entry.score.isMateScore() and
             (tt_move.isNull() or tt_move.isQuiet()))
         {            
@@ -907,7 +907,7 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RfpDepth and
-            !grand_node->mate_thread and
+            !grandparent_node->mate_thread and
             (tt_move.isNull() or tt_move.isQuiet()))
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
@@ -1058,6 +1058,9 @@ Score Search::nmSearch(Position& pos,
                 !node->mate_thread and
                 alpha < Score::MateBound)
             {
+                /* Static Exchange Evaluation Pruning -
+                *  prune bad moves accoring to SEE score.
+                */
                 if (depth <= SeePruneDepth and
                     node->move != tt_move and
                     node->move != killer and
@@ -1737,12 +1740,12 @@ _FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
     const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
     const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
     // Do not return same depth, we could stuck in a loop
-    assert(8 * depth / NullReduction < depth);
-    return std::max<int>(std::lroundf(8.f * diff_scale * depth / NullReduction), 1);
+    assert(NullDepthMult * depth / 256 < depth);
+    return std::max<int>(std::lroundf(NullDepthMult * diff_scale * depth / 256), 1);
 }
 
 _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
-    return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 16), 
+    return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 64), 
                     1l);
 }
 
