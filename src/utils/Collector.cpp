@@ -107,7 +107,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
     const float stddev = _NodesRandomFactor / 2.f * nodes_per_search;
     std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
-    std::mt19937 mt{ GlobRandomSeed };
+    std::mt19937_64 mt = rnd::getRandomEngine();
 
     for (size_t i = 0; 
          thr_data.commons->games_ended < thr_data.commons->games2play; 

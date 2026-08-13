@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "Common.hpp"
 
 #include <unordered_map>
@@ -25,12 +27,38 @@
 class TunableParametersMap {
 public:
     TunableParametersMap() = default;
-    void createMapping();
+    void addTunableParameter(const std::string& param, 
+                             void* addr, 
+                             float mi, 
+                             float ma, 
+                             float step_rate);
     _NODISCARD void* getAddressOf(const std::string& str);
+
+    struct ParameterInfo {
+        void* addr;
+        float mi, ma;
+        float step_rate;
+    };
+
+    std::unordered_map<std::string, ParameterInfo>::iterator begin();
+    std::unordered_map<std::string, ParameterInfo>::iterator end();
+    std::unordered_map<std::string, ParameterInfo>::const_iterator cbegin() const;
+    std::unordered_map<std::string, ParameterInfo>::const_iterator cend() const;
 private:
-    std::unordered_map<std::string, void*> _addr;
+    std::unordered_map<std::string, ParameterInfo> _params;
 };
 
-extern TunableParametersMap GlobParamMapping;
+inline TunableParametersMap GlobParamMapping;
+
+#define _DEFINE_TUNABLE_PARAMETER(parameter, type, value , mi, ma, step_rate)                     \
+_PARAM_ATTRIBS type parameter = [](std::string_view param_name) {                                 \
+    GlobParamMapping.addTunableParameter(std::string(param_name), &parameter, mi, ma, step_rate); \
+    return static_cast<type>(roundi<float>(value));                                               \
+}(#parameter)
+
+#else 
+
+#define _DEFINE_TUNABLE_PARAMETER(parameter, type, value , mi, ma, step_rate) \
+_PARAM_ATTRIBS type parameter = static_cast<type>(roundi<float>(value));
 
 #endif // _ENABLE_TUNING

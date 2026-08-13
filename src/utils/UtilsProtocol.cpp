@@ -404,7 +404,7 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
             }
         }
 
-        std::shuffle(entries.begin(), entries.end(), GlobMersenne);
+        std::shuffle(entries.begin(), entries.end(), rnd::GlobMersenne);
 
         for (const auto& entry : entries) {
             if (!BulletChessBoard::write(output, entry)) {
@@ -495,11 +495,7 @@ void UtilsProtocol::parsePerft(std::istringstream& strm) {
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
     std::ios_base::sync_with_stdio(false);
-
-#if defined(_ENABLE_TUNING)
-    GlobParamMapping.createMapping();
-#endif
-
+    
     if (argc > 1 and std::string(argv[1]) == "--self-play")
         UniversalChessInterface::parseSelfPlay();
 

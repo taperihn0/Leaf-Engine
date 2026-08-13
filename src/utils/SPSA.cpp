@@ -51,7 +51,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     std::transform(tunable_options.begin(),
                    tunable_options.end(),
                    std::back_inserter(params),
-                   [](OptionTunableParam option) {
+                   [](opt::OptionTunableParam option) {
                         SPSA_Parameter param;
 
                         param.name = option.str;
@@ -224,7 +224,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         for (SPSA_Parameter& param : local_params) {
             param.ak = param.a / std::pow(A + curr_iter + 1, Alpha);
             param.ck = param.c / std::pow(curr_iter + 1, Gamma);
-            param.delta = static_cast<double>(2 * random<int>(0, 1) - 1);
+            param.delta = static_cast<double>(2 * rnd::random<int>(0, 1) - 1);
         }
 
         std::vector<SPSA_Parameter>& theta = local_params;

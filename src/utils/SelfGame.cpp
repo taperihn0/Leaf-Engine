@@ -36,7 +36,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     array1d<EngineProcess*, 2> player;
     
     // true zero_player_white means (is0, os0) engine is white player
-    const bool zero_player_white = random<int>(0, 1);
+    const bool zero_player_white = rnd::random<int>(0, 1);
 
     // mixing sides to move 
     if (zero_player_white) {

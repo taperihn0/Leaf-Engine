@@ -101,7 +101,7 @@ void OpeningGenerator::load() {
     });
 
     _positions.erase(last, _positions.end());
-    std::shuffle(_positions.begin(), _positions.end(), GlobMersenne);
+    std::shuffle(_positions.begin(), _positions.end(), rnd::GlobMersenne);
 
     std::cout << "Successfully loaded " << _positions.size() << " opening positions" << std::endl;
 }
@@ -111,7 +111,7 @@ const Position& OpeningGenerator::getRandomPosition(int& moves_done) const {
         FAILED("Openings are not loaded");
     }
 
-    const size_t random_index = random<size_t>(0, _positions.size() - 1);
+    const size_t random_index = rnd::random<size_t>(0, _positions.size() - 1);
     moves_done = _positions[random_index].moves_done;
     return _positions[random_index].pos;
 }
@@ -153,7 +153,7 @@ const Position& OpeningSuite::getRandomPosition(int& moves_done) const {
         FAILED("Openings are not loaded");
     }
 
-    size_t random_index = random<size_t>(0, _positions.size() - 1);
+    size_t random_index = rnd::random<size_t>(0, _positions.size() - 1);
     moves_done = 0;
     return _positions[random_index];
 }

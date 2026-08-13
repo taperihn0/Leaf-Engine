@@ -938,7 +938,7 @@ Score Search::nmSearch(Position& pos,
             !beta.isMateScore()) {
 
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
-            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / (2 * FixedPointMult));
+            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
 
             if (node->eval - nmp_margin >= beta) {    
                 assert(parent_node->move != Move32b::Null);
@@ -1123,7 +1123,7 @@ Score Search::nmSearch(Position& pos,
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const Score singular_beta = std::max<int>(-Score::MateBound / 2, 
-                                                          static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth);
+                                                          static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16);
 
                 child_node->is_cut = !node->is_cut;
 

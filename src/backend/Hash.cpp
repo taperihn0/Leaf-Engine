@@ -19,8 +19,6 @@
 #include "Hash.hpp"
 #include "Position.hpp"
 
-#include <random>
-
 ZobristMasks& ZobristMasks::get() {
     static ZobristMasks ZKeys;
     return ZKeys;
@@ -32,7 +30,7 @@ ZobristMasks::ZobristMasks() {
 
 void ZobristMasks::fillKeys() {
     static auto get_sparse_random_u64 = []() {
-        return sparseRandom<uint64_t>(1, maxof<uint64_t>());
+        return rnd::sparseRandom<uint64_t>(1, maxof<uint64_t>());
     };
 
     for (int sq = 0; sq < 64; sq++) {

@@ -97,7 +97,7 @@ public:
         if (!_idx) 
             return Move32b::Null;
 
-        size_t random_idx = random<size_t>(0, _idx - 1);
+        size_t random_idx = rnd::random<size_t>(0, _idx - 1);
         return _moves[random_idx].move;
     }
 

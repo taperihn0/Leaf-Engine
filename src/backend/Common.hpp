@@ -288,17 +288,18 @@ _INLINE constexpr T maxof() {
     return std::numeric_limits<T>::max();
 }
 
+namespace rnd {
+
 static int GlobFixedSeed = 1;
 static std::mt19937 GlobMersenne(GlobFixedSeed);
 
-#if !defined(LEAF_BUILD_UTILS)
-static thread_local uint GlobRandomSeed = GlobFixedSeed;
-#else
-static thread_local uint GlobRandomSeed = GlobFixedSeed; // !!! std::random_device{}();
-#endif
-
 _INLINE std::mt19937_64& getRandomEngine() {
-    static thread_local std::mt19937_64 engine(static_cast<uint64_t>(GlobRandomSeed));
+#if !defined(LEAF_BUILD_UTILS)
+    static thread_local uint RandomEngineSeed = GlobFixedSeed;
+    static thread_local std::mt19937_64 engine(static_cast<uint64_t>(RandomEngineSeed));
+#else
+    static thread_local std::mt19937_64 engine([]() { return std::random_device{}(); }());
+#endif
     return engine;
 }
 
@@ -313,6 +314,8 @@ template <typename T = int, typename = std::enable_if_t<std::is_integral_v<T>>>
 _INLINE T sparseRandom(T l, T r) {
     return random<T>(l, r) & random<T>(l, r);
 }
+
+} // namespace rnd
 
 template <typename T, size_t N>
 using array1d = std::array<T, N>;

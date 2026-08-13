@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "Common.hpp"
 #include "Position.hpp"
 #include "Move.hpp"
 #include "MoveOrder.hpp"
@@ -29,6 +28,7 @@
 #include "Accumulator.hpp"
 #include "Cuckoo.hpp"
 #include "Tablebase.hpp"
+#include "Tuning.hpp"
 
 struct SearchLimits {
     int       depth       = 0;
@@ -181,98 +181,98 @@ private:
 *   Tunable parameters in Search.
 */
 
-_PARAM_ATTRIBS int IidDepth = roundi<float>(2.6917f);
-_PARAM_ATTRIBS int IidDepthDiv = roundi<float>(12.0625f);
-_PARAM_ATTRIBS int RfpDepth = roundi<float>(5.21208f);
-_PARAM_ATTRIBS int RazorDepth = roundi<float>(1.55689f);
-_PARAM_ATTRIBS int FutilityDepth = roundi<float>(2.80804f);
-_PARAM_ATTRIBS int LmrDepth = roundi<float>(1.87427f);
-_PARAM_ATTRIBS int LmrBaseQuietReduction = roundi<float>(162.9090f);
-_PARAM_ATTRIBS int LmrLogQuietDepthMovesMult = roundi<float>(69.8181f);
-_PARAM_ATTRIBS int LmrBaseCaptureReduction = roundi<float>(132.7407f);
-_PARAM_ATTRIBS int LmrLogCaptureDepthMovesMult = roundi<float>(56.8888f);
-_PARAM_ATTRIBS int NullReduction = roundi<float>(35.4356f);
-_PARAM_ATTRIBS int LmrMoveCount = roundi<float>(4.68328f);
-_PARAM_ATTRIBS int RazorMultDelta = roundi<float>(10.2223f);
-_PARAM_ATTRIBS int RazorCutDelta = roundi<float>(10.f);
-_PARAM_ATTRIBS int RazorBetaLimit = roundi<float>(1200.f);
-_PARAM_ATTRIBS int RfpMultDelta = roundi<float>(113.653f);
-_PARAM_ATTRIBS int RfpMarginThreshold = roundi<float>(6.f);
-_PARAM_ATTRIBS int RfpReturnValueWeight = roundi<float>(64.f);
-_PARAM_ATTRIBS int FutilityMoveCount = roundi<float>(7.8672f);
-_PARAM_ATTRIBS int FutilityDelta = roundi<float>(22.8808f);
-_PARAM_ATTRIBS int FutilityScoreMult = roundi<float>(9.f);
-_PARAM_ATTRIBS int RazorBaseDelta = roundi<float>(119.431f);
-_PARAM_ATTRIBS int QMaterialDelta = roundi<float>(1106.39f);
-_PARAM_ATTRIBS int NNEvalScale = roundi<float>(8.7321f);
-_PARAM_ATTRIBS int ImprovingRate = roundi<float>(39.2507f);
-_PARAM_ATTRIBS int RfpImprovingSinkMult = roundi<float>(128.0f);
-_PARAM_ATTRIBS int NullMargin = roundi<float>(8.33824f);
-_PARAM_ATTRIBS int NullImprovingSinkMult = roundi<float>(28.4444f);
-_PARAM_ATTRIBS int TTEvalCorrRate = roundi<float>(2.36075f);
-_PARAM_ATTRIBS int NullDiffScale = roundi<float>(1053.47f);
-_PARAM_ATTRIBS int NullDepth = roundi<float>(3.01463f);
-_PARAM_ATTRIBS int NextDepthTimeRed = roundi<float>(6.82642f);
-_PARAM_ATTRIBS int UnstableMatMargin = roundi<float>(13.8272f);
-_PARAM_ATTRIBS int UnstableMultMargin = roundi<float>(6.80492f);
-_PARAM_ATTRIBS int ContemptDiv = roundi<float>(86.5476f);
-_PARAM_ATTRIBS int ImprovingExtensionRate = roundi<float>(36.57036f);
-_PARAM_ATTRIBS int QuietNotPvNodeReduction = roundi<float>(115.2750f);
-_PARAM_ATTRIBS int QuietCutNodeReduction = roundi<float>(14.0604f);
-_PARAM_ATTRIBS int QuietCheckReduction = roundi<float>(345.1729f);
-_PARAM_ATTRIBS int QuietExtensionReduction = roundi<float>(113.0990f);
-_PARAM_ATTRIBS int QuietPawnMoveReduction = roundi<float>(35.3802f);
-_PARAM_ATTRIBS int QuietImprovingReductionRate = roundi<float>(21.4482f);
-_PARAM_ATTRIBS int QuietHashCapReduction = roundi<float>(130.2399f);
-_PARAM_ATTRIBS int QuietKillerMoveReduction = roundi<float>(212.9658f);
-_PARAM_ATTRIBS int CaptureNotPvNodeReduction = roundi<float>(90.0759f);
-_PARAM_ATTRIBS int CaptureCutNodeReduction = roundi<float>(58.6884f);
-_PARAM_ATTRIBS int CaptureCheckReduction = roundi<float>(167.3002f);
-_PARAM_ATTRIBS int CaptureHashCapReduction = roundi<float>(152.2967f);
-_PARAM_ATTRIBS int CaptureKillerMoveReduction = roundi<float>(159.2310f);
-_PARAM_ATTRIBS int CaptureExtensionReduction = roundi<float>(75.1489f);
-_PARAM_ATTRIBS int CaptureImprovingReductionRate = roundi<float>(26.63286f);
-_PARAM_ATTRIBS int HalfMovesEvalLimit = roundi<float>(11.8268f);
-_PARAM_ATTRIBS int NullVerifyDepth = roundi<float>(10.12013f);
-_PARAM_ATTRIBS int MoveCheckExtensionRate = roundi<float>(12.2576f);
-_PARAM_ATTRIBS int MoveCheckExtensionDiv = roundi<float>(9.95162f);
-_PARAM_ATTRIBS int ImprovingExtensionMateRate = roundi<float>(19.6923f);
-_PARAM_ATTRIBS int MateThreadFracExtensionRate = roundi<float>(11.6797f);
-_PARAM_ATTRIBS int MateThreadFracExtensionDiv = roundi<float>(17.9521f);
-_PARAM_ATTRIBS int MaxMoveExtensionRate = roundi<float>(16.3261f);
-_PARAM_ATTRIBS int MaxMoveExtensionDiv = roundi<float>(10.9455f);
-_PARAM_ATTRIBS int NullVerifyDepthMult = roundi<float>(2.94352f);
-_PARAM_ATTRIBS int ExtensionDepth = roundi<float>(16.8311f);
-_PARAM_ATTRIBS int SingularDepth = roundi<float>(4.03396f);
-_PARAM_ATTRIBS int SingularDepthMargin = roundi<float>(1.71455f);
-_PARAM_ATTRIBS int SingularExtensionRate = roundi<float>(3.08547f);
-_PARAM_ATTRIBS int SingularBetaDepthMult = roundi<float>(2.60718f);
-_PARAM_ATTRIBS int SingularDepthMult = roundi<float>(124.551f);
-_PARAM_ATTRIBS int SingularDepthBase = roundi<float>(535.727f);
-_PARAM_ATTRIBS int SingularBetaExtensionRate = roundi<float>(8.8357f);
-_PARAM_ATTRIBS int TablebaseProbeDepth = roundi<float>(7.33313f);
-_PARAM_ATTRIBS int TablebasePieceCountLimit = roundi<float>(5.63201f);
-_PARAM_ATTRIBS int TablebaseWinScore = roundi<float>(31036.8f);
-_PARAM_ATTRIBS int TablebasePieceDiffMult = roundi<float>(105.374f);
-_PARAM_ATTRIBS int TablebaseScoreScale = roundi<float>(17.0653f);
-_PARAM_ATTRIBS int AspirationSearchDepth = roundi<float>(4.42753f);
-_PARAM_ATTRIBS int AspirationFirstWindow = roundi<float>(68.2525f);
-_PARAM_ATTRIBS int AspirationUnstableFactor = roundi<float>(179.176f);
-_PARAM_ATTRIBS int AspirationDepthRate = roundi<float>(0.906031f);
-_PARAM_ATTRIBS int AspirationMaxDepthInfl = roundi<float>(8.44154f);
-_PARAM_ATTRIBS int AspirationWindowScoreDiv = roundi<float>(5208.23f);
-_PARAM_ATTRIBS int AspirationMaxWindow = roundi<float>(736.662f);
-_PARAM_ATTRIBS int AspirationCount = roundi<float>(3.4091f);
-_PARAM_ATTRIBS int AspirationWidenRate = roundi<float>(4.68001f);
-_PARAM_ATTRIBS int QSeePruningThreshold = roundi<float>(-8.86404f);
-_PARAM_ATTRIBS int RfpQuietPenaltyMult = roundi<float>(19.f);
-_PARAM_ATTRIBS int SeePruneDepth = roundi<float>(2.f);
-_PARAM_ATTRIBS int SeePruneMarginMult = roundi<float>(8.f);
-_PARAM_ATTRIBS int SeeCapturePruneThreshold = roundi<float>(-165.f);
-_PARAM_ATTRIBS int SeeQuietScoreThreshold = roundi<float>(2048.f);
-_PARAM_ATTRIBS int SeeQuietPruneThreshold = roundi<float>(-65.f);
-_PARAM_ATTRIBS int QDeltaPruningEvalWeight = roundi<float>(8.f);
-_PARAM_ATTRIBS int QBetaCutoffEvalWeight = roundi<float>(120.f);
+_DEFINE_TUNABLE_PARAMETER(IidDepth, int32_t, 2.6917f, 2.f, 5.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(IidDepthDiv, int32_t, 12.0625f, 8.f, 16.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(RfpDepth, int32_t, 5.21208f, 2.f, 6.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(RazorDepth, int32_t, 1.55689f, 1.f, 4.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(FutilityDepth, int32_t, 2.80804f, 2.f, 5.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(LmrDepth, int32_t, 1.87427f, 1.f, 4.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(LmrBaseQuietReduction, int32_t, 162.9090f, 130.f, 190.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(LmrLogQuietDepthMovesMult, int32_t, 69.8181f, 50.f, 90.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(LmrBaseCaptureReduction, int32_t, 132.7407f, 110.f, 150.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(LmrLogCaptureDepthMovesMult, int32_t, 56.8888f, 40.f, 76.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(NullReduction, int32_t, 35.4356f, 15.f, 51.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(LmrMoveCount, int32_t, 4.68328f, 1.f, 16.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(RazorMultDelta, int32_t, 10.2223f, 5.f, 40.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(RazorCutDelta, int32_t, 10.f, 5.f, 35.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(RazorBetaLimit, int32_t, 1200.f, 1000.f, 2000.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(RfpMultDelta, int32_t, 113.653f, 10.f, 220.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(RfpMarginThreshold, int32_t, 6.f, 1.f, 30.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(RfpReturnValueWeight, int32_t, 64.f, 4.f, 128.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(FutilityMoveCount, int32_t, 7.8672f, 1.f, 16.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(FutilityDelta, int32_t, 22.8808f, 2.f, 50.f, 0.7f);
+_DEFINE_TUNABLE_PARAMETER(FutilityScoreMult, int32_t, 9.f, 5.f, 13.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(RazorBaseDelta, int32_t, 119.431f, 20.f, 500.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(QMaterialDelta, int32_t, 1106.39f, 700.f, 1200.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(NNEvalScale, int32_t, 8.7321f, 7.f, 17.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(ImprovingRate, int32_t, 39.2507f, 30.f, 90.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(RfpImprovingSinkMult, int32_t, 128.0f, 100.f, 160.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(NullMargin, int32_t, 4.33824f, 1.f, 14.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(NullImprovingSinkMult, int32_t, 28.4444f, 16.f, 38.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(TTEvalCorrRate, int32_t, 2.36075f, 1.f, 4.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(NullDiffScale, int32_t, 1053.47f, 800.f, 1300.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(NullDepth, int32_t, 3.01463f, 2.f, 5.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(NextDepthTimeRed, int32_t, 6.82642f, 4.f, 8.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(UnstableMatMargin, int32_t, 13.8272f, 10.f, 80.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(UnstableMultMargin, int32_t, 6.80492f, 4.f, 12.f, 2.5f);
+_DEFINE_TUNABLE_PARAMETER(ContemptDiv, int32_t, 86.5476f, 30.f, 160.f, 1.7f);
+_DEFINE_TUNABLE_PARAMETER(ImprovingExtensionRate, int32_t, 36.57036f, 10.f, 70.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(QuietNotPvNodeReduction, int32_t, 115.2750f, 40.f, 200.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(QuietCutNodeReduction, int32_t, 14.0604f, 0.f, 40.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(QuietCheckReduction, int32_t, 345.1729f, 100.f, 600.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(QuietExtensionReduction, int32_t, 113.0990f, 40.f, 200.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(QuietPawnMoveReduction, int32_t, 35.3802f, 10.f, 70.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(QuietImprovingReductionRate, int32_t, 21.4482f, 5.f, 50.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(QuietHashCapReduction, int32_t, 130.2399f, 40.f, 220.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(QuietKillerMoveReduction, int32_t, 212.9658f, 80.f, 380.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(CaptureNotPvNodeReduction, int32_t, 90.0759f, 30.f, 160.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(CaptureCutNodeReduction, int32_t, 58.6884f, 20.f, 110.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(CaptureCheckReduction, int32_t, 167.3002f, 50.f, 300.f, 2.0f);
+_DEFINE_TUNABLE_PARAMETER(CaptureHashCapReduction, int32_t, 152.2967f, 50.f, 260.f, 1.8f);
+_DEFINE_TUNABLE_PARAMETER(CaptureKillerMoveReduction, int32_t, 159.2310f, 50.f, 280.f, 1.8f);
+_DEFINE_TUNABLE_PARAMETER(CaptureExtensionReduction, int32_t, 75.1489f, 20.f, 140.f, 1.0f);
+_DEFINE_TUNABLE_PARAMETER(CaptureImprovingReductionRate, int32_t, 26.63286f, 8.f, 55.f, 0.5f);
+_DEFINE_TUNABLE_PARAMETER(HalfMovesEvalLimit, int32_t, 11.8268f, 5.f, 40.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(NullVerifyDepth, int32_t, 10.12013f, 5.f, 16.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionRate, int32_t, 12.2576f, 8.f, 16.f, 1.8f);
+_DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionDiv, int32_t, 9.95162f, 8.f, 16.f, 1.4f);
+_DEFINE_TUNABLE_PARAMETER(ImprovingExtensionMateRate, int32_t, 19.6923f, 12.f, 28.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionRate, int32_t, 11.6797f, 10.f, 30.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionDiv, int32_t, 17.9521f, 12.f, 26.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 16.3261f, 10.f, 30.f, 1.7f);
+_DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionDiv, int32_t, 10.9455f, 10.f, 18.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(NullVerifyDepthMult, int32_t, 2.94352f, 1.f, 12.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(ExtensionDepth, int32_t, 16.8311f, 4.f, 32.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepth, int32_t, 4.03396f, 2.f, 8.f, 1.9f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 1.71455f, 1.f, 4.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(SingularExtensionRate, int32_t, 3.08547f, 0.8f, 12.f, 1.8f);
+_DEFINE_TUNABLE_PARAMETER(SingularBetaDepthMult, int32_t, 47.f, 1.f, 96.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepthMult, int32_t, 124.551f, 90.f, 180.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 535.727f, 400.f, 650.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 8.8357f, 1.f, 15.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(TablebaseProbeDepth, int32_t, 7.33313f, 2.f, 16.f, 2.f);
+_DEFINE_TUNABLE_PARAMETER(TablebasePieceCountLimit, int32_t, 5.63201f, 2.f, 10.f, 1.7f);
+_DEFINE_TUNABLE_PARAMETER(TablebaseWinScore, int32_t, 31036.8f, 30000.f, 31500.f, 0.1f);
+_DEFINE_TUNABLE_PARAMETER(TablebasePieceDiffMult, int32_t, 105.374f, 10.f, 250.f, 0.4f);
+_DEFINE_TUNABLE_PARAMETER(TablebaseScoreScale, int32_t, 17.0653f, 8.f, 20.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(AspirationSearchDepth, int32_t, 4.42753f, 2.f, 5.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(AspirationFirstWindow, int32_t, 68.2525f, 10.f, 120.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(AspirationUnstableFactor, int32_t, 179.176f, 10.f, 220.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(AspirationDepthRate, int32_t, 0.906031f, 0.f, 1.5f, 0.3f);
+_DEFINE_TUNABLE_PARAMETER(AspirationMaxDepthInfl, int32_t, 8.44154f, 1.f, 14.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(AspirationWindowScoreDiv, int32_t, 5208.23f, 2000.f, 6500.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(AspirationMaxWindow, int32_t, 736.662f, 400.f, 1000.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(AspirationCount, int32_t, 3.4091f, 2.f, 5.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(AspirationWidenRate, int32_t, 4.68001f, 2.f, 5.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(QSeePruningThreshold, int32_t, -8.86404f, -150.f, 80.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(RfpQuietPenaltyMult, int32_t, 19.f, 10.f, 40.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(SeePruneDepth, int32_t, 2.f, 0.f, 5.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(SeePruneMarginMult, int32_t, 8.f, 0.f, 20.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(SeeCapturePruneThreshold, int32_t, -165.f, -250.f, -60.f, 0.7f);
+_DEFINE_TUNABLE_PARAMETER(SeeQuietScoreThreshold, int32_t, 2048.f, 1000.f, 4000.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(SeeQuietPruneThreshold, int32_t, -65.f, -90.f, -30.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(QDeltaPruningEvalWeight, int32_t, 8.f, 0.f, 128.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(QBetaCutoffEvalWeight, int32_t, 120.f, 0.f, 128.f, 0.6f);
 
 /* Static parameters -
 *  These are not tuned.

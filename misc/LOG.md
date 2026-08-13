@@ -1,3 +1,13 @@
+### [commit:cf721f3] feature: changed tunable parameters values - now rounding errors are smaller
+```
+Score of leaf-see-prune-2 vs leaf-fp-base: 160 - 153 - 222  [0.507] 535
+...      leaf-see-prune-2 playing White: 110 - 49 - 109  [0.614] 268
+...      leaf-see-prune-2 playing Black: 50 - 104 - 113  [0.399] 267
+...      White vs Black: 214 - 99 - 222  [0.607] 535
+Elo difference: 4.5 +/- 22.5, LOS: 65.4 %, DrawRatio: 41.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:fe1ec28] feature: fixed-point arithmetic in Search
 ```
 Score of leaf-fp vs leaf-arch-v3: 291 - 275 - 340  [0.509] 906

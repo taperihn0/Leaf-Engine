@@ -44,117 +44,7 @@ _INLINE bool isValidUnsigned(const std::string& str) {
     return !isSigned(str) and isValidNumber(str);
 }
 
-#if defined(_USE_EMBEDDED_NEURAL_NET)
-static std::filesystem::path DefaultNeuralNetOptionPath = "<embedded:" DEFAULT_NEURAL_NET_FILE_NAME ">";
-#else
-static std::filesystem::path DefaultNeuralNetOptionPath = nn::DefaultNetworkFile;
-#endif
-
-UniversalChessInterface::Options UniversalChessInterface::_options = { 
-        // --- Regular parameters ---
-        OptionHash(SpinType<ll>(DefaultTTSizeMb / 1_MB, 1, 512)),
-        OptionClearHash(),
-        OptionPath("SyzygyPath",    StringType("<empty>")),
-        OptionPath("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string())),
-        { // --- Tunable parameters ---
-          // TODO: these may be floats aswell 
-        OptionTunableParam(SpinType<double>(IidDepth,                     2.,  5.),     "IidDepth",                     0.9),
-        OptionTunableParam(SpinType<double>(IidDepthDiv,                  8.,  16.),    "IidDepthDiv",                  0.9),
-        OptionTunableParam(SpinType<double>(RfpDepth,                     2.,  6.),     "RfpDepth",                     0.9),
-        OptionTunableParam(SpinType<double>(RazorDepth,                   1.,  4.),     "RazorDepth",                   0.9),
-        OptionTunableParam(SpinType<double>(FutilityDepth,                2.,  5.),     "FutilityDepth",                0.9),
-        OptionTunableParam(SpinType<double>(LmrDepth,                     1.,  4.),     "LmrDepth",                     1.5),
-        OptionTunableParam(SpinType<double>(NullReduction,                15., 51.),    "NullReduction",                1.1),
-        OptionTunableParam(SpinType<double>(LmrMoveCount,                 1.,  16.),    "LmrMoveCount",                 0.6),
-        OptionTunableParam(SpinType<double>(RazorMultDelta,               5.,  40.),    "RazorMultDelta",               0.3),
-        OptionTunableParam(SpinType<double>(RazorCutDelta,                5.,  35.),    "RazorMultDelta",               1.),
-        OptionTunableParam(SpinType<double>(RazorBetaLimit,               1000.,2000.), "RazorBetaLimit",               0.5),
-        OptionTunableParam(SpinType<double>(RfpMultDelta,                 10., 220.),   "RfpMultDelta",                 0.4),
-        OptionTunableParam(SpinType<double>(RfpMarginThreshold,           1.,  30.),    "RfpMarginThreshold",           1.2),
-        OptionTunableParam(SpinType<double>(RfpReturnValueWeight,         4.,  128.),   "RfpReturnValueWeight",         0.5),
-        OptionTunableParam(SpinType<double>(FutilityMoveCount,            1.,  16.),    "FutilityMoveCount",            0.5),
-        OptionTunableParam(SpinType<double>(FutilityDelta,                2.,  50.),    "FutilityDelta",                0.7),
-        OptionTunableParam(SpinType<double>(RazorBaseDelta,               20., 500.),   "RazorBaseDelta",               0.4),
-        OptionTunableParam(SpinType<double>(QMaterialDelta,               700.,1200.),  "QMaterialDelta",               0.6),
-        OptionTunableParam(SpinType<double>(NNEvalScale,                  7.,  17.),    "NNEvalScale",                  1.3),
-        OptionTunableParam(SpinType<double>(ImprovingRate,                30., 90.),    "ImprovingRate" ,               0.6),
-        OptionTunableParam(SpinType<double>(RfpImprovingSinkMult,             1.,  10.),    "RfpImprovingSinkMult",             1.2),
-        OptionTunableParam(SpinType<double>(NullMargin,                   1,   28.),    "NullMargin",                   0.4),
-        OptionTunableParam(SpinType<double>(NullImprovingSinkMult ,           1.,  10.),    "NullImprovingSinkMult",            1.2),
-        OptionTunableParam(SpinType<double>(TTEvalCorrRate,               1.,  4.),     "TTEvalCorrRate",               0.2),
-        OptionTunableParam(SpinType<double>(NullDiffScale,                800.,1300.),  "NullDiffScale",                0.5),
-        OptionTunableParam(SpinType<double>(NullDepth,                    2.,  5.),     "NullDepth",                    1.3),
-        OptionTunableParam(SpinType<double>(NextDepthTimeRed ,            4.,  8.),     "NextDepthTimeRed",             1.2),
-        OptionTunableParam(SpinType<double>(UnstableMatMargin,            10., 80.),    "UnstableMatMargin",            1.),
-        OptionTunableParam(SpinType<double>(UnstableMultMargin,           4.,  12.),    "UnstableMultMargin",           2.5),
-        OptionTunableParam(SpinType<double>(ContemptDiv,                  30., 160.),   "ContemptDiv",                  1.7),
-        OptionTunableParam(SpinType<double>(ImprovingExtensionRate,       2., 10.),     "ImprovingExtensionRate",       2.6),
-        OptionTunableParam(SpinType<double>(QuietNotPvNodeReduction,      1., 20.),     "QuietNotPvNodeReduction",      2.3),
-        OptionTunableParam(SpinType<double>(QuietCutNodeReduction,        0,  12.),     "QuietCutNodeReduction",        1.4),
-        OptionTunableParam(SpinType<double>(QuietCheckReduction,          9., 81.),     "QuietCheckReduction",          1.7),
-        OptionTunableParam(SpinType<double>(QuietExtensionReduction,      5., 35.),     "QuietExtensionReduction",      1.2),
-        OptionTunableParam(SpinType<double>(QuietPawnMoveReduction,       1., 15.),     "QuietPawnMoveReduction",       1.4),
-        OptionTunableParam(SpinType<double>(QuietImprovingReductionRate,  3., 15.),     "QuietImprovingReductionRate",  1.5),
-        OptionTunableParam(SpinType<double>(QuietHashCapReduction,        10.,50.),     "QuietHashCapReduction",        1.),
-        OptionTunableParam(SpinType<double>(QuietKillerMoveReduction,     5., 60.),     "QuietKillerMoveReduction",     1.1),
-        OptionTunableParam(SpinType<double>(QuietTotalReductionRate,      25.,80.),     "QuietTotalReductionRate",      1.1),
-        OptionTunableParam(SpinType<double>(CaptureNotPvNodeReduction,    1., 20.),     "CaptureNotPvNodeReduction",    1.5),
-        OptionTunableParam(SpinType<double>(CaptureCutNodeReduction,      1., 20.),     "CaptureCutNodeReduction",      1.5),
-        OptionTunableParam(SpinType<double>(CaptureCheckReduction,        5., 60.),     "CaptureCheckReduction",        1.4),
-        OptionTunableParam(SpinType<double>(CaptureHashCapReduction,      10.,50.),     "CaptureHashCapReduction",      1.4),
-        OptionTunableParam(SpinType<double>(CaptureKillerMoveReduction,   5., 50.),     "CaptureKillerMoveReduction",   1.9),
-        OptionTunableParam(SpinType<double>(CaptureExtensionReduction,    5., 35.),     "CaptureExtensionReduction",    1.2),
-        OptionTunableParam(SpinType<double>(CaptureImprovingReductionRate,1., 15.),     "CaptureImprovingReductionRate",1.6),
-        OptionTunableParam(SpinType<double>(CaptureTotalReductionRate,    20.,80.),     "CaptureTotalReductionRate",    1.4),
-        OptionTunableParam(SpinType<double>(HalfMovesEvalLimit,           5., 40.),     "HalfMovesEvalLimit",           1.),
-        OptionTunableParam(SpinType<double>(NullVerifyDepth,              5., 16.),     "NullVerifyDepth",              1.3),
-        OptionTunableParam(SpinType<double>(MoveCheckExtensionRate,       8., 16.),     "MoveCheckExtensionRate",       1.8),
-        OptionTunableParam(SpinType<double>(MoveCheckExtensionDiv,        8., 16.),     "MoveCheckExtensionDiv",        1.8),
-        OptionTunableParam(SpinType<double>(ImprovingExtensionMateRate,   4., 16.),     "ImprovingExtensionMateRate",   1.3),
-        OptionTunableParam(SpinType<double>(MateThreadFracExtensionRate,  10., 30.),    "MateThreadFracExtensionRate",  0.9),
-        OptionTunableParam(SpinType<double>(MateThreadFracExtensionDiv,   10., 18.),    "MateThreadFracExtensionDiv",   1.1),
-        OptionTunableParam(SpinType<double>(MaxMoveExtensionRate,         10., 30.),    "MaxMoveExtensionRate",         1.7),
-        OptionTunableParam(SpinType<double>(MaxMoveExtensionDiv,          10., 18.),    "MaxMoveExtensionDiv",          1.),
-        OptionTunableParam(SpinType<double>(NullVerifyDepthMult,          1.,  12.),    "NullVerifyDepthMult",          1.1),
-        OptionTunableParam(SpinType<double>(ExtensionDepth,               4.,  32.),    "ExtensionDepth",               1.1),
-        OptionTunableParam(SpinType<double>(SingularDepth,                2.,  8.),     "SingularDepth",                1.9),
-        OptionTunableParam(SpinType<double>(SingularDepthMargin,          1.,  4.),     "SingularDepthMargin",          1.8),
-        OptionTunableParam(SpinType<double>(SingularExtensionRate,        0.8,  12.),   "SingularExtensionRate",        1.8),
-        OptionTunableParam(SpinType<double>(SingularBetaDepthMult,        1.,  6.),     "SingularBetaDepthMult",        1.2),
-        OptionTunableParam(SpinType<double>(SingularDepthMult,            90., 180.),   "SingularDepthMult",            1.3),
-        OptionTunableParam(SpinType<double>(SingularDepthBase,            400., 650.),  "SingularDepthBase",            0.6),
-        OptionTunableParam(SpinType<double>(SingularBetaExtensionRate,    1.,   15.),   "SingularBetaExtensionRate",    1.2),
-        OptionTunableParam(SpinType<double>(TablebaseProbeDepth,          2., 16.),     "TablebaseProbeDepth",          2.),
-        OptionTunableParam(SpinType<double>(TablebasePieceCountLimit,     2., 10.),     "TablebasePieceCountLimit",     1.7),
-        OptionTunableParam(SpinType<double>(TablebaseWinScore,            30000., 31500.), "TablebaseWinScore",         0.1),
-        OptionTunableParam(SpinType<double>(TablebasePieceDiffMult,       10., 250.),   "TablebasePieceDiffMult",       0.4),
-        OptionTunableParam(SpinType<double>(TablebaseScoreScale,          8., 20.),     "TablebaseScoreScale",          1.5),
-        OptionTunableParam(SpinType<double>(AspirationSearchDepth,        2.,     5.),  "AspirationSearchDepth",        1.5),
-        OptionTunableParam(SpinType<double>(AspirationFirstWindow,        10.,  120.),  "AspirationFirstWindow",        0.9),
-        OptionTunableParam(SpinType<double>(AspirationUnstableFactor,     10.,  220.),  "AspirationUnstableFactor",     0.8),
-        OptionTunableParam(SpinType<double>(AspirationDepthRate,          0.,   1.5),   "AspirationDepthRate",          0.3),
-        OptionTunableParam(SpinType<double>(AspirationMaxDepthInfl,       1.,   14.),   "AspirationMaxDepthInfl",       1.1),
-        OptionTunableParam(SpinType<double>(AspirationWindowScoreDiv,     2000., 6500.),"AspirationWindowScoreDiv",     0.2),
-        OptionTunableParam(SpinType<double>(AspirationMaxWindow,          400.,  1000.),"AspirationMaxWindow",          0.6),
-        OptionTunableParam(SpinType<double>(AspirationCount,              2., 5.),      "AspirationCount",              1.),
-        OptionTunableParam(SpinType<double>(AspirationWidenRate,          2., 5.),      "AspirationWidenRate",          1.),
-        OptionTunableParam(SpinType<double>(QuietMoveScoreReductionRate,  20.,100.),    "QuietMoveScoreReductionRate",  0.9),
-        OptionTunableParam(SpinType<double>(CaptureMoveScoreReductionRate,30.,120.),    "CaptureMoveScoreReductionRate",1.2),
-        OptionTunableParam(SpinType<double>(QSeePruningThreshold,         -150., 80.),  "QSeePruningThreshold",         1.2),
-        OptionTunableParam(SpinType<double>(RfpQuietPenaltyMult,          10.,  40.),   "RfpQuietPenaltyMult",          1.1),
-        OptionTunableParam(SpinType<double>(KnightCapturedScore,          260., 350.),  "KnightCapturedScore",          1.3),
-        OptionTunableParam(SpinType<double>(BishopCapturedScore,          260., 350.),  "BishopCapturedScore",          1.3),
-        OptionTunableParam(SpinType<double>(ToKnightPromoScore,           80.,  300.),  "ToKnightPromoScore",           1.3),
-        OptionTunableParam(SpinType<double>(ToBishopPromoScore,           50.,  300.),  "ToBishopPromoScore",           1.3),
-        OptionTunableParam(SpinType<double>(ToRookPromoScore,             150., 500.),  "ToRookPromoScore",             1.3),
-        OptionTunableParam(SpinType<double>(ToQueenPromoScore,            700., 1020.), "ToQueenPromoScore",            1.3),
-        OptionTunableParam(SpinType<double>(SeePawnValue,                 80.,  120.),  "SeePawnValue",                 1.1),
-        OptionTunableParam(SpinType<double>(SeeKnightValue,               250., 350.),  "SeeKnightValue",               1.1),
-        OptionTunableParam(SpinType<double>(SeeBishopValue,               250., 350.),  "SeeBishopValue",               1.1),
-        OptionTunableParam(SpinType<double>(SeeRookValue,                 450., 550.),  "SeeRookValue",                 1.1),
-        OptionTunableParam(SpinType<double>(SeeQueenValue,                830., 970.),  "SeeQueenValue",                1.1),
-        }, 
-};
+opt::Options UniversalChessInterface::_options;
 
 SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
     SearchLimits limits;
@@ -251,10 +141,6 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
     if (argc > 1 and std::string(argv[1]) == "--self-play")
         parseSelfPlay();
 
-#if defined(_ENABLE_TUNING)
-    GlobParamMapping.createMapping();
-#endif
-
     std::cout << "Polish Chess Engine, " << EngineName << " by " << EngineAuthor << '\n';
 
     std::string command;
@@ -296,7 +182,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
     } while (command != "quit");
 }
 
-std::vector<OptionTunableParam>& UniversalChessInterface::getTunableOptions() {
+std::vector<opt::OptionTunableParam>& UniversalChessInterface::getTunableOptions() {
     return _options.tunable_params_opt;
 }
 
@@ -541,7 +427,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
     }
 
 #if defined(_ENABLE_TUNING)
-    for (OptionTunableParam& param : _options.tunable_params_opt) {
+    for (opt::OptionTunableParam& param : _options.tunable_params_opt) {
         if (option == param.str) {
             strm >> std::skipws >> token;
 
@@ -615,7 +501,7 @@ void UniversalChessInterface::parseShowOptions() {
         std::tie(hash_opt, clear_hash_opt, syzygy_opt, neural_net_opt));
 
 #if defined(_ENABLE_TUNING)
-    for (OptionTunableParam& param : _options.tunable_params_opt) {
+    for (opt::OptionTunableParam& param : _options.tunable_params_opt) {
         param.print();
     }
 #endif

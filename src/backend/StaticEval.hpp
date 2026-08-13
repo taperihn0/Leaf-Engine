@@ -20,6 +20,7 @@
 
 #include "Score.hpp"
 #include "Color.hpp"
+#include "Tuning.hpp"
 
 /* 
 *  Static evaluation utilities.
@@ -27,11 +28,11 @@
 
 class Position;
 
-_PARAM_ATTRIBS int PawnValue   = 100;
-_PARAM_ATTRIBS int KnightValue = 300;
-_PARAM_ATTRIBS int BishopValue = 300;
-_PARAM_ATTRIBS int RookValue   = 500;
-_PARAM_ATTRIBS int QueenValue  = 900;
+_DEFINE_TUNABLE_PARAMETER(PawnValue, int32_t, 100.f, 80.f, 120.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(KnightValue, int32_t, 300.f, 260.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 300.f, 270.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 500.f, 450.f, 550.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 900.f, 820.f, 980.f, 1.1f);
 
 inline array1d<const int*, 5> PieceValue = {
     reinterpret_cast<const int*>(&PawnValue), 

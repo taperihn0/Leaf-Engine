@@ -20,6 +20,8 @@
 
 #include "backend/Common.hpp"
 
+namespace opt {
+
 // ----- States -----
 
 enum class OptionValueType {
@@ -122,8 +124,8 @@ _INTERNAL SpinType<T>::SpinType(ValType def, ValType mi, ValType ma)
 
 template <typename T>
 _INTERNAL void SpinType<T>::setCurrentValue(ValType val) {
-    //if (val < min_value or val > max_value)
-    //    throw std::runtime_error("Value is outside min-max bounds");
+    if (val < min_value or val > max_value)
+        throw std::logic_error("Value is outside min-max bounds");
 
     curr_value = val;
 }
@@ -220,3 +222,17 @@ _INTERNAL std::string OptionPath::getCurrentValue() const {
 }
 
 #undef _OPTION
+
+struct Options {
+    Options();
+
+    OptionHash      hash_opt;
+    OptionClearHash clear_hash_opt;
+    OptionPath      syzygy_opt;
+    OptionPath      neural_net_opt;
+    std::vector<OptionTunableParam> 
+                    tunable_params_opt;
+};
+
+} // namespace opt
+

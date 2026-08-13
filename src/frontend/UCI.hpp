@@ -33,7 +33,7 @@ public:
     void finish() override;
 
     static SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
-    static std::vector<OptionTunableParam>& getTunableOptions();
+    static std::vector<opt::OptionTunableParam>& getTunableOptions();
 
     virtual void loop(int argc, const char* argv[]);
 protected:
@@ -54,16 +54,8 @@ protected:
     void parseNNEval(std::istringstream& strm);
 #endif
 
-    struct Options {
-        OptionHash                      hash_opt;
-        OptionClearHash                 clear_hash_opt;
-        OptionPath                      syzygy_opt;
-        OptionPath                      neural_net_opt;
-        std::vector<OptionTunableParam> tunable_params_opt;
-    };
-
-    Search         _search;
-    Position        _pos;
-    FullInfoRecord _game;
-    static Options _options;
+    Search              _search;
+    Position            _pos;
+    FullInfoRecord      _game;
+    static opt::Options _options;
 };
