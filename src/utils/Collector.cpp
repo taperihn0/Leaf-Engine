@@ -346,6 +346,11 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     for (uint id = 1; id <= packet.thread_count; id++) {
         PerThreadData per_thread_data;
 
+        if (!std::filesystem::create_directories(packet.selfplay_filename)) {
+            labelLog(std::cout, LOG_INFO, "Failed to create directory: " + packet.selfplay_filename.string());
+            return;
+        }
+
         {
             const std::filesystem::path fp = packet.selfplay_filename 
                                                 / paths::PathsManager.getWhiteWinOutputFileName(id);
