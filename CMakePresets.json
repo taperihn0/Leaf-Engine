@@ -155,6 +155,21 @@
                 "ARCHITECTURE_X86_64_LEGACY": "ON",
                 "ARCHITECTURE_ARM": "OFF"
             }
+        },
+        {
+            "name": "finalutils",
+            "displayName": "FinalUtils",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Utils/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "ENABLE_SIMD_AVX": "ON",
+                "ARCHITECTURE_X86_64_V3": "OFF",
+                "ARCHITECTURE_X86_64_LEGACY": "ON",
+                "ARCHITECTURE_ARM": "OFF"
+            }
         }
     ],
     "buildPresets": [
