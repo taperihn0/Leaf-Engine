@@ -28,7 +28,7 @@ def run_command(cmd: list, cwd: Path = curr_working_dir, msg: str = ""):
     process = subprocess.Popen(cmd, 
                                cwd=cwd, 
                                stdout=subprocess.PIPE, 
-                               stderr=subprocess.PIPE, 
+                               stderr=subprocess.STDOUT, 
                                text=True)
 
     full_output = []

@@ -4,13 +4,12 @@
 * Experiment with lmr formula and parameters
 * Checkmate standpat
 * Use mate_thread in search
-* Experiment with fixed-float arithmetics in search
 * Implement ProbCut
 * Improve poor move ordering
 * Reevaluate dataset
 * Cleanup Utils
 * Provide some docs about commands
-* Train bigger net: 160, 192 or 256 HL
+* Train bigger net: 256 HL
 * Improve README (version-strength tables) & explain commands
 * Update commands docs
 * Try to update Zobrish Key only when move is legal, in an if (legal) branch.

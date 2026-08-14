@@ -1673,9 +1673,7 @@ _INLINE Score Search::evaluate(const Position& pos,
     _declUnused(results);
 #endif
 
-    const int pc_cnt = pos.getPiecesCount();
-
-    if (pc_cnt <= 6) {
+    if (pos.getPiecesCount() <= 6) {
         const Score eval = StaticEval::evaluateEndgame(pos);
 
         if (eval != Score::Undef)
