@@ -157,7 +157,7 @@
             }
         },
         {
-            "name": "finalutils",
+            "name": "finalutils-legacy",
             "displayName": "FinalUtils",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Utils/Release",
