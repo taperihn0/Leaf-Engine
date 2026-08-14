@@ -202,6 +202,16 @@
             "name": "finalutils",
             "configurePreset": "finalutils",
             "targets": [ "LeafUtils" ]
+        },
+        {
+            "name": "final-legacy",
+            "configurePreset": "final",
+            "targets": [ "Leaf" ]
+        },
+        {
+            "name": "finalutils-legacy",
+            "configurePreset": "finalutils-legacy",
+            "targets": [ "LeafUtils" ]
         }
     ]
 }
