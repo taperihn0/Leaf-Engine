@@ -19,7 +19,7 @@
 #include "Game.hpp"
 #include "MoveGen.hpp"
 
-Game::Game(const Position& from,  bool time_constraint, time_ms_t time_white, time_ms_t time_black)
+Game::Game(const Position& from,  bool time_constraint, clk::milliseconds time_white, clk::milliseconds time_black)
     : _current_pos(from)
     , _time_left_sided{ time_white, time_black }
     , _time_constraint(time_constraint)
@@ -32,7 +32,7 @@ void Game::applyMove(Move32b move) {
     applyMove(move, 0);
 }
 
-void Game::applyMove(Move32b move, time_ms_t think_time) {
+void Game::applyMove(Move32b move, clk::milliseconds think_time) {
     bool side2move = _current_pos.getTurn();
 
     if (_time_constraint) {

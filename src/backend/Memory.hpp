@@ -189,9 +189,18 @@ template <typename T>
 using AlignedUniquePtr = std::unique_ptr<T, AlignedDeleter<T>>;
 
 template <typename T>
+using AlignedSharedPtr = std::shared_ptr<T>;
+
+template <typename T>
 _NODISCARD _INTERNAL AlignedUniquePtr<T> makeAlignedUnique(size_t count, size_t alignment = alignof(T)) {
     T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
     return AlignedUniquePtr<T>(p);
+}
+
+template <typename T>
+_NODISCARD _INTERNAL AlignedSharedPtr<T> makeAlignedShared(size_t count, size_t alignment = alignof(T)) {
+    T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
+    return AlignedSharedPtr<T>(p, AlignedDeleter<T>());
 }
 
 template <typename T>

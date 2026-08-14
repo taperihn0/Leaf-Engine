@@ -46,8 +46,8 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 
 opt::Options UniversalChessInterface::_options;
 
-SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
-    SearchLimits limits;
+search::SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
+    search::SearchLimits limits;
     limits.depth = MaxDepth;
     limits.nodes = limits.qnodes = 0;
 
@@ -194,7 +194,7 @@ void UniversalChessInterface::parseUCI() {
 
 void UniversalChessInterface::parseNewGame() {
     _game.clear();
-    _search.registerNewGame();
+    _search.onNewGame();
 }
 
 void UniversalChessInterface::parsePosition(std::istringstream& strm) {
@@ -268,7 +268,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
         return;
     }
     
-    SearchLimits limits = loadSearchLimits(strm, token);
+    search::SearchLimits limits = loadSearchLimits(strm, token);
     _declUnused(_search.findBestMove(_pos, _game, limits));
 }
 
@@ -355,7 +355,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
         strm >> std::skipws >> token;
 
         if (token == "Hash") {
-            _search.clearHashTT();
+            _search.clearHash();
         }
     }
     
@@ -378,7 +378,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
                 _options.hash_opt.set(val);
             }
 
-            _search.resizeHashTT(_options.hash_opt.getCurrentValue() * 1_MB);
+            _search.resizeHash(_options.hash_opt.getCurrentValue() * 1_MB);
         }
     }
     
@@ -457,7 +457,7 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
     if (depth <= 0 or depth >= MaxDepth) 
         depth = BenchDepth;
 
-    Timer timer;
+    clk::Timer timer;
     size_t total_nodes = 0;
 
     timer.go();
@@ -466,26 +466,26 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
         [&](const std::string_view& fen) {
             Position pos(fen);
 
-            SearchLimits limits;
+            search::SearchLimits limits;
             limits.depth = depth;
             limits.nodes = 0; // no node limit
             limits.wtime = limits.btime = 0;
             limits.winc  = limits.binc =  0;
 
             FullInfoRecord tmpgame;
-            SearchResults results;
+            search::SearchResults results;
 
 #if defined(DEBUG)
             std::cout << "Searching " << fen << "..." << std::endl;
 #endif
 
-            const Move32b bm = _search.findBestMove<Search::SEARCH_NO_INFO>(pos, tmpgame, limits, results);
+            const Move32b bm = _search.findBestMove<search::SEARCH_NO_INFO>(pos, tmpgame, limits, results);
             _declUnused(bm);
 
             total_nodes += results.nodes_cnt;
         });
 
-    const time_ms_t total_time_ms = timer.duration();
+    const clk::milliseconds total_time_ms = timer.getDurationMs();
 
     std::cout << "Searched " << total_nodes << " nodes in " << (total_time_ms / 1000.) << 's' << std::endl;
 }

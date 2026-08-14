@@ -89,10 +89,10 @@ public:
         DRAW_BY_ADJUCATION
     };
 
-    Game(const Position& from, bool time_constraint, time_ms_t time_white, time_ms_t time_black);
+    Game(const Position& from, bool time_constraint, clk::milliseconds time_white, clk::milliseconds time_black);
 
     void applyMove(Move32b move);
-    void applyMove(Move32b move, time_ms_t think_time);
+    void applyMove(Move32b move, clk::milliseconds think_time);
 
     // Returns true whether there is a win on the board.
     // 'full' parameter contains detailed info.
@@ -110,8 +110,8 @@ public:
 
     _NODISCARD size_t getMoveCount() const;
 
-    static constexpr time_ms_t MoveOverhead = 15_ms;
-    static constexpr time_ms_t TimeMargin   = 40_ms;
+    static constexpr clk::milliseconds MoveOverhead = 15_ms;
+    static constexpr clk::milliseconds TimeMargin   = 40_ms;
 private:
     bool isGameCycle() const;
     bool isStaleMate() const;
@@ -124,7 +124,7 @@ private:
 
     Position       _current_pos;
     FullInfoRecord _pos_record;
-    time_ms_t      _time_left_sided[2];
+    clk::milliseconds      _time_left_sided[2];
     bool           _time_constraint;
     CachedState    _cached;
 };

@@ -22,39 +22,50 @@
 
 #include <chrono>
 
-using time_ms_t = ll;
-using time_s_t = ll;
-using internal_clock_t = std::chrono::steady_clock;
-using timepoint_t = internal_clock_t::time_point;
+namespace search { class SearchLimits; };
+class Position;
 
-_INLINE constexpr time_ms_t operator"" _ms(ull t) {
-    return static_cast<time_ms_t>(t);
-}
+namespace clk {
 
-_INLINE constexpr time_s_t operator"" _s(ull t) {
-    return static_cast<time_ms_t>(t);
-}
+using milliseconds = ll;
+using seconds = ll;
+/* Main backend clock is `std::chrono::steady_clock`
+*/
+using backend_clock = std::chrono::steady_clock;
+using time_point = backend_clock::time_point;
 
 class Clock {
 public:
-    Clock() = delete;
-    _NODISCARD static timepoint_t timePoint();
-    _NODISCARD static time_ms_t getMilliseconds(timepoint_t stop, timepoint_t start);
+    _NODISCARD static const Clock& getInstance();
+    _NODISCARD time_point getTimePoint() const;
+    _NODISCARD milliseconds getMilliseconds(time_point stop, time_point start) const;
+private:
+    Clock() = default;
 };
 
 class Timer {
 public:
+    Timer() = default;
     void go();
-    _NODISCARD time_ms_t duration() const;
+    void reset();
+    _NODISCARD milliseconds getDurationMs() const;
 private:
-    timepoint_t _start_tp;
+    bool       _run = false;
+    time_point _start_tp;
 };
 
-struct SearchLimits;
-class Position;
-
-class TimeMan {
+class TimeManager {
 public:
-    TimeMan() = delete;
-    _NODISCARD static time_ms_t searchTime(const Position& pos, SearchLimits& limits);
+    TimeManager() = delete;
+    _NODISCARD static milliseconds searchTimeMs(const Position& pos, const search::SearchLimits& limits);
 };
+
+} // namespace clk
+
+constexpr clk::milliseconds operator"" _ms(ull t) noexcept {
+    return static_cast<clk::milliseconds>(t);
+}
+
+constexpr clk::seconds operator"" _s(ull t) noexcept {
+    return static_cast<clk::seconds>(t);
+}

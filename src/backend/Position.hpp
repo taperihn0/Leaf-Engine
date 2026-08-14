@@ -349,7 +349,7 @@ public:
     }
 
     uint64_t goPerft(uint depth);
-    uint64_t goPerft(uint depth, time_ms_t& duration_ms);
+    uint64_t goPerft(uint depth, clk::milliseconds& duration_ms);
 
     template <bool ExactScore>
     int staticExchangeEval(Square org, 
@@ -362,6 +362,8 @@ public:
 
     _NODISCARD ReversibleState getReversibleState() const;
 
+    /* Copy-make position states.
+    */
     struct ReversibleState {
         Square                     ep_sq;
         uint8_t                    halfmove_count;

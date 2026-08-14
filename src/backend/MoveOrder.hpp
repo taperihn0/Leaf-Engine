@@ -23,34 +23,11 @@
 #include "Memory.hpp"
 #include "Tuning.hpp"
 
+namespace search { class NodeInfo; }
 class TreeStack;
 class MoveOrder;
 
-/* It is basically a part of MoveOrder interface.
-*  It contains tables used in move ordering with history data, for instance 
-*  piece-square or from-to tables.
-*  It implements differentiation of history data between each Search object,
-*  as it is part of Search class.
-*/
-
-class MoveOrderHistoryTables {
-public:
-    friend class MoveOrder;
-    MoveOrderHistoryTables() { clearQuietsHistory(); }
-
-    _INLINE void clearQuietsHistory() {
-        mem::memSet(dataOfArray3d(_quiets_history), 0, sizeof(_quiets_history));
-    }
-private:
-    array3d<int16_t, 2, 6, 64> _quiets_history;
-    // ...
-};
-
-enum OrderType : uint8_t {
-    STAGED         = 1, // At nmSearch nodes
-    QUIESCENT      = 2, // At qSearch nodes
-    ONCE_GEN_LEGAL = 3  // At root node
-};
+namespace mvorder {
 
 /*
 *  Tunable parameters in move ordering.
@@ -76,6 +53,12 @@ inline constexpr int32_t PawnCapturedScore    = 100;
 inline constexpr int32_t RookCapturedScore    = 500;
 inline constexpr int32_t QueenCapturedScore   = 900;
 
+enum OrderType : uint8_t {
+    STAGED         = 1, // At nmSearch nodes
+    QUIESCENT      = 2, // At qSearch nodes
+    ONCE_GEN_LEGAL = 3  // At root node
+};
+
 /*
 *   MoveOrder<STAGED>:
 *    - Generates moves by moving through generation stages (first <CAPTURES>, then <QUIETS>)
@@ -83,21 +66,41 @@ inline constexpr int32_t QueenCapturedScore   = 900;
 *    - Generates only captures in quiescent node.
 */
 
+enum class enumStage {
+    STAGE_UNKNOWN,
+    STAGE_PRIORITY_MOVES,
+    STAGE_CAPTURES,
+    STAGE_QUIETS
+};
+
+/* Here we generate and sort moves.
+*/
 class MoveOrder {
 public:
-    enum class enumStage {
-        STAGE_UNKNOWN,
-        STAGE_PRIORITY_MOVES,
-        STAGE_CAPTURES,
-        STAGE_QUIETS
+
+    /* It is basically a part of MoveOrder interface.
+    *  It contains tables used in move ordering with history data, for instance 
+    *  piece-square or from-to tables.
+    *  It implements differentiation of history data between each Search object,
+    *  as it is part of Search class.
+    */
+    class HistoryTables {
+    public:
+        friend class MoveOrder;
+        
+        HistoryTables();
+        void clearQuietsHistory();
+    private:
+        array3d<int16_t, 2, 6, 64> _quiets_history;
     };
 
-    explicit MoveOrder(MoveOrderHistoryTables* history_tables = nullptr);
+    MoveOrder() = default;
+    explicit MoveOrder(mem::AlignedSharedPtr<HistoryTables> history_tables);
 
-    void setHistoryBuffer(MoveOrderHistoryTables* history_tables);
+    void setHistoryBuffer(mem::AlignedSharedPtr<HistoryTables> history_tables);
 
     template <OrderType Type, bool Root>
-    _NODISCARD bool nextMove(const NodeInfo* node, 
+    _NODISCARD bool nextMove(const search::NodeInfo* node, 
                              Position& pos, 
                              Move32b& next_move,
                              int16_t& move_score);
@@ -157,7 +160,7 @@ private:
     static_assert(is_same<MoveList::entryscore_t, int16_t> or
                   is_same<MoveList::entryscore_t, int32_t>);
 
-    MoveOrderHistoryTables* _tables;
+    mem::AlignedSharedPtr<HistoryTables> _tables;
 
     enumPrivateStage _stage = enumPrivateStage::NONE;
     size_t    _iterator     = 0;
@@ -170,7 +173,7 @@ private:
     MoveList _move_list;
 };
 
-_INLINE void MoveOrder::setHistoryBuffer(MoveOrderHistoryTables* history_tables) {
+_INLINE void MoveOrder::setHistoryBuffer(mem::AlignedSharedPtr<HistoryTables> history_tables) {
     _tables = history_tables;
 }
 
@@ -233,7 +236,7 @@ uint MoveOrder::getTotalMoves() {
     return static_cast<uint>(_move_list.count());
 }
 
-_NODISCARD _FORCEINLINE MoveOrder::enumStage MoveOrder::getStage() const {
+_NODISCARD _FORCEINLINE enumStage MoveOrder::getStage() const {
     switch (_stage) {
     case enumPrivateStage::NONE:
     case enumPrivateStage::FIRST_STAGE:
@@ -259,3 +262,5 @@ _NODISCARD _FORCEINLINE MoveOrder::enumStage MoveOrder::getStage() const {
         return enumStage::STAGE_UNKNOWN;
     }
 }
+
+} // namespace mvorder

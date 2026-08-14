@@ -37,7 +37,7 @@ public:
     };
 
     struct GameSpecPacket {
-        SearchLimits                   limits;
+        search::SearchLimits           limits;
         uint                           thread_id;
         std::shared_ptr<Game::Result>  result;
         OpeningManBase*                openings; 
@@ -73,7 +73,7 @@ private:
                       enumLogLabel ret_msg_label);
     
     template <bool EnableLog>
-    Move32b getPlayerMove(SearchLimits limits, 
+    Move32b getPlayerMove(search::SearchLimits limits, 
                           Position& pos,
                           EngineProcess& player,
                           Score& score,

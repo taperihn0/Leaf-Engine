@@ -642,17 +642,17 @@ _INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,
 }
 
 uint64_t Position::goPerft(uint depth) {
-    time_ms_t tmp;
+    clk::milliseconds tmp;
     return goPerft(depth, tmp);    
 }
 
-uint64_t Position::goPerft(uint depth, time_ms_t& duration_ms) {
-    Timer timer;
+uint64_t Position::goPerft(uint depth, clk::milliseconds& duration_ms) {
+    clk::Timer timer;
     timer.go();
 
     const uint64_t nodes_cnt = perft<true>(depth);
 
-    duration_ms = timer.duration();
+    duration_ms = timer.getDurationMs();
     return nodes_cnt;
 }
 
@@ -756,7 +756,7 @@ uint64_t Position::perft(unsigned depth) {
     if (depth == 0)
         return 1;
 
-    Timer my_timer;
+    clk::Timer my_timer;
 
     if constexpr (Root)
         my_timer.go();
@@ -789,7 +789,7 @@ uint64_t Position::perft(unsigned depth) {
     }
 
     if constexpr (Root) {
-        time_ms_t duration_ms = my_timer.duration();
+        clk::milliseconds duration_ms = my_timer.getDurationMs();
         duration_ms = duration_ms ? duration_ms : 1;
 
         std::cout << ss.str();

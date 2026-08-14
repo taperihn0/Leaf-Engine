@@ -59,6 +59,7 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
         limits,
     };
 
+    std::cout << packet.selfplay_filename << std::endl;
     collector.startTournament(packet);
 }
 
@@ -441,7 +442,7 @@ void UtilsProtocol::parsePerft(std::istringstream& strm) {
 
     static const auto perft_on_set = [](const auto policy) {
         std::atomic<bool> status = true;
-        std::atomic<time_ms_t> total_duration_ms = 0_ms;
+        std::atomic<clk::milliseconds> total_duration_ms = 0_ms;
 
         std::for_each(policy, PerftStandard.begin(), PerftStandard.end(), 
             [&status, &total_duration_ms](std::string_view test) {
@@ -465,7 +466,7 @@ void UtilsProtocol::parsePerft(std::istringstream& strm) {
                     ss >> std::skipws >> token;
                     const auto nodes = std::stoull(token);
 
-                    time_ms_t duration_ms;
+                    clk::milliseconds duration_ms;
                     const auto perft_nodes = pos.goPerft(depth, duration_ms);
 
                     total_duration_ms.fetch_add(duration_ms);

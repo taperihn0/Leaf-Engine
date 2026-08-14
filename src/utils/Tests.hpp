@@ -28,10 +28,10 @@
 #define _COLOR_GREEN       "\033[0;32m"
 #define _COLOR_RESET       "\033[0m"
 
-#define _TESTCASE(cmp, expc, f, ...)                                                                         \
-{                                                                                                          \
+#define _TESTCASE(cmp, expc, f, ...)                                                                      \
+{                                                                                                         \
     ::utils::_testcaseAssertion(f, expc, cmp, #cmp, #f "(" #__VA_ARGS__ ")", (int)__LINE__, __VA_ARGS__); \
-}                                                                                                          \
+}                                                                                                         \
 
 namespace utils {
 
@@ -155,12 +155,12 @@ _INTERNAL bool ccrOneHourTest() {
     Move32b move;
 
     FullInfoRecord tmpgame;
-    SearchLimits limits;
+    search::SearchLimits limits;
     limits.depth = SearchDepth;
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
 
-    Search search{TranspositionTable(DefaultTTSizeMb)};
+    search::Search search{TranspositionTable(DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;
@@ -169,11 +169,11 @@ _INTERNAL bool ccrOneHourTest() {
         return last;
     };
 
-    time_ms_t total_duration_ms = 0_ms;
+    clk::milliseconds total_duration_ms = 0_ms;
 
     int lcnt = 0;
     for (const auto& sv_fen : CcrOneHourSet) {
-        search.registerNewGame();
+        search.onNewGame();
 
         const std::string full_fen = static_cast<std::string>(sv_fen);
         size_t next = next_token(full_fen, 0);
@@ -186,14 +186,14 @@ _INTERNAL bool ccrOneHourTest() {
 
         std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
 
-        Timer timer;
+        clk::Timer timer;
         timer.go();
 
         if (ind != std::string::npos) {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
         else {
             ind = opt.find("am");
@@ -201,10 +201,10 @@ _INTERNAL bool ccrOneHourTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
 
-        const time_ms_t duration_ms = timer.duration();
+        const clk::milliseconds duration_ms = timer.getDurationMs();
         total_duration_ms += duration_ms;
 
         ++lcnt;
@@ -223,12 +223,12 @@ _INTERNAL bool nullMoveTest() {
     Move32b move;
 
     FullInfoRecord tmpgame;
-    SearchLimits limits;
+    search::SearchLimits limits;
     limits.depth = SearchDepth;
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### NULL MOVE TESTING #######\n" _COLOR_RESET;
 
-    Search search{TranspositionTable(DefaultTTSizeMb)};
+    search::Search search{TranspositionTable(DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;
@@ -237,7 +237,7 @@ _INTERNAL bool nullMoveTest() {
         return last;
     };
 
-    Timer timer;
+    clk::Timer timer;
     timer.go();
 
     int lcnt = 0;
@@ -257,7 +257,7 @@ _INTERNAL bool nullMoveTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(equal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
         else {
             ind = opt.find("am");
@@ -265,13 +265,13 @@ _INTERNAL bool nullMoveTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(nonequal, move, Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
 
         ++lcnt;
     }
 
-    time_ms_t duration_ms = timer.duration();
+    clk::milliseconds duration_ms = timer.getDurationMs();
 
     std::cout << "TEST DURATION: " << duration_ms << "ms" << std::endl;
     return true;

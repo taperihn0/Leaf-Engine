@@ -345,9 +345,11 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 
     for (uint id = 1; id <= packet.thread_count; id++) {
         PerThreadData per_thread_data;
+        std::error_code err;
 
-        if (!std::filesystem::create_directories(packet.selfplay_filename)) {
-            labelLog(std::cout, LOG_INFO, "Failed to create directory: " + packet.selfplay_filename.string());
+        if (std::filesystem::create_directories(packet.selfplay_filename, err), err) {
+            labelLog(std::cout, LOG_INFO, "Failed to create directory: " + packet.selfplay_filename.string() +
+                                          ", reason: " + err.message());
             return;
         }
 

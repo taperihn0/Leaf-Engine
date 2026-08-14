@@ -29,24 +29,99 @@
 #define _TT_PREFETCH_QSEARCH
 #define _CUCKOO_DRAW
 
-_FORCEINLINE bool isTimeLimit(const SearchLimits& limits) {
-    return limits.search_time;
+namespace search {
+
+/* Wrapping SearchLimits onto own, private class used in Search with some utilities
+*/
+class SearchLimitsWrapper final : public SearchLimits {
+public:
+    SearchLimitsWrapper() = default;
+    explicit SearchLimitsWrapper(const SearchLimits& base);
+
+    void onNewSearch(const Position& pos);
+    _NODISCARD _FORCEINLINE bool isTimeLeft() const;
+    _NODISCARD const clk::Timer& getTimer() const;
+    _NODISCARD _FORCEINLINE clk::milliseconds getSearchTime() const;
+private:
+    clk::milliseconds _search_time;
+    clk::Timer        _timer;
+    enumColor         _side2move;
+};
+
+/* Wrapping SearchResults onto own, private class used in Search with another utilities
+*/
+class SearchResultsWrapper final : public SearchResults {
+public:
+    SearchResultsWrapper() = default;
+    explicit SearchResultsWrapper(const SearchResults& base);
+
+    // `anyNodesLeft` compares current any-node count (both search and quiescent nodes)
+    // and returns whether given number is below any-node threshold.
+    _NODISCARD _FORCEINLINE bool anyNodesLeft(const SearchLimitsWrapper& limits);
+
+    // `anyQuiesceNodesLeft` compares current quiescent nodes count
+    // and returns whether given number is below quiescent-node threshold.
+    _NODISCARD _FORCEINLINE bool anyQuiesceNodesLeft(const SearchLimitsWrapper& limits);
+};
+
+class TreeStack {
+public:
+    TreeStack();
+
+    TreeStack(const TreeStack&)            = delete;
+    TreeStack(TreeStack&&)                 = delete;
+    TreeStack& operator=(const TreeStack&) = delete;
+    TreeStack& operator=(TreeStack&&)      = delete;
+
+    void clear(mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> history_buffer);
+
+    NodeInfo*       getRootNode();
+    const NodeInfo* getRootNode() const;
+    NodeInfo*       getPreRootNode();
+    const NodeInfo* getPreRootNode() const;
+    const NodeInfo* getNode(unsigned ply) const;
+
+    AccumulatorCluster* getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
+                                                   NodeInfo* const preroot);
+
+    void updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
+                                 AccumulatorCluster* const accum_cluster);
+private:
+    static constexpr size_t _Count = MaxSelDepth;
+    mem::AlignedUniquePtr<NodeInfo> _stack;
+};
+
+SearchLimitsWrapper::SearchLimitsWrapper(const SearchLimits& base) 
+    : SearchLimits(base) {}
+
+void SearchLimitsWrapper::onNewSearch(const Position& pos) {
+    _side2move = pos.getTurn();
+    _timer.reset();
+    _timer.go();
+    _search_time = clk::TimeManager::searchTimeMs(pos, *this);
 }
 
-_FORCEINLINE bool isTimeLeft(const SearchLimits& limits) {
-    return !limits.search_time or limits.timer.duration() < limits.search_time;
+_NODISCARD _FORCEINLINE bool SearchLimitsWrapper::isTimeLeft() const {
+    return !isTimeLimit(_side2move) or _timer.getDurationMs() < _search_time;
 }
 
-// anyNodesLeft compares current any-node count (both search and quiescent nodes)
-// and returns whether given number is below any-node threshold.
-_FORCEINLINE bool anyNodesLeft(const SearchLimits& limits, ull nodes_so_far) {
-    return !limits.nodes or nodes_so_far < limits.nodes;
+_NODISCARD const clk::Timer& SearchLimitsWrapper::getTimer() const {
+    return _timer;
 }
 
-// anyQuiesceNodesLeft compares current quiescent nodes count
-// and returns whether given number is below quiescent-node threshold.
-_FORCEINLINE bool anyQuiesceNodesLeft(const SearchLimits& limits, ull qnodes_so_far) {
-    return !limits.qnodes or qnodes_so_far < limits.qnodes;
+_NODISCARD _FORCEINLINE clk::milliseconds SearchLimitsWrapper::getSearchTime() const {
+    return _search_time;
+}
+
+SearchResultsWrapper::SearchResultsWrapper(const SearchResults& base)
+    : SearchResults(base) {}
+
+_NODISCARD _FORCEINLINE bool SearchResultsWrapper::anyNodesLeft(const SearchLimitsWrapper& limits) {
+    return !limits.nodes or nodes_cnt < limits.nodes;
+}
+
+_NODISCARD _FORCEINLINE bool SearchResultsWrapper::anyQuiesceNodesLeft(const SearchLimitsWrapper& limits) {
+    return !limits.qnodes or qnodes_cnt < limits.qnodes;
 }
 
 void SearchResults::clear() {
@@ -55,24 +130,25 @@ void SearchResults::clear() {
 
 void SearchResults::printBestMove() {
     ASSERT(!best_move.isNull(), "Null bestmove");
+
     std::cout << "bestmove ";
     best_move.print();
     std::cout << '\n';
 }
 
-void SearchResults::print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::print(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                           uint16_t pv_len, 
                           const TranspositionTable& tt) 
 {
     const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
-    std::cout << 
-           "info depth " << depth             << ' '
+    std::cout  
+        << "info depth " << depth            << ' '
         << "seldepth "   << seldepth         << ' '
         << "score "      << score_cp.toStr() << ' '
-        << "nodes "      << nodes_cnt         << ' '
+        << "nodes "      << nodes_cnt        << ' '
         << "time "       << duration         << ' '
-        << "nps "        << nps                 << ' '
+        << "nps "        << nps              << ' '
         << "hashfull "   << tt.getHashfull() << ' '
         << "pv ";
 
@@ -97,7 +173,7 @@ void SearchResults::printShort() {
 #endif
 }
 
-void SearchResults::printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::printPV(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                             uint16_t pv_len) 
 {
     for (uint16_t i = 0; i < pv_len; i++) {
@@ -203,6 +279,8 @@ void SearchResults::printSearchStats() {
 }
 #endif
 
+NodeInfo::NodeInfo() { clear(); }
+
 void NodeInfo::clear() {
     side2move        = WHITE;
     state            = {};
@@ -223,31 +301,31 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    PVInfo* p = dataOfArray1d(pv_line);
+    PvInfo* p = dataOfArray1d(pv_line);
+    mem::fill(p, p + countOfArray1d(pv_line), PvInfo());
 
-    mem::fill(p, p + countOfArray1d(pv_line), 
-              PVInfo{ Move16b::Null, Score::Undef });
     pv_line_len = 0;
 }
 
-void Search::clearHashTT() {
+void Search::clearHash() {
     _tt.clear();
     _tt.clearHashfull();
 }
 
-void Search::resizeHashTT(size_t tt_size_mb) {
+void Search::resizeHash(size_t tt_size_mb) {
     if (tt_size_mb > 0 and 
-        tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) {
+        tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) 
+    {
         _tt.resize(tt_size_mb);
         _tt.clear();
         _tt.clearHashfull();
     }
 }
 
-void Search::registerNewGame() {
-    clearHashTT();
+void Search::onNewGame() {
+    clearHash();
     _history_buff->clearQuietsHistory();
-    _tree_stack.clear(_history_buff.get());
+    _tree_stack->clear(_history_buff);
 }
 
 TreeStack::TreeStack()
@@ -256,7 +334,7 @@ TreeStack::TreeStack()
     ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::clear(MoveOrderHistoryTables* history_buffer) {
+void TreeStack::clear(mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> history_buffer) {
     ASSERT_NOLOG(history_buffer);
 
     for (int i = 0; i < static_cast<int>(_Count); i++) {
@@ -289,10 +367,10 @@ _INLINE const NodeInfo* TreeStack::getPreRootNode() const {
     return _stack.get();
 }
 
-_INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
-                                                                        const NodeInfo* const preroot)
+AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
+                                                          NodeInfo* const preroot)
 {
-    for (const AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
+    for (AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
          prev_accum_cluster != &preroot->cluster;
          prev_accum_cluster = prev_accum_cluster->prev_cluster) {
 
@@ -303,12 +381,12 @@ _INLINE const AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(const Ac
     return &preroot->cluster;
 }
 
-_INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
-                                                AccumulatorCluster* const accum_cluster)
+void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
+                                        AccumulatorCluster* const accum_cluster)
 {
-    for (AccumulatorCluster* prev_cluster = const_cast<AccumulatorCluster*>(clean_accum_cluster->next_cluster);
-        prev_cluster != accum_cluster;
-        prev_cluster = prev_cluster->next_cluster) {
+    for (AccumulatorCluster* prev_cluster = clean_accum_cluster->next_cluster;
+         prev_cluster != accum_cluster;
+         prev_cluster = prev_cluster->next_cluster) {
 
         array2d<int, 2, 2> added_features_index;
         array2d<int, 2, 2> removed_features_index;
@@ -366,14 +444,17 @@ _INLINE void TreeStack::updateDirtyAccumulators(const AccumulatorCluster* const 
 
 Search::Search(TranspositionTable&& tt) 
     : _tt(std::move(tt))
-    , _history_buff(mem::makeAlignedUnique<MoveOrderHistoryTables>(1, CachelineSize))
+    , _tree_stack(std::make_unique<TreeStack>())
+    , _history_buff(mem::makeAlignedShared<mvorder::MoveOrder::HistoryTables>(1, CachelineSize))
 {
     ASSERT(_history_buff != nullptr, "Failed to allocate memory");
-    registerNewGame();
+    onNewGame();
     _cuckoo_tables.init();
 }
 
-template <Search::enumInfoLevel InfoLevel>
+Search::~Search() = default;
+
+template <enumInfoLevel InfoLevel>
 Move32b Search::findBestMove(Position& pos, 
                              const FullInfoRecord& game, 
                              SearchLimits limits) 
@@ -383,40 +464,41 @@ Move32b Search::findBestMove(Position& pos,
     return bm;
 }
 
-template <Search::enumInfoLevel InfoLevel>
+template <enumInfoLevel InfoLevel>
 Move32b Search::findBestMove(Position& pos, 
                              const FullInfoRecord& game, 
                              SearchLimits limits,
-                             SearchResults& search_results) 
+                             SearchResults& results) 
 {
     ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
-    ASSERT(search_results.best_move.isNull(), 
-           "Best move should be null before doing the search");
 
     _tt.newGeneration();
     
-    limits.timer.go();
-    limits.search_time = TimeMan::searchTime(pos, limits);
+    SearchLimitsWrapper search_limits(limits);
+    search_limits.onNewSearch(pos);
 
-    const Move32b bm = goIterativeDeepening(pos, game, limits, search_results, InfoLevel);
+    SearchResultsWrapper search_results(results);
+    search_results.best_move = Move32b::Null;
+
+    const Move32b bm = goIterativeDeepening(pos, game, search_limits, search_results, InfoLevel);
     return bm;
 }
 
 Move32b Search::_findBestMove_unittest(Search& search, 
-                                          Position& pos, 
-                                          const FullInfoRecord& game, 
-                                          SearchLimits limits) 
+                                       Position& pos, 
+                                       const FullInfoRecord& game, 
+                                       SearchLimits limits) 
 {
-    return search.findBestMove<Search::SEARCH_SHORT_INFO>(pos, game, limits);
+    return search.findBestMove<SEARCH_SHORT_INFO>(pos, game, limits);
 }
 
 Move32b Search::goIterativeDeepening(Position& pos,    
                                      const FullInfoRecord& game, 
-                                     SearchLimits& limits,
-                                     SearchResults& search_results,
+                                     const SearchLimitsWrapper& limits,
+                                     SearchResultsWrapper& search_results,
                                      enumInfoLevel info_lv) 
 {    
-    NodeInfo* preroot = _tree_stack.getPreRootNode();
+    NodeInfo* preroot = _tree_stack->getPreRootNode();
     preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
     preroot->cluster.accum_cache.markClean();
     preroot->move = preroot->best_move = game.getMoveCount() > 0 ? game.getCurrentMove() 
@@ -424,7 +506,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     preroot->side2move = !pos.getTurn();
     preroot->mate_thread = false;
 
-    NodeInfo* root = _tree_stack.getRootNode();
+    NodeInfo* root = _tree_stack->getRootNode();
 
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
@@ -432,10 +514,11 @@ Move32b Search::goIterativeDeepening(Position& pos,
     _contempt = 0;
     bool unstable = false;
 
+    root->side2move = pos.getTurn();
     root->best_move = Move32b::Null;
     root->best_score = Score::Undef;
 
-    const Score eval = evaluate<PV_NODE>(pos, _tree_stack, 
+    const Score eval = evaluate<PV_NODE>(pos, _tree_stack.get(), 
                                          root, preroot, 
                                          pos.getTurn(), search_results);
     root->eval = eval;
@@ -449,7 +532,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         *  to setup a rational breaking system when we got too little time
         *  for deeper search.
         */
-        if (isTimeLimit(limits) and d - 2 > 0 and 
+        if (limits.isTimeLimit(root->side2move) and d - 2 > 0 and 
             search_results.nodes_per_depth[d - 2] > 0) 
         {
             double ef_branch_factor = 1. * search_results.nodes_per_depth[d - 1] / 
@@ -469,17 +552,17 @@ Move32b Search::goIterativeDeepening(Position& pos,
                                           MinTimeBranchFactor, 
                                           MaxTimeBranchFactor); 
 
-            const time_ms_t approx_search_time = static_cast<time_ms_t>(search_results.time_per_depth[d - 1] * 
+            const clk::milliseconds approx_search_time = static_cast<clk::milliseconds>(search_results.time_per_depth[d - 1] * 
                                                                         ef_branch_factor);
 
             const float time_margin_mult = unstable ? (UnstableMultMargin / 4.f) : 1.f;
 
-            if (time_margin_mult * limits.search_time < 4. * approx_search_time / NextDepthTimeRed)
+            if (time_margin_mult * limits.getSearchTime() < 4. * approx_search_time / NextDepthTimeRed)
                 break;
         }
 
         const ull       prev_total_node_cnt = d > 1 ? search_results.nodes_cnt : 0;
-        const time_ms_t prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
+        const clk::milliseconds prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
         const Score     prev_best_score     = d > 1 ? root->best_score         : Score::Undef;
         const Move32b   prev_best_move      = d > 1 ? root->best_move          : Move32b::Null;
 
@@ -590,10 +673,11 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
 bool Search::goSearch(Position& pos, 
                       const FullInfoRecord& game, 
-                      SearchLimits& limits, SearchResults& results,
+                      const SearchLimitsWrapper& limits, 
+                      SearchResultsWrapper& results,
                       Score alpha, Score beta) 
 {
-    NodeInfo* root = _tree_stack.getRootNode();
+    NodeInfo* root = _tree_stack->getRootNode();
 
     const Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
                                                              alpha, beta, 
@@ -605,19 +689,20 @@ bool Search::goSearch(Position& pos,
     /* Terminate on resource exhaustion or
     *  invalid root score.
     */
-    if (!isTimeLeft(limits) or 
-        !anyNodesLeft(limits, results.nodes_cnt) or 
-        !anyQuiesceNodesLeft(limits, results.qnodes_cnt) or
+    if (!limits.isTimeLeft() or 
+        !results.anyNodesLeft(limits) or 
+        !results.anyQuiesceNodesLeft(limits) or
         !root_score.isValid())
         return false;
 
-    results.duration = limits.timer.duration();
+    results.duration = limits.getTimer().getDurationMs();
     return true;
 }
 
-template <Search::enumNode NmNodeType, bool NullMove, bool Root>
+template <enumNode NmNodeType, bool NullMove, bool Root>
 Score Search::nmSearch(Position& pos, 
-                       SearchLimits& limits, SearchResults& results, 
+                       const SearchLimitsWrapper& limits, 
+                       SearchResultsWrapper& results, 
                        const FullInfoRecord& game, 
                        NodeInfo* node,
                        Score alpha, Score beta, 
@@ -630,12 +715,12 @@ Score Search::nmSearch(Position& pos,
     if constexpr (Root) assert(!ply);
     else                assert(ply > 0);
 
-    NodeInfo* const preroot = _tree_stack.getPreRootNode();
+    NodeInfo* const preroot = _tree_stack->getPreRootNode();
     node->side2move = pos.getTurn();
     node->pv_line_len = 0;
 
-    static constexpr OrderType OrderPolicy = Root ? ONCE_GEN_LEGAL : STAGED;
-    static constexpr bool      IsPv        = NmNodeType & PV_NODE;
+    static constexpr mvorder::OrderType OrderPolicy = Root ? mvorder::ONCE_GEN_LEGAL : mvorder::STAGED;
+    static constexpr bool               IsPv        = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -672,12 +757,12 @@ Score Search::nmSearch(Position& pos,
 #endif // _CUCKOO_DRAW
     
     else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and 
-             !isTimeLeft(limits)) {
+             !limits.isTimeLeft()) {
         return -Score::Undef;
     }
     
-    else if (!Root and (!anyNodesLeft(limits, results.nodes_cnt) or
-                        !anyQuiesceNodesLeft(limits, results.qnodes_cnt))) {
+    else if (!Root and (!results.anyNodesLeft(limits) or
+                        !results.anyQuiesceNodesLeft(limits))) {
         return -Score::Undef;
     }
 
@@ -764,8 +849,7 @@ Score Search::nmSearch(Position& pos,
                     _tt.write(hash,
                               EntryMaxDepth, ply,
                               TTBound::EXACT,
-                              tb_score, tt_entry.move, tt_entry.eval,
-                              results);
+                              tb_score, tt_entry.move, tt_entry.eval);
 
                     return tb_score;
                 }
@@ -804,7 +888,7 @@ Score Search::nmSearch(Position& pos,
     node->mate_thread = false;
 
     if (!node->eval.isValid()) {
-        node->eval = evaluate<NmNodeType>(pos, _tree_stack, 
+        node->eval = evaluate<NmNodeType>(pos, _tree_stack.get(), 
                                           node, preroot, 
                                           node->side2move, results);
     }
@@ -1038,7 +1122,7 @@ Score Search::nmSearch(Position& pos,
         /* Singular Move -
         *  return obvious move that is the only one in root
         */
-        if constexpr (Root and OrderPolicy == ONCE_GEN_LEGAL) {
+        if constexpr (Root and OrderPolicy == mvorder::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
                 node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
                 results.score_cp = Score::Undef;
@@ -1085,7 +1169,7 @@ Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    (move_score - MaxAbsQuietsHistory) * FutilityScoreMult / 8192;
+                                                    (move_score - mvorder::MaxAbsQuietsHistory) * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1197,7 +1281,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
                 if (move_score != Score::Undef) 
-                    move_reduction += MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
+                    move_reduction += mvorder::MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     QuietExtensionReduction / FixedPointMult;
@@ -1225,7 +1309,7 @@ Score Search::nmSearch(Position& pos,
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
                 if (move_score != Score::Undef and !node->move.isPromotion())
-                    move_reduction += MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
+                    move_reduction += mvorder::MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     CaptureExtensionReduction / FixedPointMult;
@@ -1302,9 +1386,9 @@ Score Search::nmSearch(Position& pos,
 
         pos.unmake(node->move, node->state);
 
-        if (isTimeLeft(limits) and 
-            anyNodesLeft(limits, results.nodes_cnt) and
-            anyQuiesceNodesLeft(limits, results.qnodes_cnt) and
+        if (limits.isTimeLeft() and 
+            results.anyNodesLeft(limits) and
+            results.anyQuiesceNodesLeft(limits) and
             node->move.isLegalMoved() and 
             node->score > node->best_score) 
         {
@@ -1343,21 +1427,21 @@ Score Search::nmSearch(Position& pos,
 
                     mem::memCopy(node->pv_line.data() + 1, 
                                  child_node->pv_line.data(), 
-                                 child_node->pv_line_len * sizeof(PVInfo));
+                                 child_node->pv_line_len * sizeof(PvInfo));
 
                     node->pv_line_len = child_node->pv_line_len + 1;
                 }
             }
         }
-        else if (!isTimeLeft(limits) or
-                 !anyNodesLeft(limits, results.nodes_cnt) or
-                 !anyQuiesceNodesLeft(limits, results.qnodes_cnt))
+        else if (!limits.isTimeLeft() or
+                 !results.anyNodesLeft(limits) or
+                 !results.anyQuiesceNodesLeft(limits))
         break;
     }
 
-    if (!isTimeLeft(limits) or
-        !anyNodesLeft(limits, results.nodes_cnt) or
-        !anyQuiesceNodesLeft(limits, results.qnodes_cnt)) 
+    if (!limits.isTimeLeft() or
+        !results.anyNodesLeft(limits) or
+        !results.anyQuiesceNodesLeft(limits)) 
     {
         if constexpr (Root) {
             if (node->best_move.isNull()) {
@@ -1383,8 +1467,7 @@ Score Search::nmSearch(Position& pos,
         _tt.write(hash, 
                   depth, ply, 
                   node->bound, 
-                  node->best_score, bestmove16b, node->eval, 
-                  results);
+                  node->best_score, bestmove16b, node->eval);
     }
 
     if constexpr (!Root) {
@@ -1398,9 +1481,10 @@ Score Search::nmSearch(Position& pos,
     return node->best_score;
 }
 
-template <Search::enumNode QNodeType, bool Root>
+template <enumNode QNodeType, bool Root>
 Score Search::qSearch(Position& pos, 
-                      SearchLimits& limits, SearchResults& results, 
+                      const SearchLimitsWrapper& limits, 
+                      SearchResultsWrapper& results, 
                       NodeInfo* node, 
                       Score alpha, Score beta, 
                       int depth, int ply) 
@@ -1408,8 +1492,8 @@ Score Search::qSearch(Position& pos,
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    static constexpr OrderType QuiescentOrderPolicy = QUIESCENT;
-    static constexpr bool      IsPv = QNodeType & PV_NODE; 
+    static constexpr mvorder::OrderType QuiescentOrderPolicy = mvorder::QUIESCENT;
+    static constexpr bool               IsPv = QNodeType & PV_NODE; 
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1418,16 +1502,16 @@ Score Search::qSearch(Position& pos,
     if (isInsufficientMaterial(pos)) {
         return getDrawScore(node);
     }
-    else if ((results.nodes_cnt & CheckNodeCount) == 0 and !isTimeLeft(limits)) {
+    else if ((results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
         return -Score::Undef;
     }
     
-    const NodeInfo* const preroot = _tree_stack.getPreRootNode();
+    NodeInfo* const preroot = _tree_stack->getPreRootNode();
 
-    if (!anyNodesLeft(limits, results.nodes_cnt) or
-        !anyQuiesceNodesLeft(limits, results.qnodes_cnt) or
+    if (!results.anyNodesLeft(limits) or
+        !results.anyQuiesceNodesLeft(limits) or
         ply >= MaxSelDepth) {
-        return evaluate<QNodeType>(pos, _tree_stack, 
+        return evaluate<QNodeType>(pos, _tree_stack.get(), 
                                    node, preroot, 
                                    node->side2move, results);
     }
@@ -1460,16 +1544,16 @@ Score Search::qSearch(Position& pos,
 #endif // _TT_PROBE_QSEARCH
 
     results.nodes_cnt++;
-    results.seldepth = std::max(results.seldepth, static_cast<unsigned>(ply + 1));
+    results.seldepth = std::max(results.seldepth, ply + 1);
     results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-    node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack, 
+    node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack.get(), 
                                                                         node, preroot, 
                                                                         node->side2move, results)
                                                   : tt_entry.eval;
 #else 
-    node->eval = evaluate<QNodeType>(pos, _tree_stack, node, preroot, node->side2move, results);
+    node->eval = evaluate<QNodeType>(pos, _tree_stack.get(), node, preroot, node->side2move, results);
 #endif // _TT_PROBE_QSEARCH
 
     node->check = pos.isInCheck(!node->side2move);
@@ -1570,9 +1654,9 @@ Score Search::qSearch(Position& pos,
 
         pos.unmake(node->move, node->state);
 
-        if (isTimeLeft(limits) and 
-            anyNodesLeft(limits, results.nodes_cnt) and
-            anyQuiesceNodesLeft(limits, results.qnodes_cnt) and
+        if (limits.isTimeLeft() and 
+            results.anyNodesLeft(limits) and
+            results.anyQuiesceNodesLeft(limits) and
             node->move.isLegalMoved() and 
             node->score > alpha) 
         {
@@ -1596,9 +1680,9 @@ Score Search::qSearch(Position& pos,
             
             alpha = node->score;
         }
-        else if (!isTimeLeft(limits) or
-                 !anyNodesLeft(limits, results.nodes_cnt) or
-                 !anyQuiesceNodesLeft(limits, results.qnodes_cnt))
+        else if (!limits.isTimeLeft() or
+                 !results.anyNodesLeft(limits) or
+                 !results.anyQuiesceNodesLeft(limits))
         {
             return -Score::Undef;
         }
@@ -1648,19 +1732,19 @@ _FORCEINLINE bool Search::isTablebaseScore(Score score) const {
 }
 
 _FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) const {
-    const NodeInfo* const root = _tree_stack.getRootNode();
+    const NodeInfo* const root = _tree_stack->getRootNode();
     assert(_contempt != Score::Undef);
     return root->side2move == node->side2move ? score - _contempt
                                               : score;
 }
 
-template <Search::enumNode NodeType>
+template <enumNode NodeType>
 _INLINE Score Search::evaluate(const Position& pos,
-                               TreeStack& _tree_stack,
+                               TreeStack* _tree_stack,
                                NodeInfo* node,
-                               const NodeInfo* preroot,
+                               NodeInfo* preroot,
                                enumColor side2move, 
-                               SearchResults& results)
+                               SearchResultsWrapper& results)
 {
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1684,8 +1768,8 @@ _INLINE Score Search::evaluate(const Position& pos,
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
 
     if (prev_accum_cluster->accum_cache.isDirty()) {
-        const AccumulatorCluster* clean_accum_cluster = _tree_stack.getCleanAccumulatorCluster(curr_accum_cluster, preroot);
-        _tree_stack.updateDirtyAccumulators(clean_accum_cluster, curr_accum_cluster);
+        AccumulatorCluster* clean_accum_cluster = _tree_stack->getCleanAccumulatorCluster(curr_accum_cluster, preroot);
+        _tree_stack->updateDirtyAccumulators(clean_accum_cluster, curr_accum_cluster);
     }
 
     assert(prev_accum_cluster->accum_cache.isClean());
@@ -1748,9 +1832,9 @@ _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
 }
 
 void Search::refreshPVinTT(const Position& pos, 
-                           const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+                           const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                            uint16_t pv_len,
-                           SearchResults& results) 
+                           SearchResultsWrapper& results) 
 {
     if (results.depth <= 1)
         return;
@@ -1781,8 +1865,7 @@ void Search::refreshPVinTT(const Position& pos,
             _tt.write(key,
                       static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
                       TTBound::EXACT, 
-                      score, pv_move, Score::Undef, 
-                      results);
+                      score, pv_move, Score::Undef);
         }
         
         Move32b pv_unpack = unpackedMove(cpy_pos, pv_move);
@@ -1812,8 +1895,7 @@ void Search::refreshPVinTT(const Position& pos,
             _tt.write(key,
                       depth, 0,
                       TTBound::EXACT,
-                      score, root_best_move, Score::Undef,
-                      results);
+                      score, root_best_move, Score::Undef);
         }
     }
 
@@ -1838,7 +1920,7 @@ bool Search::isRepetitionCycle(const Position& pos,
                                const FullInfoRecord& game,
                                const NodeInfo* node,
                                int ply,
-                               SearchResults& results)
+                               SearchResultsWrapper& results)
 {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
     results.rep_call_cnt++;
@@ -1953,7 +2035,6 @@ bool Search::canRepetitionDraw(const Position& pos,
 }
 
 bool Search::isInsufficientMaterial(const Position& pos) {
-
     if (pos.getPawns() or pos.getQueens())
         return false;
 
@@ -1989,11 +2070,13 @@ bool Search::isInsufficientMaterial(const Position& pos) {
     return false;
 }
 
-template Move32b Search::findBestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::findBestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::findBestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::findBestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);
-template Move32b Search::findBestMove<Search::SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
-template Move32b Search::findBestMove<Search::SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
-template Move32b Search::findBestMove<Search::SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
-template Move32b Search::findBestMove<Search::SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits);
+template Move32b Search::findBestMove<SEARCH_FULL_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<SEARCH_SHORT_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+template Move32b Search::findBestMove<SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
+
+} // namespace search

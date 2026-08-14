@@ -68,10 +68,8 @@ def main():
             f.truncate(0)
 
         log_msg(f"Launching Session {session_num}...")
-
-        safe_session_dir = f"session{session_num}"
         
-        input_cmds = f"self_play {games_per_session} {thread_count} {safe_session_dir} nodes {nodes}\n"
+        input_cmds = f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
         if (syzygy_path != "<empty>"):
             input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
 

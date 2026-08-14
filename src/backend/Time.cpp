@@ -20,23 +20,39 @@
 #include "Search.hpp"
 #include "Position.hpp"
 
-timepoint_t Clock::timePoint() { 
-    return internal_clock_t::now();
+namespace clk {
+
+static const Clock ClockInstance = Clock::getInstance();
+
+_NODISCARD const Clock& Clock::getInstance() {
+    static Clock ClockInstance;
+    return ClockInstance;
 }
 
-time_ms_t Clock::getMilliseconds(timepoint_t stop, timepoint_t start) { 
+time_point Clock::getTimePoint() const { 
+    return backend_clock::now();
+}
+
+milliseconds Clock::getMilliseconds(time_point stop, time_point start) const { 
     return std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count(); 
 }
 
-void Timer::go() {
-    _start_tp = Clock::timePoint();
+void clk::Timer::go() {
+    _start_tp = ClockInstance.getTimePoint();
+    _run = true;
 }
 
-time_ms_t Timer::duration() const {
-    return Clock::getMilliseconds(Clock::timePoint(), _start_tp);
+void clk::Timer::reset() {
+    _run = false;
 }
 
-time_ms_t TimeMan::searchTime(const Position& pos, SearchLimits& limits) {
+milliseconds clk::Timer::getDurationMs() const {
+    return _run ? ClockInstance.getMilliseconds(ClockInstance.getTimePoint(), _start_tp) : 0_ms;
+}
+
+milliseconds TimeManager::searchTimeMs(const Position& pos, const search::SearchLimits& limits) {
     return pos.getTurn() == WHITE ? (limits.wtime / 20 + limits.winc / 2)
                                   : (limits.btime / 20 + limits.binc / 2);
 }
+
+} // namespace clk

@@ -30,48 +30,71 @@
 #include "Tablebase.hpp"
 #include "Tuning.hpp"
 
-struct SearchLimits {
-    int       depth       = 0;
-    time_ms_t wtime       = 0,
-              btime       = 0;
-    time_ms_t winc        = 0, 
-              binc        = 0,
-              search_time = 0;
-    ull       nodes       = 0;
-    ull       qnodes      = 0;
-    bool      analysis_mode = false;
-    Timer     timer;
+namespace search {
+
+/* Keeping our search limitations here.
+*/
+class SearchLimits {
+public:
+    SearchLimits() = default;
+
+    _NODISCARD _FORCEINLINE bool isTimeLimit(enumColor side) const { 
+        return side == WHITE ? wtime : btime;
+    }
+
+    int32_t           depth  = 0;
+    clk::milliseconds wtime  = 0,
+                      btime  = 0;
+    clk::milliseconds winc   = 0, 
+                      binc   = 0;
+    ull               nodes  = 0;
+    // `qnodes` is maximum bound of quiescent nodes in search.
+    // This is not implemented in UCI protocol.
+    ull               qnodes = 0;
+    // Toggle analysis mode (may help when Pv lines are short)
+    bool              analysis_mode = false;
 };
 
-class Search;
-struct PVInfo;
+struct PvInfo;
 
-struct SearchResults {
+/* Keeping search statistics and current data here.
+*/
+class SearchResults {
+public:
+    SearchResults() = default;
+
     void clear();
 
     void printBestMove();
-    void print(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+    void print(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                uint16_t pv_len, 
                const TranspositionTable& tt);
     void printShort();
-    void printPV(const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+    void printPV(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                  uint16_t pv_len);
 
-#if defined (LEAF_COLLECT_SEARCH_STATS)
+#if defined(LEAF_COLLECT_SEARCH_STATS)
     void printSearchStats();
 #endif
 
-    unsigned  depth             = 0,
-              seldepth          = 0;
-    Score     score_cp          = 0;
-    ull       nodes_cnt         = 0,
-              qnodes_cnt        = 0;
-    size_t    tt_entries        = 0;
-    Move32b   best_move         = Move32b::Null;
-    time_ms_t duration          = 0;
-    array1d<ull, MaxDepth + 1> nodes_per_depth = {};
-    array1d<time_ms_t, MaxDepth + 1> time_per_depth  = {};
+    // Basic search statistics
+    int32_t           depth      = 0,
+                      seldepth   = 0;
+    Score             score_cp   = 0;
+    // `nodes_cnt` - total nodes count in entire search tree
+    // with quiescent search
+    ull               nodes_cnt  = 0,
+    // `qnodes_cnt` - nodes count in quiescent search
+                      qnodes_cnt = 0;
+    size_t            tt_entries = 0;
+    Move32b           best_move  = Move32b::Null;
+    clk::milliseconds duration   = 0;
+    array1d<ull, MaxDepth + 1> 
+                      nodes_per_depth = {};
+    array1d<clk::milliseconds, MaxDepth + 1> 
+                      time_per_depth  = {};
 
+    // Extendend search statistics 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
     ull       pv_nodes_cnt      = 0,
               npv_nodes_cnt     = 0,
@@ -108,73 +131,60 @@ struct SearchResults {
     ull       syzygy_tb_probe_cnt = 0;
     ull       syzygy_tb_cuts      = 0;
 
-    array1d<ull, MaxNodeMoves>   move_cut_cnt = {};
-    array1d<ull, MaxNodeMoves>   move_reduced_cnt = {};
-    array1d<ull, MaxNodeMoves>   move_reduced_fail_high_cnt = {};
-    array1d<float, MaxNodeMoves> move_reduction_sum = {};
+    array1d<ull, MaxNodeMoves>   
+              move_cut_cnt = {};
+    array1d<ull, MaxNodeMoves>   
+              move_reduced_cnt = {};
+    array1d<ull, MaxNodeMoves>   
+              move_reduced_fail_high_cnt = {};
+    array1d<float, MaxNodeMoves> 
+              move_reduction_sum = {};
 #endif
 };
 
+/* Accumulator chain inside tree stack of nodes
+*/
 struct AccumulatorCluster {
     nn::AccumulatorCache accum_cache;
     AccumulatorCluster*  prev_cluster;
     AccumulatorCluster*  next_cluster;
 };
 
-struct PVInfo {    
-    Move16b best_move;
-    Score   score;
+struct PvInfo {    
+    Move16b best_move = Move16b::Null;
+    Score   score = Score::Undef;
 };
 
-struct NodeInfo {
+/* We store crucial info about current node
+*  in NodeInfo class. We accumulate nodes of branch in 
+*  search in stack.
+*/
+class NodeInfo {
+public:
+    NodeInfo();
+
     void clear();
 
-    enumColor                    side2move;
-    MoveOrder                    move_picker;
-    Position::ReversibleState    state;
-    Move32b                      move;
-    Move32b                      best_move;
-    Score                        score;
-    Score                        eval;
-    int32_t                      improving;
-    bool                         can_move;
-    Score                        best_score;
-    bool                         check;
-    uint8_t                      moves_searched;
-    uint8_t                      move_index;
-    TTBound                      bound;
-    AccumulatorCluster           cluster;
-    array1d<PVInfo, MaxSelDepth> pv_line;
-    uint16_t                     pv_line_len;
-    bool                         is_cut;
-    bool                         mate_thread;
-};
-
-class TreeStack {
-public:
-    TreeStack();
-
-    TreeStack(const TreeStack&)           = delete;
-    TreeStack(TreeStack&&)                = delete;
-    TreeStack operator=(const TreeStack&) = delete;
-    TreeStack operator=(TreeStack&&)      = delete;
-
-    void clear(MoveOrderHistoryTables* history_buffer);
-
-    NodeInfo* getRootNode();
-    const NodeInfo* getRootNode() const;
-    NodeInfo* getPreRootNode();
-    const NodeInfo* getPreRootNode() const;
-    const NodeInfo* getNode(unsigned ply) const;
-
-    const AccumulatorCluster* getCleanAccumulatorCluster(const AccumulatorCluster* const accum_cluster,
-                                                         const NodeInfo* const preroot);
-
-    void updateDirtyAccumulators(const AccumulatorCluster* const clean_accum_cluster,
-                                 AccumulatorCluster* const accum_cluster);
-private:
-    static constexpr size_t _Count = MaxSelDepth;
-    mem::AlignedUniquePtr<NodeInfo> _stack;
+    enumColor                 side2move;
+    mvorder::MoveOrder        move_picker;
+    Position::ReversibleState state;
+    Move32b                   move;
+    Move32b                   best_move;
+    Score                     score;
+    Score                     eval;
+    int32_t                   improving;
+    bool                      can_move;
+    Score                     best_score;
+    bool                      check;
+    uint8_t                   moves_searched;
+    uint8_t                   move_index;
+    TTBound                   bound;
+    AccumulatorCluster        cluster;
+    array1d<PvInfo, MaxSelDepth> 
+                              pv_line;
+    uint16_t                  pv_line_len;
+    bool                      is_cut;
+    bool                      mate_thread;
 };
 
 /*
@@ -289,32 +299,35 @@ inline constexpr int32_t CaptureTotalReductionRate = 256;
 inline constexpr int32_t QuietTotalReductionRate = 256;
 inline constexpr int32_t TablebaseWinScore = 31000;
 
+class TreeStack;
+class SearchLimitsWrapper;
+class SearchResultsWrapper;
+
+enum enumNode : int8_t {
+    PV_NODE             = 1,
+    NON_PV_NODE         = 2,
+    QUIESCE_NODE        = 4,
+    QUIESCE_PV_NODE     = QUIESCE_NODE | PV_NODE,
+    QUIESCE_NON_PV_NODE = QUIESCE_NODE | NON_PV_NODE,
+};
+
+enum enumInfoLevel : int8_t {
+    SEARCH_FULL_INFO    = 0,
+    SEARCH_SHORT_INFO   = 1,
+    SEARCH_ONLY_BM_INFO = 2,
+    SEARCH_NO_INFO      = 3,
+};
+
 class Search {
 public:
-    friend struct SearchResults;
-
-    enum enumNode : int8_t {
-        PV_NODE             = 1,
-        NON_PV_NODE         = 2,
-        QUIESCE_NODE        = 4,
-        QUIESCE_PV_NODE     = QUIESCE_NODE | PV_NODE,
-        QUIESCE_NON_PV_NODE = QUIESCE_NODE | NON_PV_NODE,
-    };
-
-    enum enumInfoLevel : int8_t {
-        SEARCH_FULL_INFO    = 0,
-        SEARCH_SHORT_INFO   = 1,
-        SEARCH_ONLY_BM_INFO = 2,
-        SEARCH_NO_INFO      = 3,
-    };
-
-    Search() = default;
-    Search(TranspositionTable&& tt);
-
-    Search(Search&&)             = delete;
-    Search(Search&)              = delete;
-    Search operator=(Search&)    = delete;
-    Search operator=(Search&& t) = delete;
+    explicit Search(TranspositionTable&& tt);
+    ~Search();
+    
+    Search()                      = delete;
+    Search(Search&&)              = delete;
+    Search(Search&)               = delete;
+    Search& operator=(Search&)    = delete;
+    Search& operator=(Search&& t) = delete;
 
     template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
     _NODISCARD Move32b findBestMove(Position& pos, 
@@ -325,39 +338,42 @@ public:
     _NODISCARD Move32b findBestMove(Position& pos, 
                                     const FullInfoRecord& game, 
                                     SearchLimits limits,
-                                    SearchResults& search_results);
+                                    SearchResults& results);
 
     static Move32b _findBestMove_unittest(Search& search, 
                                           Position& pos, 
                                           const FullInfoRecord& game, 
                                           SearchLimits limits);
     
-    void clearHashTT();
-    void resizeHashTT(size_t tt_size_mb);
-    void registerNewGame();
+    void clearHash();
+    void resizeHash(size_t tt_size_mb);
+    void onNewGame();
 private:
     Move32b goIterativeDeepening(Position& pos, 
                                  const FullInfoRecord& game, 
-                                 SearchLimits& limits,
-                                 SearchResults& search_results,
+                                 const SearchLimitsWrapper& limits,
+                                 SearchResultsWrapper& search_results,
                                  enumInfoLevel info_lv);
 
     bool goSearch(Position& pos, 
                   const FullInfoRecord& game, 
-                  SearchLimits& limits, SearchResults& results,
+                  const SearchLimitsWrapper& limits, 
+                  SearchResultsWrapper& results,
                   Score alpha, Score beta);
 
     template <enumNode NmNodeType, bool NullMove, bool Root = false>
     Score nmSearch(Position& pos, 
-                   SearchLimits& limits, SearchResults& results, 
+                   const SearchLimitsWrapper& limits, 
+                   SearchResultsWrapper& results, 
                    const FullInfoRecord& game, 
                    NodeInfo* node,
                    Score alpha, Score beta, 
                    int depth, int ply);
 
-    template <Search::enumNode QNodeType, bool Root = false>
+    template <enumNode QNodeType, bool Root = false>
     Score qSearch(Position& pos, 
-                  SearchLimits& limits, SearchResults& results, 
+                  const SearchLimitsWrapper& limits, 
+                  SearchResultsWrapper& results, 
                   NodeInfo* node, 
                   Score alpha, Score beta, 
                   int depth, int ply);
@@ -372,11 +388,11 @@ private:
 
     template <enumNode NodeType>
     Score evaluate(const Position& pos,
-                   TreeStack& tree_stack,
+                   TreeStack* tree_stack,
                    NodeInfo* node,
-                   const NodeInfo* preroot, 
+                   NodeInfo* preroot, 
                    enumColor side2move, 
-                   SearchResults& results);
+                   SearchResultsWrapper& results);
 
     Score correctedEvalScore(Score eval, Score score);
 
@@ -386,16 +402,16 @@ private:
     int getNullVerifyDepth(int nm_depth);
 
     void refreshPVinTT(const Position& pos, 
-                       const array1d<PVInfo, MaxSelDepth>& root_pv_line, 
+                       const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                        uint16_t pv_len,
-                       SearchResults& results);
+                       SearchResultsWrapper& results);
 
     template <bool IsPV>
     bool isRepetitionCycle(const Position& pos, 
                            const FullInfoRecord& game, 
                            const NodeInfo* node, 
                            int ply,
-                           SearchResults& results);
+                           SearchResultsWrapper& results);
 
     bool canRepetitionDraw(const Position& pos, 
                            const NodeInfo* node, 
@@ -403,19 +419,21 @@ private:
 
     bool isInsufficientMaterial(const Position& pos);
 
-    TreeStack          _tree_stack;
-    CuckooTables       _cuckoo_tables;
-    TranspositionTable _tt;
+    TranspositionTable         _tt;
+    std::unique_ptr<TreeStack> _tree_stack;
+    CuckooTables               _cuckoo_tables;
 
     /* Each Search instance should have own history buffer with tables 
     *  for very MoveOrder in TreeStack.
     *  Also, Search class in responsible for allocation and deallocation.
     */
-    mem::AlignedUniquePtr<MoveOrderHistoryTables> 
+    mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> 
                  _history_buff;
     Score::int_t _contempt = Score::Undef;
 };
 
-_INLINE constexpr Search::enumNode operator|(Search::enumNode node0, Search::enumNode node1) {
-    return static_cast<Search::enumNode>(static_cast<int>(node0) | static_cast<int>(node1));
+constexpr enumNode operator|(enumNode node0, enumNode node1) {
+    return static_cast<enumNode>(static_cast<int>(node0) | static_cast<int>(node1));
 }
+
+} // namespace search

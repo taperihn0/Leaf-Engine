@@ -65,10 +65,8 @@ void TranspositionTable::write(uint64_t node_key64,
                                TTBound node_bound, 
                                Score node_score, 
                                Move16b node_move, 
-                               Score node_eval,
-                               SearchResults& results) 
+                               Score node_eval) 
 {
-    _declUnused(results);
     _declUnused(node_ply); // unused for now
 
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);

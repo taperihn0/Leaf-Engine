@@ -109,7 +109,8 @@ struct FeatureData {
 };
 
 struct AccumulatorCache {
-    _INLINE AccumulatorCache() = default;
+    AccumulatorCache() = default;
+    
     _NODISCARD _INLINE bool isDirty() const { return dirty;  }
     _NODISCARD _INLINE bool isClean() const { return !dirty; }
     _INLINE void markClean() { dirty = false; }

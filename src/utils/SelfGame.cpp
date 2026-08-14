@@ -61,7 +61,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
         }
     }
 
-    Timer timer;
+    clk::Timer timer;
     SearchLimits limits = packet.limits;
 
     const bool time_constraint = (limits.wtime != 0 and limits.btime != 0);
@@ -131,7 +131,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
             break;   
         }
 
-        const time_ms_t think_time = timer.duration();
+        const clk::milliseconds think_time = timer.getDurationMs();
 
         if (packet.train_data_spec != nullptr) {
             packet.train_data_spec->positions_buf->push_back(pos);
@@ -214,7 +214,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
 }
 
 template <bool EnableLog>
-Move32b SelfGame::getPlayerMove(SearchLimits limits,
+Move32b SelfGame::getPlayerMove(search::SearchLimits limits,
                                 Position& pos,
                                 EngineProcess& player, 
                                 Score& score,

@@ -31,8 +31,8 @@ static constexpr size_t  EntryKeySize     = 18;
 static constexpr uint8_t EntryMaxDepth    = 64;
 
 enum class TTBound : uint8_t {
-    NONE        = 0,
-    EXACT         = 1,
+    NONE       = 0,
+    EXACT      = 1,
     UPPERBOUND = 2,
     LOWERBOUND = 3,
     MAX_BOUND  = 3
@@ -97,8 +97,7 @@ public:
                TTBound node_bound, 
                Score node_score, 
                Move16b node_move, 
-               Score node_eval,
-               SearchResults& results);
+               Score node_eval);
 
     bool probe(TTEntry& out_entry,
                uint64_t key, 

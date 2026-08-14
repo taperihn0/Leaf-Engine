@@ -20,17 +20,25 @@
 #include "Position.hpp"
 #include "Search.hpp"
 
-MoveOrder::MoveOrder(MoveOrderHistoryTables* history_tables) 
+namespace mvorder {
+
+MoveOrder::HistoryTables::HistoryTables() { clearQuietsHistory(); }
+
+void MoveOrder::HistoryTables::clearQuietsHistory() {
+    mem::memSet(dataOfArray3d(_quiets_history), 0, sizeof(_quiets_history));
+}
+    
+MoveOrder::MoveOrder(mem::AlignedSharedPtr<HistoryTables> history_tables) 
     : _tables(history_tables) {}
 
 /* 
-*    MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
+*   MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
 *   Both generates appropiate moves on fly, during move picking as stage is 
-*    moving from really promising moves to less interesting ones.
+*   moving from really promising moves to less interesting ones.
 */
 
 template <OrderType Type, bool Root>
-bool MoveOrder::nextMove(const NodeInfo* node,
+bool MoveOrder::nextMove(const search::NodeInfo* node,
                          Position& pos, 
                          Move32b& next_move,
                          int16_t& move_score) 
@@ -92,7 +100,7 @@ bool MoveOrder::nextMove(const NodeInfo* node,
             uint64_t parent_hash = ZHash::Undef;
 
             if constexpr (!Root) {
-                const NodeInfo* const parent_node = node - 1;
+                const search::NodeInfo* const parent_node = node - 1;
                 parent_hash = parent_node->state.hash_key;
             }
 
@@ -310,6 +318,8 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
     return false;
 }
 
-template bool MoveOrder::nextMove<STAGED, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<QUIESCENT, false>(const NodeInfo*, Position&, Move32b&, int16_t&);
-template bool MoveOrder::nextMove<ONCE_GEN_LEGAL, true>(const NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<STAGED, false>(const search::NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<QUIESCENT, false>(const search::NodeInfo*, Position&, Move32b&, int16_t&);
+template bool MoveOrder::nextMove<ONCE_GEN_LEGAL, true>(const search::NodeInfo*, Position&, Move32b&, int16_t&);
+
+} // namespace mvorder
