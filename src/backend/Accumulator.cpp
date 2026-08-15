@@ -27,14 +27,14 @@ uint16_t Accumulator::featureIndex(Square sq,
                                    enumColor side) 
 {
     if constexpr (Perspective == BLACK) {
-        return static_cast<int16_t>(!side) * 64 * 6 
+        return static_cast<uint16_t>(!side) * 64 * 6 
             + index(piece_type) * 64 
-            + static_cast<int16_t>(sqVerticalFlip(sq));
+            + static_cast<uint16_t>(sqVerticalFlip(sq));
     }
 
-    return static_cast<int>(side) * 64 * 6 
+    return static_cast<uint16_t>(side) * 64 * 6 
         + index(piece_type) * 64 
-        + static_cast<int>(sq);
+        + static_cast<uint16_t>(sq);
 }
 
 uint16_t Accumulator::featureIndex(enumColor perspective, 
@@ -115,7 +115,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
-        const uint32_t base_offset = static_cast<uint32_t>(side_active_features[i]) * ChunkCount;
+        const size_t base_offset = side_active_features[i] * ChunkCount;
 
         for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
@@ -129,8 +129,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
-        const int index = side_active_features[i];
-        const int base_offset = index * NetworkAccumulatorSizePerSide;
+        const size_t base_offset = side_active_features[i] * NetworkAccumulatorSizePerSide;
 
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
@@ -142,9 +141,9 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 
 void Accumulator::update(const PackedNeuralNetwork& network,
                          const Accumulator* _RESTRICT prev_acc,
-                         const int* _RESTRICT added_features,
+                         const uint16_t* _RESTRICT added_features,
                          size_t added_features_cnt,
-                         const int* _RESTRICT removed_features,
+                         const uint16_t* _RESTRICT removed_features,
                          size_t removed_features_cnt,
                          enumColor side)
 {
@@ -160,9 +159,9 @@ void Accumulator::update(const PackedNeuralNetwork& network,
 
 void Accumulator::update(const int16_t* _RESTRICT weights,
                          const Accumulator* _RESTRICT prev_acc,
-                         const int* _RESTRICT added_features,
+                         const uint16_t* _RESTRICT added_features,
                          size_t added_features_cnt,
-                         const int* _RESTRICT removed_features,
+                         const uint16_t* _RESTRICT removed_features,
                          size_t removed_features_cnt,
                          enumColor side)
 {
@@ -192,8 +191,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
-        const int index = removed_features[i];
-        const int base_offset = index * ChunkCount;
+        const size_t base_offset = removed_features[i] * ChunkCount;
         
         for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_sub_i16(values_base[j], weights_base[base_offset + j]));
@@ -201,8 +199,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     }
 
     for (size_t i = 0; i < added_features_cnt; i++) {
-        const int index = added_features[i];
-        const int base_offset = index * ChunkCount;
+        const size_t base_offset = added_features[i] * ChunkCount;
 
         for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
@@ -216,8 +213,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
-        const int index = removed_features[i];
-        const int base_offset = index * NetworkAccumulatorSizePerSide;
+        const size_t base_offset = removed_features[i] * NetworkAccumulatorSizePerSide;
         
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] -= weights[base_offset + j];
@@ -225,8 +221,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     }
 
     for (size_t i = 0; i < added_features_cnt; i++) {
-        const int index = added_features[i];
-        const int base_offset = index * NetworkAccumulatorSizePerSide;
+        const size_t base_offset = added_features[i] * NetworkAccumulatorSizePerSide;
 
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
@@ -257,7 +252,7 @@ void AccumulatorCache::clearBuffers() {
     dirty = false;
 }
 
-template int Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
-template int Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
+template uint16_t Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
+template uint16_t Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
 
 } // namespace nn

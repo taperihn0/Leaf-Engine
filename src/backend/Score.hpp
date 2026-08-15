@@ -125,6 +125,8 @@ public:
     }
     
     static constexpr int_t Draw       = 0,
+                           Win        = 12000,
+                           KnownWin   = 16000,
                            Mate       = 32000,
                            MateBound  = Mate - MaxDepth,
                            Infinity   = maxof<int_t>(),

@@ -21,39 +21,194 @@
 #include "Position.hpp"
 
 Score StaticEval::evaluateEndgame(const Position& pos) {
-    const int piece_cnt = pos.getPiecesCount();
 
     // Pawnless endgames:
     // https://en.wikipedia.org/wiki/Pawnless_chess_endgame
 
-    if (pos.getPawns().isEmpty()) {
+    const int piece_cnt = pos.getPiecesCount();
 
-        // K + R vs K + R
-        if (piece_cnt == 4 and
-            pos.getRooksBySide(WHITE).isSingleBit() and
-            pos.getRooksBySide(BLACK).isSingleBit())
-            return Score::Draw;
+    if (pos.getPawns().isEmpty() and piece_cnt < 6) {
+        const enumColor s2m = pos.getTurn();
 
-        // K + NN vs K
-        if (piece_cnt == 4 and
-            (pos.getKnightsBySide(WHITE) == 2 or
-             pos.getKnightsBySide(BLACK) == 2))
-            return Score::Draw;
+        if (piece_cnt == 3) {
 
-        // K + NR vs K + R
-        if (piece_cnt == 5 and
-            pos.getRooksBySide(WHITE).isSingleBit() and
-            pos.getBishopsBySide(BLACK).isSingleBit() and
-            pos.getKnights().isSingleBit())
-            return Score::Draw;
+            // K + R vs K
+            if (pos.getRooks().isSingleBit())
+                return pos.getRooksBySide(s2m) ? Score::KnownWin
+                                               : -Score::KnownWin;
+
+            // K + Q vs K
+            if (pos.getQueens().isSingleBit())
+                return pos.getQueensBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+        }
+        else if (piece_cnt == 4) {
+
+            const int white_bishops = pos.getBishopsBySide(WHITE).popCount();
+            const int black_bishops = pos.getBishopsBySide(BLACK).popCount();
+            const int white_queens  = pos.getQueensBySide(WHITE).popCount();
+            const int black_queens  = pos.getQueensBySide(BLACK).popCount();
+
+            // K + Q vs K + B
+            if ((white_queens == 1 and black_bishops == 1) or
+                (black_queens == 1 and white_bishops == 1))
+                return pos.getQueensBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+            const int white_knights = pos.getKnightsBySide(WHITE).popCount();
+            const int black_knights = pos.getKnightsBySide(BLACK).popCount();
+
+            // K + Q vs K + N
+            if ((white_queens == 1 and black_knights == 1) or
+                (black_queens == 1 and white_knights == 1))
+                return pos.getQueensBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+            const int white_rooks = pos.getRooksBySide(WHITE).popCount();
+            const int black_rooks = pos.getRooksBySide(BLACK).popCount();
+
+            // K + Q vs K + R
+            if ((white_queens == 1 and black_rooks == 1) or
+                (black_queens == 1 and white_rooks == 1))
+                return pos.getQueensBySide(s2m) ? Score::Win
+                                                : -Score::Win;
+
+            // K + BB vs K
+            if (white_bishops == 2 or black_bishops == 2)
+                return pos.getBishopsBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+            // K + BN vs K
+            if (white_bishops == 1 and white_knights == 1)
+                return pos.getBishopsBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+            if (black_bishops == 1 and black_knights == 1)
+                return pos.getBishopsBySide(s2m) ? Score::KnownWin
+                                                : -Score::KnownWin;
+
+            // K + R vs K + B
+            if ((white_rooks == 1 and black_bishops == 1) or
+                (black_rooks == 1 and white_bishops == 1))
+                return Score::Draw;
+
+            // K + R vs K + N
+            if ((white_rooks == 1 and black_knights == 1) or
+                (black_rooks == 1 and white_knights == 1))
+                return Score::Draw;
+
+            // K + R vs K + R
+            if (white_rooks == 1 and black_rooks == 1)
+                return Score::Draw;
+
+            // K + NN vs K
+            if (white_knights == 2 or black_knights == 2)
+                return Score::Draw;
+
+        }
+        else if (piece_cnt == 5) {
+
+            const int s2m_rooks_cnt  = pos.getRooksBySide(s2m).popCount();
+            const int ns2m_rooks_cnt = pos.getRooksBySide(!s2m).popCount();
+
+            // K + RR vs K + R
+            if (s2m_rooks_cnt == 2 and ns2m_rooks_cnt == 1)
+                return Score::KnownWin;
+
+            if (ns2m_rooks_cnt == 2 and s2m_rooks_cnt == 1)
+                return -Score::KnownWin;
+
+            const int white_rooks   = pos.getRooksBySide(WHITE).popCount();
+            const int black_rooks   = pos.getRooksBySide(BLACK).popCount();
+            const int white_knights = pos.getKnightsBySide(WHITE).popCount();
+            const int black_knights = pos.getKnightsBySide(BLACK).popCount();
+
+            // K + NR vs K + R
+            if (white_rooks == 1 and
+                black_rooks == 1 and
+                white_knights + black_knights == 1)
+                return Score::Draw;
+
+        }
+        else if (piece_cnt == 6) {
+
+            const int white_bishops = pos.getBishopsBySide(WHITE).popCount();
+            const int black_bishops = pos.getBishopsBySide(BLACK).popCount();
+
+            const int white_knights = pos.getKnightsBySide(WHITE).popCount();
+            const int black_knights = pos.getKnightsBySide(BLACK).popCount();
+
+            // K + BB vs K + NN
+            if ((white_bishops == 2 and black_knights == 2) or
+                (black_bishops == 2 and white_knights == 2))
+                return Score::Draw;
+
+            const int white_rooks = pos.getRooksBySide(WHITE).popCount();
+            const int black_rooks = pos.getRooksBySide(BLACK).popCount();
+
+            // K + RN vs K + BN
+            if (white_knights == 1 and
+                black_knights == 1 and
+                white_bishops + black_bishops == 1 and
+                white_rooks + black_rooks == 1 and
+                !(white_bishops == 1 and black_rooks == 1) ==
+                !(black_bishops == 1 and white_rooks == 1)
+               )
+                return Score::Draw;
+
+            // K + RN vs K + BB
+            if ((white_bishops == 2 and
+                 black_rooks == 1 and
+                 black_knights == 1) or
+                (black_bishops == 2 and
+                 white_rooks == 1 and
+                 white_knights == 1)
+               )
+                return Score::Draw;
+
+            // K + RB vs K + BB
+            if ((white_bishops == 2 and
+                 black_rooks == 1 and
+                 black_bishops == 1) or
+                (black_bishops == 2 and
+                 white_rooks == 1 and
+                 white_bishops == 1)
+               )
+                return Score::Draw;
+
+            const int s2m_rooks_cnt  = pos.getRooksBySide(s2m).popCount();
+            const int ns2m_rooks_cnt = pos.getRooksBySide(!s2m).popCount();
+
+            // K + RR vs K + BB, K + NN, K + NB
+            if (s2m_rooks_cnt == 2 and
+                (s2m ? white_knights : black_knights) == 2)
+                return Score::Win;
+
+            if (ns2m_rooks_cnt == 2 and
+                (s2m ? black_knights : white_knights) == 2)
+                return -Score::Win;
+
+            // K + RB vs K + NN
+            if ((white_rooks == 1 and
+                 white_bishops == 1 and
+                 black_knights == 2) or
+                (black_rooks == 1 and
+                 black_bishops == 1 and
+                 white_knights == 2)
+               )
+                return pos.getRooksBySide(s2m) ? Score::Win
+                                               : -Score::Win;
+
+        }
     }
 
     return Score::Undef;
 }
 
 /*
-*    PeSTO evaluation tables provided by Chess Programming Wiki:
-*    https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function 
+*  PeSTO evaluation tables provided by Chess Programming Wiki:
+*  https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function 
 */
 
 array1d<int16_t, 64> StaticEval::_mg_pawn_tables = {

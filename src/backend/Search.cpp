@@ -388,8 +388,8 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
          prev_cluster != accum_cluster;
          prev_cluster = prev_cluster->next_cluster) {
 
-        array2d<int, 2, 2> added_features_index;
-        array2d<int, 2, 2> removed_features_index;
+        array2d<uint16_t, 2, 2> added_features_index;
+        array2d<uint16_t, 2, 2> removed_features_index;
 
         nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
@@ -1757,12 +1757,7 @@ _INLINE Score Search::evaluate(const Position& pos,
     _declUnused(results);
 #endif
 
-    if (pos.getPiecesCount() <= 6) {
-        const Score eval = StaticEval::evaluateEndgame(pos);
-
-        if (eval != Score::Undef)
-            return eval;
-    }
+    const Score eg_eval = StaticEval::evaluateEndgame(pos);
 
     AccumulatorCluster* curr_accum_cluster = &node->cluster;
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
@@ -1791,8 +1786,16 @@ _INLINE Score Search::evaluate(const Position& pos,
  
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
-    const Score result = static_cast<Score>(scaled_eval * clock_mult / HalfMovesEvalLimit);
+    Score::int_t result = static_cast<Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
  
+    if (eg_eval.isValid()) {
+        if (eg_eval == Score::Draw)
+            result /= 2;
+
+        else if (eg_eval >= Score::Win)
+            result = static_cast<Score::int_t>(eg_eval) + std::max<Score::int_t>(result / 32, 0);
+    }
+
     return result;
 }
 
@@ -2040,27 +2043,30 @@ bool Search::isInsufficientMaterial(const Position& pos) {
 
     const int piece_cnt = pos.getPiecesCount();
 
-    // King versus King
+    // K vs K
     if (piece_cnt == 2)
         return true;
 
-    // King + Bishop versus King
+    // K + B vs K
     if (piece_cnt == 3 and
         pos.getBishops() /* .popCount() == 1 */)
         return true;
 
-    // King + Knight versus King
+    // K + N vs K
     if (piece_cnt == 3 and
         pos.getKnights() /* .popCount() == 1 */)
         return true;
 
-    // King + Bishop versus King + Bishop with same-color Bishops
-    if (piece_cnt == 4 and
-        pos.getBishopsBySide(WHITE).isSingleBit() and
-        pos.getBishopsBySide(BLACK).isSingleBit()) {
+    // K + BB... vs K + BB... with same color bishops
 
-        // check colors matching
+    const int white_bishop_cnt = pos.getBishopsBySide(WHITE).popCount();
+    const int black_bishop_cnt = pos.getBishopsBySide(BLACK).popCount();
 
+    if (const int total_bishop_cnt = white_bishop_cnt + black_bishop_cnt;
+        piece_cnt - 2 == total_bishop_cnt and 
+        white_bishop_cnt > 0 and 
+        black_bishop_cnt > 0) 
+    {
         const BitBoard bishops = pos.getBishops();
         const BitBoard white_square_bishops = bishops & BitBoard::WhiteSquares;
 

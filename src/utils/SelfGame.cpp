@@ -62,7 +62,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     }
 
     clk::Timer timer;
-    SearchLimits limits = packet.limits;
+    search::SearchLimits limits = packet.limits;
 
     const bool time_constraint = (limits.wtime != 0 and limits.btime != 0);
     int moves_done = 0;
