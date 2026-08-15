@@ -906,9 +906,9 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
-            beta < RazorBetaLimit and
+            beta < Score::Win and
             !grandparent_node->mate_thread and 
-            !tt_entry.score.isMateScore() and
+            tt_entry.score < Score::Win and
             (tt_move.isNull() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
@@ -1018,7 +1018,7 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             pos.getNonPawnMaterial() > 0 and
-            !beta.isMateScore()) {
+            beta < Score::Win) {
 
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
@@ -1205,7 +1205,7 @@ Score Search::nmSearch(Position& pos,
                 !tt_move.isNull() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == TTBound::LOWERBOUND and
-                !tt_entry.score.isMateScore()) 
+                tt_entry.score < Score::Win) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const Score singular_beta = std::max<int>(-Score::MateBound / 2, 
@@ -1220,7 +1220,7 @@ Score Search::nmSearch(Position& pos,
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and !score.isMateScore()) {
+                else if (score >= beta and score < Score::Win) {
                     pos.unmake(node->move, node->state);
                     const Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                 / (singular_depth + 1);
