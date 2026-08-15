@@ -22,14 +22,14 @@
 namespace nn {
 
 template <enumColor Perspective>
-int Accumulator::featureIndex(Square sq, 
-                              Piece::enumType piece_type, 
-                              enumColor side) 
+uint16_t Accumulator::featureIndex(Square sq, 
+                                   Piece::enumType piece_type, 
+                                   enumColor side) 
 {
     if constexpr (Perspective == BLACK) {
-        return static_cast<int>(!side) * 64 * 6 
+        return static_cast<int16_t>(!side) * 64 * 6 
             + index(piece_type) * 64 
-            + static_cast<int>(sqVerticalFlip(sq));
+            + static_cast<int16_t>(sqVerticalFlip(sq));
     }
 
     return static_cast<int>(side) * 64 * 6 
@@ -37,10 +37,10 @@ int Accumulator::featureIndex(Square sq,
         + static_cast<int>(sq);
 }
 
-int Accumulator::featureIndex(enumColor perspective, 
-                              Square sq, 
-                              Piece::enumType piece_type, 
-                              enumColor side) 
+uint16_t Accumulator::featureIndex(enumColor perspective, 
+                                   Square sq, 
+                                   Piece::enumType piece_type, 
+                                   enumColor side) 
 {
     return perspective == BLACK ? featureIndex<BLACK>(sq, piece_type, side)
                                 : featureIndex<WHITE>(sq, piece_type, side);
@@ -61,7 +61,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     assert(biases != nullptr);
     assert(weights != nullptr);
 
-    array2d<int, 2, 32> side_active_features;
+    array2d<uint16_t, 2, 32> side_active_features;
 
     size_t active_features_cnt = 0;
 
@@ -74,6 +74,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
                 
                 side_active_features[WHITE][active_features_cnt] = featureIndex<WHITE>(sq, piece_type, side);
                 side_active_features[BLACK][active_features_cnt++] = featureIndex<BLACK>(sq, piece_type, side);
+                
                 assert(active_features_cnt <= 32);
             }
         }
@@ -87,7 +88,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 void Accumulator::refresh(const int16_t* _RESTRICT biases, 
                           const int16_t* _RESTRICT weights, 
                           enumColor side, 
-                          const int* _RESTRICT side_active_features,
+                          const uint16_t* _RESTRICT side_active_features,
                           size_t side_active_features_cnt) 
 {
     assert(biases != nullptr);
@@ -114,8 +115,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
-        const int index = side_active_features[i];
-        const int base_offset = index * ChunkCount;
+        const uint32_t base_offset = static_cast<uint32_t>(side_active_features[i]) * ChunkCount;
 
         for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));

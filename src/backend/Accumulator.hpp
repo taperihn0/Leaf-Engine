@@ -42,13 +42,13 @@ public:
     _INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
-    _NODISCARD static int featureIndex(Square sq, 
-                                       Piece::enumType piece_type, 
-                                       enumColor side);
-    _NODISCARD static int featureIndex(enumColor perspective, 
-                                       Square sq, 
-                                       Piece::enumType piece_type, 
-                                       enumColor side);
+    _NODISCARD static uint16_t featureIndex(Square sq, 
+                                            Piece::enumType piece_type, 
+                                            enumColor side);
+    _NODISCARD static uint16_t featureIndex(enumColor perspective, 
+                                            Square sq, 
+                                            Piece::enumType piece_type, 
+                                            enumColor side);
 
     void refresh(const PackedNeuralNetwork& network,
                  const Position& pos);
@@ -60,22 +60,22 @@ public:
     void refresh(const int16_t* _RESTRICT biases, 
                  const int16_t* _RESTRICT weights, 
                  enumColor side, 
-                 const int* _RESTRICT side_active_features,
+                 const uint16_t* _RESTRICT side_active_features,
                  size_t side_active_features_cnt);
 
     void update(const PackedNeuralNetwork& network,
                 const Accumulator* _RESTRICT prev_accum,
-                const int* _RESTRICT added_features,
+                const uint16_t* _RESTRICT added_features,
                 size_t added_features_cnt,
-                const int* _RESTRICT removed_features,
+                const uint16_t* _RESTRICT removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 
     void update(const int16_t* _RESTRICT weights,
                 const Accumulator* _RESTRICT prev_accum,
-                const int* _RESTRICT added_features,
+                const uint16_t* _RESTRICT added_features,
                 size_t added_features_cnt,
-                const int* _RESTRICT removed_features,
+                const uint16_t* _RESTRICT removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 
