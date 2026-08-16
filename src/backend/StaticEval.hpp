@@ -44,7 +44,7 @@ inline array1d<const int32_t*, 5> PieceValue = {
 
 class StaticEval {
 public:
-    _NODISCARD static Score evaluateEndgame(const Position& pos);
+    _NODISCARD static Score evaluatePawnlessEndgame(const Position& pos);
     _NODISCARD static Score matEval(const Position& pos);
     _NODISCARD static Score staticEval(const Position& pos);
 private:

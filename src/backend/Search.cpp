@@ -1757,7 +1757,11 @@ _INLINE Score Search::evaluate(const Position& pos,
     _declUnused(results);
 #endif
 
-    const Score eg_eval = StaticEval::evaluateEndgame(pos);
+    const Score::int_t pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos).toInt16()
+                                                                   : Score::Undef;
+
+    if (pawnless_eg_eval == Score::Draw)
+        return pawnless_eg_eval;
 
     AccumulatorCluster* curr_accum_cluster = &node->cluster;
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
@@ -1773,8 +1777,6 @@ _INLINE Score Search::evaluate(const Position& pos,
 
 #if defined(_VERIFY_NN)
     ASSERT(nn::Accumulator::verify(prev_accum, pos), "Accumulator verification failed");
-#else
-    _declUnused(pos);
 #endif
 
     const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
@@ -1787,13 +1789,19 @@ _INLINE Score Search::evaluate(const Position& pos,
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
     Score::int_t result = static_cast<Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
- 
-    if (eg_eval.isValid()) {
-        if (eg_eval == Score::Draw)
-            result /= 2;
 
-        else if (eg_eval >= Score::Win)
-            result = static_cast<Score::int_t>(eg_eval) + std::max<Score::int_t>(result / 32, 0);
+    if (pawnless_eg_eval != Score::Undef) {
+        switch (pawnless_eg_eval) {
+        case Score::Win:
+        case -Score::Win:
+            return pawnless_eg_eval + std::max<Score::int_t>(result, 0);
+
+        case Score::KnownWin:
+        case -Score::KnownWin: 
+            return pawnless_eg_eval + std::max<Score::int_t>(result, 0);
+
+        default: assert("Invalid endgame score");
+        }
     }
 
     return result;

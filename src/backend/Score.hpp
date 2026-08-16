@@ -123,10 +123,14 @@ public:
 
         return "cp " + std::to_string(_raw);
     }
+
+    _NODISCARD _INLINE int_t toInt16() const {
+        return _raw;
+    }
     
     static constexpr int_t Draw       = 0,
-                           Win        = 12000,
-                           KnownWin   = 16000,
+                           Win        = 8000,
+                           KnownWin   = 12000,
                            Mate       = 32000,
                            MateBound  = Mate - MaxDepth,
                            Infinity   = maxof<int_t>(),
