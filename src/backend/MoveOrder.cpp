@@ -120,7 +120,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_QUIETS:
         assert(Policy != QUIESCENT);
-        scoreQuiets(0, pos.getTurn());
+        scoreQuiets(_iterator, pos.getTurn());
         return nextFromList(next_move, move_score);
     default:
         assert(false);

@@ -482,6 +482,7 @@ Move32b Search::findBestMove(Position& pos,
     search_results.best_move = NullMove;
 
     const Move32b bm = goIterativeDeepening(pos, game, search_limits, search_results, InfoLevel);
+    results = search_results;
     return bm;
 }
 
