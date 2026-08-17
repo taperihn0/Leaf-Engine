@@ -291,10 +291,10 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         if (nextFromList(next_move, move_score, _quiets_ind))
             return true;
 
+        scoreQuiets(_quiets_ind, pos.getTurn());
         _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
-        scoreQuiets(_iterator, pos.getTurn());
         return nextFromList(next_move, move_score);
     default:
         assert(false);
