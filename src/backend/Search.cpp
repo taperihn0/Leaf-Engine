@@ -906,9 +906,10 @@ sc::Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
-            beta < sc::Win and
+            beta < RazorBetaLimit and
             !grandparent_node->mate_thread and 
-            tt_entry.score < sc::Win and
+            tt_entry.score < sc::KnownWin and
+            tt_entry.score > -sc::KnownWin and
             (tt_move.isNullMove() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
@@ -1018,7 +1019,8 @@ sc::Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             pos.getNonPawnMaterial() > 0 and
-            beta < sc::Win) {
+            beta < sc::KnownWin and
+            beta > -sc::KnownWin) {
 
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
@@ -1205,7 +1207,8 @@ sc::Score Search::nmSearch(Position& pos,
                 !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == TTBound::LOWERBOUND and
-                tt_entry.score < sc::Win) 
+                tt_entry.score < sc::KnownWin and
+                tt_entry.score > -sc::KnownWin) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
@@ -1220,7 +1223,7 @@ sc::Score Search::nmSearch(Position& pos,
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and score < sc::Win) {
+                else if (score >= beta and score < sc::KnownWin and score > -sc::KnownWin) {
                     pos.unmake(node->move, node->state);
                     const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                         / (singular_depth + 1);
@@ -1792,23 +1795,25 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     const int64_t unscaled_eval = NNEvalScale * 4096 * static_cast<int64_t>(eval);
     const int32_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
  
-    // Assert we won't overflow into mate score
-    assert(abs<int16_t>(scaled_eval) < sc::MateBound - 100);
- 
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
     sc::Score::int_t result = static_cast<sc::Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
+
+    // Assert we won't overflow into special winning scores
+    assert(abs<int16_t>(result) < sc::Win);
 
     if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
         switch (pawnless_eg_eval.value()) {
         case sc::Win.value():
         case -sc::Win.value():
-            return pawnless_eg_eval + std::max<sc::Score::int_t>(result, 0);
+            return pawnless_eg_eval + 
+                   std::clamp<sc::Score::int_t>(result, sc::KnownWin.value() - sc::Win.value() - 1, 0);
 
         case sc::KnownWin.value():
         case -sc::KnownWin.value(): 
-            return pawnless_eg_eval + std::max<sc::Score::int_t>(result, 0);
-
+            return pawnless_eg_eval + 
+                   std::clamp<sc::Score::int_t>(result, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
+        
         default: 
             assert("Invalid endgame score");
             break;

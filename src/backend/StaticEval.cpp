@@ -33,7 +33,7 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + R vs K
         if (pos.getRooks().isSingleBit())
             return pos.getRooksBySide(s2m) ? sc::KnownWin
-                                            : -sc::KnownWin;
+                                           : -sc::KnownWin;
 
         // K + Q vs K
         if (pos.getQueens().isSingleBit())
@@ -49,7 +49,7 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + BB vs K
         if (white_bishops == 2 or black_bishops == 2)
             return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                            : -sc::KnownWin;
+                                             : -sc::KnownWin;
 
         const int white_queens  = pos.getQueensBySide(WHITE).popCount();
         const int black_queens  = pos.getQueensBySide(BLACK).popCount();
@@ -76,11 +76,11 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + BN vs K
         if (white_bishops == 1 and white_knights == 1)
             return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                                : -sc::KnownWin;
+                                             : -sc::KnownWin;
 
         if (black_bishops == 1 and black_knights == 1)
             return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                                : -sc::KnownWin;
+                                             : -sc::KnownWin;
 
         const int white_rooks = pos.getRooksBySide(WHITE).popCount();
         const int black_rooks = pos.getRooksBySide(BLACK).popCount();
@@ -130,14 +130,13 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
         // K + RB vs K + NN
         if ((white_rooks == 1 and
-                white_bishops == 1 and
-                black_knights == 2) or
+             white_bishops == 1 and
+             black_knights == 2) or
             (black_rooks == 1 and
-                black_bishops == 1 and
-                white_knights == 2)
-            )
+             black_bishops == 1 and
+             white_knights == 2))
             return pos.getRooksBySide(s2m) ? sc::Win
-                                            : -sc::Win;
+                                           : -sc::Win;
 
     }
 
