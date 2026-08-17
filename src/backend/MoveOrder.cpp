@@ -138,11 +138,11 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int16_t bonus) {
     const Piece::uint_t piece = index(move.getPiece());
     const Square dst = move.getTarget();
 
-    const int32_t bonus = std::min(bonus, static_cast<int32_t>(HistoryTables::_MaxAbsQuietsHistory));
+    const int32_t cbonus = std::min(bonus, HistoryTables::_MaxAbsQuietsHistory);
     const int32_t quiet_value = static_cast<int32_t>(_hist_tables->_quiets_history[side][piece][dst]);
 
     _hist_tables->_quiets_history[side][piece][dst] += static_cast<int16_t>(
-        Sign * bonus - quiet_value * bonus / HistoryTables::_MaxAbsQuietsHistory
+        Sign * cbonus - quiet_value * cbonus / HistoryTables::_MaxAbsQuietsHistory
     );
 
     assert(abs(quiet_value) <= HistoryTables::_MaxAbsQuietsHistory);
