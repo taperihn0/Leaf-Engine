@@ -24,8 +24,6 @@
 #include "Tuning.hpp"
 
 namespace search { class NodeInfo; }
-class TreeStack;
-class MoveOrder;
 
 namespace mvorder {
 
@@ -33,23 +31,22 @@ namespace mvorder {
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
-_DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(KnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(BishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
-
-/*  Static parameters in move ordering -
-*   These are not tuned.
-*/
-
-inline constexpr int32_t PawnCapturedScore    = 100;
-inline constexpr int32_t RookCapturedScore    = 500;
-inline constexpr int32_t QueenCapturedScore   = 900;
+_DEFINE_TUNABLE_PARAMETER(OrdQuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(OrdCaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(OrdQuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(OrdKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(OrdPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(OrdRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(OrdQueenCapturedScore, int32_t, 900.f, 820.f, 980.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(OrdQuietBonusHistoryScore2Coeff, int32_t, 1024.f, 924.f, 1124.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(OrdQuietBonusHistoryScore1Coeff, int32_t, 0.f, -100.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(OrdQuietPenaltyHistoryScore2Coeff, int32_t, 1024.f, 924.f, 1124.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(OrdQuietPenaltyHistoryScore1Coeff, int32_t, 0.f, -100.f, 300.f, 1.f);
 
 enum enumOrderPolicy : uint8_t {
     STAGED         = 1, // At nmSearch nodes
@@ -115,7 +112,7 @@ public:
     Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
     template <int8_t Sign>
-    void updateQuietEntry(Move32b move, enumColor side, int depth);
+    void updateQuietEntry(Move32b move, enumColor side, int16_t bonus);
     void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
     
     void clear();
@@ -224,15 +221,15 @@ _NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedQuietScor
 */
 
 _NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
-    const int32_t centered_score = quiet_score.value() - QuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
+    const int32_t centered_score = quiet_score.value() - OrdQuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const int32_t val = QuietMoveScoreReductionRate * rt / 128;
+    const int32_t val = OrdQuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
 
 _NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_score) {
     // TODO: better fixed-point formula
-    return static_cast<float>(CaptureMoveScoreReductionRate * capture_score.value() / 128);
+    return static_cast<float>(OrdCaptureMoveScoreReductionRate * capture_score.value() / 128);
 }
 
 // =================================

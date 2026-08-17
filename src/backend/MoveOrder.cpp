@@ -115,12 +115,12 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     case enumPrivateStage::STAGED_QUIETS:
         assert(Policy != QUIESCENT);
         MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
-        scoreQuiets(_quiets_ind, pos.getTurn());
 
         _stage = enumPrivateStage::STAGED_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_QUIETS:
         assert(Policy != QUIESCENT);
+        scoreQuiets(_iterator, pos.getTurn());
         return nextFromList(next_move, move_score);
     default:
         assert(false);
@@ -131,14 +131,14 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
 }
 
 template <int8_t Sign>
-void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
+void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int16_t bonus) {
     static_assert(Sign == -1 or Sign == 1);
     assert(_hist_tables != nullptr);
 
     const Piece::uint_t piece = index(move.getPiece());
     const Square dst = move.getTarget();
 
-    const int32_t bonus = std::min(sq(depth), static_cast<int>(HistoryTables::_MaxAbsQuietsHistory));
+    const int32_t bonus = std::min(bonus, static_cast<int32_t>(HistoryTables::_MaxAbsQuietsHistory));
     const int32_t quiet_value = static_cast<int32_t>(_hist_tables->_quiets_history[side][piece][dst]);
 
     _hist_tables->_quiets_history[side][piece][dst] += static_cast<int16_t>(
@@ -151,7 +151,15 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int depth) {
 void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
     assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
-    updateQuietEntry<1>(bestmove, side, depth);
+    const int16_t bonus = (OrdQuietBonusHistoryScore2Coeff * sq(depth) + 
+                           OrdQuietBonusHistoryScore1Coeff * depth
+                          ) / 1024;
+
+    updateQuietEntry<1>(bestmove, side, bonus);
+
+    const int16_t penalty = (OrdQuietPenaltyHistoryScore2Coeff * sq(depth) + 
+                             OrdQuietPenaltyHistoryScore1Coeff * depth
+                            ) / 1024;
 
     for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
@@ -162,7 +170,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
         if (move == bestmove)
             break;
 
-        updateQuietEntry<-1>(move, side, depth);
+        updateQuietEntry<-1>(move, side, penalty);
     }
 }
 
@@ -186,19 +194,19 @@ _INLINE bool MoveOrder::nextFromList(Move32b& move, ml::MoveScore& score, size_t
 }
 
 static Array1d<const int16_t*, 5> CaptureScore = {
-    reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
-    reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
-    reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
-    reinterpret_cast<const int16_t*>(&RookCapturedScore), 
-    reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
+    reinterpret_cast<const int16_t*>(&OrdPawnCapturedScore), 
+    reinterpret_cast<const int16_t*>(&OrdKnightCapturedScore), 
+    reinterpret_cast<const int16_t*>(&OrdBishopCapturedScore), 
+    reinterpret_cast<const int16_t*>(&OrdRookCapturedScore), 
+    reinterpret_cast<const int16_t*>(&OrdQueenCapturedScore), 
 };
 
 static Array1d<const int16_t*, 5> PromotionScore = {
     nullptr,                        // pawn placeholder 
-    reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
-    reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 
-    reinterpret_cast<const int16_t*>(&ToRookPromoScore),
-    reinterpret_cast<const int16_t*>(&ToQueenPromoScore)
+    reinterpret_cast<const int16_t*>(&OrdToKnightPromoScore), 
+    reinterpret_cast<const int16_t*>(&OrdToBishopPromoScore), 
+    reinterpret_cast<const int16_t*>(&OrdToRookPromoScore),
+    reinterpret_cast<const int16_t*>(&OrdToQueenPromoScore)
 };
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
@@ -274,8 +282,6 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         _quiets_ind = _move_list.count();
         MoveGen::generateLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-        scoreQuiets(_quiets_ind, pos.getTurn());
-
         if (!next_move.isNullMove()) // got hash move assigned already
             return true;
 
@@ -288,6 +294,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
+        scoreQuiets(_iterator, pos.getTurn());
         return nextFromList(next_move, move_score);
     default:
         assert(false);
