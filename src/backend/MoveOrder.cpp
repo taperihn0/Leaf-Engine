@@ -73,7 +73,6 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
         [[fallthrough]];
     case enumPrivateStage::STAGED_CAPTURES:
         MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>(pos, _move_list);
-
         scoreCaptures(0, pos);
 
         _stage = enumPrivateStage::STAGED_PICK_CAPTURES;
@@ -116,11 +115,12 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     case enumPrivateStage::STAGED_QUIETS:
         assert(Policy != QUIESCENT);
         MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+        scoreQuiets(0, pos.getTurn());
+
         _stage = enumPrivateStage::STAGED_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_QUIETS:
         assert(Policy != QUIESCENT);
-        scoreQuiets(_iterator, pos.getTurn());
         return nextFromList(next_move, move_score);
     default:
         assert(false);
@@ -166,8 +166,8 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
     }
 }
 
-/* Search for another move in a '_move_list' starting from current '_iterator'
-*  up to the possible 'end_idx' position.
+/* Search for another move in a `_move_list` starting from current `_iterator`
+*  up to the possible `end_idx` position.
 */
 _INLINE bool MoveOrder::nextFromList(Move32b& move, ml::MoveScore& score, size_t end_idx) {
     assert(_iterator <= end_idx);
@@ -185,7 +185,7 @@ _INLINE bool MoveOrder::nextFromList(Move32b& move, ml::MoveScore& score, size_t
     return false;
 }
 
-static array1d<const int16_t*, 5> CaptureScore = {
+static Array1d<const int16_t*, 5> CaptureScore = {
     reinterpret_cast<const int16_t*>(&PawnCapturedScore), 
     reinterpret_cast<const int16_t*>(&KnightCapturedScore), 
     reinterpret_cast<const int16_t*>(&BishopCapturedScore), 
@@ -193,7 +193,7 @@ static array1d<const int16_t*, 5> CaptureScore = {
     reinterpret_cast<const int16_t*>(&QueenCapturedScore), 
 };
 
-static array1d<const int16_t*, 5> PromotionScore = {
+static Array1d<const int16_t*, 5> PromotionScore = {
     nullptr,                        // pawn placeholder 
     reinterpret_cast<const int16_t*>(&ToKnightPromoScore), 
     reinterpret_cast<const int16_t*>(&ToBishopPromoScore), 
@@ -208,9 +208,9 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
         ml::MoveScore& score = entry.score;
 
         assert(move->isCapture() or 
-              (move->isPromotion() and 
-               move->isQueenPromotion() and 
-              !move->isLegalMoved())); // legality not checked yet
+               (move->isPromotion() and 
+                move->isQueenPromotion() and 
+               !move->isLegalMoved())); // legality not checked yet
 
         score = 0;
 
@@ -243,14 +243,10 @@ void MoveOrder::scoreQuiets(size_t first_ind, enumColor side) {
 
         assert(move.isQuiet());
 
-        const Piece::uint_t piece = index(move.getPiece());
-        const Square dst = move.getTarget();
-
         /* history value is in range [-HistoryTables::_MaxAbsQuietsHistory, +HistoryTables::_MaxAbsQuietsHistory],
         *  we shift so that we got non-negative actual score.
         */
-        const int16_t quiet_value = _hist_tables->_quiets_history[side][piece][dst];
-        score = quiet_value + HistoryTables::_MaxAbsQuietsHistory;
+        score = _hist_tables->getNormalizedQuietScore(move, side);
     }
 }
 

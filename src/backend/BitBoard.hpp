@@ -337,7 +337,7 @@ public:
     static RectangularTable& get();
     static BitBoard inBetweenOnFly(Square org, Square dst);
 
-    array1d<array1d<BitBoard, 64>, 64> t64;
+    Array1d<Array1d<BitBoard, 64>, 64> t64;
 private:
     RectangularTable();
 };

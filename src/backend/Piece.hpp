@@ -83,7 +83,7 @@ public:
         return _col;
     }
 
-    static constexpr array1d<enumType, 5> PieceTypeWithoutKingList = {
+    static constexpr Array1d<enumType, 5> PieceTypeWithoutKingList = {
         Piece::PAWN, 
         Piece::KNIGHT, 
         Piece::BISHOP, 
@@ -91,7 +91,7 @@ public:
         Piece::QUEEN, 
     };
 
-    static constexpr array1d<enumType, 6> PieceTypeList = { 
+    static constexpr Array1d<enumType, 6> PieceTypeList = { 
         Piece::PAWN, 
         Piece::KNIGHT, 
         Piece::BISHOP, 

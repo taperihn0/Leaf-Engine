@@ -66,11 +66,11 @@ public:
     void clear();
 
     void printBestMove();
-    void print(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+    void print(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                uint16_t pv_len, 
                const TranspositionTable& tt);
     void printShort();
-    void printPV(const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+    void printPV(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                  uint16_t pv_len);
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -89,9 +89,9 @@ public:
     size_t            tt_entries = 0;
     Move32b           best_move  = Move32b::Null;
     clk::milliseconds duration   = 0;
-    array1d<ull, MaxDepth + 1> 
+    Array1d<ull, MaxDepth + 1> 
                       nodes_per_depth = {};
-    array1d<clk::milliseconds, MaxDepth + 1> 
+    Array1d<clk::milliseconds, MaxDepth + 1> 
                       time_per_depth  = {};
 
     // Extendend search statistics 
@@ -180,7 +180,7 @@ public:
     uint8_t                   move_index;
     TTBound                   bound;
     AccumulatorCluster        cluster;
-    array1d<PvInfo, MaxSelDepth> 
+    Array1d<PvInfo, MaxSelDepth> 
                               pv_line;
     uint16_t                  pv_line_len;
     bool                      is_cut;
@@ -402,7 +402,7 @@ private:
     int getNullVerifyDepth(int nm_depth);
 
     void refreshPVinTT(const Position& pos, 
-                       const array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+                       const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
                        uint16_t pv_len,
                        SearchResultsWrapper& results);
 

@@ -102,14 +102,14 @@ public:
     static constexpr int MaxPiecesOnBoard = 32;
     static constexpr int MaxNibbles       = MaxPiecesOnBoard / 2;
 
-    array1d<Nibble, MaxNibbles> getNibbles() const;
+    Array1d<Nibble, MaxNibbles> getNibbles() const;
 
     static Piece pieceFromMask(uint8_t mask, SpecialMasks& flags, Square sq);
 protected:
     static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + MaxNibbles;
 
     BitBoard                    _occupancy_mask;
-    array1d<Nibble, MaxNibbles> _pieces;
+    Array1d<Nibble, MaxNibbles> _pieces;
     uint8_t                     _piece_cnt;
 };
 

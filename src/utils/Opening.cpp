@@ -19,7 +19,7 @@
 #include "Opening.hpp"
 #include "backend/StaticEval.hpp"
 #include "backend/MoveGen.hpp"
-#include "backend/sc::Score.hpp"
+#include "backend/Score.hpp"
 #include "NetworkEval.hpp"
 #include "Sets.hpp"
 

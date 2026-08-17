@@ -189,7 +189,7 @@ void generatePawnCaptures(const Position& pos,
 
     /* Handle pinned pawns that can do en-passant capture */
     if constexpr (LMode == LEGAL) {
-        array2d<BitBoard, 2, 6> pc_bbs = {
+        Array2d<BitBoard, 2, 6> pc_bbs = {
             pos.getPawnsBySide(WHITE),
             pos.getKnightsBySide(WHITE),
             pos.getBishopsBySide(WHITE),

@@ -163,7 +163,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
 
 #endif // !LEAF_ENABLE_BMI2
 
-const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
+const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
     0x40201008040200,
     0x402010080400,
     0x4020100a00,
@@ -230,7 +230,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
     0x40201008040200,
 };
 
-const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
+const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
     0x101010101017e,
     0x202020202027c,
     0x404040404047a,
@@ -297,7 +297,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
     0x7e80808080808000,
 };
 
-const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
+const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
     6, 5, 5, 5, 5, 5, 5, 6,
     5, 5, 5, 5, 5, 5, 5, 5,
     5, 5, 7, 7, 7, 7, 5, 5,
@@ -308,7 +308,7 @@ const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
     6, 5, 5, 5, 5, 5, 5, 6,
 };
 
-const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
+const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
     12,11,11,11,11,11,11,12,
     11,10,10,10,10,10,10,11,
     11,10,10,10,10,10,10,11,
@@ -319,8 +319,8 @@ const array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
     12,11,11,11,11,11,11,12,
 };
 
-array2d<uint64_t, 64, 512>  SlidersAttacks::_mbishop_att;
-array2d<uint64_t, 64, 4096> SlidersAttacks::_mrook_att;
+Array2d<uint64_t, 64, 512>  SlidersAttacks::_mbishop_att;
+Array2d<uint64_t, 64, 4096> SlidersAttacks::_mrook_att;
 
 void SlidersAttacks::initTables() {
     initAttackTables<Piece::BISHOP>();

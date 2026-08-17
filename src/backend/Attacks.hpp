@@ -70,8 +70,8 @@ struct StaticAttackTables {
              | westOne(bit) | noWeOne(bit);
     }
 
-    array2d<BitBoard, 2, 64> pawns_attacks_mask;
-    array1d<BitBoard, 64> knights_attacks_mask, 
+    Array2d<BitBoard, 2, 64> pawns_attacks_mask;
+    Array1d<BitBoard, 64> knights_attacks_mask, 
                              kings_attacks_mask;
 };
 

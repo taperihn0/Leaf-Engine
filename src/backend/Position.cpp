@@ -658,7 +658,7 @@ uint64_t Position::goPerft(uint depth, clk::milliseconds& duration_ms) {
 
 static constexpr int32_t NonePieceValue = 0;
 
-static constexpr array1d<const int32_t*, 7> SeePieceValue = {
+static constexpr Array1d<const int32_t*, 7> SeePieceValue = {
     &SeePawnValue,
     &SeeKnightValue,
     &SeeBishopValue,
@@ -681,7 +681,7 @@ int Position::staticExchangeEval(Square org,
             return gain;
     }
     
-    array1d<int, 32> gain;
+    Array1d<int, 32> gain;
     int i = 0;
 
     const BitBoard bishopsQueens = getBishops() | getQueens();

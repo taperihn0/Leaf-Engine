@@ -143,7 +143,6 @@ public:
                                    pred);
 
         _idx = std::distance(_moves.begin(), last);
-
         return *this;
     }
 
@@ -155,7 +154,7 @@ private:
     };
 
     size_t                   _idx = 0;
-    array1d<Entry, _MaxSize> _moves = {};
+    Array1d<Entry, _MaxSize> _moves = {};
 };
 
 _INLINE void MoveList::selectSort(size_t first_ind) {

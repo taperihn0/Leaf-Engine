@@ -61,7 +61,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     assert(biases != nullptr);
     assert(weights != nullptr);
 
-    array2d<uint16_t, 2, 32> side_active_features;
+    Array2d<uint16_t, 2, 32> side_active_features;
 
     size_t active_features_cnt = 0;
 
@@ -235,7 +235,7 @@ void Accumulator::clear(enumColor side) {
     mem::memSet(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
 }
 
-const array1d<int16_t, NetworkAccumulatorSizePerSide>& Accumulator::getValues(enumColor side) const {
+const Array1d<int16_t, NetworkAccumulatorSizePerSide>& Accumulator::getValues(enumColor side) const {
     return _values[side];
 }
 

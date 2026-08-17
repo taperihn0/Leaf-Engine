@@ -87,7 +87,7 @@ public:
 
         static inline constexpr int16_t _MaxQuietsHistoryExp2 = 13;
         static inline constexpr int16_t _MaxAbsQuietsHistory  = 1 << _MaxQuietsHistoryExp2;
-        array3d<int16_t, 2, 6, 64>      _quiets_history;
+        Array3d<int16_t, 2, 6, 64>      _quiets_history;
     };
 
     MoveOrder() = default;
@@ -220,6 +220,10 @@ _FORCEINLINE int16_t MoveOrder::getQuietMoveScore(size_t move_idx, enumColor sid
     return _hist_tables->getNormalizedQuietScore(move, side);
 }
 
+/* Search utilities - move reductions
+*  =================================
+*/
+
 _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
     const int32_t centered_score = quiet_score.value() - QuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
@@ -231,6 +235,8 @@ _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_sco
     // TODO: better fixed-point formula
     return static_cast<float>(CaptureMoveScoreReductionRate * capture_score.value() / 128);
 }
+
+// =================================
 
 template <enumOrderPolicy Policy, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getMovesLeft() {

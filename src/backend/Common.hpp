@@ -290,11 +290,17 @@ _INLINE constexpr T maxof() {
 
 namespace rnd {
 
+#if defined(LEAF_BUILD_UTILS)
+#define LEAF_RANDOMIZE_RND_ENGINE
+#endif
+
+#undef LEAF_RANDOMIZE_RND_ENGINE // !!!
+
 static int GlobFixedSeed = 1;
 static std::mt19937 GlobMersenne(GlobFixedSeed);
 
 _INLINE std::mt19937_64& getRandomEngine() {
-#if !defined(LEAF_BUILD_UTILS)
+#if !defined(LEAF_RANDOMIZE_RND_ENGINE)
     static thread_local uint RandomEngineSeed = GlobFixedSeed;
     static thread_local std::mt19937_64 engine(static_cast<uint64_t>(RandomEngineSeed));
 #else
@@ -318,59 +324,59 @@ _INLINE T sparseRandom(T l, T r) {
 } // namespace rnd
 
 template <typename T, size_t N>
-using array1d = std::array<T, N>;
+using Array1d = std::array<T, N>;
 
 template <typename T, size_t N, size_t M>
-using array2d = array1d<
-                    array1d<T, M>, 
+using Array2d = Array1d<
+                    Array1d<T, M>, 
                 N>;
 
 template <typename T, size_t N, size_t M, size_t S>
-using array3d = array1d<
-                    array2d<T, M, S>, 
+using Array3d = Array1d<
+                    Array2d<T, M, S>, 
                 N>;
 
 template <typename T, size_t N>
-_FORCEINLINE T* dataOfArray1d(array1d<T, N>& arr) {
+_FORCEINLINE T* dataOfArray1d(Array1d<T, N>& arr) {
     return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M>
-_FORCEINLINE T* dataOfArray2d(array2d<T, N, M>& arr) {
+_FORCEINLINE T* dataOfArray2d(Array2d<T, N, M>& arr) {
     return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE T* dataOfArray3d(array3d<T, N, M, S>& arr) {
+_FORCEINLINE T* dataOfArray3d(Array3d<T, N, M, S>& arr) {
     return reinterpret_cast<T*>(arr.data());
 }
 
 template <typename T, size_t N>
-_FORCEINLINE const T* dataOfArray1d(const array1d<T, N>& arr) {
+_FORCEINLINE const T* dataOfArray1d(const Array1d<T, N>& arr) {
     return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M>
-_FORCEINLINE const T* dataOfArray2d(const array2d<T, N, M>& arr) {
+_FORCEINLINE const T* dataOfArray2d(const Array2d<T, N, M>& arr) {
     return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE const T* dataOfArray3d(const array3d<T, N, M, S>& arr) {
+_FORCEINLINE const T* dataOfArray3d(const Array3d<T, N, M, S>& arr) {
     return reinterpret_cast<const T*>(arr.data());
 }
 
 template <typename T, size_t N>
-_FORCEINLINE constexpr size_t countOfArray1d(const array1d<T, N>&) {
+_FORCEINLINE constexpr size_t countOfArray1d(const Array1d<T, N>&) {
     return N;
 }
 
 template <typename T, size_t N, size_t M>
-_FORCEINLINE constexpr size_t countOfArray2d(const array2d<T, N, M>&) {
+_FORCEINLINE constexpr size_t countOfArray2d(const Array2d<T, N, M>&) {
     return N * M;
 }
 
 template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE constexpr size_t countOfArray3d(const array3d<T, N, M, S>&) {
+_FORCEINLINE constexpr size_t countOfArray3d(const Array3d<T, N, M, S>&) {
     return N * M * S;
 }

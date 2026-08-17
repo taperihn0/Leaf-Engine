@@ -70,8 +70,8 @@ struct alignas(BucketTargetSize) Bucket {
     static constexpr size_t InternalEntriesCnt = 3;
     static constexpr size_t AlignmentSize = BucketTargetSize - InternalEntriesCnt * EntryTargetSize;
 
-    array1d<TTEntry, InternalEntriesCnt> entries;
-    array1d<std::byte, AlignmentSize> __align;
+    Array1d<TTEntry, InternalEntriesCnt> entries;
+    Array1d<std::byte, AlignmentSize> __align;
 };
 
 static_assert(sizeof(Bucket) == BucketTargetSize);

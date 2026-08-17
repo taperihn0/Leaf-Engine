@@ -118,6 +118,6 @@ _NODISCARD static _INLINE Square sqVerticalFlip(Square sq) {
 *  when 'side' is WHITE, 'sq' is flipped vertically.
 */
 _NODISCARD static _INLINE Square sqBlackPerspectiveFlip(Square sq, enumColor side) {
-    static array1d<int8_t, 2> ConvertVal = { 56, 0 };
+    static Array1d<int8_t, 2> ConvertVal = { 56, 0 };
     return sq ^ ConvertVal[side];
 }
