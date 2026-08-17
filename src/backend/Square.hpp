@@ -23,10 +23,9 @@
 
 class Square {
 public:
-    using uint_t = uint8_t;
 
     // little endian squares mapping
-    enum enumSquare : uint_t {
+    enum enumSquare : uint8_t {
         SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
         SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
         SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
@@ -37,7 +36,7 @@ public:
         SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8
     };
 
-    enum enumFile : uint_t {
+    enum enumFile : uint8_t {
         FILE_A = 0, 
         FILE_B, 
         FILE_C, 
@@ -48,7 +47,7 @@ public:
         FILE_H
     };
     
-    enum enumRank : uint_t {
+    enum enumRank : uint8_t {
         RANK_1 = 0, 
         RANK_2, 
         RANK_3, 
@@ -59,24 +58,18 @@ public:
         RANK_8
     };
 
-    _FORCEINLINE Square() 
+    _INLINE constexpr Square() 
         : _sq(None) {}
-
-    _INLINE constexpr Square(uint_t sq)
-        : _sq(sq) { 
-        assert(isValid()); 
-    }
-    
+    _INLINE constexpr Square(uint8_t sq)
+        : _sq(sq) {}
     _INLINE constexpr Square(enumSquare sq)
-        : _sq(sq) { 
-        assert(isValid()); 
-    }
+        : _sq(sq) {}
 
-    _INLINE constexpr Square operator=(uint_t sq) {
+    _INLINE constexpr Square operator=(uint8_t sq) {
         return _sq = sq;
     }
 
-    _INLINE constexpr operator uint_t() const {
+    _INLINE constexpr operator uint8_t() const {
         return _sq;
     }
 
@@ -88,7 +81,7 @@ public:
         return static_cast<enumRank>(_sq / 8);
     }
 
-    _NODISCARD _INLINE bool isNull() const {
+    _NODISCARD _INLINE bool isNone() const {
         return _sq == None;
     }
 
@@ -98,7 +91,7 @@ public:
 
     _NODISCARD _INLINE std::string toStr() const {
         ASSERT(isValid(), "Invalid square");
-        if (isNull()) return "-";
+        if (isNone()) return "-";
         return std::string{ "abcdefgh"[_sq & 7], static_cast<char>(_sq / 8 + '1') };
     }
 
@@ -110,9 +103,9 @@ public:
         return _sq < 64 or _sq == None;
     }
 
-    static constexpr uint_t None = -1_ui8;
+    static constexpr uint8_t None = -1_ui8;
 private:
-    uint_t _sq;
+    uint8_t _sq;
 };
 
 // flipping square horizontally - a1 becomes a8 and vice versa.

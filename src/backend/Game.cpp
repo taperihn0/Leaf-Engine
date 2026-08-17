@@ -123,10 +123,10 @@ _INLINE bool Game::isStaleMate() const {
 }
 
 _INLINE bool Game::isAnyResponse() {
-    MoveList ml;
+    ml::MoveList ml;
     MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(_current_pos, ml);
 
-    return ml.any([&](MoveList::Entry en) { 
+    return ml.any([&](ml::MoveList::Entry en) { 
         return en.move.isLegal(_current_pos); 
     });
 }

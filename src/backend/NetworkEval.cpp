@@ -30,11 +30,11 @@ _FORCEINLINE int32_t screlu(int16_t value, int16_t mi, int16_t ma) {
     return c * c;
 }
 
-Score NEval::evaluate(const PackedNeuralNetwork& network, std::string fen) {
+sc::Score NEval::evaluate(const PackedNeuralNetwork& network, std::string fen) {
     return evaluate(network, Position(fen));
 }
 
-Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
+sc::Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
     assert(network.isValid());
 
     Accumulator accumulator;
@@ -43,13 +43,16 @@ Score NEval::evaluate(const PackedNeuralNetwork& network, const Position& pos) {
     return evaluate(network, accumulator, pos.getTurn());
 }
 
-Score NEval::evaluate(const PackedNeuralNetwork& network, const Accumulator& acc, enumColor side2move) {
+sc::Score NEval::evaluate(const PackedNeuralNetwork& network, 
+                          const Accumulator& acc, 
+                          enumColor side2move) 
+{
     assert(network.isValid());
 
     const int16_t output = layerActivationSingleOutput(acc.getValues(side2move).data(),
                                                        acc.getValues(!side2move).data(),
                                                        network);
-    return static_cast<Score>(output);
+    return static_cast<sc::Score>(output);
 }
 
 int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumulator, 

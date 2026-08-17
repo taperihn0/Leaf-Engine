@@ -19,7 +19,7 @@
 #include "Opening.hpp"
 #include "backend/StaticEval.hpp"
 #include "backend/MoveGen.hpp"
-#include "backend/Score.hpp"
+#include "backend/sc::Score.hpp"
 #include "NetworkEval.hpp"
 #include "Sets.hpp"
 
@@ -83,7 +83,7 @@ void OpeningGenerator::load() {
     auto last = std::unique(_positions.begin(), _positions.end());
 
     last = std::remove_if(_positions.begin(), last, [](GeneratedPosition& genpos) {
-        const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, genpos.pos);
+        const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, genpos.pos);
 
         if (std::abs(static_cast<int>(score)) > _OpeningEvalThreshold)
             return true;
@@ -91,7 +91,7 @@ void OpeningGenerator::load() {
         else if (genpos.pos.isInCheck(genpos.pos.getTurn()))
             return true;
 
-        MoveList ml;
+        ml::MoveList ml;
         MoveGen::generateLegalMoves<MoveGen::ALL>(genpos.pos, ml);
 
         if (!ml.count())

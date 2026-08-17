@@ -36,7 +36,7 @@ struct CacheKingRelated {
 template <MoveGen::enumGenMoves Moves2Gen, bool Capture>
 _INLINE void generatePromotions(Square origin, 
                                 Square target, 
-                                MoveList& move_list) 
+                                ml::MoveList& move_list) 
 {
     if constexpr (Moves2Gen == MoveGen::CAPTURES or 
                   Moves2Gen == MoveGen::TACTICALS) {
@@ -54,7 +54,7 @@ _INLINE void generatePromotions(Square origin,
 
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode, enumColor Side>
 void generatePawnCaptures(const Position& pos, 
-                          MoveList& move_list, 
+                          ml::MoveList& move_list, 
                           BitBoard mask,
                           BitBoard enemies,
                           const CacheKingRelated& cache) 
@@ -182,7 +182,7 @@ void generatePawnCaptures(const Position& pos,
     // En-passant validation
     const Square ep_sq = pos.getEnPassantSq();
 
-    if (ep_sq.isNull()) 
+    if (ep_sq.isNone()) 
         return;
 
     const BitBoard ep_bb(ep_sq);
@@ -243,7 +243,7 @@ void generatePawnCaptures(const Position& pos,
 
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode, enumColor Side>
 void generatePawnPushes(const Position& pos, 
-                        MoveList& move_list, 
+                        ml::MoveList& move_list, 
                         BitBoard mask,
                         BitBoard empties,
                         const CacheKingRelated& cache) 
@@ -335,7 +335,7 @@ void generatePawnPushes(const Position& pos,
 
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode, enumColor Side>
 _FORCEINLINE void generatePawnMoves(const Position& pos, 
-                                    MoveList& move_list, 
+                                    ml::MoveList& move_list, 
                                     BitBoard mask,
                                     BitBoard enemies, 
                                     BitBoard empties,
@@ -350,7 +350,7 @@ _FORCEINLINE void generatePawnMoves(const Position& pos,
 
 template <enumColor Side, enumLegality LMode, bool isCapture>
 void generateKingMoves(const Position& pos, 
-                       MoveList& move_list, 
+                       ml::MoveList& move_list, 
                        BitBoard mask, 
                        BitBoard occupied, 
                        bool check,
@@ -400,7 +400,7 @@ void generateKingMoves(const Position& pos,
 
 template <Piece::enumType Pc, enumLegality LMode, enumColor Side, bool isCapture> 
 _INLINE void generate(const Position& pos, 
-                      MoveList& move_list, 
+                      ml::MoveList& move_list, 
                       BitBoard mask, 
                       BitBoard occupied,
                       const CacheKingRelated& cache) 
@@ -529,7 +529,7 @@ _FORCEINLINE CacheKingRelated getCache(const Position& pos, enumColor side2move)
 
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode, enumColor Side>
 void generateByColor(const Position& pos, 
-                     MoveList& move_list, 
+                     ml::MoveList& move_list, 
                      const BitBoard occupied, 
                      const BitBoard enemy_pieces, 
                      const BitBoard checkers,
@@ -575,7 +575,7 @@ void generateByColor(const Position& pos,
 }
 
 template <MoveGen::enumGenMoves Moves2Gen, enumLegality LMode>
-void generateMovesInMode(const Position& pos, MoveList& move_list) {
+void generateMovesInMode(const Position& pos, ml::MoveList& move_list) {
     const enumColor side2move = pos.getTurn();
     const BitBoard  enemy_pieces = pos.getOppositePieces(),
                     occupied = pos.getOccupied(),
@@ -624,7 +624,7 @@ void generateMovesInMode(const Position& pos, MoveList& move_list) {
 *    delegated variable definitions in make and unmake:
 *    -> (192.031 seconds, 36051kN/sec.)
 *
-*    changed if-branch for captures and r-value references in MoveList::push:
+*    changed if-branch for captures and r-value references in ml::MoveList::push:
 *    -> (190.25 seconds, 36389kN/sec.)
 *
 *    used __forceinline attribute:
@@ -632,40 +632,40 @@ void generateMovesInMode(const Position& pos, MoveList& move_list) {
 */
 
 template <MoveGen::enumGenMoves Moves2Gen>
-void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& move_list) {
+void MoveGen::generatePseudoLegalMoves(const Position& pos, ml::MoveList& move_list) {
     generateMovesInMode<Moves2Gen, PSEUDOLEGAL>(pos, move_list);
 }
 
 template <MoveGen::enumGenMoves Moves2Gen>
-void MoveGen::generateLegalMoves(Position& pos, MoveList& move_list) {
+void MoveGen::generateLegalMoves(Position& pos, ml::MoveList& move_list) {
     generateMovesInMode<Moves2Gen, LEGAL>(pos, move_list);
 }
 
 template <MoveGen::enumGenMoves Moves2Gen>
 Move32b MoveGen::getRandomLegalMove(Position& pos) {
-    MoveList ml;
+    ml::MoveList ml;
     generateLegalMoves<Moves2Gen>(pos, ml);
     return ml.getRandomMove();
 }
 
 bool MoveGen::isAnyCapture(Position& pos) {
-    MoveList ml;
+    ml::MoveList ml;
     generateLegalMoves<MoveGen::CAPTURES>(pos, ml);
     
-    return ml.any([](MoveList::Entry en) {
+    return ml.any([](ml::MoveList::Entry en) {
         return en.move.isCapture();
     });
 }
 
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES> (const Position&, MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>   (const Position&, MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>      (const Position&, MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES> (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>   (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>      (const Position&, ml::MoveList&);
 
-template void    MoveGen::generateLegalMoves<MoveGen::CAPTURES> (Position&, MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS>(Position&, MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::QUIETS>   (Position&, MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::ALL>      (Position&, MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::CAPTURES> (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS>(Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::QUIETS>   (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::ALL>      (Position&, ml::MoveList&);
 
 template Move32b MoveGen::getRandomLegalMove<MoveGen::CAPTURES> (Position&);
 template Move32b MoveGen::getRandomLegalMove<MoveGen::TACTICALS>(Position&);

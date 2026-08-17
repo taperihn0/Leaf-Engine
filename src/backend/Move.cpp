@@ -136,7 +136,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
                 }
             }
 
-            if (origin.isNull())
+            if (origin.isNone())
                 origin = pos.getTurn() == WHITE ? Square(static_cast<int>(target) - 8)
                                                 : Square(static_cast<int>(target) + 8);
         }
@@ -246,7 +246,7 @@ bool Move32b::isPseudoLegal(const Position& pos) const {
 template <>
 template <bool onlyQuiets>
 bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
-    MoveList mlist;
+    ml::MoveList mlist;
     MoveGen::generatePseudoLegalMoves<onlyQuiets ? MoveGen::QUIETS : MoveGen::ALL>(pos, mlist);
     return mlist.contains(*this);
 }

@@ -22,35 +22,52 @@
 
 #include <algorithm>
 
+namespace ml {
+
+class MoveScore final : public sc::util::ScoreBase<MoveScore> {
+public:
+    friend class sc::util::ScoreBase<MoveScore>;
+    using sc::util::ScoreBase<MoveScore>::operator=;
+
+    MoveScore() = default;
+    _INLINE constexpr MoveScore(const MoveScore&) = default;
+    _INLINE constexpr MoveScore(const sc::Score& s) noexcept 
+        : ScoreBase(s.value()) {}
+    _INLINE constexpr MoveScore(int32_t val) noexcept
+        : ScoreBase(val) {}
+
+    _FORCEINLINE constexpr MoveScore& operator=(const sc::Score& s) noexcept {
+        _v = static_cast<const sc::util::ScoreBase<sc::Score>&>(s)._v;
+        return *this;
+    }
+private:
+    using sc::util::ScoreBase<MoveScore>::_v;
+};
+
 class MoveList {
 public:
     struct Entry {
-        using movescore_t = int32_t;
-
-        _INLINE constexpr bool operator==(Entry b) const noexcept {
+        constexpr bool operator==(Entry b) const noexcept {
             return move == b.move;
         }
 
-        Move32b     move;
-        movescore_t score;
+        Move32b   move;
+        MoveScore score;
     };
 
-    using entryscore_t = Entry::movescore_t;
+    static_assert(is_same<MoveScore::int_t, int16_t>);
 
-    static_assert(is_same<entryscore_t, int32_t> or
-                  is_same<entryscore_t, int16_t>);
-
-    _INLINE MoveList() = default;
+    MoveList() = default;
 
     _INLINE void sort(size_t first, size_t end) {
-        std::sort(_moves.data() + first, _moves.data() + end, _greater_score);
+        std::sort(_moves.data() + first, _moves.data() + end, _GreaterScore);
     }
 
     _INLINE void partialSort(size_t first, size_t mid, size_t end) {
         std::partial_sort(_moves.data() + first, 
                           _moves.data() + mid, 
                           _moves.data() + end, 
-                          _greater_score);
+                          _GreaterScore);
     }
 
     _INLINE void push(Move32b new_move) {
@@ -58,9 +75,9 @@ public:
         _moves[_idx++].move = new_move;
     }
 
-    _INLINE Entry* getEntry(size_t idx) {
+    _INLINE Entry& getEntry(size_t idx) {
         assert(idx < _idx);
-        return _moves.data() + idx;
+        return _moves[idx];
     }
 
     _INLINE Move32b getMove(size_t idx) const {
@@ -68,7 +85,7 @@ public:
         return _moves[idx].move;
     }
 
-    _INLINE entryscore_t getScore(size_t idx) const {
+    _INLINE MoveScore getScore(size_t idx) const {
         assert(idx < _idx);
         return _moves[idx].score;
     }
@@ -133,18 +150,18 @@ public:
 private:
     static constexpr size_t _MaxSize = MaxNodeMoves;
 
-    inline static const auto _greater_score = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
+    inline static const constexpr auto _GreaterScore = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
         return a.score > b.score;
     };
 
-    size_t                     _idx = 0;
+    size_t                   _idx = 0;
     array1d<Entry, _MaxSize> _moves = {};
 };
 
 _INLINE void MoveList::selectSort(size_t first_ind) {
     assert(first_ind < _idx);
 
-    entryscore_t best = _moves[first_ind].score;
+    MoveScore best = _moves[first_ind].score;
     size_t ind = first_ind;
 
     for (size_t i = first_ind + 1; i < _idx; i++) {
@@ -156,3 +173,6 @@ _INLINE void MoveList::selectSort(size_t first_ind) {
 
     std::swap(_moves[ind], _moves[first_ind]);
 }
+
+} // namespace ml
+

@@ -41,12 +41,12 @@ public:
     
     void startTournament(const TournamentPacket& packet);
     static bool explicitFilterPolicy(const Position& pos, 
-                                     Score white_score);
+                                     sc::Score white_score);
 private:
     static bool internalFilterPolicy(Move32b internal_move,
                                      size_t internal_total_positions_cnt);
     bool filterTrainPosition(const Position& pos, 
-                             Score white_score, 
+                             sc::Score white_score, 
                              Move32b internal_move,
                              size_t internal_total_positions_cnt);
 

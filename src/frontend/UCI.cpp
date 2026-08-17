@@ -301,7 +301,7 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
     else
         pos.setByFEN(fen);
 
-    const Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
+    const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
 
     std::cout << static_cast<int>(score) << std::endl;
 }

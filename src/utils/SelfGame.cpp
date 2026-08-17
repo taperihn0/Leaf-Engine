@@ -116,7 +116,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
                                 *curr_player,
                                 info_labels[side2move]);
         
-        Score score = Score::Undef;
+        sc::Score score = sc::Undef;
 
         timer.go();
         Move32b move = getPlayerMove<EnableLog>(limits, pos, 
@@ -136,7 +136,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
         if (packet.train_data_spec != nullptr) {
             packet.train_data_spec->positions_buf->push_back(pos);
 
-            const Score white_score = pos.getTurn() == WHITE ? score : -score;
+            const sc::Score white_score = pos.getTurn() == WHITE ? score : -score;
             packet.train_data_spec->white_scores_buf->push_back(white_score);
             
             packet.train_data_spec->moves_buf->push_back(move);
@@ -217,7 +217,7 @@ template <bool EnableLog>
 Move32b SelfGame::getPlayerMove(search::SearchLimits limits,
                                 Position& pos,
                                 EngineProcess& player, 
-                                Score& score,
+                                sc::Score& score,
                                 enumLogLabel ret_msg_label) 
 {
     /* Is, os are relative to the engines.
@@ -262,11 +262,11 @@ Move32b SelfGame::getPlayerMove(search::SearchLimits limits,
                     ss >> type >> value;
 
                     if (type == "cp") {
-                        score = static_cast<Score>(value);
+                        score = static_cast<sc::Score>(value);
                     } 
                     else if (type == "mate") {
-                        score = (value >= 0) ? (Score::Mate - value) 
-                                             : (-Score::Mate - value);
+                        score = (value >= 0) ? (sc::Mate - value) 
+                                             : (-sc::Mate - value);
                     }
                 }
             }

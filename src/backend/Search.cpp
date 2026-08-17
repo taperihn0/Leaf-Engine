@@ -285,11 +285,11 @@ void NodeInfo::clear() {
     side2move        = WHITE;
     state            = {};
     best_move = move = Move32b::Null;
-    score            = Score::Undef;
-    eval             = Score::Undef;
+    score            = sc::Undef;
+    eval             = sc::Undef;
     improving        = 0;
     can_move         = false;
-    best_score       = Score::Undef;
+    best_score       = sc::Undef;
     check            = false;
     moves_searched   = 0;
     move_index       = 0;
@@ -337,10 +337,11 @@ TreeStack::TreeStack()
 void TreeStack::clear(mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> history_buffer) {
     ASSERT_NOLOG(history_buffer);
 
+    mvorder::MoveOrder::setHistoryBuffer(history_buffer);
+
     for (int i = 0; i < static_cast<int>(_Count); i++) {
         NodeInfo& node = _stack.get()[i];
         node.clear();
-        node.move_picker.setHistoryBuffer(history_buffer);
         node.cluster.prev_cluster = i - 1 >= 0 ? &_stack.get()[i - 1].cluster : nullptr;
         node.cluster.next_cluster = i + 1 < static_cast<int>(_Count) ? &_stack.get()[i + 1].cluster : nullptr;
     }
@@ -516,11 +517,11 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
     root->side2move = pos.getTurn();
     root->best_move = Move32b::Null;
-    root->best_score = Score::Undef;
+    root->best_score = sc::Undef;
 
-    const Score eval = evaluate<PV_NODE>(pos, _tree_stack.get(), 
-                                         root, preroot, 
-                                         pos.getTurn(), search_results);
+    const sc::Score eval = evaluate<PV_NODE>(pos, _tree_stack.get(), 
+                                             root, preroot, 
+                                             pos.getTurn(), search_results);
     root->eval = eval;
 
     for (int d = 1; d <= limits.depth; d++) {
@@ -561,15 +562,15 @@ Move32b Search::goIterativeDeepening(Position& pos,
                 break;
         }
 
-        const ull       prev_total_node_cnt = d > 1 ? search_results.nodes_cnt : 0;
+        const ull               prev_total_node_cnt = d > 1 ? search_results.nodes_cnt : 0;
         const clk::milliseconds prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
-        const Score     prev_best_score     = d > 1 ? root->best_score         : Score::Undef;
-        const Move32b   prev_best_move      = d > 1 ? root->best_move          : Move32b::Null;
+        const sc::Score         prev_best_score     = d > 1 ? root->best_score         : sc::Undef;
+        const Move32b           prev_best_move      = d > 1 ? root->best_move          : Move32b::Null;
 
         // Adjust contempt factor based on a corrected evaluation
-        const Score corr_eval = correctedEvalScore(eval, prev_best_score);
+        const sc::Score corr_eval = correctedEvalScore(eval, prev_best_score);
 
-        _contempt = unstable ? 0 : static_cast<Score::int_t>(corr_eval / ContemptDiv);
+        _contempt = unstable ? 0 : static_cast<sc::Score::int_t>(corr_eval / ContemptDiv);
 
         // Inject previous PV line to hash table
         refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
@@ -578,20 +579,19 @@ Move32b Search::goIterativeDeepening(Position& pos,
                              - std::min(d, AspirationMaxDepthInfl) * AspirationDepthRate 
                              + unstable * AspirationUnstableFactor;
 
-        Score alpha = -Score::Mate;
-        Score beta = +Score::Mate;
+        sc::Score alpha = -sc::Mate;
+        sc::Score beta = +sc::Mate;
 
-        if (!prev_best_score.isMateScore() and
-            !isTablebaseScore(prev_best_score)) 
-        {
-            const Score::int_t prev_best_score_abs = abs<Score::int_t>(static_cast<Score::int_t>(prev_best_score));
+        if (abs<sc::Score::int_t>(prev_best_score.value()) < sc::Win.value()) {
+            const sc::Score::int_t prev_best_score_abs = abs<sc::Score::int_t>(
+                                                           static_cast<sc::Score::int_t>(prev_best_score));
             aspiration_win += sq(prev_best_score_abs) / AspirationWindowScoreDiv;
 
             if (d >= AspirationSearchDepth)    {
-                alpha = std::max<int>(static_cast<int>(prev_best_score) - aspiration_win, 
-                                      -Score::Mate);
-                beta  = std::min<int>(static_cast<int>(prev_best_score) + aspiration_win, 
-                                      +Score::Mate);
+                alpha = std::max<int16_t>(static_cast<int16_t>(prev_best_score) - aspiration_win, 
+                                          -sc::Mate.value());
+                beta  = std::min<int16_t>(static_cast<int16_t>(prev_best_score) + aspiration_win, 
+                                          +sc::Mate.value());
             }
         }
 
@@ -614,18 +614,18 @@ Move32b Search::goIterativeDeepening(Position& pos,
 
             if (i + 1 >= AspirationCount or
                 aspiration_win >= AspirationMaxWindow) {
-                alpha = -Score::Mate;
-                beta = +Score::Mate;
+                alpha = -sc::Mate;
+                beta = +sc::Mate;
                 continue;
             }
 
             if (root->best_score <= alpha) {
                 alpha = std::max<int>(static_cast<int>(alpha) - aspiration_win,
-                                      -Score::Mate);
+                                      -sc::Mate.value());
             }
             else {
                 beta = std::min<int>(static_cast<int>(beta) + aspiration_win,
-                                     +Score::Mate);
+                                     +sc::Mate.value());
             }
         }
 
@@ -675,14 +675,14 @@ bool Search::goSearch(Position& pos,
                       const FullInfoRecord& game, 
                       const SearchLimitsWrapper& limits, 
                       SearchResultsWrapper& results,
-                      Score alpha, Score beta) 
+                      sc::Score alpha, sc::Score beta) 
 {
     NodeInfo* root = _tree_stack->getRootNode();
 
-    const Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
-                                                             alpha, beta, 
-                                                             results.depth, 
-                                                             0);
+    const sc::Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
+                                                                 alpha, beta, 
+                                                                 results.depth, 
+                                                                 0);
 
     results.seldepth = std::max(results.seldepth, results.depth);
     
@@ -700,12 +700,12 @@ bool Search::goSearch(Position& pos,
 }
 
 template <enumNode NmNodeType, bool NullMove, bool Root>
-Score Search::nmSearch(Position& pos, 
+sc::Score Search::nmSearch(Position& pos, 
                        const SearchLimitsWrapper& limits, 
                        SearchResultsWrapper& results, 
                        const FullInfoRecord& game, 
                        NodeInfo* node,
-                       Score alpha, Score beta, 
+                       sc::Score alpha, sc::Score beta, 
                        int depth, int ply) 
 {
     assert(0 <= depth and depth <= MaxSelDepth);
@@ -719,7 +719,7 @@ Score Search::nmSearch(Position& pos,
     node->side2move = pos.getTurn();
     node->pv_line_len = 0;
 
-    static constexpr mvorder::OrderType OrderPolicy = Root ? mvorder::ONCE_GEN_LEGAL : mvorder::STAGED;
+    static constexpr mvorder::enumOrderPolicy OrderPolicy = Root ? mvorder::ONCE_GEN_LEGAL : mvorder::STAGED;
     static constexpr bool               IsPv        = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
@@ -744,7 +744,7 @@ Score Search::nmSearch(Position& pos,
 #if defined(_CUCKOO_DRAW)
 
     if constexpr (!Root and !IsPv) {
-        const Score draw_score = getDrawScore(node);
+        const sc::Score draw_score = getDrawScore(node);
 
         if (beta <= draw_score and canRepetitionDraw(pos, node, ply)) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -758,12 +758,12 @@ Score Search::nmSearch(Position& pos,
     
     else if (!Root and (results.nodes_cnt & CheckNodeCount) == 0 and 
              !limits.isTimeLeft()) {
-        return -Score::Undef;
+        return -sc::Undef;
     }
     
     else if (!Root and (!results.anyNodesLeft(limits) or
                         !results.anyQuiesceNodesLeft(limits))) {
-        return -Score::Undef;
+        return -sc::Undef;
     }
 
     const uint64_t hash = pos.getZobristKey();
@@ -773,9 +773,9 @@ Score Search::nmSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
 
     TTEntry tt_entry;
-    tt_entry.eval = Score::Undef;
+    tt_entry.eval = sc::Undef;
     tt_entry.move = Move16b::Null;
-    tt_entry.score = Score::Undef;
+    tt_entry.score = sc::Undef;
 
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
     const bool exact_hit = !IsPv and tt_hit;
@@ -805,7 +805,6 @@ Score Search::nmSearch(Position& pos,
                 SyzygyTablebase::TbWdlInfo wdl;
                 uint dtz;
                 Move16b tb_move;
-                _declUnused(dtz); // DTZ info is unused
 
                 const bool status = SyzygyTablebase::get().probeDtz(pos, wdl, dtz, tb_move);
 
@@ -825,9 +824,9 @@ Score Search::nmSearch(Position& pos,
                     node->pv_line[0].best_move = packedMove(tb_move32);
                     node->pv_line_len = 1;
 
-                    const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
+                    const sc::Score tb_score = getTablebaseScore(wdl, pos, node, ply);
                     
-                    assert(tb_score != Score::Undef);
+                    assert(tb_score.isValid());
                     node->best_score = tb_score;
 
                     return node->best_score;
@@ -844,7 +843,7 @@ Score Search::nmSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
 
                 if (status) {
-                    const Score tb_score = getTablebaseScore(wdl, pos, node, ply);
+                    const sc::Score tb_score = getTablebaseScore(wdl, pos, node, ply);
 
                     _tt.write(hash,
                               EntryMaxDepth, ply,
@@ -906,19 +905,19 @@ Score Search::nmSearch(Position& pos,
     if constexpr (!Root and !IsPv) {
         if (!node->check and
             depth <= RazorDepth and
-            beta < Score::Win and
+            beta < sc::Win and
             !grandparent_node->mate_thread and 
-            tt_entry.score < Score::Win and
+            tt_entry.score < sc::Win and
             (tt_move.isNull() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
             int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
             if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
-                const Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
-                                                                         beta - 1, beta,
-                                                                         depth - 1,
-                                                                         ply);
+                const sc::Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
+                                                                             beta - 1, beta,
+                                                                             depth - 1,
+                                                                             ply);
                 
                 if (qscore < beta) {
                     return qscore;
@@ -940,16 +939,16 @@ Score Search::nmSearch(Position& pos,
         {
             child_node->is_cut = !node->is_cut;
 
-            _UNUSED const Score iid_score =
+            _UNUSED const sc::Score iid_score =
                 nmSearch<NmNodeType, false>(pos, limits, results, game, node,
                                             alpha, beta,
                                             4 * depth / IidDepthDiv,
                                             ply);
 
             TTEntry iid_entry;
-            iid_entry.eval = Score::Undef;
+            iid_entry.eval = sc::Undef;
             iid_entry.move = Move16b::Null;
-            iid_entry.score = Score::Undef;
+            iid_entry.score = sc::Undef;
 
             _UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
             
@@ -1000,8 +999,8 @@ Score Search::nmSearch(Position& pos,
             const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / FixedPointMult);
 
             if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
-                const Score rfp_value = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
-                                         static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
+                const sc::Score rfp_value = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
+                                             static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
                 return rfp_value;
             }
         }
@@ -1018,7 +1017,7 @@ Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             pos.getNonPawnMaterial() > 0 and
-            beta < Score::Win) {
+            beta < sc::Win) {
 
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
@@ -1045,18 +1044,18 @@ Score Search::nmSearch(Position& pos,
 
                 child_node->is_cut = !node->is_cut;
 
-                Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
-                                                                -beta, -beta + 1, 
-                                                                nm_depth, 
-                                                                ply + 1);
+                sc::Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
+                                                                    -beta, -beta + 1, 
+                                                                    nm_depth, 
+                                                                    ply + 1);
                 pos.unmakeNull(node->state);
                 next_cluster->prev_cluster = curr_cluster;
 
-                if (score <= -Score::MateBound) {
+                if (score <= -sc::MateBound) {
                     node->mate_thread = true;
                 }
 
-                const Score nm_score = score;
+                const sc::Score nm_score = score;
 
                 /* Unless Null Move Pruning is not handled properly in the endgame, 
                 *  verification search is just needed to prevent Zugzwang.
@@ -1106,17 +1105,17 @@ Score Search::nmSearch(Position& pos,
     _LC_PARAM_ATTRIBS int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     node->can_move       = false;
-    node->score          = Score::Undef;
+    node->score          = sc::Undef;
     node->move           = Move32b::Null;
     node->best_move      = Move32b::Null;
-    node->best_score     = -Score::Infinity;
+    node->best_score     = -sc::Infinity;
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
 
-    int16_t move_score = Score::Undef;
+    ml::MoveScore move_score = sc::Undef;
 
     for (node->move_index = 0; 
-         node->move_picker.nextMove<OrderPolicy, Root>(node, pos, node->move, move_score);
+         node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, move_score);
          node->move_index++) 
     {
         /* Singular Move -
@@ -1125,9 +1124,9 @@ Score Search::nmSearch(Position& pos,
         if constexpr (Root and OrderPolicy == mvorder::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
                 node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
-                results.score_cp = Score::Undef;
+                results.score_cp = sc::Undef;
                 node->best_move = node->move;
-                return Score::Undef;
+                return sc::Undef;
             }
         }
 
@@ -1140,7 +1139,7 @@ Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                alpha < Score::MateBound)
+                alpha < sc::MateBound)
             {
                 /* Static Exchange Evaluation Pruning -
                 *  prune bad moves accoring to SEE score.
@@ -1169,7 +1168,7 @@ Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    (move_score - mvorder::MaxAbsQuietsHistory) * FutilityScoreMult / 8192;
+                                                    mvorder::MoveOrder::centeredQuietScore(move_score).value() * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1205,25 +1204,25 @@ Score Search::nmSearch(Position& pos,
                 !tt_move.isNull() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == TTBound::LOWERBOUND and
-                tt_entry.score < Score::Win) 
+                tt_entry.score < sc::Win) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-                const Score singular_beta = std::max<int>(-Score::MateBound / 2, 
-                                                          static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16);
+                const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
+                                                                  static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16);
 
                 child_node->is_cut = !node->is_cut;
 
-                const Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
-                                                                 -singular_beta, -singular_beta + 1,
-                                                                 singular_depth,
-                                                                 ply + 1);
+                const sc::Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+                                                                     -singular_beta, -singular_beta + 1,
+                                                                     singular_depth,
+                                                                     ply + 1);
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and score < Score::Win) {
+                else if (score >= beta and score < sc::Win) {
                     pos.unmake(node->move, node->state);
-                    const Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
-                                                / (singular_depth + 1);
+                    const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
+                                                        / (singular_depth + 1);
                     return reduced_score;
                 }
                 else if (score >= singular_beta) {
@@ -1280,7 +1279,7 @@ Score Search::nmSearch(Position& pos,
                 if (!killer.isNull() and node->move == killer) 
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
-                if (move_score != Score::Undef) 
+                if (move_score.isValid()) 
                     move_reduction += mvorder::MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
@@ -1308,7 +1307,7 @@ Score Search::nmSearch(Position& pos,
                 if (!killer.isNull() and node->move == killer)
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
-                if (move_score != Score::Undef and !node->move.isPromotion())
+                if (move_score.isValid() and !node->move.isPromotion())
                     move_reduction += mvorder::MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
@@ -1451,13 +1450,13 @@ Score Search::nmSearch(Position& pos,
             }
         }
 
-        return -Score::Undef;
+        return -sc::Undef;
     }
     
     // detect checkmate or stealmate
     if (!node->can_move) {
         node->bound = TTBound::EXACT;
-        node->best_score = node->check ? -Score::getMateScore(ply)
+        node->best_score = node->check ? -sc::Score::getMateScore(ply)
                                        : getDrawScore(node);
     }
 
@@ -1482,17 +1481,17 @@ Score Search::nmSearch(Position& pos,
 }
 
 template <enumNode QNodeType, bool Root>
-Score Search::qSearch(Position& pos, 
-                      const SearchLimitsWrapper& limits, 
-                      SearchResultsWrapper& results, 
-                      NodeInfo* node, 
-                      Score alpha, Score beta, 
-                      int depth, int ply) 
+sc::Score Search::qSearch(Position& pos, 
+                          const SearchLimitsWrapper& limits, 
+                          SearchResultsWrapper& results, 
+                          NodeInfo* node, 
+                          sc::Score alpha, sc::Score beta, 
+                          int depth, int ply) 
 {
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    static constexpr mvorder::OrderType QuiescentOrderPolicy = mvorder::QUIESCENT;
+    static constexpr mvorder::enumOrderPolicy QuiescentOrderPolicy = mvorder::QUIESCENT;
     static constexpr bool               IsPv = QNodeType & PV_NODE; 
 
     assert(IsPv or alpha == beta - 1);
@@ -1503,7 +1502,7 @@ Score Search::qSearch(Position& pos,
         return getDrawScore(node);
     }
     else if ((results.nodes_cnt & CheckNodeCount) == 0 and !limits.isTimeLeft()) {
-        return -Score::Undef;
+        return -sc::Undef;
     }
     
     NodeInfo* const preroot = _tree_stack->getPreRootNode();
@@ -1518,9 +1517,9 @@ Score Search::qSearch(Position& pos,
 
 #if defined(_TT_PROBE_QSEARCH)
     TTEntry tt_entry;
-    tt_entry.eval = Score::Undef;
+    tt_entry.eval = sc::Undef;
     tt_entry.move = Move16b::Null;
-    tt_entry.score = Score::Undef;
+    tt_entry.score = sc::Undef;
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
     results.tt_probe_cnt++;
@@ -1566,8 +1565,8 @@ Score Search::qSearch(Position& pos,
         pos.getNonPawnMaterial() > 0 and
         !node->check) 
     {
-        const Score delta_value = (static_cast<int32_t>(alpha)      * (128 - QDeltaPruningEvalWeight) + 
-                                   static_cast<int32_t>(node->eval) * QDeltaPruningEvalWeight) / 128;
+        const sc::Score delta_value = (static_cast<int32_t>(alpha)      * (128 - QDeltaPruningEvalWeight) + 
+                                       static_cast<int32_t>(node->eval) * QDeltaPruningEvalWeight) / 128;
         return delta_value;
     }
     
@@ -1576,8 +1575,8 @@ Score Search::qSearch(Position& pos,
     */
     if (node->eval > alpha) {
         if (node->eval >= beta) {
-            const Score beta_cutoff_value = (static_cast<int32_t>(beta)       * (128 - QBetaCutoffEvalWeight) + 
-                                             static_cast<int32_t>(node->eval) * QBetaCutoffEvalWeight) / 128;
+            const sc::Score beta_cutoff_value = (static_cast<int32_t>(beta)       * (128 - QBetaCutoffEvalWeight) + 
+                                                 static_cast<int32_t>(node->eval) * QBetaCutoffEvalWeight) / 128;
             return beta_cutoff_value;
         }
 
@@ -1614,13 +1613,13 @@ Score Search::qSearch(Position& pos,
     node->state          = pos.getReversibleState();
     node->best_move      = Move32b::Null;
     node->move           = Move32b::Null;
-    node->score          = Score::Undef;
-    node->best_score     = -Score::Infinity;
+    node->score          = sc::Undef;
+    node->best_score     = -sc::Infinity;
 
-    int16_t move_score = Score::Undef;
+    ml::MoveScore move_score = sc::Undef;
 
     for (node->move_index = 0;
-         node->move_picker.nextMove<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
+         node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
          node->move_index++) 
     {
         
@@ -1684,67 +1683,74 @@ Score Search::qSearch(Position& pos,
                  !results.anyNodesLeft(limits) or
                  !results.anyQuiesceNodesLeft(limits))
         {
-            return -Score::Undef;
+            return -sc::Undef;
         }
     }
 
-    return node->best_score != -Score::Infinity ? node->best_score 
+    return node->best_score != -sc::Infinity ? node->best_score 
                                                 : alpha;
 }
 
-_FORCEINLINE Score Search::getDrawScore(const NodeInfo* node) const {
-    return applyContempt(Score::Draw, node);
+_FORCEINLINE sc::Score Search::getDrawScore(const NodeInfo* node) const {
+    return applyContempt(sc::Draw, node);
 }
 
-_FORCEINLINE Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
+_FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
                                              const Position& pos, 
                                              const NodeInfo* node,
                                              int ply) const 
 {
-    static auto get_win_tb_score = [](const Position& pos, int ply) -> Score  _LAMBDA_FORCEINLINE {
-        const int pccnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
-        const int unscaled = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pccnt_diff);
-        return static_cast<Score>(TablebaseScoreScale * unscaled / 16);
+    static const auto get_win_tb_score = [](const Position& pos, int ply) -> sc::Score  _LAMBDA_FORCEINLINE {
+        const int16_t pc_cnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
+        const int16_t result = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pc_cnt_diff);
+        return static_cast<sc::Score>(result);
     };
 
     switch (wdl) {
-    case SyzygyTablebase::WDL_WIN:  return get_win_tb_score(pos, ply);
-    case SyzygyTablebase::WDL_LOSS: return -get_win_tb_score(pos, ply);
-    case SyzygyTablebase::WDL_DRAW: return getDrawScore(node);
-    default: break;
+    case SyzygyTablebase::WDL_WIN: {
+        const sc::Score tb_score = get_win_tb_score(pos, ply);
+        assert(tb_score > sc::Win);
+        return tb_score;
+    }
+    case SyzygyTablebase::WDL_LOSS: {
+        const sc::Score tb_score = -get_win_tb_score(pos, ply);
+        assert(tb_score < -sc::Win);
+        return -tb_score;
+    }
+    case SyzygyTablebase::WDL_DRAW: {
+        return getDrawScore(node);
+    }
+    default: 
+        break;
     }
 
-    return Score::Undef;
+    return sc::Undef;
 }
 
-_FORCEINLINE bool Search::isTablebaseScore(Score score) const {
-    /* We are calculating TablebaseLowestWinScore dynamically to
-    *  match current TablebaseScoreScale which may vary while tuning.
-    */ 
-    const _LC_PARAM_ATTRIBS int TablebaseLowestWinScore = 
-                                                    TablebaseScoreScale 
-                                                      * (TablebaseWinScore 
-                                                        - MaxSelDepth 
-                                                        - 15 * TablebasePieceDiffMult) 
-                                                      / 16;
-    return score.isValid() and 
-           abs<Score::int_t>(static_cast<Score::int_t>(score)) >= TablebaseLowestWinScore;
+_FORCEINLINE bool Search::isTablebaseScore(sc::Score score) const {
+    static constexpr int16_t TablebaseLowestWinScore = TablebaseScoreScale 
+                                                        * (TablebaseWinScore 
+                                                          - MaxSelDepth 
+                                                          - 15 * TablebasePieceDiffMult) 
+                                                        / 16;
+    return score.isValid() and abs<sc::Score::int_t>(
+        static_cast<sc::Score::int_t>(score)) >= TablebaseLowestWinScore;
 }
 
-_FORCEINLINE Score Search::applyContempt(Score score, const NodeInfo* node) const {
+_FORCEINLINE sc::Score Search::applyContempt(sc::Score score, const NodeInfo* node) const {
     const NodeInfo* const root = _tree_stack->getRootNode();
-    assert(_contempt != Score::Undef);
+    assert(_contempt.isValid());
     return root->side2move == node->side2move ? score - _contempt
                                               : score;
 }
 
 template <enumNode NodeType>
-_INLINE Score Search::evaluate(const Position& pos,
-                               TreeStack* _tree_stack,
-                               NodeInfo* node,
-                               NodeInfo* preroot,
-                               enumColor side2move, 
-                               SearchResultsWrapper& results)
+_INLINE sc::Score Search::evaluate(const Position& pos,
+                                   TreeStack* _tree_stack,
+                                   NodeInfo* node,
+                                   NodeInfo* preroot,
+                                   enumColor side2move, 
+                                   _MAYBE_UNUSED SearchResultsWrapper& results)
 {
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1753,15 +1759,17 @@ _INLINE Score Search::evaluate(const Position& pos,
         
     else
         results.nmeval_cnt++;
-#else
-    _declUnused(results);
 #endif
 
-    const Score::int_t pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos).toInt16()
-                                                                   : Score::Undef;
+    sc::Score pawnless_eg_eval = sc::Undef;
 
-    if (pawnless_eg_eval == Score::Draw)
-        return pawnless_eg_eval;
+    if (!SyzygyTablebase::get().isLoaded()) {
+        pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos)
+                                                    : sc::Undef;
+
+        if (pawnless_eg_eval == sc::Draw)
+            return pawnless_eg_eval;
+    }
 
     AccumulatorCluster* curr_accum_cluster = &node->cluster;
     const AccumulatorCluster* prev_accum_cluster = curr_accum_cluster->prev_cluster;
@@ -1779,41 +1787,43 @@ _INLINE Score Search::evaluate(const Position& pos,
     ASSERT(nn::Accumulator::verify(prev_accum, pos), "Accumulator verification failed");
 #endif
 
-    const Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
+    const sc::Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
     const int64_t unscaled_eval = NNEvalScale * 4096 * static_cast<int64_t>(eval);
     const int32_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
  
     // Assert we won't overflow into mate score
-    assert(abs<int16_t>(scaled_eval) < Score::MateBound - 100);
+    assert(abs<int16_t>(scaled_eval) < sc::MateBound - 100);
  
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
-    Score::int_t result = static_cast<Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
+    sc::Score::int_t result = static_cast<sc::Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
 
-    if (pawnless_eg_eval != Score::Undef) {
-        switch (pawnless_eg_eval) {
-        case Score::Win:
-        case -Score::Win:
-            return pawnless_eg_eval + std::max<Score::int_t>(result, 0);
+    if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
+        switch (pawnless_eg_eval.value()) {
+        case sc::Win.value():
+        case -sc::Win.value():
+            return pawnless_eg_eval + std::max<sc::Score::int_t>(result, 0);
 
-        case Score::KnownWin:
-        case -Score::KnownWin: 
-            return pawnless_eg_eval + std::max<Score::int_t>(result, 0);
+        case sc::KnownWin.value():
+        case -sc::KnownWin.value(): 
+            return pawnless_eg_eval + std::max<sc::Score::int_t>(result, 0);
 
-        default: assert("Invalid endgame score");
+        default: 
+            assert("Invalid endgame score");
+            break;
         }
     }
 
     return result;
 }
 
-_FORCEINLINE Score Search::correctedEvalScore(Score eval, Score score) {
+_FORCEINLINE sc::Score Search::correctedEvalScore(sc::Score eval, sc::Score score) {
     assert(eval.isValid());
 
-    if (!score.isValid() or eval.isMateScore())
+    if (!score.isValid())
         return eval;
 
-    const Score tt_eval_diff = score - eval;
+    const sc::Score tt_eval_diff = score - eval;
     return eval + tt_eval_diff / TTEvalCorrRate;
 }
 
@@ -1821,15 +1831,15 @@ _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
     const Move32b prev_move = parent_node->move;
 
     if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
-        const int unorm_score = parent_node->move_picker.getPositiveNormQuietScore(prev_move, 
-                                                                                   parent_node->side2move);
+        const int unorm_score = parent_node->move_picker.getQuietMoveScore(parent_node->move_index, 
+                                                                           parent_node->side2move);
         return unorm_score * RfpQuietPenaltyMult / 8192;
     }
 
     return 0;
 }
 
-_FORCEINLINE int Search::getNullSearchDepth(Score eval, Score beta, int depth) {
+_FORCEINLINE int Search::getNullSearchDepth(sc::Score eval, sc::Score beta, int depth) {
     const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
     const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
     // Do not return same depth, we could stuck in a loop
@@ -1857,7 +1867,7 @@ void Search::refreshPVinTT(const Position& pos,
          i++) 
     {
         const Move16b pv_move = root_pv_line[i].best_move;
-        const Score score = root_pv_line[i].score;
+        const sc::Score score = root_pv_line[i].score;
         const uint64_t key = cpy_pos.getZobristKey();
         const int depth = results.depth - i;
 
@@ -1869,14 +1879,14 @@ void Search::refreshPVinTT(const Position& pos,
 
         const bool tt_hit = _tt.probe(tt_entry, 
                                       key,
-                                      -Score::MateBound, +Score::MateBound, 
+                                      -sc::MateBound, +sc::MateBound, 
                                       depth);
 
         if (!tt_hit or pv_move != tt_entry.move) {
             _tt.write(key,
                       static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
                       TTBound::EXACT, 
-                      score, pv_move, Score::Undef);
+                      score, pv_move, sc::Undef);
         }
         
         Move32b pv_unpack = unpackedMove(cpy_pos, pv_move);
@@ -1891,7 +1901,7 @@ void Search::refreshPVinTT(const Position& pos,
     const uint64_t key = pos.getZobristKey();
     const Move16b  root_best_move = packedMove(results.best_move);
     const int depth = results.depth;
-    const Score score = results.score_cp;
+    const sc::Score score = results.score_cp;
 
     if (!pv_len) {
         TTEntry tt_entry;
@@ -1899,14 +1909,14 @@ void Search::refreshPVinTT(const Position& pos,
 
         const bool tt_hit = _tt.probe(tt_entry,
                                       key,
-                                      -Score::MateBound, +Score::MateBound,
+                                      -sc::MateBound, +sc::MateBound,
                                       depth);
 
         if (!tt_hit or root_best_move != tt_entry.move) {
             _tt.write(key,
                       depth, 0,
                       TTBound::EXACT,
-                      score, root_best_move, Score::Undef);
+                      score, root_best_move, sc::Undef);
         }
     }
 
@@ -1918,7 +1928,7 @@ void Search::refreshPVinTT(const Position& pos,
 
     _tt.probe(tt_entry,
               key,
-              -Score::MateBound, +Score::MateBound,
+              -sc::MateBound, +sc::MateBound,
               depth);
 
     ASSERT_NOLOG(!tt_entry.move.isNull());

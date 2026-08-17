@@ -32,7 +32,7 @@ public:
 
     struct TrainDataSpec {
         std::vector<Position>* positions_buf;
-        std::vector<Score>*    white_scores_buf;
+        std::vector<sc::Score>*    white_scores_buf;
         std::vector<Move32b>*  moves_buf;
     };
 
@@ -76,7 +76,7 @@ private:
     Move32b getPlayerMove(search::SearchLimits limits, 
                           Position& pos,
                           EngineProcess& player,
-                          Score& score,
+                          sc::Score& score,
                           enumLogLabel ret_msg_label);
 
     PlayerPerspectiveResult resultToPerspectiveResult(Game::Result result, bool zero_player_white);

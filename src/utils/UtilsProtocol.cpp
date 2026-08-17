@@ -104,7 +104,7 @@ bool verifyTrainData(std::ifstream& input,
 
     for (TrainingDataEntry entry; TrainingDataEntry::read(input, entry); ) {
         const PackedPosition pack = entry.getPosition();
-        const Score white_score = entry.getWhiteScore();
+        const sc::Score white_score = entry.getWhiteScore();
         const TrainingDataEntry::Result8b game_result = entry.getGameResult();
 
         if (const Position pos = PackedPosition::unpacked(pack); 
@@ -321,7 +321,7 @@ void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
     std::string fen;
     BulletChessBoard bf_entry_valid;
 
-    static constexpr Score FixedScore = 120;
+    static constexpr sc::Score FixedScore = 120;
 
     bool success = true;
 

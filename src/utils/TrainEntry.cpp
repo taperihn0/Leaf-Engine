@@ -53,12 +53,12 @@ bool BulletChessBoard::operator==(const BulletChessBoard& bf) const {
            opp_ksq == bf.opp_ksq;
 }
 
-TrainingDataEntry::TrainingDataEntry(const PackedPosition& packed, Score white_score, Result8b result)
+TrainingDataEntry::TrainingDataEntry(const PackedPosition& packed, sc::Score white_score, Result8b result)
     : _packed_pos(packed)
     , _game_details{ white_score, result, packed.getKingSquare(), packed.getOppKingSquare() }
 {}
 
-TrainingDataEntry::TrainingDataEntry(const ExtPackedPosition& packed, Score white_score, Result8b result)
+TrainingDataEntry::TrainingDataEntry(const ExtPackedPosition& packed, sc::Score white_score, Result8b result)
     : TrainingDataEntry(PackedPosition::fromExt(packed), white_score, result)
 {}
 
@@ -143,8 +143,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         bullet_entry.pcs[i / 2] |= mask << (4 * (i & 1));
     }
 
-    // Score
-    const Score::int_t white_score = static_cast<Score::int_t>(entry.getWhiteScore());
+    const sc::Score::int_t white_score = static_cast<sc::Score::int_t>(entry.getWhiteScore());
     bullet_entry.score = side2move == WHITE ? white_score : -white_score;
 
     // Result
@@ -164,7 +163,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
     return bullet_entry;
 }
 
-Score TrainingDataEntry::getWhiteScore() const {
+sc::Score TrainingDataEntry::getWhiteScore() const {
     return _game_details.white_score;
 }
 

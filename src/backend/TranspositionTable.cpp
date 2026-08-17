@@ -25,9 +25,9 @@ TTEntry::TTEntry()
     , generation(0)
     , bound(TTBound::NONE)
     , depth(0)
-    , score(Score::Undef)
+    , score(sc::Undef)
     , move(Move16b::Null)
-    , eval(Score::Undef)
+    , eval(sc::Undef)
 {}
 
 TranspositionTable::TranspositionTable(size_t mb_size)
@@ -61,14 +61,12 @@ void TranspositionTable::clear() {
 
 void TranspositionTable::write(uint64_t node_key64, 
                                uint8_t node_depth, 
-                               uint8_t node_ply, 
+                               _MAYBE_UNUSED uint8_t node_ply, 
                                TTBound node_bound, 
-                               Score node_score, 
+                               sc::Score node_score, 
                                Move16b node_move, 
-                               Score node_eval) 
+                               sc::Score node_eval) 
 {
-    _declUnused(node_ply); // unused for now
-
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
     Bucket* bucket = _mem.get() + (node_key64 & (_buckets_cnt - 1));
@@ -120,7 +118,7 @@ void TranspositionTable::write(uint64_t node_key64,
 
 bool TranspositionTable::probe(TTEntry& out_entry, 
                                uint64_t key64, 
-                               Score alpha, Score beta,
+                               sc::Score alpha, sc::Score beta,
                                uint8_t node_depth) const 
 {
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
@@ -140,7 +138,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 
     if (ind == Bucket::InternalEntriesCnt) {
         out_entry.move = Move32b::Null;
-        out_entry.eval = Score::Undef;
+        out_entry.eval = sc::Undef;
         return false;
     }
 
@@ -149,7 +147,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     if (entry->depth < node_depth) {
         out_entry.move = entry->move;
         out_entry.eval = entry->eval;
-        //out_entry.score = entry->score.isMateScore() ? entry->score : Score::Undef;
+        //out_entry.score = entry->score.isMateScore() ? entry->score : sc::Undef;
         //return entry->score.isMateScore();
         return false;
     }

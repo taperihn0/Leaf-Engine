@@ -69,7 +69,7 @@ ZHash ZHash::generateOnFly(const Position& pos) {
     const Square ep_sq = pos.getEnPassantSq();
     assert(ep_sq.isValid());
 
-    if (!ep_sq.isNull())
+    if (!ep_sq.isNone())
         key ^= ZHashMasks->ep_file_keys[ep_sq.getFile()];
 
     if (pos.getCastlingByColor(WHITE).isShortPossible())

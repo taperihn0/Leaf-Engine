@@ -161,12 +161,10 @@ _NODISCARD _INLINE void* largePageAlignedMalloc(size_t size) {
 #endif
 }
 
-_INLINE void pageAlignedFree(void* m, size_t size) { 
+_INLINE void pageAlignedFree(void* m, _MAYBE_UNUSED size_t size) { 
     if (!m) return;
 
 #if defined(_WIN32)
-    _declUnused(size);
-
     if (!VirtualFree(m, 0, MEM_RELEASE)) {
         throw std::runtime_error("Failed to execute `VirtualFree`");
     }

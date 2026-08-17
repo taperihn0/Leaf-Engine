@@ -39,10 +39,10 @@ public:
     };
 
     template <enumGenMoves Moves2Gen>
-    static void generatePseudoLegalMoves(const Position& pos, MoveList& move_list);
+    static void generatePseudoLegalMoves(const Position& pos, ml::MoveList& move_list);
 
     template <enumGenMoves Moves2Gen>
-    static void generateLegalMoves(Position& pos, MoveList& move_list);
+    static void generateLegalMoves(Position& pos, ml::MoveList& move_list);
 
     template <enumGenMoves Moves2Gen>
     _NODISCARD static Move32b getRandomLegalMove(Position& pos);

@@ -426,7 +426,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         }
 
         // reset old en passant square state
-        if (!_ep_square.isNull())
+        if (!_ep_square.isNone())
             _zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
 
         _ep_square = Square::None;
@@ -527,7 +527,7 @@ void Position::makeNull(ReversibleState& state, nn::AccumulatorCache* accum_cach
 
     state.ep_sq = _ep_square;
 
-    if (!_ep_square.isNull())
+    if (!_ep_square.isNone())
         _zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
 
     _ep_square = Square::None;
@@ -763,7 +763,7 @@ uint64_t Position::perft(unsigned depth) {
 
     uint64_t nodes = 0, child_nodes = 0;
 
-    MoveList move_list;
+    ml::MoveList move_list;
     MoveGen::generateLegalMoves<MoveGen::ALL>(*this, move_list);
 
     ReversibleState state = getReversibleState();

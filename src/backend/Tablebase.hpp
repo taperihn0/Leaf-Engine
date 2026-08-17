@@ -28,8 +28,8 @@ public:
 
     _NODISCARD static SyzygyTablebase& get();
     _NODISCARD bool loadSyzygyFile(const std::string& fp);
-    _NODISCARD bool isLoaded() const;
     _NODISCARD std::string getFilePath() const;
+    _NODISCARD _FORCEINLINE bool isLoaded() const { return _initialized; }
 
     enum TbWdlInfo {
         WDL_LOSS,

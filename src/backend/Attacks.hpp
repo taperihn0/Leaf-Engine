@@ -80,17 +80,17 @@ inline const StaticAttackTables StaticAttacks;
 namespace {
 
 _FORCEINLINE BitBoard pawnAttacks(Square sq, enumColor col_type) {
-    assert(sq.isValid() and !sq.isNull());
+    assert(sq.isValid() and !sq.isNone());
     return StaticAttacks.pawns_attacks_mask[col_type][sq];
 }
 
 _FORCEINLINE BitBoard knightAttacks(Square sq) {
-    assert(sq.isValid() and !sq.isNull());
+    assert(sq.isValid() and !sq.isNone());
     return StaticAttacks.knights_attacks_mask[sq];
 }
 
 _FORCEINLINE BitBoard kingAttacks(Square sq) {
-    assert(sq.isValid() and !sq.isNull());
+    assert(sq.isValid() and !sq.isNone());
     return StaticAttacks.kings_attacks_mask[sq];
 }
 

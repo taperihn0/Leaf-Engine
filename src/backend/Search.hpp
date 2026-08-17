@@ -80,7 +80,7 @@ public:
     // Basic search statistics
     int32_t           depth      = 0,
                       seldepth   = 0;
-    Score             score_cp   = 0;
+    sc::Score         score_cp   = 0;
     // `nodes_cnt` - total nodes count in entire search tree
     // with quiescent search
     ull               nodes_cnt  = 0,
@@ -151,8 +151,8 @@ struct AccumulatorCluster {
 };
 
 struct PvInfo {    
-    Move16b best_move = Move16b::Null;
-    Score   score = Score::Undef;
+    Move16b   best_move = Move16b::Null;
+    sc::Score score = sc::Undef;
 };
 
 /* We store crucial info about current node
@@ -170,11 +170,11 @@ public:
     Position::ReversibleState state;
     Move32b                   move;
     Move32b                   best_move;
-    Score                     score;
-    Score                     eval;
+    sc::Score                 score;
+    sc::Score                 eval;
     int32_t                   improving;
     bool                      can_move;
-    Score                     best_score;
+    sc::Score                 best_score;
     bool                      check;
     uint8_t                   moves_searched;
     uint8_t                   move_index;
@@ -262,8 +262,6 @@ _DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 535.757f, 400.f, 650.f, 0.
 _DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 10.5274f, 1.f, 15.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(TablebaseProbeDepth, int32_t, 8.29697f, 2.f, 16.f, 2.f);
 _DEFINE_TUNABLE_PARAMETER(TablebasePieceCountLimit, int32_t, 5.63622f, 2.f, 10.f, 1.7f);
-_DEFINE_TUNABLE_PARAMETER(TablebasePieceDiffMult, int32_t, 115.504f, 10.f, 250.f, 0.4f);
-_DEFINE_TUNABLE_PARAMETER(TablebaseScoreScale, int32_t, 15.6988f, 8.f, 20.f, 1.5f);
 _DEFINE_TUNABLE_PARAMETER(AspirationSearchDepth, int32_t, 3.63818f, 2.f, 5.f, 1.5f);
 _DEFINE_TUNABLE_PARAMETER(AspirationFirstWindow, int32_t, 63.6752f, 10.f, 120.f, 0.9f);
 _DEFINE_TUNABLE_PARAMETER(AspirationUnstableFactor, int32_t, 190.508f, 10.f, 220.f, 0.8f);
@@ -297,7 +295,9 @@ inline constexpr double  MaxTimeBranchFactor = 5.;
 inline constexpr int32_t FixedPointMult = 65536;
 inline constexpr int32_t CaptureTotalReductionRate = 256;
 inline constexpr int32_t QuietTotalReductionRate = 256;
-inline constexpr int32_t TablebaseWinScore = 31000;
+inline constexpr int32_t TablebaseWinScore = 32000;
+inline constexpr int32_t TablebasePieceDiffMult = 116;
+inline constexpr int32_t TablebaseScoreScale = 16;
 
 class TreeStack;
 class SearchLimitsWrapper;
@@ -359,46 +359,46 @@ private:
                   const FullInfoRecord& game, 
                   const SearchLimitsWrapper& limits, 
                   SearchResultsWrapper& results,
-                  Score alpha, Score beta);
+                  sc::Score alpha, sc::Score beta);
 
     template <enumNode NmNodeType, bool NullMove, bool Root = false>
-    Score nmSearch(Position& pos, 
-                   const SearchLimitsWrapper& limits, 
-                   SearchResultsWrapper& results, 
-                   const FullInfoRecord& game, 
-                   NodeInfo* node,
-                   Score alpha, Score beta, 
-                   int depth, int ply);
+    sc::Score nmSearch(Position& pos, 
+                       const SearchLimitsWrapper& limits, 
+                       SearchResultsWrapper& results, 
+                       const FullInfoRecord& game, 
+                       NodeInfo* node,
+                       sc::Score alpha, sc::Score beta, 
+                       int depth, int ply);
 
     template <enumNode QNodeType, bool Root = false>
-    Score qSearch(Position& pos, 
-                  const SearchLimitsWrapper& limits, 
-                  SearchResultsWrapper& results, 
-                  NodeInfo* node, 
-                  Score alpha, Score beta, 
-                  int depth, int ply);
+    sc::Score qSearch(Position& pos, 
+                      const SearchLimitsWrapper& limits, 
+                      SearchResultsWrapper& results, 
+                      NodeInfo* node, 
+                      sc::Score alpha, sc::Score beta, 
+                      int depth, int ply);
     
-    Score getDrawScore(const NodeInfo* node) const;
-    Score getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
-                            const Position& pos, 
-                            const NodeInfo* node, 
-                            int ply) const;
-    bool isTablebaseScore(Score score) const;
-    Score applyContempt(Score score, const NodeInfo* node) const;
+    sc::Score getDrawScore(const NodeInfo* node) const;
+    sc::Score getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
+                                const Position& pos, 
+                                const NodeInfo* node, 
+                                int ply) const;
+    bool isTablebaseScore(sc::Score score) const;
+    sc::Score applyContempt(sc::Score score, const NodeInfo* node) const;
 
     template <enumNode NodeType>
-    Score evaluate(const Position& pos,
+    sc::Score evaluate(const Position& pos,
                    TreeStack* tree_stack,
                    NodeInfo* node,
                    NodeInfo* preroot, 
                    enumColor side2move, 
-                   SearchResultsWrapper& results);
+                   _MAYBE_UNUSED SearchResultsWrapper& results);
 
-    Score correctedEvalScore(Score eval, Score score);
+    sc::Score correctedEvalScore(sc::Score eval, sc::Score score);
 
     int16_t getRfpQuietHistPenalty(NodeInfo* parent_node);
 
-    int getNullSearchDepth(Score eval, Score beta, int depth);
+    int getNullSearchDepth(sc::Score eval, sc::Score beta, int depth);
     int getNullVerifyDepth(int nm_depth);
 
     void refreshPVinTT(const Position& pos, 
@@ -428,8 +428,8 @@ private:
     *  Also, Search class in responsible for allocation and deallocation.
     */
     mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> 
-                 _history_buff;
-    Score::int_t _contempt = Score::Undef;
+                     _history_buff;
+    sc::Score::int_t _contempt = sc::Undef.value();
 };
 
 constexpr enumNode operator|(enumNode node0, enumNode node1) {

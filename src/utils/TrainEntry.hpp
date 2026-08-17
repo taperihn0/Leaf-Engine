@@ -65,8 +65,8 @@ public:
         WHITE_WIN = 2,
     };
 
-    TrainingDataEntry(const PackedPosition& packed, Score white_score, Result8b result);
-    TrainingDataEntry(const ExtPackedPosition& packed, Score white_score, Result8b result);
+    TrainingDataEntry(const PackedPosition& packed, sc::Score white_score, Result8b result);
+    TrainingDataEntry(const ExtPackedPosition& packed, sc::Score white_score, Result8b result);
 
     bool operator==(const TrainingDataEntry& entry) const;
     _INLINE bool operator!=(const TrainingDataEntry& entry) const { return !(*this == entry); }
@@ -76,7 +76,7 @@ public:
     static BulletChessBoard toBulletFormat(const TrainingDataEntry& entry);
 
     const PackedPosition& getPosition() const;
-    Score getWhiteScore() const;
+    sc::Score getWhiteScore() const;
     Result8b getGameResult() const;
 private:
 #pragma pack(push, 1)
@@ -86,7 +86,7 @@ private:
         bool operator==(const PackedPosInfo& info) const;
         _INLINE bool operator!=(const PackedPosInfo& info) const { return !(*this == info); }
 
-        Score                 white_score;
+        sc::Score             white_score;
         Result8b              result;
         Square                king_sq;
         Square                opp_king_sq;

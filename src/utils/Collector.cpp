@@ -73,7 +73,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
     
-    std::vector<Score> white_scores;
+    std::vector<sc::Score> white_scores;
     white_scores.reserve(MaxGameMoves);
     
     std::vector<Move32b> moves;
@@ -183,7 +183,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 positions[i].print(err_output);
                 err_output << "Following move: ";
                 moves[i].print(err_output);
-                err_output << "\nWhite-POV Search Score: " 
+                err_output << "\nWhite-POV Search sc::Score: " 
                                              << static_cast<int16_t>(white_scores.at(i))
                                              << '\n';
             }
@@ -201,7 +201,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         for (size_t i = 0; i < positions.size(); i++) {
             Position& pos = positions[i];
-            const Score white_score = white_scores[i];
+            const sc::Score white_score = white_scores[i];
 
             assert(moves[i].isLegal(pos));
 
@@ -429,13 +429,13 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 }
 
 bool TournamentCollector::explicitFilterPolicy(const Position& pos, 
-                                               Score white_score) 
+                                               sc::Score white_score) 
 {
     if (white_score.isMateScore())
         return false;
 
     else if (pos.getPiecesCount() <= 6 and 
-             StaticEval::evaluatePawnlessEndgame(pos) != Score::Undef)
+             StaticEval::evaluatePawnlessEndgame(pos) != sc::Undef)
         return false;
 
     else if (pos.isInCheck(pos.getTurn()))
@@ -454,9 +454,9 @@ _FORCEINLINE bool TournamentCollector::internalFilterPolicy(Move32b internal_mov
 }
 
 _FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
-                                                            Score white_score,
-                                                            Move32b internal_move,
-                                                            size_t internal_total_positions_cnt) 
+                                                           sc::Score white_score,
+                                                           Move32b internal_move,
+                                                           size_t internal_total_positions_cnt) 
 {
     return explicitFilterPolicy(pos, white_score) and 
            internalFilterPolicy(internal_move, internal_total_positions_cnt);

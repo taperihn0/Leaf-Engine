@@ -56,10 +56,6 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
 #endif // _USE_SYZYGY_TB
 }
 
-bool SyzygyTablebase::isLoaded() const {
-    return _initialized;
-}
-
 std::string SyzygyTablebase::getFilePath() const {
     return _tb_path.value_or("<empty>");
 }
@@ -83,7 +79,7 @@ bool SyzygyTablebase::probeWdl(const Position& pos, TbWdlInfo& wdl) {
     if (pos.getCastlingByColor(BLACK).isLongPossible())
         tb_castling |= TB_CASTLING_q;
 
-    const uint tb_ep = pos.getEnPassantSq().isNull() ? 0 : static_cast<Square::uint_t>(pos.getEnPassantSq());
+    const uint tb_ep = pos.getEnPassantSq().isNone() ? 0 : static_cast<uint8_t>(pos.getEnPassantSq());
 
     // One of [TB_LOSS, TB_BLESSED_LOSS, TB_DRAW, TB_CURSED_WIN, TB_WIN, TB_RESULT_FAILED]
     const uint tb_wdl = tb_probe_wdl(pos.getWhites(),
@@ -138,7 +134,7 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
     if (pos.getCastlingByColor(BLACK).isLongPossible())
         tb_castling |= TB_CASTLING_q;
 
-    const uint tb_ep = pos.getEnPassantSq().isNull() ? 0 : static_cast<Square::uint_t>(pos.getEnPassantSq());
+    const uint tb_ep = pos.getEnPassantSq().isNone() ? 0 : static_cast<uint8_t>(pos.getEnPassantSq());
 
     const uint tb_res = tb_probe_root(pos.getWhites(),
                                       pos.getBlacks(),

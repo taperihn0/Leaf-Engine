@@ -59,9 +59,9 @@ struct TTEntry {
     uint8_t  generation : 6;
     TTBound  bound : 2;
     uint8_t  depth : 6;
-    Score    score;
+    sc::Score    score;
     Move16b  move;
-    Score    eval;
+    sc::Score    eval;
 };
 
 static_assert(sizeof(TTEntry) == EntryTargetSize);
@@ -93,15 +93,15 @@ public:
 
     void write(uint64_t node_key, 
                uint8_t node_depth, 
-               uint8_t node_ply, 
+               _MAYBE_UNUSED uint8_t node_ply, 
                TTBound node_bound, 
-               Score node_score, 
+               sc::Score node_score, 
                Move16b node_move, 
-               Score node_eval);
+               sc::Score node_eval);
 
     bool probe(TTEntry& out_entry,
                uint64_t key, 
-               Score alpha, Score beta, 
+               sc::Score alpha, sc::Score beta, 
                uint8_t node_depth) const;
 
     void prefetchBucket(uint64_t key64) const;

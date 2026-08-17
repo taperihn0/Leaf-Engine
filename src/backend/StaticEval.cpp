@@ -20,7 +20,7 @@
 #include "Search.hpp"
 #include "Position.hpp"
 
-Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
+sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
     // Pawnless endgames:
     // https://en.wikipedia.org/wiki/Pawnless_chess_endgame
@@ -32,13 +32,13 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
         // K + R vs K
         if (pos.getRooks().isSingleBit())
-            return pos.getRooksBySide(s2m) ? Score::KnownWin
-                                            : -Score::KnownWin;
+            return pos.getRooksBySide(s2m) ? sc::KnownWin
+                                            : -sc::KnownWin;
 
         // K + Q vs K
         if (pos.getQueens().isSingleBit())
-            return pos.getQueensBySide(s2m) ? Score::KnownWin
-                                            : -Score::KnownWin;
+            return pos.getQueensBySide(s2m) ? sc::KnownWin
+                                            : -sc::KnownWin;
 
     }
     else if (piece_cnt == 4) {
@@ -48,8 +48,8 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
         // K + BB vs K
         if (white_bishops == 2 or black_bishops == 2)
-            return pos.getBishopsBySide(s2m) ? Score::KnownWin
-                                            : -Score::KnownWin;
+            return pos.getBishopsBySide(s2m) ? sc::KnownWin
+                                            : -sc::KnownWin;
 
         const int white_queens  = pos.getQueensBySide(WHITE).popCount();
         const int black_queens  = pos.getQueensBySide(BLACK).popCount();
@@ -57,30 +57,30 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + Q vs K + B
         if ((white_queens == 1 and black_bishops == 1) or
             (black_queens == 1 and white_bishops == 1))
-            return pos.getQueensBySide(s2m) ? Score::KnownWin
-                                            : -Score::KnownWin;
+            return pos.getQueensBySide(s2m) ? sc::KnownWin
+                                            : -sc::KnownWin;
 
         const int white_knights = pos.getKnightsBySide(WHITE).popCount();
         const int black_knights = pos.getKnightsBySide(BLACK).popCount();
 
         // K + NN vs K
         if (white_knights == 2 or black_knights == 2)
-            return Score::Draw;
+            return sc::Draw;
 
         // K + Q vs K + N
         if ((white_queens == 1 and black_knights == 1) or
             (black_queens == 1 and white_knights == 1))
-            return pos.getQueensBySide(s2m) ? Score::KnownWin
-                                            : -Score::KnownWin;
+            return pos.getQueensBySide(s2m) ? sc::KnownWin
+                                            : -sc::KnownWin;
 
         // K + BN vs K
         if (white_bishops == 1 and white_knights == 1)
-            return pos.getBishopsBySide(s2m) ? Score::KnownWin
-                                                : -Score::KnownWin;
+            return pos.getBishopsBySide(s2m) ? sc::KnownWin
+                                                : -sc::KnownWin;
 
         if (black_bishops == 1 and black_knights == 1)
-            return pos.getBishopsBySide(s2m) ? Score::KnownWin
-                                                : -Score::KnownWin;
+            return pos.getBishopsBySide(s2m) ? sc::KnownWin
+                                                : -sc::KnownWin;
 
         const int white_rooks = pos.getRooksBySide(WHITE).popCount();
         const int black_rooks = pos.getRooksBySide(BLACK).popCount();
@@ -88,8 +88,8 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + Q vs K + R
         if ((white_queens == 1 and black_rooks == 1) or
             (black_queens == 1 and white_rooks == 1))
-            return pos.getQueensBySide(s2m) ? Score::Win
-                                            : -Score::Win;
+            return pos.getQueensBySide(s2m) ? sc::Win
+                                            : -sc::Win;
 
     }
     else if (piece_cnt == 5) {
@@ -99,10 +99,10 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
         // K + RR vs K + R
         if (s2m_rooks_cnt == 2 and ns2m_rooks_cnt == 1)
-            return Score::KnownWin;
+            return sc::KnownWin;
 
         if (ns2m_rooks_cnt == 2 and s2m_rooks_cnt == 1)
-            return -Score::KnownWin;
+            return -sc::KnownWin;
 
     }
     else if (piece_cnt == 6) {
@@ -116,11 +116,11 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         // K + RR vs K + BB, K + NN, K + NB
         if (s2m_rooks_cnt == 2 and
             (s2m ? white_knights : black_knights) == 2)
-            return Score::Win;
+            return sc::Win;
 
         if (ns2m_rooks_cnt == 2 and
             (s2m ? black_knights : white_knights) == 2)
-            return -Score::Win;
+            return -sc::Win;
 
         const int white_rooks = pos.getRooksBySide(WHITE).popCount();
         const int black_rooks = pos.getRooksBySide(BLACK).popCount();
@@ -136,12 +136,12 @@ Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
                 black_bishops == 1 and
                 white_knights == 2)
             )
-            return pos.getRooksBySide(s2m) ? Score::Win
-                                            : -Score::Win;
+            return pos.getRooksBySide(s2m) ? sc::Win
+                                            : -sc::Win;
 
     }
 
-    return Score::Undef;
+    return sc::Undef;
 }
 
 /*
@@ -215,12 +215,12 @@ array1d<int16_t, 64> StaticEval::_mg_king_tables = {
     -15,  36,  12, -54,   8, -28,  24,  14,
 };
 
-Score StaticEval::matEval(const Position& pos) {
+sc::Score StaticEval::matEval(const Position& pos) {
     const enumColor turn = pos.getTurn();
     return pos.getOnBoardMaterial(turn) - pos.getOnBoardMaterial(!turn);
 }
 
-_INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
     BitBoard pawns = pos.getPawnsBySide(side);
     int16_t res = 0;
 
@@ -229,10 +229,10 @@ _INLINE Score StaticEval::pawnsStaticEval(const Position& pos, enumColor side) {
         res += _mg_pawn_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
-    return Score(res);
+    return sc::Score(res);
 }
 
-_INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::knightsStaticEval(const Position& pos, enumColor side) {
     BitBoard knights = pos.getKnightsBySide(side);
     int16_t res = 0;
 
@@ -241,10 +241,10 @@ _INLINE Score StaticEval::knightsStaticEval(const Position& pos, enumColor side)
         res += _mg_knight_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
-    return Score(res);
+    return sc::Score(res);
 }
 
-_INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side) {
     BitBoard bishops = pos.getBishopsBySide(side);
     int16_t res = 0;
 
@@ -253,10 +253,10 @@ _INLINE Score StaticEval::bishopsStaticEval(const Position& pos, enumColor side)
         res += _mg_bishop_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
-    return Score(res);
+    return sc::Score(res);
 }
 
-_INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
     BitBoard rooks = pos.getRooksBySide(side);
     int16_t res = 0;
 
@@ -265,10 +265,10 @@ _INLINE Score StaticEval::rooksStaticEval(const Position& pos, enumColor side) {
         res += _mg_rook_tables[sqBlackPerspectiveFlip(sq, side)];
     }
 
-    return Score(res);
+    return sc::Score(res);
 }
 
-_INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::queensStaticEval(const Position& pos, enumColor side) {
     BitBoard queens = pos.getQueensBySide(side);
     int16_t res = 0;
 
@@ -280,12 +280,12 @@ _INLINE Score StaticEval::queensStaticEval(const Position& pos, enumColor side) 
     return res;
 }
 
-_INLINE Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
+_INLINE sc::Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
     const Square ksq = pos.getKingSquareBySide(side);
-    return Score(_mg_king_tables[sqBlackPerspectiveFlip(ksq, side)]);
+    return sc::Score(_mg_king_tables[sqBlackPerspectiveFlip(ksq, side)]);
 }
 
-Score StaticEval::staticEval(const Position& pos) {
+sc::Score StaticEval::staticEval(const Position& pos) {
     const enumColor side = pos.getTurn();
 
     return matEval(pos)
