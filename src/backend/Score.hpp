@@ -109,8 +109,8 @@ private:
 };
 
 inline constexpr Score Draw      = Score(0);
-inline constexpr Score Win       = Score(16000);
-inline constexpr Score KnownWin  = Score(24000);
+inline constexpr Score Win       = Score(6000);
+inline constexpr Score KnownWin  = Score(18000);
 inline constexpr Score Mate      = Score(32000);
 inline constexpr Score MateBound = Score(32000 - MaxDepth);
 inline constexpr Score Infinity  = Score(maxof<Score::int_t>());

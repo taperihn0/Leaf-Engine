@@ -1767,7 +1767,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
 
     sc::Score pawnless_eg_eval = sc::Undef;
 
-    if (!SyzygyTablebase::get().isLoaded()) {
+    if (true) {
         pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos)
                                                     : sc::Undef;
 
@@ -1793,32 +1793,33 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
 
     const sc::Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
     const int64_t unscaled_eval = NNEvalScale * 4096 * static_cast<int64_t>(eval);
-    const int32_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
- 
-    const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-    const int32_t clock_mult = std::clamp<int32_t>(halfmoves_left, 0, HalfMovesEvalLimit);
-    sc::Score::int_t result = static_cast<sc::Score::int_t>(scaled_eval * clock_mult / HalfMovesEvalLimit);
+    int16_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
 
     // Assert we won't overflow into special winning scores
-    assert(abs<int16_t>(result) < sc::Win);
+    assert(abs<int16_t>(scaled_eval) < sc::Win);
 
-    if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
+    if (pawnless_eg_eval.isValid()) {
         switch (pawnless_eg_eval.value()) {
         case sc::Win.value():
         case -sc::Win.value():
-            return pawnless_eg_eval + 
-                   std::clamp<sc::Score::int_t>(result, sc::KnownWin.value() - sc::Win.value() - 1, 0);
-
+            scaled_eval = pawnless_eg_eval.value() + 
+                          std::clamp<sc::Score::int_t>(scaled_eval, sc::KnownWin.value() - sc::Win.value() - 1, 0);
+            break;
         case sc::KnownWin.value():
         case -sc::KnownWin.value(): 
-            return pawnless_eg_eval + 
-                   std::clamp<sc::Score::int_t>(result, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
-        
+            scaled_eval = pawnless_eg_eval.value() + 
+                          std::clamp<sc::Score::int_t>(scaled_eval, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
+            break;
         default: 
             assert("Invalid endgame score");
             break;
         }
     }
+ 
+    const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
+    const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? HalfMovesEvalLimit + 6 : HalfMovesEvalLimit;
+    const int32_t clock_mult = std::min<int32_t>(halfmoves_left, HalfMovesEvalLimit);
+    sc::Score::int_t result = static_cast<sc::Score::int_t>(static_cast<int32_t>(scaled_eval) * clock_mult / halfmoves_left_limit);
 
     return result;
 }

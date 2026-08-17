@@ -112,7 +112,7 @@ public:
     Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
     template <int8_t Sign>
-    void updateQuietEntry(Move32b move, enumColor side, int16_t bonus);
+    void updateQuietEntry(Move32b move, enumColor side, int16_t hist_bonus);
     void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
     
     void clear();

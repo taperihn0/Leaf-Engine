@@ -626,8 +626,7 @@ void Position::setGameStatesFromStr(const std::string fen, size_t i) {
 
 _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, BitBoard rooksQueens) {
     return ((bishopsQueens & attacks<Piece::BISHOP>(sq, occ))
-            | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) 
-            & occ;
+            | (rooksQueens & attacks<Piece::ROOK>(sq, occ))) & occ;
 }
 
 _INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,

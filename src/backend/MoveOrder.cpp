@@ -131,14 +131,14 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
 }
 
 template <int8_t Sign>
-void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int16_t bonus) {
+void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int16_t hist_bonus) {
     static_assert(Sign == -1 or Sign == 1);
     assert(_hist_tables != nullptr);
 
     const Piece::uint_t piece = index(move.getPiece());
     const Square dst = move.getTarget();
 
-    const int32_t cbonus = std::min(bonus, HistoryTables::_MaxAbsQuietsHistory);
+    const int32_t cbonus = std::min(hist_bonus, HistoryTables::_MaxAbsQuietsHistory);
     const int32_t quiet_value = static_cast<int32_t>(_hist_tables->_quiets_history[side][piece][dst]);
 
     _hist_tables->_quiets_history[side][piece][dst] += static_cast<int16_t>(
@@ -151,15 +151,15 @@ void MoveOrder::updateQuietEntry(Move32b move, enumColor side, int16_t bonus) {
 void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth) {
     assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
-    const int16_t bonus = (OrdQuietBonusHistoryScore2Coeff * sq(depth) + 
-                           OrdQuietBonusHistoryScore1Coeff * depth
-                          ) / 1024;
+    const int16_t hist_bonus = (OrdQuietBonusHistoryScore2Coeff * sq(depth) + 
+                                OrdQuietBonusHistoryScore1Coeff * depth
+                               ) / 1024;
 
-    updateQuietEntry<1>(bestmove, side, bonus);
+    updateQuietEntry<1>(bestmove, side, hist_bonus);
 
-    const int16_t penalty = (OrdQuietPenaltyHistoryScore2Coeff * sq(depth) + 
-                             OrdQuietPenaltyHistoryScore1Coeff * depth
-                            ) / 1024;
+    const int16_t hist_penalty = (OrdQuietPenaltyHistoryScore2Coeff * sq(depth) + 
+                                  OrdQuietPenaltyHistoryScore1Coeff * depth
+                                 ) / 1024;
 
     for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
@@ -170,7 +170,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove, enumColor side, int depth)
         if (move == bestmove)
             break;
 
-        updateQuietEntry<-1>(move, side, penalty);
+        updateQuietEntry<-1>(move, side, hist_penalty);
     }
 }
 

@@ -91,18 +91,30 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
             return pos.getQueensBySide(s2m) ? sc::Win
                                             : -sc::Win;
 
+        // K + R vs K + R                                    
+        if (piece_cnt == 4 and
+            white_rooks == 1 and
+            black_rooks == 1)
+            return sc::Draw;
+
     }
     else if (piece_cnt == 5) {
 
-        const int s2m_rooks_cnt  = pos.getRooksBySide(s2m).popCount();
-        const int ns2m_rooks_cnt = pos.getRooksBySide(!s2m).popCount();
+        const int s2m_rooks  = pos.getRooksBySide(s2m).popCount();
+        const int ns2m_rooks = pos.getRooksBySide(!s2m).popCount();
 
         // K + RR vs K + R
-        if (s2m_rooks_cnt == 2 and ns2m_rooks_cnt == 1)
+        if (s2m_rooks == 2 and ns2m_rooks == 1)
             return sc::KnownWin;
 
-        if (ns2m_rooks_cnt == 2 and s2m_rooks_cnt == 1)
+        if (ns2m_rooks == 2 and s2m_rooks == 1)
             return -sc::KnownWin;
+
+        // K + NR vs K + R
+        if (s2m_rooks == 1 and
+            ns2m_rooks == 1 and
+            pos.getKnights().isSingleBit())
+            return sc::Draw;
 
     }
     else if (piece_cnt == 6) {
@@ -110,15 +122,15 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
         const int white_knights = pos.getKnightsBySide(WHITE).popCount();
         const int black_knights = pos.getKnightsBySide(BLACK).popCount();
 
-        const int s2m_rooks_cnt  = pos.getRooksBySide(s2m).popCount();
-        const int ns2m_rooks_cnt = pos.getRooksBySide(!s2m).popCount();
+        const int s2m_rooks  = pos.getRooksBySide(s2m).popCount();
+        const int ns2m_rooks = pos.getRooksBySide(!s2m).popCount();
 
         // K + RR vs K + BB, K + NN, K + NB
-        if (s2m_rooks_cnt == 2 and
+        if (s2m_rooks == 2 and
             (s2m ? white_knights : black_knights) == 2)
             return sc::Win;
 
-        if (ns2m_rooks_cnt == 2 and
+        if (ns2m_rooks == 2 and
             (s2m ? black_knights : white_knights) == 2)
             return -sc::Win;
 
