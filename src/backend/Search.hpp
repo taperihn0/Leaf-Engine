@@ -87,7 +87,7 @@ public:
     // `qnodes_cnt` - nodes count in quiescent search
                       qnodes_cnt = 0;
     size_t            tt_entries = 0;
-    Move32b           best_move  = Move32b::Null;
+    Move32b           best_move  = NullMove;
     clk::milliseconds duration   = 0;
     Array1d<ull, MaxDepth + 1> 
                       nodes_per_depth = {};
@@ -151,7 +151,7 @@ struct AccumulatorCluster {
 };
 
 struct PvInfo {    
-    Move16b   best_move = Move16b::Null;
+    Move16b   best_move = NullMove;
     sc::Score score = sc::Undef;
 };
 
@@ -361,7 +361,7 @@ private:
                   SearchResultsWrapper& results,
                   sc::Score alpha, sc::Score beta);
 
-    template <enumNode NmNodeType, bool NullMove, bool Root = false>
+    template <enumNode NmNodeType, bool AllowNullMove, bool Root = false>
     sc::Score nmSearch(Position& pos, 
                        const SearchLimitsWrapper& limits, 
                        SearchResultsWrapper& results, 

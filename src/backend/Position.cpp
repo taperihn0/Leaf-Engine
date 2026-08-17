@@ -547,7 +547,7 @@ void Position::unmakeNull(const ReversibleState& prev_state) {
 }
 
 uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
-    ASSERT_NOLOG(!move.isNull());
+    ASSERT_NOLOG(!move.isNullMove());
 
     const Square          org = move.getOrigin(),
                           dst = move.getTarget();

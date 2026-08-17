@@ -35,15 +35,21 @@ public:
 
     MoveData() = default;
 
-    _INLINE MoveData(T raw)
-        : _rmove(raw) {}
+    _INLINE constexpr explicit MoveData(T raw)
+        : _v(raw) {}
 
-    _NODISCARD _INLINE bool isNull() const {
-        return _rmove == Null;
+    _INLINE constexpr MoveData(const MoveData<uint16_t>& m) 
+        : _v(m.value()) {}
+
+    _INLINE constexpr MoveData& operator=(const MoveData<uint16_t>& m) {
+        _v = m.value();
+        return *this;
     }
 
+    _NODISCARD _INLINE bool isNullMove() const;
+
     _INLINE constexpr MoveData operator=(T raw) {
-        _rmove = raw;
+        _v = raw;
         return *this;
     }
 
@@ -53,8 +59,8 @@ public:
     }
 
     _NODISCARD _INLINE constexpr bool operator==(MoveData b) const noexcept {
-        return (_rmove & (PROMO_PIECE | TARGET | ORIGIN)) == 
-               (b._rmove & (PROMO_PIECE | TARGET | ORIGIN));
+        return (_v & (PROMO_PIECE | TARGET | ORIGIN)) == 
+               (b._v & (PROMO_PIECE | TARGET | ORIGIN));
     }
 
     // simplified make function. Leaves other data fields empty, initializing only
@@ -89,16 +95,16 @@ public:
     _NODISCARD bool isPackedEnPassant(const Position& pos) const;
 
     _NODISCARD _INLINE Square getOrigin() const {
-        return _rmove & ORIGIN;
+        return _v & ORIGIN;
     }
 
     _NODISCARD _INLINE Square getTarget() const {
-        return (_rmove & TARGET) >> 6;
+        return (_v & TARGET) >> 6;
     }
 
     _NODISCARD _INLINE bool isCapture() const {
         static_assert(is_same<T, uint32_t>);
-        return _rmove & CAPTURE;
+        return _v & CAPTURE;
     }
 
     _NODISCARD _INLINE bool isQuiet() const {
@@ -108,21 +114,21 @@ public:
 
     _NODISCARD _INLINE bool isEnPassant() const {
         static_assert(is_same<T, uint32_t>);
-        return _rmove & EP_CAPTURE;
+        return _v & EP_CAPTURE;
     }
 
     _NODISCARD _INLINE bool isShortCastle() const {
         static_assert(is_same<T, uint32_t>);
-        return _rmove & SHORT_CASTLE;
+        return _v & SHORT_CASTLE;
     }
 
     _NODISCARD _INLINE bool isLongCastle() const {
         static_assert(is_same<T, uint32_t>);
-        return _rmove & LONG_CASTLE;
+        return _v & LONG_CASTLE;
     }
 
     _NODISCARD _INLINE bool isPromotion() const {
-        return _rmove & PROMO_PIECE;
+        return _v & PROMO_PIECE;
     }
 
     _NODISCARD _INLINE bool isQueenPromotion() const {
@@ -141,7 +147,7 @@ public:
     // move legality is checked only when attempting to make it
     _NODISCARD _INLINE bool isLegalMoved() const {
         static_assert(is_same<T, uint32_t>);
-        return _rmove & LEGALLY_MOVED;
+        return _v & LEGALLY_MOVED;
     }
 
     _NODISCARD _INLINE bool isIrreversible() const {
@@ -154,7 +160,7 @@ public:
 
     _NODISCARD _INLINE Piece::enumType getPiece() const {
         static_assert(is_same<T, uint32_t>);
-        return static_cast<Piece::enumType>((_rmove & PERFORMER) >> 19);
+        return static_cast<Piece::enumType>((_v & PERFORMER) >> 19);
     }
 
     _NODISCARD _INLINE bool isKnight() const {
@@ -178,38 +184,42 @@ public:
     // captured piece is saved only in making a move
     _NODISCARD _INLINE Piece::enumType getCapturedAfterMove() const {
         static_assert(is_same<T, uint32_t>);
-        return static_cast<Piece::enumType>((_rmove & CAPTURED) >> 22);
+        return static_cast<Piece::enumType>((_v & CAPTURED) >> 22);
     }
 
     _NODISCARD _INLINE Piece::enumType getPromoPiece() const {
-        return static_cast<Piece::enumType>((_rmove & PROMO_PIECE) >> 12);
+        return static_cast<Piece::enumType>((_v & PROMO_PIECE) >> 12);
     }
 
     _INLINE void setOrigin(Square origin) {
-        _rmove &= ~ORIGIN, _rmove |= origin;
+        _v &= ~ORIGIN, _v |= origin;
     }
 
     _INLINE void setTarget(Square target) {
-        _rmove &= ~TARGET, _rmove |= static_cast<uint32_t>(target) << 6;
+        _v &= ~TARGET, _v |= static_cast<uint32_t>(target) << 6;
     }
 
     _INLINE void setPromoPiece(Piece::enumType piece) {
-        _rmove &= ~PROMO_PIECE, _rmove |= static_cast<uint32_t>(piece) << 12;
+        _v &= ~PROMO_PIECE, _v |= static_cast<uint32_t>(piece) << 12;
     }
 
     _INLINE void setPiece(Piece::enumType piece) {
         static_assert(is_same<T, uint32_t>);
-        _rmove &= ~PERFORMER, _rmove |= static_cast<uint32_t>(piece) << 19;
+        _v &= ~PERFORMER, _v |= static_cast<uint32_t>(piece) << 19;
     }
 
     _INLINE void setCaptured(Piece::enumType captured) {
         static_assert(is_same<T, uint32_t>);
-        _rmove &= ~CAPTURED, _rmove |= static_cast<uint32_t>(captured) << 22;
+        _v &= ~CAPTURED, _v |= static_cast<uint32_t>(captured) << 22;
     }
 
     _INLINE void setLegalMoved(bool legal) {
         static_assert(is_same<T, uint32_t>);
-        _rmove &= ~LEGALLY_MOVED, _rmove |= static_cast<uint32_t>(legal) << 25;
+        _v &= ~LEGALLY_MOVED, _v |= static_cast<uint32_t>(legal) << 25;
+    }
+
+    _NODISCARD _FORCEINLINE T value() const noexcept {
+        return _v;
     }
 
     void print(std::ostream& os = std::cout) const;
@@ -230,8 +240,6 @@ public:
     enum class Notation {
         REGULAR, ALGEBRAIC
     };
-
-    static constexpr T Null = 0;
 private:
     enum enumLayout : uint32_t {
         ORIGIN        = 0x3f,
@@ -246,14 +254,14 @@ private:
         LEGALLY_MOVED = 0x2000000
     };
 
-    T _rmove;
+    T _v;
 };
 
 /*
 *    Use standard 32 - bit wide move encoding.
 *    Raw number data consists of:
 *     <------------------------------------------------------------------------------------------------>
-*     |                                26 bits    layout                                                      |
+*     |                                26 bits layout                                                  |
 *     <------------------------------------------------------------------------------------------------>
 *     [legal-moved][captured][performer][q-castle][k-castle][ep-capture][capture][promo][target][origin]
 *         1 bit      3 bits    3 bits      1 bit     1 bit     1 bit      1 bit   3 bits 6 bits  6 bits
@@ -267,13 +275,20 @@ using Move32b = MoveData<uint32_t>;
 *
 *    Raw number data consists of:
 *     <--------------------->
-*     |     16 bits layout    |
+*     |     16 bits layout  |
 *     <--------------------->
 *     [promo][target][origin]
 *      4 bits 6 bits  6 bits
 *       MS1B    -->    LS1B
 */
 using Move16b = MoveData<uint16_t>;
+
+static inline constexpr Move16b NullMove = Move16b(0);
+
+template <typename T>
+_NODISCARD _INLINE bool MoveData<T>::isNullMove() const {
+    return _v == NullMove.value();
+}
 
 template <typename T>
 _INLINE MoveData<T> MoveData<T>::makeSimple(Square origin, 
@@ -348,10 +363,7 @@ _INLINE MoveData<T> MoveData<T>::makePackedPromo(Square origin,
 }
 
 _NODISCARD _INLINE Move16b packedMove(Move32b move) {
-    return Move16b(
-          (static_cast<uint16_t>(move.getPromoPiece() << 12))
-        | (static_cast<uint16_t>(move.getTarget()) << 6)
-        |  static_cast<uint16_t>(move.getOrigin()));
+    return Move16b(move.value() & 0x7FFF);
 }
 
 // used only in testing templates.

@@ -26,7 +26,7 @@ TTEntry::TTEntry()
     , bound(TTBound::NONE)
     , depth(0)
     , score(sc::Undef)
-    , move(Move16b::Null)
+    , move(NullMove)
     , eval(sc::Undef)
 {}
 
@@ -104,7 +104,7 @@ void TranspositionTable::write(uint64_t node_key64,
     if (bucket->entries[ind].isEmpty())
         _hits++;
 
-    if (entry_keyhi != keyhi or !node_move.isNull())
+    if (entry_keyhi != keyhi or !node_move.isNullMove())
         bucket->entries[ind].move = node_move;
 
     bucket->entries[ind].writeHash(keyhi);
@@ -137,7 +137,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     }
 
     if (ind == Bucket::InternalEntriesCnt) {
-        out_entry.move = Move32b::Null;
+        out_entry.move = NullMove;
         out_entry.eval = sc::Undef;
         return false;
     }

@@ -48,10 +48,10 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     assert(_hist_tables != nullptr);
 
     if constexpr (Root) {
-        _killer_move = Move32b::Null;
+        _killer_move = NullMove;
     }
 
-    next_move = Move32b::Null;
+    next_move = NullMove;
     move_score = sc::Undef;
 
     if constexpr (Policy == ONCE_GEN_LEGAL) {
@@ -65,7 +65,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     case enumPrivateStage::STAGED_HASH_MOVE:
         _stage = enumPrivateStage::STAGED_CAPTURES;
 
-        if (!_hash_move.isNull()) {
+        if (!_hash_move.isNullMove()) {
             next_move = _hash_move;
             return true;
         }
@@ -100,7 +100,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
                 parent_hash = parent_node->state.hash_key;
             }
 
-            if (!_killer_move.isNull() and
+            if (!_killer_move.isNullMove() and
                 _killer_move != _hash_move and
                 !Root and
                 parent_hash == _killer_move_parent_hash and
@@ -261,7 +261,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
     case enumPrivateStage::ONCEGEN_HASH_MOVE:
         _stage = enumPrivateStage::ONCEGEN_ALL;
 
-        if (!_hash_move.isNull())
+        if (!_hash_move.isNullMove())
             next_move = _hash_move;
         
         [[fallthrough]];
@@ -276,7 +276,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
         scoreQuiets(_quiets_ind, pos.getTurn());
 
-        if (!next_move.isNull()) // got hash move assigned already
+        if (!next_move.isNullMove()) // got hash move assigned already
             return true;
 
         [[fallthrough]];

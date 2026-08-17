@@ -70,10 +70,10 @@ void CuckooTables::init() {
                         std::swap(_cuckoo_entry_buff.get()[idx].move_hash, move_hash);
                         std::swap(_cuckoo_entry_buff.get()[idx].move16, move16b);
 
-                        ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()), 
+                        ASSERT((!move_hash and move16b.isNullMove()) or (move_hash and !move16b.isNullMove()), 
                                 "Invalid entry in cuckoo tables");
 
-                        if (move16b.isNull())
+                        if (move16b.isNullMove())
                             break;
 
                         idx = idx == cuckooIndex1(move_hash) ? cuckooIndex2(move_hash) 
@@ -94,10 +94,10 @@ void CuckooTables::validate() {
         const uint32_t move_hash = _cuckoo_entry_buff.get()[i].move_hash;
         const Move16b move16b = _cuckoo_entry_buff.get()[i].move16;
 
-        ASSERT((!move_hash and move16b.isNull()) or (move_hash and !move16b.isNull()),
+        ASSERT((!move_hash and move16b.isNullMove()) or (move_hash and !move16b.isNullMove()),
                "Invalid entry in cuckoo tables");
 
-        if (move_hash and !move16b.isNull())
+        if (move_hash and !move16b.isNullMove())
             count++;
     }
 

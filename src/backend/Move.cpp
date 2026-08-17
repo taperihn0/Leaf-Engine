@@ -30,7 +30,7 @@ Move32b createMove(const Position& pos, Square origin, Square target, Piece::enu
     ASSERT(piece != Piece::NONE, "Invalid move");
     ASSERT(pos.getOwnPieces().isEmptySq(target), "Invalid move");
 
-    Move32b res = Move32b::Null;
+    Move32b res = NullMove;
 
     if (promotion)
         res = Move32b::makePromotion(origin, target, capture, promo_piece);
@@ -202,7 +202,7 @@ Piece::enumType MoveData<T>::getCaptured(const Position& pos) const {
 
 template <>
 bool Move32b::isPseudoLegal(const Position& pos) const {
-    if (*this == Move32b::Null) 
+    if (*this == NullMove) 
         return false;
 
     const Square org = getOrigin(), 
@@ -262,7 +262,7 @@ bool Move32b::isLegal(Position& pos) {
 template <typename T>
 void MoveData<T>::print(std::ostream& os) const {
 #if defined(_PURE_NOTATION_DISPLAY)
-    if (_rmove == Null) {
+    if (_v == NullMove.value()) {
         std::cout << "0000";
     }
     else {
@@ -278,8 +278,8 @@ void MoveData<T>::print(std::ostream& os) const {
 }
 
 Move32b unpackedMove(const Position& pos, Move16b move) {
-    if (move.isNull()) 
-        return Move32b::Null;
+    if (move.isNullMove()) 
+        return NullMove;
 
     Square                origin = move.getOrigin(),
                           target = move.getTarget();
@@ -297,36 +297,36 @@ Move32b unpackedMove(const Position& pos, Move16b move) {
         const bool double_push = target - origin == 2 * dir;
 
         if (double_push and origin.getRank() != pawn_start_rank)
-            return Move32b::Null;
+            return NullMove;
 
         const BitBoard pawn_capt = pawnAttacks(origin, pos.getTurn()) & BitBoard(target);
 
         if (pawn_capt and pawn_capt & pos.getEmpties() and pos.getEnPassantSq() != target)
-            return Move32b::Null;
+            return NullMove;
         else if (!pawn_capt and !double_push and target - origin != dir)
-            return Move32b::Null;
+            return NullMove;
     }
     else if (short_castle and
         !pos.getOwnCastling().isShortPossible()) {
-        return Move32b::Null;
+        return NullMove;
     }
     else if (long_castle and
         !pos.getOwnCastling().isLongPossible()) {
-        return Move32b::Null;
+        return NullMove;
     }
     
     if (piece == Piece::NONE or
         pos.getOwnPieces().isOccupiedSq(target) or
         pos.pieceOn(target, pos.getOppositeTurn()) == Piece::KING)
-        return Move32b::Null;
+        return NullMove;
     else if 
         (isSlider(piece) and
        !(attacks(piece, origin, pos.getOccupied()) & BitBoard(target)))
-        return Move32b::Null;
+        return NullMove;
     else if 
         (isSlider(piece) and
         (onlyBetween(origin, target) & pos.getOccupied()))
-        return Move32b::Null;
+        return NullMove;
 
     return createMove(pos, origin, target, piece, 
                       capture, ep_capture, promotion, 

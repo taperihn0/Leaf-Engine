@@ -236,7 +236,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
         while (strm >> std::skipws >> token) {
             Move32b move = Move32b::fromStr<Move32b::Notation::REGULAR>(_pos, token);
 
-            if (move.isNull() or move.getPieceColor(_pos) != _pos.getTurn()) {
+            if (move.isNullMove() or move.getPieceColor(_pos) != _pos.getTurn()) {
                 std::cout << "Invalid move" << std::endl;
                 _game.clear();
                 break;

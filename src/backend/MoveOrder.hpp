@@ -122,10 +122,10 @@ public:
     void skipQuiets();
 
     // Returns score in range [0, +MaxQuietMoveScore]
-    int16_t getQuietMoveScore(size_t move_idx, enumColor side) const;
+    _NODISCARD int16_t getQuietMoveScore(Move32b move, enumColor side) const;
 
-    static int32_t getQuietDepthReduction(ml::MoveScore quiet_score);
-    static float getCaptureDepthReduction(ml::MoveScore capture_score);
+    _NODISCARD static int32_t getQuietDepthReduction(ml::MoveScore quiet_score);
+    _NODISCARD static float getCaptureDepthReduction(ml::MoveScore capture_score);
 
     template <enumOrderPolicy Policy, typename = std::enable_if_t<Policy == ONCE_GEN_LEGAL>>
     _NODISCARD uint getMovesLeft();
@@ -171,8 +171,8 @@ private:
     size_t    _iterator     = 0;
     size_t    _quiets_ind   = 0;
 
-    Move32b  _hash_move     = Move32b::Null;
-    Move32b  _killer_move   = Move32b::Null;
+    Move32b  _hash_move     = NullMove;
+    Move32b  _killer_move   = NullMove;
     uint64_t _killer_move_parent_hash = 0;
 
     ml::MoveList _move_list;
@@ -200,8 +200,8 @@ _INLINE void MoveOrder::clear() {
     _stage = enumPrivateStage::FIRST_STAGE;
     _iterator = 0;
     _quiets_ind = 0;
-    _hash_move = Move32b::Null;
-    _killer_move = Move32b::Null;
+    _hash_move = NullMove;
+    _killer_move = NullMove;
     _move_list.clear();
 }
 
@@ -215,8 +215,7 @@ _NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedQuietScor
     return _hist_tables->_quiets_history[side][piece_ind][dst] + _MaxAbsQuietsHistory;
 }
 
-_FORCEINLINE int16_t MoveOrder::getQuietMoveScore(size_t move_idx, enumColor side) const {
-    const Move32b move = _move_list.getMove(move_idx);
+ _NODISCARD _FORCEINLINE int16_t MoveOrder::getQuietMoveScore(Move32b move, enumColor side) const {
     return _hist_tables->getNormalizedQuietScore(move, side);
 }
 
@@ -224,14 +223,14 @@ _FORCEINLINE int16_t MoveOrder::getQuietMoveScore(size_t move_idx, enumColor sid
 *  =================================
 */
 
-_FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
+_NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
     const int32_t centered_score = quiet_score.value() - QuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = QuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
 
-_FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_score) {
+_NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_score) {
     // TODO: better fixed-point formula
     return static_cast<float>(CaptureMoveScoreReductionRate * capture_score.value() / 128);
 }

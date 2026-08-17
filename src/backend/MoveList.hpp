@@ -112,7 +112,7 @@ public:
 
     _INLINE Move32b getRandomMove() const {
         if (!_idx) 
-            return Move32b::Null;
+            return NullMove;
 
         size_t random_idx = rnd::random<size_t>(0, _idx - 1);
         return _moves[random_idx].move;

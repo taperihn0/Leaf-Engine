@@ -153,7 +153,7 @@ bool SyzygyTablebase::probeDtz(const Position& pos,
     if (tb_res == TB_RESULT_FAILED) {
         wdl = WDL_INVALID;
         dtz = 0;
-        move = Move32b::Null;
+        move = NullMove;
         return false;
     }
 

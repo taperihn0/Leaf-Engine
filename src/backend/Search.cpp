@@ -129,7 +129,7 @@ void SearchResults::clear() {
 }
 
 void SearchResults::printBestMove() {
-    ASSERT(!best_move.isNull(), "Null bestmove");
+    ASSERT(!best_move.isNullMove(), "Null bestmove");
 
     std::cout << "bestmove ";
     best_move.print();
@@ -165,7 +165,7 @@ void SearchResults::print(const Array1d<PvInfo, MaxSelDepth>& root_pv_line,
 void SearchResults::printShort() {
     std::cout << "Total nodes: " << nodes_cnt << '\n';
 
-    if (!best_move.isNull())
+    if (!best_move.isNullMove())
         printBestMove();
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -284,7 +284,7 @@ NodeInfo::NodeInfo() { clear(); }
 void NodeInfo::clear() {
     side2move        = WHITE;
     state            = {};
-    best_move = move = Move32b::Null;
+    best_move = move = NullMove;
     score            = sc::Undef;
     eval             = sc::Undef;
     improving        = 0;
@@ -479,7 +479,7 @@ Move32b Search::findBestMove(Position& pos,
     search_limits.onNewSearch(pos);
 
     SearchResultsWrapper search_results(results);
-    search_results.best_move = Move32b::Null;
+    search_results.best_move = NullMove;
 
     const Move32b bm = goIterativeDeepening(pos, game, search_limits, search_results, InfoLevel);
     return bm;
@@ -503,7 +503,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
     preroot->cluster.accum_cache.markClean();
     preroot->move = preroot->best_move = game.getMoveCount() > 0 ? game.getCurrentMove() 
-                                                                 : Move32b::Null;
+                                                                 : NullMove;
     preroot->side2move = !pos.getTurn();
     preroot->mate_thread = false;
 
@@ -516,7 +516,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     bool unstable = false;
 
     root->side2move = pos.getTurn();
-    root->best_move = Move32b::Null;
+    root->best_move = NullMove;
     root->best_score = sc::Undef;
 
     const sc::Score eval = evaluate<PV_NODE>(pos, _tree_stack.get(), 
@@ -565,7 +565,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         const ull               prev_total_node_cnt = d > 1 ? search_results.nodes_cnt : 0;
         const clk::milliseconds prev_total_duration = d > 1 ? search_results.duration  : 0_ms;
         const sc::Score         prev_best_score     = d > 1 ? root->best_score         : sc::Undef;
-        const Move32b           prev_best_move      = d > 1 ? root->best_move          : Move32b::Null;
+        const Move32b           prev_best_move      = d > 1 ? root->best_move          : NullMove;
 
         // Adjust contempt factor based on a corrected evaluation
         const sc::Score corr_eval = correctedEvalScore(eval, prev_best_score);
@@ -630,7 +630,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         }
 
         if (terminate) {
-            if (search_results.best_move.isNull())
+            if (search_results.best_move.isNullMove())
                 search_results.best_move = root->best_move;
 
             break;
@@ -654,14 +654,14 @@ Move32b Search::goIterativeDeepening(Position& pos,
             unstable |= (abs(score_diff) > UnstableMatMargin);
         }
         
-        if (!prev_best_move.isNull() and !root->best_move.isNull())
+        if (!prev_best_move.isNullMove() and !root->best_move.isNullMove())
             unstable |= (prev_best_move != root->best_move);
     }
 
     if (info_lv == SEARCH_FULL_INFO or 
         info_lv == SEARCH_ONLY_BM_INFO) {
 
-        if (!search_results.best_move.isNull())
+        if (!search_results.best_move.isNullMove())
             search_results.printBestMove();
     }
     else if (info_lv == SEARCH_SHORT_INFO) {
@@ -699,14 +699,14 @@ bool Search::goSearch(Position& pos,
     return true;
 }
 
-template <enumNode NmNodeType, bool NullMove, bool Root>
+template <enumNode NmNodeType, bool AllowNullMove, bool Root>
 sc::Score Search::nmSearch(Position& pos, 
-                       const SearchLimitsWrapper& limits, 
-                       SearchResultsWrapper& results, 
-                       const FullInfoRecord& game, 
-                       NodeInfo* node,
-                       sc::Score alpha, sc::Score beta, 
-                       int depth, int ply) 
+                           const SearchLimitsWrapper& limits, 
+                           SearchResultsWrapper& results, 
+                           const FullInfoRecord& game, 
+                           NodeInfo* node,
+                           sc::Score alpha, sc::Score beta, 
+                           int depth, int ply) 
 {
     assert(0 <= depth and depth <= MaxSelDepth);
     assert(0 <= ply and ply <= MaxSelDepth);
@@ -774,7 +774,7 @@ sc::Score Search::nmSearch(Position& pos,
 
     TTEntry tt_entry;
     tt_entry.eval = sc::Undef;
-    tt_entry.move = Move16b::Null;
+    tt_entry.move = NullMove;
     tt_entry.score = sc::Undef;
 
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
@@ -814,7 +814,7 @@ sc::Score Search::nmSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
 
                 if (status) {
-                    assert(tb_move != Move16b::Null);
+                    assert(tb_move != NullMove);
                     assert(wdl != SyzygyTablebase::WDL_INVALID);
 
                     const Move32b tb_move32 = unpackedMove(pos, tb_move);
@@ -880,7 +880,7 @@ sc::Score Search::nmSearch(Position& pos,
     NodeInfo* const child_node = node + 1;
     assert(child_node - preroot < MaxSelDepth);
 
-    node->move = Move32b::Null;
+    node->move = NullMove;
     node->eval = tt_entry.eval;
     node->state = pos.getReversibleState();
     node->improving = 0;
@@ -894,7 +894,7 @@ sc::Score Search::nmSearch(Position& pos,
 
     Move32b ttm32b = unpackedMove(pos, tt_entry.move);
     Move32b tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-                                                : Move32b::Null;
+                                                : NullMove;
 
     /* Razoring -
     *  if we're at lower depth and the eval is really low
@@ -908,7 +908,7 @@ sc::Score Search::nmSearch(Position& pos,
             beta < sc::Win and
             !grandparent_node->mate_thread and 
             tt_entry.score < sc::Win and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            (tt_move.isNullMove() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
             int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
@@ -934,7 +934,7 @@ sc::Score Search::nmSearch(Position& pos,
     */
     if constexpr (!Root and IsPv) {
         if (depth >= IidDepth and 
-            tt_move.isNull() and
+            tt_move.isNullMove() and
             node->is_cut) 
         {
             child_node->is_cut = !node->is_cut;
@@ -947,14 +947,14 @@ sc::Score Search::nmSearch(Position& pos,
 
             TTEntry iid_entry;
             iid_entry.eval = sc::Undef;
-            iid_entry.move = Move16b::Null;
+            iid_entry.move = NullMove;
             iid_entry.score = sc::Undef;
 
             _UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
             
             ttm32b = unpackedMove(pos, iid_entry.move);
             tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-                                                : Move32b::Null;
+                                                : NullMove;
         }
     }
 
@@ -991,7 +991,7 @@ sc::Score Search::nmSearch(Position& pos,
         if (!node->check and
             depth <= RfpDepth and
             !grandparent_node->mate_thread and
-            (tt_move.isNull() or tt_move.isQuiet()))
+            (tt_move.isNullMove() or tt_move.isQuiet()))
         {            
             const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
 
@@ -1012,7 +1012,7 @@ sc::Score Search::nmSearch(Position& pos,
     *  if we're doing so well even after not making a move, we must be winning here.
     *  So we can do beta cutoff.
     */
-    if constexpr (!Root and NullMove and !IsPv) {
+    if constexpr (!Root and AllowNullMove and !IsPv) {
 
         if (!node->check and 
             depth >= NullDepth and
@@ -1023,7 +1023,7 @@ sc::Score Search::nmSearch(Position& pos,
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
 
             if (node->eval - nmp_margin >= beta) {    
-                assert(parent_node->move != Move32b::Null);
+                assert(parent_node->move != NullMove);
                 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
                 results.null_moves_cnt++;
@@ -1037,14 +1037,14 @@ sc::Score Search::nmSearch(Position& pos,
 
                 assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
 
-                node->move = Move32b::Null;
+                node->move = NullMove;
                 next_cluster->prev_cluster = prev_cluster;
                 
                 const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
 
                 child_node->is_cut = !node->is_cut;
 
-                sc::Score score = -nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, child_node,
+                sc::Score score = -nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, child_node,
                                                                     -beta, -beta + 1, 
                                                                     nm_depth, 
                                                                     ply + 1);
@@ -1066,7 +1066,7 @@ sc::Score Search::nmSearch(Position& pos,
                 {
                     const int verify_depth = getNullVerifyDepth(nm_depth);
 
-                    score = nmSearch<NON_PV_NODE, !NullMove>(pos, limits, results, game, node,
+                    score = nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, node,
                                                              beta - 1, beta,
                                                              verify_depth,
                                                              ply);
@@ -1089,10 +1089,10 @@ sc::Score Search::nmSearch(Position& pos,
     
     // Assert we don't probe junk killer move
     if (Root or 
-        killer.isNull() or 
+        killer.isNullMove() or 
         parent_hash_of_killer != parent_hash or
         !killer.isPseudoLegal(pos)) {
-        killer = Move32b::Null;
+        killer = NullMove;
     }
         
     node->move_picker.clear();
@@ -1106,8 +1106,8 @@ sc::Score Search::nmSearch(Position& pos,
 
     node->can_move       = false;
     node->score          = sc::Undef;
-    node->move           = Move32b::Null;
-    node->best_move      = Move32b::Null;
+    node->move           = NullMove;
+    node->best_move      = NullMove;
     node->best_score     = -sc::Infinity;
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
@@ -1201,7 +1201,7 @@ sc::Score Search::nmSearch(Position& pos,
             if (depth >= SingularDepth and
                 !node->check and
                 node->move == tt_move and
-                !tt_move.isNull() and
+                !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == TTBound::LOWERBOUND and
                 tt_entry.score < sc::Win) 
@@ -1273,10 +1273,10 @@ sc::Score Search::nmSearch(Position& pos,
                 if (pc == Piece::PAWN) 
                     move_reduction -= QuietPawnMoveReduction * FixedPointMult;
 
-                if (!tt_move.isNull() and tt_move.isCapture())
+                if (!tt_move.isNullMove() and tt_move.isCapture())
                     move_reduction += QuietHashCapReduction * FixedPointMult;
 
-                if (!killer.isNull() and node->move == killer) 
+                if (!killer.isNullMove() and node->move == killer) 
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
                 if (move_score.isValid()) 
@@ -1301,10 +1301,10 @@ sc::Score Search::nmSearch(Position& pos,
                 if (node->check)
                     move_reduction -= CaptureCheckReduction * FixedPointMult;
 
-                if (!tt_move.isNull() and tt_move.isCapture())
+                if (!tt_move.isNullMove() and tt_move.isCapture())
                     move_reduction += CaptureHashCapReduction * FixedPointMult;
 
-                if (!killer.isNull() and node->move == killer)
+                if (!killer.isNullMove() and node->move == killer)
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
                 if (move_score.isValid() and !node->move.isPromotion())
@@ -1443,7 +1443,7 @@ sc::Score Search::nmSearch(Position& pos,
         !results.anyQuiesceNodesLeft(limits)) 
     {
         if constexpr (Root) {
-            if (node->best_move.isNull()) {
+            if (node->best_move.isNullMove()) {
                 node->best_move = node->move;
                 node->pv_line[0].best_move = packedMove(node->best_move);
                 node->pv_line_len = 1;
@@ -1470,7 +1470,7 @@ sc::Score Search::nmSearch(Position& pos,
     }
 
     if constexpr (!Root) {
-        child_node->move_picker.setKillerMove(Move32b::Null, 0);
+        child_node->move_picker.setKillerMove(NullMove, 0);
     }
 
     if constexpr (Root) {
@@ -1518,7 +1518,7 @@ sc::Score Search::qSearch(Position& pos,
 #if defined(_TT_PROBE_QSEARCH)
     TTEntry tt_entry;
     tt_entry.eval = sc::Undef;
-    tt_entry.move = Move16b::Null;
+    tt_entry.move = NullMove;
     tt_entry.score = sc::Undef;
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1585,7 +1585,7 @@ sc::Score Search::qSearch(Position& pos,
 
     node->move_picker.clear();
 
-    Move32b tt_move = Move32b::Null;
+    Move32b tt_move = NullMove;
 
 #if defined(_TT_PROBE_QSEARCH)
     const Move16b ttm16b = tt_entry.move;
@@ -1599,7 +1599,7 @@ sc::Score Search::qSearch(Position& pos,
 
         const Move32b ttm32b = unpackedMove(pos, tt_entry.move);
         tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-                                            : Move32b::Null;
+                                            : NullMove;
         node->move_picker.setHashMove(tt_move);
     }
 #endif // _TT_PROBE_QSEARCH
@@ -1611,8 +1611,8 @@ sc::Score Search::qSearch(Position& pos,
 
     node->moves_searched = 0;
     node->state          = pos.getReversibleState();
-    node->best_move      = Move32b::Null;
-    node->move           = Move32b::Null;
+    node->best_move      = NullMove;
+    node->move           = NullMove;
     node->score          = sc::Undef;
     node->best_score     = -sc::Infinity;
 
@@ -1831,7 +1831,7 @@ _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
     const Move32b prev_move = parent_node->move;
 
     if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
-        const int unorm_score = parent_node->move_picker.getQuietMoveScore(parent_node->move_index, 
+        const int unorm_score = parent_node->move_picker.getQuietMoveScore(prev_move, 
                                                                            parent_node->side2move);
         return unorm_score * RfpQuietPenaltyMult / 8192;
     }
@@ -1872,10 +1872,10 @@ void Search::refreshPVinTT(const Position& pos,
         const int depth = results.depth - i;
 
         assert(depth > 0);
-        assert(!pv_move.isNull());
+        assert(!pv_move.isNullMove());
 
         TTEntry tt_entry;
-        tt_entry.move = Move16b::Null;
+        tt_entry.move = NullMove;
 
         const bool tt_hit = _tt.probe(tt_entry, 
                                       key,
@@ -1893,7 +1893,7 @@ void Search::refreshPVinTT(const Position& pos,
         _declUnused(cpy_pos.make(pv_unpack));
     }
 
-    if (results.best_move.isNull())
+    if (results.best_move.isNullMove())
         return;
 
     // Assert we got PV-move at root - got it directly from previous best move
@@ -1905,7 +1905,7 @@ void Search::refreshPVinTT(const Position& pos,
 
     if (!pv_len) {
         TTEntry tt_entry;
-        tt_entry.move = Move16b::Null;
+        tt_entry.move = NullMove;
 
         const bool tt_hit = _tt.probe(tt_entry,
                                       key,
@@ -1924,7 +1924,7 @@ void Search::refreshPVinTT(const Position& pos,
 
     // Check if PV-move for root node is actually there
     TTEntry tt_entry;
-    tt_entry.move = Move16b::Null;
+    tt_entry.move = NullMove;
 
     _tt.probe(tt_entry,
               key,
@@ -1958,12 +1958,12 @@ bool Search::isRepetitionCycle(const Position& pos,
     {
         prev_node--;
 
-        if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             return false;
 
         prev_node--;
         
-        if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             return false;
 
         assert(prev_node->side2move == node->side2move);
@@ -2009,7 +2009,7 @@ bool Search::canRepetitionDraw(const Position& pos,
     const uint64_t curr_hash = pos.getZobristKey();
     const NodeInfo* prev_node = node - 1;
 
-    if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+    if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
         return false;
 
     size_t idx = static_cast<size_t>(-1);
@@ -2020,12 +2020,12 @@ bool Search::canRepetitionDraw(const Position& pos,
     {
         prev_node--;
         
-        if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             break;
         
         prev_node--;
 
-        if (prev_node->move.isNull() or prev_node->move.isIrreversible())
+        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             break;
 
         assert(prev_node->side2move != node->side2move);

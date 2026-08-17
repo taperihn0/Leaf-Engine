@@ -124,7 +124,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
                                                 score,
                                                 debug_labels[side2move]);
 
-        if (move.isNull() or
+        if (move.isNullMove() or
             !engine0.isAlive() or
             !engine1.isAlive()) {
             game_result = Game::GAME_INVALID;
@@ -279,14 +279,14 @@ Move32b SelfGame::getPlayerMove(search::SearchLimits limits,
 
     if (best_move_str.empty()) {
         labelLog(std::cout, LOG_INFO, "Null best move");
-        return Move32b::Null;
+        return NullMove;
     }
 
     Move32b best_move = Move32b::fromStr<Move32b::Notation::REGULAR>(pos, best_move_str);
 
     if (!best_move.isLegal(pos)) {
         labelLog(std::cout, LOG_INFO, "Invalid best move");
-        return Move32b::Null;
+        return NullMove;
     }
 
     return best_move;

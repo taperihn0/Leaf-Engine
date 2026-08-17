@@ -68,7 +68,7 @@ void OpeningGenerator::load() {
             for (int j = 1; j <= _MaxRandomMoves; j++) {
                 Move32b random_move = MoveGen::getRandomLegalMove<MoveGen::ALL>(pos);
 
-                if (random_move.isNull())
+                if (random_move.isNullMove())
                     break;
 
                 const bool legal = pos.make(random_move);

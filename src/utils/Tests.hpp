@@ -105,7 +105,7 @@ _INTERNAL bool seeTests() {
         const std::string fen = static_cast<std::string>(SeeTestSet.at(cnt));
 
         size_t ind = 0;
-        Move32b move = Move32b::Null;
+        Move32b move = NullMove;
         int expected = 0;
 
         for (int i = 0; i < 3; i++) {
