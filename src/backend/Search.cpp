@@ -1767,7 +1767,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
 
     sc::Score pawnless_eg_eval = sc::Undef;
 
-    if (true) {
+    if (!SyzygyTablebase::get().isLoaded()) {
         pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos)
                                                     : sc::Undef;
 
@@ -1798,7 +1798,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     // Assert we won't overflow into special winning scores
     assert(abs<int16_t>(scaled_eval) < sc::Win);
 
-    if (pawnless_eg_eval.isValid()) {
+    if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
         switch (pawnless_eg_eval.value()) {
         case sc::Win.value():
         case -sc::Win.value():
