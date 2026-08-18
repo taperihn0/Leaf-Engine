@@ -115,6 +115,14 @@
 #endif
 
 #define _PARAM_ATTRIBS    inline _P_CONSTEXPR
+
+/* When _ENABLE_TUNING is defined, it
+*  expands to nothing.
+*  That way, we can declare local variables
+*  that may depent on tuned parameters and 
+*  that are dynamically recalculated to sync with
+*  tunable parameters.
+*/
 #define _LC_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
 
 #if defined(__GNUC__) and defined(LEAF_ARCHITECTURE_X86)

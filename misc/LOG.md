@@ -1,3 +1,13 @@
+### [commit:cd99432] fixes: fix scaling bug in Endgame
+```
+Score of leaf-eg vs leaf-base: 201 - 180 - 494  [0.512] 875
+...      leaf-eg playing White: 152 - 47 - 239  [0.620] 438
+...      leaf-eg playing Black: 49 - 133 - 255  [0.404] 437
+...      White vs Black: 285 - 96 - 494  [0.608] 875
+Elo difference: 8.3 +/- 15.2, LOS: 85.9 %, DrawRatio: 56.5 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:7d5f24a] fixes: removed Endgame evaluation & added different HalfMoveEvalLimit for endgame
 ```
 Score of leaf-eg vs leaf-base: 793 - 695 - 988  [0.520] 2476

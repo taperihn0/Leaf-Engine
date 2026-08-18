@@ -143,7 +143,7 @@
         },
         {
             "name": "final-legacy",
-            "displayName": "Final",
+            "displayName": "Final-Legacy",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Release",
             "cacheVariables": {
@@ -158,7 +158,7 @@
         },
         {
             "name": "finalutils-legacy",
-            "displayName": "FinalUtils",
+            "displayName": "FinalUtils-Legacy",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/Utils/Release",
             "cacheVariables": {
@@ -204,12 +204,12 @@
             "targets": [ "LeafUtils" ]
         },
         {
-            "name": "final-legacy",
-            "configurePreset": "final",
+            "name": "finallegacy",
+            "configurePreset": "final-legacy",
             "targets": [ "Leaf" ]
         },
         {
-            "name": "finalutils-legacy",
+            "name": "finalutilslegacy",
             "configurePreset": "finalutils-legacy",
             "targets": [ "LeafUtils" ]
         }

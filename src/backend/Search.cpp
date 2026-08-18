@@ -1118,7 +1118,7 @@ sc::Score Search::nmSearch(Position& pos,
     ml::MoveScore move_score = sc::Undef;
 
     for (node->move_index = 0; 
-         node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, move_score);
+         node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, move_score, ply);
          node->move_index++) 
     {
         /* Singular Move -
@@ -1392,7 +1392,7 @@ sc::Score Search::nmSearch(Position& pos,
         if (limits.isTimeLeft() and 
             results.anyNodesLeft(limits) and
             results.anyQuiesceNodesLeft(limits) and
-            node->move.isLegalMoved() and 
+            node->move.isLegalAfterMove() and 
             node->score > node->best_score) 
         {
             node->best_move = node->move;
@@ -1402,11 +1402,9 @@ sc::Score Search::nmSearch(Position& pos,
                 if (node->score >= beta) {
                     node->bound = TTBound::LOWERBOUND;
 
-                    if (node->move.isQuiet() and 
-                        !node->move.isQueenPromotion()) 
-                    {
+                    if (node->move.isQuiet() and !node->move.isQueenPromotion())  {
+                        node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth, ply, node);
                         node->move_picker.setKillerMove(node->move, parent_hash);
-                        node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth);
                     }
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1623,7 +1621,7 @@ sc::Score Search::qSearch(Position& pos,
     ml::MoveScore move_score = sc::Undef;
 
     for (node->move_index = 0;
-         node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score);
+         node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score, ply);
          node->move_index++) 
     {
         
@@ -1660,7 +1658,7 @@ sc::Score Search::qSearch(Position& pos,
         if (limits.isTimeLeft() and 
             results.anyNodesLeft(limits) and
             results.anyQuiesceNodesLeft(limits) and
-            node->move.isLegalMoved() and 
+            node->move.isLegalAfterMove() and 
             node->score > alpha) 
         {
             node->best_move = node->move;
@@ -1796,7 +1794,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     int16_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
 
     // Assert we won't overflow into special winning scores
-    assert(abs<int16_t>(scaled_eval) < sc::Win);
+    assert(abs<int16_t>(scaled_eval) < sc::Win.value());
 
     if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
         switch (pawnless_eg_eval.value()) {
@@ -1938,7 +1936,7 @@ void Search::refreshPVinTT(const Position& pos,
               -sc::MateBound, +sc::MateBound,
               depth);
 
-    ASSERT_NOLOG(!tt_entry.move.isNull());
+    ASSERT_NOLOG(!tt_entry.move.isNullMove());
 
 #endif
 }

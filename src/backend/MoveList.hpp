@@ -24,10 +24,12 @@
 
 namespace ml {
 
-class MoveScore final : public sc::util::ScoreBase<MoveScore> {
+class MoveScore final : public sc::util::ScoreBase<MoveScore, int32_t> {
 public:
-    friend class sc::util::ScoreBase<MoveScore>;
-    using sc::util::ScoreBase<MoveScore>::operator=;
+    friend class sc::util::ScoreBase<MoveScore, int32_t>;
+    using Base = sc::util::ScoreBase<MoveScore, int32_t>;
+
+    using Base::operator=;
 
     MoveScore() = default;
     _INLINE constexpr MoveScore(const MoveScore&) = default;
@@ -37,11 +39,11 @@ public:
         : ScoreBase(val) {}
 
     _FORCEINLINE constexpr MoveScore& operator=(const sc::Score& s) noexcept {
-        _v = static_cast<const sc::util::ScoreBase<sc::Score>&>(s)._v;
+        _v = static_cast<const sc::Score::Base&>(s)._v;
         return *this;
     }
 private:
-    using sc::util::ScoreBase<MoveScore>::_v;
+    using Base::_v;
 };
 
 class MoveList {
@@ -55,7 +57,7 @@ public:
         MoveScore score;
     };
 
-    static_assert(is_same<MoveScore::int_t, int16_t>);
+    static_assert(is_same<MoveScore::int_t, int32_t>);
 
     MoveList() = default;
 

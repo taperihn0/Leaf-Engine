@@ -103,7 +103,7 @@ private:
 
 #if !defined(LEAF_ENABLE_BMI2)
     // magic bitboards for bishop and rook
-    static const array1d<uint64_t, 64> _magics_bishop, 
+    static const Array1d<uint64_t, 64> _magics_bishop, 
                                        _magics_rook;
 #endif // !LEAF_ENABLE_BMI2
 

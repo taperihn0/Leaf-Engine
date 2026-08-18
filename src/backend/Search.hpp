@@ -131,13 +131,13 @@ public:
     ull       syzygy_tb_probe_cnt = 0;
     ull       syzygy_tb_cuts      = 0;
 
-    array1d<ull, MaxNodeMoves>   
+    Array1d<ull, MaxNodeMoves>   
               move_cut_cnt = {};
-    array1d<ull, MaxNodeMoves>   
+    Array1d<ull, MaxNodeMoves>   
               move_reduced_cnt = {};
-    array1d<ull, MaxNodeMoves>   
+    Array1d<ull, MaxNodeMoves>   
               move_reduced_fail_high_cnt = {};
-    array1d<float, MaxNodeMoves> 
+    Array1d<float, MaxNodeMoves> 
               move_reduction_sum = {};
 #endif
 };
@@ -430,7 +430,7 @@ private:
     */
     mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> 
                      _history_buff;
-    sc::Score::int_t _contempt = sc::Undef.value();
+    sc::Score _contempt = sc::Undef;
 };
 
 constexpr enumNode operator|(enumNode node0, enumNode node1) {

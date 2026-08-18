@@ -27,7 +27,7 @@
 
 #if !defined(LEAF_ENABLE_BMI2)
 
-const array1d<uint64_t, 64> SlidersAttacks::_magics_bishop = {
+const Array1d<uint64_t, 64> SlidersAttacks::_magics_bishop = {
     0xd0100150140149c2,
     0x400b4a8fe1010031,
     0x480a1420200000,
@@ -94,7 +94,7 @@ const array1d<uint64_t, 64> SlidersAttacks::_magics_bishop = {
     0x838e00408820010,
 };
 
-const array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
+const Array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
     0x188001a080400431,
     0x8140002002401000,
     0x49000852600101c1,

@@ -24,10 +24,10 @@ namespace sc {
 
 namespace util {
 
-template <typename Derived>
+template <typename Derived, typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 class ScoreBase {
 public:
-    using int_t = int16_t;
+    using int_t = T;
 
     ScoreBase() noexcept = default;
     _INLINE constexpr ScoreBase(int32_t val) noexcept
@@ -47,7 +47,7 @@ public:
     _FORCEINLINE constexpr bool     operator==(Derived b) const noexcept { return _v == b._v; }
     _FORCEINLINE constexpr bool     operator!=(Derived b) const noexcept { return _v != b._v; }
 
-    _FORCEINLINE constexpr explicit operator int_t()      const noexcept { return _v; }
+    _FORCEINLINE constexpr explicit operator int16_t()    const noexcept { return _v; }
     _FORCEINLINE constexpr explicit operator int32_t()    const noexcept { return _v; }
     _FORCEINLINE constexpr explicit operator int64_t()    const noexcept { return _v; }
     _FORCEINLINE constexpr explicit operator float()      const noexcept { return static_cast<float>(_v); }
@@ -77,6 +77,8 @@ public:
     _NODISCARD _INLINE constexpr bool isValid() const;
 
     int_t _v;
+protected:
+    using base = ScoreBase<Derived, T>;
 private:
     constexpr Derived& asDerived() noexcept {
         return static_cast<Derived&>(*this);
@@ -92,9 +94,10 @@ private:
 /* That is int16_t wrapper that express
 *  board evaluation in centipawns.
 */
-class Score final : public util::ScoreBase<Score> {
+class Score final : public util::ScoreBase<Score, int16_t> {
 public:
-    friend class util::ScoreBase<Score>;
+    friend class util::ScoreBase<Score, int16_t>;
+    using Base = util::ScoreBase<Score, int16_t>;
 
     Score() = default;
     _INLINE constexpr Score(const Score& s) = default;
@@ -105,7 +108,7 @@ public:
     _NODISCARD _INLINE constexpr bool isMateScore() const;
     _NODISCARD static _INLINE constexpr Score getMateScore(int ply);
 private:
-    using util::ScoreBase<Score>::_v;
+    using Base::_v;
 };
 
 inline constexpr Score Draw      = Score(0);
@@ -116,8 +119,8 @@ inline constexpr Score MateBound = Score(32000 - MaxDepth);
 inline constexpr Score Infinity  = Score(maxof<Score::int_t>());
 inline constexpr Score Undef     = Score(32500);
 
-template <typename Derived>
-_NODISCARD _INLINE constexpr bool util::ScoreBase<Derived>::isValid() const {
+template <typename Derived, typename T, typename _>
+_NODISCARD _INLINE constexpr bool util::ScoreBase<Derived, T, _>::isValid() const {
     return _v != Undef.value() and _v != -Undef.value();
 }
 

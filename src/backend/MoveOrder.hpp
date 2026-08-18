@@ -31,22 +31,28 @@ namespace mvorder {
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(OrdQuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(OrdCaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
-_DEFINE_TUNABLE_PARAMETER(OrdQuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(OrdKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(OrdPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(OrdRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(OrdQueenCapturedScore, int32_t, 900.f, 820.f, 980.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(OrdQuietBonusHistoryScore2Coeff, int32_t, 1024.f, 924.f, 1124.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(OrdQuietBonusHistoryScore1Coeff, int32_t, 0.f, -100.f, 300.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(OrdQuietPenaltyHistoryScore2Coeff, int32_t, 1024.f, 924.f, 1124.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(OrdQuietPenaltyHistoryScore1Coeff, int32_t, 0.f, -100.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(MvOrCaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(MvOrRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQueenCapturedScore, int32_t, 900.f, 820.f, 980.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrdContinuation2Scale, int32_t, 800.f, 600.f, 1000.f, 1.f);
 
 enum enumOrderPolicy : uint8_t {
     STAGED         = 1, // At nmSearch nodes
@@ -79,12 +85,18 @@ public:
         
         HistoryTables();
         void clearQuietsHistory();
-    private:
-        _NODISCARD _INLINE int16_t getNormalizedQuietScore(Move32b move, enumColor side);
 
-        static inline constexpr int16_t _MaxQuietsHistoryExp2 = 13;
-        static inline constexpr int16_t _MaxAbsQuietsHistory  = 1 << _MaxQuietsHistoryExp2;
+        _NODISCARD static constexpr int16_t getContinuationPly() { return _ContinuationPly; }
+    private:
+        _NODISCARD _INLINE int16_t getNormalizedHistQuietScore(Move32b move, enumColor side);
+
+        static inline constexpr int16_t _MaxAbsQuietsHistory  = 8192;
+        static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
+        static inline constexpr int16_t _ContinuationPly = 2;
+
         Array3d<int16_t, 2, 6, 64>      _quiets_history;
+        Array2d<Array2d<Array2d<int16_t, 6, 64>, 6, 64>, 2, _ContinuationPly>
+                                        _cont_history;
     };
 
     MoveOrder() = default;
@@ -104,16 +116,19 @@ public:
     _NODISCARD bool nextMoveWithPolicy(const search::NodeInfo* node, 
                                        Position& pos, 
                                        Move32b& next_move,
-                                       ml::MoveScore& move_score);
+                                       ml::MoveScore& move_score,
+                                       int ply);
 
     void setHashMove(Move32b m);
     void setKillerMove(Move32b m, uint64_t parent_hash);
 
     Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
-    template <int8_t Sign>
-    void updateQuietEntry(Move32b move, enumColor side, int16_t hist_bonus);
-    void updateQuietsHistory(Move32b bestmove, enumColor side, int depth);
+    void updateQuietsHistory(Move32b bestmove, 
+                             enumColor side, 
+                             int depth, 
+                             int ply,
+                             const search::NodeInfo* node);
     
     void clear();
     void skipQuiets();
@@ -133,17 +148,31 @@ public:
     _NODISCARD enumStage getStage() const;
 
     _NODISCARD static ml::MoveScore centeredQuietScore(ml::MoveScore s) noexcept;
-
-    static constexpr int16_t MaxQuietMoveScore = 2 * HistoryTables::_MaxAbsQuietsHistory;
 private:
-    bool nextFromList(Move32b& move, ml::MoveScore& score, size_t end_idx = maxof<size_t>());
+    template <int8_t Sign>
+    void updateQuietEntry(Move32b move, 
+                          enumColor side, 
+                          int16_t hist_bonus, 
+                          int16_t cont_hist,
+                          const search::NodeInfo* node,
+                          int ply);
+
+    bool nextMoveFromList(Move32b& move, ml::MoveScore& score, size_t end_idx);
+    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, size_t end_idx = maxof<size_t>());
 
     void scoreCaptures(size_t first_ind, const Position& pos);
-    void scoreQuiets(size_t first_ind, enumColor side);
+    void scoreQuiets(size_t first_ind, 
+                     enumColor side, 
+                     const search::NodeInfo* node, 
+                     int ply);
 
     bool nextMoveFromOnceGen(Position& pos, 
                              Move32b& next_move,
-                             ml::MoveScore& move_score);
+                             ml::MoveScore& move_score,
+                             const search::NodeInfo* node,
+                             int ply);
+
+    _NODISCARD static ml::MoveScore outputMoveScore(Move32b move, ml::MoveScore s) noexcept;
 
     enum class enumPrivateStage : uint8_t {
         NONE,
@@ -159,8 +188,6 @@ private:
         STAGED_QUIETS,
         STAGED_PICK_QUIETS,
     };
-
-    static_assert(is_same<ml::MoveScore::int_t, int16_t>);
 
     static mem::AlignedSharedPtr<HistoryTables> _hist_tables;
 
@@ -206,14 +233,14 @@ _FORCEINLINE void MoveOrder::skipQuiets() {
     _iterator = _move_list.count();
 }
 
-_NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedQuietScore(Move32b move, enumColor side) {
+_NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedHistQuietScore(Move32b move, enumColor side) {
     const Piece::uint_t piece_ind = index(move.getPiece());
     const Square dst = move.getTarget();
     return _hist_tables->_quiets_history[side][piece_ind][dst] + _MaxAbsQuietsHistory;
 }
 
  _NODISCARD _FORCEINLINE int16_t MoveOrder::getQuietMoveScore(Move32b move, enumColor side) const {
-    return _hist_tables->getNormalizedQuietScore(move, side);
+    return _hist_tables->getNormalizedHistQuietScore(move, side);
 }
 
 /* Search utilities - move reductions
@@ -221,15 +248,15 @@ _NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedQuietScor
 */
 
 _NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
-    const int32_t centered_score = quiet_score.value() - OrdQuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
+    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const int32_t val = OrdQuietMoveScoreReductionRate * rt / 128;
+    const int32_t val = MvOrQuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
 
 _NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_score) {
     // TODO: better fixed-point formula
-    return static_cast<float>(OrdCaptureMoveScoreReductionRate * capture_score.value() / 128);
+    return static_cast<float>(MvOrCaptureMoveScoreReductionRate * capture_score.value() / 128);
 }
 
 // =================================

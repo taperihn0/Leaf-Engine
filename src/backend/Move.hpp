@@ -145,7 +145,7 @@ public:
 
     // use this field only after making a move -
     // move legality is checked only when attempting to make it
-    _NODISCARD _INLINE bool isLegalMoved() const {
+    _NODISCARD _INLINE bool isLegalAfterMove() const {
         static_assert(is_same<T, uint32_t>);
         return _v & LEGALLY_MOVED;
     }

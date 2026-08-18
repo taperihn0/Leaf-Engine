@@ -657,16 +657,6 @@ uint64_t Position::goPerft(uint depth, clk::milliseconds& duration_ms) {
 
 static constexpr int32_t NonePieceValue = 0;
 
-static constexpr Array1d<const int32_t*, 7> SeePieceValue = {
-    &SeePawnValue,
-    &SeeKnightValue,
-    &SeeBishopValue,
-    &SeeRookValue,
-    &SeeQueenValue,
-    &SeeKingValue,
-    &NonePieceValue
-};
-
 template <bool ExactScore>
 int Position::staticExchangeEval(Square org, 
                                  Square sq, 
@@ -674,8 +664,18 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
+    _LC_PARAM_ATTRIBS const Array1d<int32_t, 7> SeePieceValue = {
+        SeePawnValue,
+        SeeKnightValue,
+        SeeBishopValue,
+        SeeRookValue,
+        SeeQueenValue,
+        SeeKingValue,
+        NonePieceValue
+    };
+
     if constexpr (!ExactScore) {
-        if (const int gain = *SeePieceValue[target] - *SeePieceValue[attacker]; 
+        if (const int gain = SeePieceValue[target] - SeePieceValue[attacker]; 
             target != Piece::enumType::NONE and gain >= threshold)
             return gain;
     }
@@ -696,11 +696,11 @@ int Position::staticExchangeEval(Square org,
 
     Piece::uint_t vic = target;
     Piece::uint_t att = attacker;
-    gain[i] = *SeePieceValue[vic];
+    gain[i] = SeePieceValue[vic];
 
     vic = att;
     if (vic == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-        gain[i] += *SeePieceValue[Piece::QUEEN] - *SeePieceValue[Piece::PAWN];
+        gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
         vic = Piece::QUEEN;
     }
 
@@ -709,7 +709,7 @@ int Position::staticExchangeEval(Square org,
 
     while (from != BitBoard::Empty) {
         i++;
-        gain[i] = -gain[i - 1] + *SeePieceValue[vic];
+        gain[i] = -gain[i - 1] + SeePieceValue[vic];
         
         if constexpr (!ExactScore) {
             if (std::max(-gain[i - 1], gain[i]) < threshold)
@@ -724,7 +724,7 @@ int Position::staticExchangeEval(Square org,
         }
 
         if (att == Piece::PAWN and targetbb & BitBoard::promorank(side2move)) {
-            gain[i] += *SeePieceValue[Piece::QUEEN] - *SeePieceValue[Piece::PAWN];
+            gain[i] += SeePieceValue[Piece::QUEEN] - SeePieceValue[Piece::PAWN];
             att = Piece::QUEEN;
         }
 
