@@ -31,6 +31,18 @@ void MoveOrder::HistoryTables::clearHistoryTables() {
     mem::memSet(dataOfArray3d(_cont_history), 0, sizeof(_cont_history));
 }
 
+void MoveOrder::HistoryTables::onNewSearch() {
+    for (auto* hist_entry = dataOfArray3d(_quiets_history); 
+         hist_entry < dataOfArray3d(_quiets_history) + sizeof(_quiets_history);
+         hist_entry++)
+        *hist_entry /= 2;    
+    
+    for (auto* cont_entry = reinterpret_cast<int16_t*>(dataOfArray3d(_cont_history)); 
+         cont_entry < reinterpret_cast<int16_t*>(dataOfArray3d(_cont_history)) + sizeof(_cont_history) / 2;
+         cont_entry++)
+        *cont_entry /= 2;  
+}
+
 /* 
 *   MoveOrder<STAGED> and MoveOrder<QUIESCENT> template classes do not specify generateMoves function. 
 *   Both generates appropiate moves on fly, during move picking as stage is 

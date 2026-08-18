@@ -85,6 +85,7 @@ public:
         
         HistoryTables();
         void clearHistoryTables();
+        void onNewSearch();
 
         _NODISCARD static constexpr int16_t getContinuationPly() { return _ContinuationPly; }
     private:

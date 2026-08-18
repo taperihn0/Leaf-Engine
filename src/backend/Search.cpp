@@ -474,6 +474,7 @@ Move32b Search::findBestMove(Position& pos,
     ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
     _tt.newGeneration();
+    _history_buff->onNewSearch();
     
     SearchLimitsWrapper search_limits(limits);
     search_limits.onNewSearch(pos);
