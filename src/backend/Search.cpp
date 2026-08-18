@@ -324,7 +324,7 @@ void Search::resizeHash(size_t tt_size_mb) {
 
 void Search::onNewGame() {
     clearHash();
-    _history_buff->clearQuietsHistory();
+    _history_buff->clearHistoryTables();
     _tree_stack->clear(_history_buff);
 }
 

@@ -344,6 +344,11 @@ using Array3d = Array1d<
                     Array2d<T, M, S>, 
                 N>;
 
+template <typename T, size_t N, size_t M, size_t S, size_t U>
+using Array4d = Array1d<
+                    Array3d<T, M, S, U>, 
+                N>;
+
 template <typename T, size_t N>
 _FORCEINLINE T* dataOfArray1d(Array1d<T, N>& arr) {
     return reinterpret_cast<T*>(arr.data());
@@ -359,6 +364,11 @@ _FORCEINLINE T* dataOfArray3d(Array3d<T, N, M, S>& arr) {
     return reinterpret_cast<T*>(arr.data());
 }
 
+template <typename T, size_t N, size_t M, size_t S, size_t U>
+_FORCEINLINE T* dataOfArray4d(Array4d<T, N, M, S, U>& arr) {
+    return reinterpret_cast<T*>(arr.data());
+}
+
 template <typename T, size_t N>
 _FORCEINLINE const T* dataOfArray1d(const Array1d<T, N>& arr) {
     return reinterpret_cast<const T*>(arr.data());
@@ -371,6 +381,11 @@ _FORCEINLINE const T* dataOfArray2d(const Array2d<T, N, M>& arr) {
 
 template <typename T, size_t N, size_t M, size_t S>
 _FORCEINLINE const T* dataOfArray3d(const Array3d<T, N, M, S>& arr) {
+    return reinterpret_cast<const T*>(arr.data());
+}
+
+template <typename T, size_t N, size_t M, size_t S, size_t U>
+_FORCEINLINE const T* dataOfArray4d(const Array4d<T, N, M, S, U>& arr) {
     return reinterpret_cast<const T*>(arr.data());
 }
 

@@ -24,10 +24,11 @@ namespace mvorder {
 
 mem::AlignedSharedPtr<MoveOrder::HistoryTables> MoveOrder::_hist_tables;
 
-MoveOrder::HistoryTables::HistoryTables() { clearQuietsHistory(); }
+MoveOrder::HistoryTables::HistoryTables() { clearHistoryTables(); }
 
-void MoveOrder::HistoryTables::clearQuietsHistory() {
+void MoveOrder::HistoryTables::clearHistoryTables() {
     mem::memSet(dataOfArray3d(_quiets_history), 0, sizeof(_quiets_history));
+    mem::memSet(dataOfArray3d(_cont_history), 0, sizeof(_cont_history));
 }
 
 /* 
@@ -159,12 +160,9 @@ void MoveOrder::updateQuietEntry(Move32b move,
     for (uint i = 0; i < HistoryTables::_ContinuationPly and i < static_cast<uint32_t>(ply); i++) {
         const search::NodeInfo* prev_node = node - i - 1;
 
-        if (prev_node->move.isNullMove())
-            break;
-
         const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
         const Square prev_dst = prev_node->move.getTarget();
-        auto& cont_refute_table = _hist_tables->_cont_history[i][side][prev_piece][prev_dst];
+        auto& cont_refute_table = _hist_tables->_cont_history[i][prev_node->move.isCapture()][side][prev_piece][prev_dst];
 
         const int32_t mcont_bonus = std::min(cont_bonus, HistoryTables::_MaxAbsContinuationHistory);
         const int32_t cont_value = static_cast<int32_t>(cont_refute_table[piece][dst]);
@@ -200,8 +198,8 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
                                   ) / 1024;
 
     const int16_t cont_penalty = (MvOrContPenaltyHistoryScore2Coeff * sq(depth) + 
-                                   MvOrContPenaltyHistoryScore1Coeff * depth
-                                  ) / 1024;
+                                  MvOrContPenaltyHistoryScore1Coeff * depth
+                                 ) / 1024;
 
     for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
@@ -301,7 +299,7 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
     _LC_PARAM_ATTRIBS const Array1d<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
         MvOrdContinuation1Scale,
-        MvOrdContinuation2Scale
+        MvOrdContinuation2Scale,
     };
 
     for (size_t i = first_ind; i < _move_list.count(); i++) {
@@ -311,29 +309,23 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
         assert(move.isQuiet());
 
-        /* history value is in range [-HistoryTables::_MaxAbsQuietsHistory, +HistoryTables::_MaxAbsQuietsHistory],
-        *  we shift so that we got non-negative actual score.
-        */
-        score = _hist_tables->getNormalizedHistQuietScore(move, side);
-
-        /* Apply continuation score */
-        
         const Piece::uint_t piece = index(move.getPiece());
         const Square dst = move.getTarget();
+
+        score = _hist_tables->_quiets_history[side][piece][dst];
+
+        /* Apply continuation score */
 
         for (uint j = 0; j < HistoryTables::_ContinuationPly and j < static_cast<uint32_t>(ply); j++) {
             const search::NodeInfo* prev_node = node - j - 1;
 
-            if (prev_node->move.isNullMove())
-                break;
-
             const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
             const Square prev_dst = prev_node->move.getTarget();
 
-            auto& cont_refute_table = _hist_tables->_cont_history[j][side][prev_piece][prev_dst];
-            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_refute_table[piece][dst] / 1024;
+            auto& cont_refute_table = _hist_tables->_cont_history[j][prev_node->move.isCapture()][side][prev_piece][prev_dst];
 
-            score += scaled_cont_value + HistoryTables::_MaxAbsContinuationHistory;
+            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_refute_table[piece][dst] / 1024;
+            score += scaled_cont_value;
         }
     }
 }
@@ -375,7 +367,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         if (getNextMoveInfo(next_move, move_score, s2m, _quiets_ind))
             return true;
 
-        scoreQuiets(_quiets_ind, pos.getTurn(), node, ply);
+        scoreQuiets(_quiets_ind, s2m, node, ply);
         _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:

@@ -48,7 +48,7 @@ _DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore1Coeff, int32_t, 1.f, 0.f, 3
 _DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore1Coeff, int32_t, 16.f, 0.f, 300.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
@@ -84,18 +84,18 @@ public:
         friend class MoveOrder;
         
         HistoryTables();
-        void clearQuietsHistory();
+        void clearHistoryTables();
 
         _NODISCARD static constexpr int16_t getContinuationPly() { return _ContinuationPly; }
     private:
         _NODISCARD _INLINE int16_t getNormalizedHistQuietScore(Move32b move, enumColor side);
 
         static inline constexpr int16_t _MaxAbsQuietsHistory  = 8192;
-        static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
+        static inline constexpr int16_t _MaxAbsContinuationHistory = 4096;
         static inline constexpr int16_t _ContinuationPly = 2;
-
+        
         Array3d<int16_t, 2, 6, 64>      _quiets_history;
-        Array2d<Array2d<Array2d<int16_t, 6, 64>, 6, 64>, 2, _ContinuationPly>
+        Array3d<Array2d<Array2d<int16_t, 6, 64>, 6, 64>, _ContinuationPly, 2, 2>
                                         _cont_history;
     };
 
