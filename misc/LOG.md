@@ -1,3 +1,13 @@
+### [commit:7d5f24a] fixes: removed Endgame evaluation & added different HalfMoveEvalLimit for endgame
+```
+Score of leaf-eg vs leaf-base: 793 - 695 - 988  [0.520] 2476
+...      leaf-eg playing White: 660 - 133 - 445  [0.713] 1238
+...      leaf-eg playing Black: 133 - 562 - 543  [0.327] 1238
+...      White vs Black: 1222 - 266 - 988  [0.693] 2476
+Elo difference: 13.8 +/- 10.6, LOS: 99.4 %, DrawRatio: 39.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:cb9be55] feature: Tuned parameters
 ```
 Score of leaf-see-prune-2 vs leaf-fp-base: 144 - 134 - 167  [0.511] 445

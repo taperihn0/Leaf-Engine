@@ -242,7 +242,8 @@ _DEFINE_TUNABLE_PARAMETER(CaptureHashCapReduction, int32_t, 135.385f, 50.f, 260.
 _DEFINE_TUNABLE_PARAMETER(CaptureKillerMoveReduction, int32_t, 147.625f, 50.f, 280.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(CaptureExtensionReduction, int32_t, 72.7094f, 20.f, 140.f, 1.0f);
 _DEFINE_TUNABLE_PARAMETER(CaptureImprovingReductionRate, int32_t, 27.1306f, 8.f, 55.f, 0.5f);
-_DEFINE_TUNABLE_PARAMETER(HalfMovesEvalLimit, int32_t, 14.4607f, 5.f, 40.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(EvalHalfMovesEvalLimit, int32_t, 14.4607f, 6.f, 25.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER(EvalEgHalfMovesEvalLimit, int32_t, 20.4607f, 6.f, 30.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(NullVerifyDepth, int32_t, 8.9219f, 5.f, 16.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionRate, int32_t, 10.5909f, 8.f, 16.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionDiv, int32_t, 9.53864f, 8.f, 16.f, 1.4f);

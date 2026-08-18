@@ -1817,8 +1817,8 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     }
  
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-    const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? HalfMovesEvalLimit + 6 : HalfMovesEvalLimit;
-    const int32_t clock_mult = std::min<int32_t>(halfmoves_left, HalfMovesEvalLimit);
+    const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? EvalEgHalfMovesEvalLimit : EvalHalfMovesEvalLimit;
+    const int32_t clock_mult = std::min<int32_t>(halfmoves_left, halfmoves_left_limit);
     sc::Score::int_t result = static_cast<sc::Score::int_t>(static_cast<int32_t>(scaled_eval) * clock_mult / halfmoves_left_limit);
 
     return result;
