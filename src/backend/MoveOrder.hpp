@@ -158,7 +158,7 @@ private:
                           int ply);
 
     bool nextMoveFromList(Move32b& move, ml::MoveScore& score, size_t end_idx);
-    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, size_t end_idx = maxof<size_t>());
+    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, size_t end_idx = maxof<size_t>());
 
     void scoreCaptures(size_t first_ind, const Position& pos);
     void scoreQuiets(size_t first_ind, 
@@ -172,7 +172,7 @@ private:
                              const search::NodeInfo* node,
                              int ply);
 
-    _NODISCARD static ml::MoveScore outputMoveScore(Move32b move, ml::MoveScore s) noexcept;
+    _NODISCARD static ml::MoveScore outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept;
 
     enum class enumPrivateStage : uint8_t {
         NONE,

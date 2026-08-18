@@ -59,6 +59,8 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
         return nextMoveFromOnceGen(pos, next_move, move_score, node, ply);
     }
 
+    const enumColor s2m = pos.getTurn();
+
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
         _stage = enumPrivateStage::STAGED_HASH_MOVE;
@@ -79,7 +81,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
         _stage = enumPrivateStage::STAGED_PICK_CAPTURES;
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_CAPTURES:
-        if (getNextMoveInfo(next_move, move_score))
+        if (getNextMoveInfo(next_move, move_score, s2m))
             return true;
         
         if constexpr (Policy == QUIESCENT)
@@ -122,7 +124,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     case enumPrivateStage::STAGED_PICK_QUIETS:
         assert(Policy != QUIESCENT);
         scoreQuiets(_iterator, pos.getTurn(), node, ply);
-        return getNextMoveInfo(next_move, move_score);
+        return getNextMoveInfo(next_move, move_score, s2m);
     default:
         assert(false);
         break;
@@ -233,9 +235,9 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, si
     return false;
 }
 
-_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, size_t end_idx) {
+_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, size_t end_idx) {
     const bool found = nextMoveFromList(move, score, end_idx);
-    score = outputMoveScore(move, score);
+    score = outputMoveScore(move, side, score);
     return found;
 }
 
@@ -342,6 +344,8 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
                                     const search::NodeInfo* node,
                                     int ply)
 {
+    const enumColor s2m = pos.getTurn();
+
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
         _stage = enumPrivateStage::ONCEGEN_HASH_MOVE;
@@ -368,14 +372,14 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
         // Search for another capture only, stop at quiets
-        if (getNextMoveInfo(next_move, move_score, _quiets_ind))
+        if (getNextMoveInfo(next_move, move_score, s2m, _quiets_ind))
             return true;
 
         scoreQuiets(_quiets_ind, pos.getTurn(), node, ply);
         _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
-        return getNextMoveInfo(next_move, move_score);
+        return getNextMoveInfo(next_move, move_score, s2m);
     default:
         assert(false);
         break;
@@ -384,8 +388,8 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
     return false;
 }
 
-_NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, ml::MoveScore s) noexcept {
-    return move.isCapture() ? s : s / 4; // TODO
+_NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept {
+    return move.isCapture() or move.isPromotion() ? s : _hist_tables->getNormalizedHistQuietScore(move, side); // TODO
 }
 
 template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(const search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
