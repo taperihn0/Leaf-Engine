@@ -93,7 +93,7 @@ public:
 
         static inline constexpr int16_t _MaxAbsQuietsHistory = 8192;
         static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
-        static inline constexpr int16_t _ContinuationPly = 1;
+        static inline constexpr int16_t _ContinuationPly = 2;
         
         Array3d<int16_t, 2, 6, 64>      _quiets_history;
         Array1d<Array3d<Array3d<int16_t, 2, 6, 64>, 2, 6, 64>, _ContinuationPly>
