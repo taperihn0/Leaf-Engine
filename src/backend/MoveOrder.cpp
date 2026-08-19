@@ -169,7 +169,7 @@ void MoveOrder::updateQuietEntry(Move32b move,
         Sign * mhist_bonus - quiet_value * mhist_bonus / HistoryTables::_MaxAbsQuietsHistory
     );
 
-    for (uint i = 0; i < HistoryTables::_ContinuationPly; i++) {
+    for (int i = 0; i < HistoryTables::_ContinuationPly and i < ply; i++) {
         const search::NodeInfo* prev_node = node - i - 1;
 
         const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
@@ -311,7 +311,7 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
     _LC_PARAM_ATTRIBS const Array1d<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
         MvOrdContinuation1Scale,
-        //MvOrdContinuation2Scale,
+        MvOrdContinuation2Scale,
     };
 
     for (size_t i = first_ind; i < _move_list.count(); i++) {
@@ -328,7 +328,7 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
         /* Apply continuation score */
 
-        for (uint j = 0; j < HistoryTables::_ContinuationPly; j++) {
+        for (int j = 0; j < HistoryTables::_ContinuationPly and j < ply; j++) {
             const search::NodeInfo* prev_node = node - j - 1;
 
             const Piece::uint_t prev_piece = index(prev_node->move.getPiece());

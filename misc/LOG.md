@@ -1,8 +1,8 @@
 ### [commit:9455a77] feature: 1-Ply Continuation History & history aging inbetween searches
 ```
-Score of leaf-no-cont-hist-2ply vs leaf-base: 78 - 53 - 108  [0.552] 239
-...      leaf-no-cont-hist-2ply playing White: 23 - 40 - 56  [0.429] 119
-...      leaf-no-cont-hist-2ply playing Black: 55 - 13 - 52  [0.675] 120
+Score of leaf-cont-hist-1ply vs leaf-base: 78 - 53 - 108  [0.552] 239
+...      leaf-cont-hist-1ply playing White: 23 - 40 - 56  [0.429] 119
+...      leaf-cont-hist-1ply playing Black: 55 - 13 - 52  [0.675] 120
 ...      White vs Black: 36 - 95 - 108  [0.377] 239
 Elo difference: 36.5 +/- 32.7, LOS: 98.6 %, DrawRatio: 45.2 %
 SPRT: llr 0 (0.0%), lbound -inf, ubound inf
