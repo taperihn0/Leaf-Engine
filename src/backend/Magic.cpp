@@ -27,7 +27,7 @@
 
 #if !defined(LEAF_ENABLE_BMI2)
 
-const Array1d<uint64_t, 64> SlidersAttacks::_magics_bishop = {
+const MultiArray<uint64_t, 64> SlidersAttacks::_magics_bishop = {
     0xd0100150140149c2,
     0x400b4a8fe1010031,
     0x480a1420200000,
@@ -94,7 +94,7 @@ const Array1d<uint64_t, 64> SlidersAttacks::_magics_bishop = {
     0x838e00408820010,
 };
 
-const Array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
+const MultiArray<uint64_t, 64> SlidersAttacks::_magics_rook = {
     0x188001a080400431,
     0x8140002002401000,
     0x49000852600101c1,
@@ -163,7 +163,7 @@ const Array1d<uint64_t, 64> SlidersAttacks::_magics_rook = {
 
 #endif // !LEAF_ENABLE_BMI2
 
-const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
+const MultiArray<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
     0x40201008040200,
     0x402010080400,
     0x4020100a00,
@@ -230,7 +230,7 @@ const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_bishop = {
     0x40201008040200,
 };
 
-const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
+const MultiArray<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
     0x101010101017e,
     0x202020202027c,
     0x404040404047a,
@@ -297,7 +297,7 @@ const Array1d<uint64_t, 64> SlidersAttacks::_relv_occupancy_rook = {
     0x7e80808080808000,
 };
 
-const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
+const MultiArray<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
     6, 5, 5, 5, 5, 5, 5, 6,
     5, 5, 5, 5, 5, 5, 5, 5,
     5, 5, 7, 7, 7, 7, 5, 5,
@@ -308,7 +308,7 @@ const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_bishop = {
     6, 5, 5, 5, 5, 5, 5, 6,
 };
 
-const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
+const MultiArray<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
     12,11,11,11,11,11,11,12,
     11,10,10,10,10,10,10,11,
     11,10,10,10,10,10,10,11,
@@ -319,8 +319,8 @@ const Array1d<uint8_t, 64> SlidersAttacks::_relv_bits_cnt_rook = {
     12,11,11,11,11,11,11,12,
 };
 
-Array2d<uint64_t, 64, 512>  SlidersAttacks::_mbishop_att;
-Array2d<uint64_t, 64, 4096> SlidersAttacks::_mrook_att;
+MultiArray<uint64_t, 64, 512>  SlidersAttacks::_mbishop_att;
+MultiArray<uint64_t, 64, 4096> SlidersAttacks::_mrook_att;
 
 void SlidersAttacks::initTables() {
     initAttackTables<Piece::BISHOP>();

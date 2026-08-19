@@ -304,7 +304,7 @@ public:
     // it does exactly the same as isAttackedSquare, but with custom occupancies
     _NODISCARD static bool isAttackedSquareWithOccupancies(Square sq, 
                                                            enumColor side,
-                                                           const Array1d<Array1d<BitBoard, 6>, 2>& pc_bbs);
+                                                           const MultiArray<MultiArray<BitBoard, 6>, 2>& pc_bbs);
 
     // returns mask of attackers pointed at given square that are opposite side
     _NODISCARD BitBoard getAttacksToSquare(Square sq, enumColor side, BitBoard occ) const;
@@ -367,11 +367,11 @@ public:
     struct ReversibleState {
         Square                     ep_sq;
         uint8_t                    halfmove_count;
-        Array1d<CastlingRights, 2> castling_rights;
+        MultiArray<CastlingRights, 2> castling_rights;
         // It is not really required to store previous hash key,
         // since it can be recomputed. But keep it here for simplicity and efficiency.
         uint64_t                   hash_key;
-        Array1d<int16_t, 2>        non_pawn_material;
+        MultiArray<int16_t, 2>        non_pawn_material;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
@@ -387,16 +387,16 @@ private:
     template <bool Root = true>
     uint64_t perft(uint depth);
 
-    Array2d<BitBoard, 2, 6>     _piece_bb = {};
-    Array1d<BitBoard, 2>        _occupied = {};
-    Array1d<CastlingRights, 2>  _castling_rights = {};
-    Array1d<Square, 2>          _king_sq = { Square::None, Square::None };
+    MultiArray<BitBoard, 2, 6>     _piece_bb = {};
+    MultiArray<BitBoard, 2>        _occupied = {};
+    MultiArray<CastlingRights, 2>  _castling_rights = {};
+    MultiArray<Square, 2>          _king_sq = { Square::None, Square::None };
     Turn                        _s2m = WHITE;
     Square                      _ep_square = Square::None;
     ZHash                       _zhash = ZHash::Undef;
     uint8_t                     _halfmove_count = 0;
     uint16_t                    _fullmove_count = 0;
-    Array1d<int16_t, 2>         _non_pawn_material = {};
+    MultiArray<int16_t, 2>         _non_pawn_material = {};
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
@@ -547,9 +547,9 @@ _INLINE bool Position::isAttackedSquare_KingIncluded(Square sq, enumColor side) 
 
 _INLINE bool Position::isAttackedSquareWithOccupancies(Square sq, 
                                                        enumColor side,
-                                                       const Array2d<BitBoard, 2, 6>& pc_bbs)
+                                                       const MultiArray<BitBoard, 2, 6>& pc_bbs)
 {
-    const BitBoard occ = std::accumulate(dataOfArray2d(pc_bbs), dataOfArray2d(pc_bbs) + countOfArray2d(pc_bbs), 
+    const BitBoard occ = std::accumulate(dataOfMultiArray(pc_bbs), dataOfMultiArray(pc_bbs) + countOfMultiArray(pc_bbs), 
         BitBoard::Empty, 
         [](BitBoard prev, BitBoard bb) {
             return prev | bb;

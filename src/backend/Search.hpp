@@ -66,11 +66,11 @@ public:
     void clear();
 
     void printBestMove();
-    void print(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+    void print(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                uint16_t pv_len, 
                const TranspositionTable& tt);
     void printShort();
-    void printPV(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+    void printPV(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                  uint16_t pv_len);
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -89,9 +89,9 @@ public:
     size_t            tt_entries = 0;
     Move32b           best_move  = NullMove;
     clk::milliseconds duration   = 0;
-    Array1d<ull, MaxDepth + 1> 
+    MultiArray<ull, MaxDepth + 1> 
                       nodes_per_depth = {};
-    Array1d<clk::milliseconds, MaxDepth + 1> 
+    MultiArray<clk::milliseconds, MaxDepth + 1> 
                       time_per_depth  = {};
 
     // Extendend search statistics 
@@ -131,13 +131,13 @@ public:
     ull       syzygy_tb_probe_cnt = 0;
     ull       syzygy_tb_cuts      = 0;
 
-    Array1d<ull, MaxNodeMoves>   
+    MultiArray<ull, MaxNodeMoves>   
               move_cut_cnt = {};
-    Array1d<ull, MaxNodeMoves>   
+    MultiArray<ull, MaxNodeMoves>   
               move_reduced_cnt = {};
-    Array1d<ull, MaxNodeMoves>   
+    MultiArray<ull, MaxNodeMoves>   
               move_reduced_fail_high_cnt = {};
-    Array1d<float, MaxNodeMoves> 
+    MultiArray<float, MaxNodeMoves> 
               move_reduction_sum = {};
 #endif
 };
@@ -180,7 +180,7 @@ public:
     uint8_t                   move_index;
     TTBound                   bound;
     AccumulatorCluster        cluster;
-    Array1d<PvInfo, MaxSelDepth> 
+    MultiArray<PvInfo, MaxSelDepth> 
                               pv_line;
     uint16_t                  pv_line_len;
     bool                      is_cut;
@@ -403,7 +403,7 @@ private:
     int getNullVerifyDepth(int nm_depth);
 
     void refreshPVinTT(const Position& pos, 
-                       const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+                       const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                        uint16_t pv_len,
                        SearchResultsWrapper& results);
 

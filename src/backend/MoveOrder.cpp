@@ -27,18 +27,18 @@ mem::AlignedSharedPtr<MoveOrder::HistoryTables> MoveOrder::_hist_tables;
 MoveOrder::HistoryTables::HistoryTables() { clearHistoryTables(); }
 
 void MoveOrder::HistoryTables::clearHistoryTables() {
-    mem::memSet(dataOfArray3d(_quiets_history), 0, sizeof(_quiets_history));
-    mem::memSet(dataOfArray3d(_cont_history), 0, sizeof(_cont_history));
+    mem::memSet(dataOfMultiArray(_quiets_history), 0, sizeof(_quiets_history));
+    mem::memSet(dataOfMultiArray(_cont_history), 0, sizeof(_cont_history));
 }
 
 void MoveOrder::HistoryTables::onNewSearch() {
-    for (auto* hist_entry = dataOfArray3d(_quiets_history); 
-         hist_entry < dataOfArray3d(_quiets_history) + sizeof(_quiets_history) / 2;
+    for (auto* hist_entry = dataOfMultiArray(_quiets_history); 
+         hist_entry < dataOfMultiArray(_quiets_history) + sizeof(_quiets_history) / 2;
          hist_entry++)
         *hist_entry /= 2;    
     
-    for (auto* cont_entry = reinterpret_cast<int16_t*>(dataOfArray3d(_cont_history)); 
-         cont_entry < reinterpret_cast<int16_t*>(dataOfArray3d(_cont_history)) + sizeof(_cont_history) / 2;
+    for (auto* cont_entry = reinterpret_cast<int16_t*>(dataOfMultiArray(_cont_history)); 
+         cont_entry < reinterpret_cast<int16_t*>(dataOfMultiArray(_cont_history)) + sizeof(_cont_history) / 2;
          cont_entry++)
         *cont_entry /= 2;  
 }
@@ -253,7 +253,7 @@ _INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, enu
 
 void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
 
-    _LC_PARAM_ATTRIBS Array1d<const int16_t, 5> CaptureScore = {
+    _LC_PARAM_ATTRIBS MultiArray<const int16_t, 5> CaptureScore = {
         static_cast<int16_t>(MvOrPawnCapturedScore), 
         static_cast<int16_t>(MvOrKnightCapturedScore), 
         static_cast<int16_t>(MvOrBishopCapturedScore), 
@@ -261,7 +261,7 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
         static_cast<int16_t>(MvOrQueenCapturedScore), 
     };
 
-    _LC_PARAM_ATTRIBS Array1d<const int16_t, 5> PromotionScore = {
+    _LC_PARAM_ATTRIBS MultiArray<const int16_t, 5> PromotionScore = {
         0, // pawn placeholder 
         static_cast<int16_t>(MvOrToKnightPromoScore), 
         static_cast<int16_t>(MvOrToBishopPromoScore), 
@@ -309,7 +309,7 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 {
     assert(_hist_tables != nullptr);
 
-    _LC_PARAM_ATTRIBS const Array1d<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
+    _LC_PARAM_ATTRIBS const MultiArray<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
         MvOrdContinuation1Scale,
         MvOrdContinuation2Scale,
     };

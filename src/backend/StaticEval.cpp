@@ -160,7 +160,7 @@ sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 *  https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function 
 */
 
-Array1d<int16_t, 64> StaticEval::_mg_pawn_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_pawn_tables = {
       0,   0,   0,   0,   0,   0,  0,   0,
      98, 134,  61,  95,  68, 126, 34, -11,
      -6,   7,  26,  31,  65,  56, 25, -20,
@@ -171,7 +171,7 @@ Array1d<int16_t, 64> StaticEval::_mg_pawn_tables = {
       0,   0,   0,   0,   0,   0,  0,   0,
 };
 
-Array1d<int16_t, 64> StaticEval::_mg_knight_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_knight_tables = {
     -167, -89, -34, -49,  61, -97, -15, -107,
      -73, -41,  72,  36,  23,  62,   7,  -17,
      -47,  60,  37,  65,  84, 129,  73,   44,
@@ -182,7 +182,7 @@ Array1d<int16_t, 64> StaticEval::_mg_knight_tables = {
     -105, -21, -58, -33, -17, -28, -19,  -23,
 };
 
-Array1d<int16_t, 64> StaticEval::_mg_bishop_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_bishop_tables = {
     -29,   4, -82, -37, -25, -42,   7,  -8,
     -26,  16, -18, -13,  30,  59,  18, -47,
     -16,  37,  43,  40,  35,  50,  37,  -2,
@@ -193,7 +193,7 @@ Array1d<int16_t, 64> StaticEval::_mg_bishop_tables = {
     -33,  -3, -14, -21, -13, -12, -39, -21,
 };
 
-Array1d<int16_t, 64> StaticEval::_mg_rook_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_rook_tables = {
      32,  42,  32,  51, 63,  9,  31,  43,
      27,  32,  58,  62, 80, 67,  26,  44,
      -5,  19,  26,  36, 17, 45,  61,  16,
@@ -204,7 +204,7 @@ Array1d<int16_t, 64> StaticEval::_mg_rook_tables = {
     -19, -13,   1,  17, 16,  7, -37, -26,
 };
 
-Array1d<int16_t, 64> StaticEval::_mg_queen_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_queen_tables = {
     -28,   0,  29,  12,  59,  44,  43,  45,
     -24, -39,  -5,   1, -16,  57,  28,  54,
     -13, -17,   7,   8,  29,  56,  47,  57,
@@ -215,7 +215,7 @@ Array1d<int16_t, 64> StaticEval::_mg_queen_tables = {
      -1, -18,  -9,  10, -15, -25, -31, -50,
 };
 
-Array1d<int16_t, 64> StaticEval::_mg_king_tables = {
+MultiArray<int16_t, 64> StaticEval::_mg_king_tables = {
     -65,  23,  16, -15, -56, -34,   2,  13,
      29,  -1, -20,  -7,  -8,  -4, -38, -29,
      -9,  24,   2, -16, -20,   6,  22, -22,

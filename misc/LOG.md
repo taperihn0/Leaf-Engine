@@ -1,3 +1,13 @@
+### [commit:6f1a367] feature: 2-Ply Continuation History
+```
+Score of leaf-cont-hist-2ply vs leaf-base: 89 - 76 - 152  [0.521] 317
+...      leaf-cont-hist-2ply playing White: 73 - 13 - 73  [0.689] 159
+...      leaf-cont-hist-2ply playing Black: 16 - 63 - 79  [0.351] 158
+...      White vs Black: 136 - 29 - 152  [0.669] 317
+Elo difference: 14.3 +/- 27.6, LOS: 84.4 %, DrawRatio: 47.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:9455a77] feature: 1-Ply Continuation History & history aging inbetween searches
 ```
 Score of leaf-cont-hist-1ply vs leaf-base: 78 - 53 - 108  [0.552] 239

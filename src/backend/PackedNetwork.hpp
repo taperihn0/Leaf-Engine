@@ -55,7 +55,7 @@ public:
         uint32_t               layer_size[MaxLayerCount];
         uint16_t               layer_count;
         bool                   dual_hl;
-        Array1d<std::byte, 13> _padding;
+        MultiArray<std::byte, 13> _padding;
     };
 #pragma pack(pop)
 
@@ -107,8 +107,8 @@ private:
     std::optional<void*>                   _file_mem_buf;
     Header                                 _header;
     std::optional<std::string>             _bin_path;
-    Array1d<const int16_t*, MaxLayerCount> _layer_weights;
-    Array1d<const int16_t*, MaxLayerCount> _layer_biases;
+    MultiArray<const int16_t*, MaxLayerCount> _layer_weights;
+    MultiArray<const int16_t*, MaxLayerCount> _layer_biases;
 };
 
 extern PackedNeuralNetwork GlobPackedNetwork;

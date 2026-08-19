@@ -37,8 +37,8 @@ void CastlingRights::printByColor(enumColor col_type) const {
 }
 
 Position::Position() {
-    BitBoard* p = dataOfArray2d(_piece_bb);
-    mem::fill(p, p + countOfArray2d(_piece_bb), 0);
+    BitBoard* p = dataOfMultiArray(_piece_bb);
+    mem::fill(p, p + countOfMultiArray(_piece_bb), 0);
     _occupied[0] = BitBoard::Empty;
     _occupied[1] = BitBoard::Empty;
 }
@@ -664,7 +664,7 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
-    _LC_PARAM_ATTRIBS const Array1d<int32_t, 7> SeePieceValue = {
+    _LC_PARAM_ATTRIBS const MultiArray<int32_t, 7> SeePieceValue = {
         SeePawnValue,
         SeeKnightValue,
         SeeBishopValue,
@@ -680,7 +680,7 @@ int Position::staticExchangeEval(Square org,
             return gain;
     }
     
-    Array1d<int, 32> gain;
+    MultiArray<int, 32> gain;
     int i = 0;
 
     const BitBoard bishopsQueens = getBishops() | getQueens();

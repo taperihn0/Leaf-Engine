@@ -81,14 +81,14 @@ public:
 
     void clear(enumColor side);
 
-    _NODISCARD const Array1d<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
+    _NODISCARD const MultiArray<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
 #endif
 
 private:
-    Array2d<int16_t, 2, NetworkAccumulatorSizePerSide> _values;
+    MultiArray<int16_t, 2, NetworkAccumulatorSizePerSide> _values;
 };
 
 struct FeatureData {
@@ -118,8 +118,8 @@ struct AccumulatorCache {
     void clearBuffers();
 
     Accumulator             accum;
-    Array1d<FeatureData, 2> added_features;
-    Array1d<FeatureData, 2> removed_features;
+    MultiArray<FeatureData, 2> added_features;
+    MultiArray<FeatureData, 2> removed_features;
     size_t                  added_features_cnt   = 0;
     size_t                  removed_features_cnt = 0;
     bool                    dirty                = false;

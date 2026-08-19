@@ -331,75 +331,20 @@ _INLINE T sparseRandom(T l, T r) {
 
 } // namespace rnd
 
-template <typename T, size_t N>
-using Array1d = std::array<T, N>;
+namespace arr {
 
-template <typename T, size_t N, size_t M>
-using Array2d = Array1d<
-                    Array1d<T, M>, 
-                N>;
+template<typename T, size_t N, size_t... Ns>
+struct MultiArray {
+    using type = std::array<typename MultiArray<T, Ns...>::type, N>;
+};
 
-template <typename T, size_t N, size_t M, size_t S>
-using Array3d = Array1d<
-                    Array2d<T, M, S>, 
-                N>;
+template<typename T, size_t N>
+struct MultiArray<T, N> {
+    using type = std::array<T, N>;
+};
 
-template <typename T, size_t N, size_t M, size_t S, size_t U>
-using Array4d = Array1d<
-                    Array3d<T, M, S, U>, 
-                N>;
+} // namespace arr
 
-template <typename T, size_t N>
-_FORCEINLINE T* dataOfArray1d(Array1d<T, N>& arr) {
-    return reinterpret_cast<T*>(arr.data());
-}
+template<typename T, size_t... Ns>
+using MultiArray = typename arr::MultiArray<T, Ns...>::type;
 
-template <typename T, size_t N, size_t M>
-_FORCEINLINE T* dataOfArray2d(Array2d<T, N, M>& arr) {
-    return reinterpret_cast<T*>(arr.data());
-}
-
-template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE T* dataOfArray3d(Array3d<T, N, M, S>& arr) {
-    return reinterpret_cast<T*>(arr.data());
-}
-
-template <typename T, size_t N, size_t M, size_t S, size_t U>
-_FORCEINLINE T* dataOfArray4d(Array4d<T, N, M, S, U>& arr) {
-    return reinterpret_cast<T*>(arr.data());
-}
-
-template <typename T, size_t N>
-_FORCEINLINE const T* dataOfArray1d(const Array1d<T, N>& arr) {
-    return reinterpret_cast<const T*>(arr.data());
-}
-
-template <typename T, size_t N, size_t M>
-_FORCEINLINE const T* dataOfArray2d(const Array2d<T, N, M>& arr) {
-    return reinterpret_cast<const T*>(arr.data());
-}
-
-template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE const T* dataOfArray3d(const Array3d<T, N, M, S>& arr) {
-    return reinterpret_cast<const T*>(arr.data());
-}
-
-template <typename T, size_t N, size_t M, size_t S, size_t U>
-_FORCEINLINE const T* dataOfArray4d(const Array4d<T, N, M, S, U>& arr) {
-    return reinterpret_cast<const T*>(arr.data());
-}
-
-template <typename T, size_t N>
-_FORCEINLINE constexpr size_t countOfArray1d(const Array1d<T, N>&) {
-    return N;
-}
-
-template <typename T, size_t N, size_t M>
-_FORCEINLINE constexpr size_t countOfArray2d(const Array2d<T, N, M>&) {
-    return N * M;
-}
-
-template <typename T, size_t N, size_t M, size_t S>
-_FORCEINLINE constexpr size_t countOfArray3d(const Array3d<T, N, M, S>&) {
-    return N * M * S;
-}

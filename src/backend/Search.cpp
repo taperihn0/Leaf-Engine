@@ -136,7 +136,7 @@ void SearchResults::printBestMove() {
     std::cout << '\n';
 }
 
-void SearchResults::print(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::print(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                           uint16_t pv_len, 
                           const TranspositionTable& tt) 
 {
@@ -173,7 +173,7 @@ void SearchResults::printShort() {
 #endif
 }
 
-void SearchResults::printPV(const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::printPV(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                             uint16_t pv_len) 
 {
     for (uint16_t i = 0; i < pv_len; i++) {
@@ -301,8 +301,8 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    PvInfo* p = dataOfArray1d(pv_line);
-    mem::fill(p, p + countOfArray1d(pv_line), PvInfo());
+    PvInfo* p = dataOfMultiArray(pv_line);
+    mem::fill(p, p + countOfMultiArray(pv_line), PvInfo());
 
     pv_line_len = 0;
 }
@@ -389,8 +389,8 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
          prev_cluster != accum_cluster;
          prev_cluster = prev_cluster->next_cluster) {
 
-        Array2d<uint16_t, 2, 2> added_features_index;
-        Array2d<uint16_t, 2, 2> removed_features_index;
+        MultiArray<uint16_t, 2, 2> added_features_index;
+        MultiArray<uint16_t, 2, 2> removed_features_index;
 
         nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
@@ -1859,7 +1859,7 @@ _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
 }
 
 void Search::refreshPVinTT(const Position& pos, 
-                           const Array1d<PvInfo, MaxSelDepth>& root_pv_line, 
+                           const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
                            uint16_t pv_len,
                            SearchResultsWrapper& results) 
 {
