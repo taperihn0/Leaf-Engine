@@ -33,7 +33,7 @@ void MoveOrder::HistoryTables::clearHistoryTables() {
 
 void MoveOrder::HistoryTables::onNewSearch() {
     for (auto* hist_entry = dataOfArray3d(_quiets_history); 
-         hist_entry < dataOfArray3d(_quiets_history) + sizeof(_quiets_history);
+         hist_entry < dataOfArray3d(_quiets_history) + sizeof(_quiets_history) / 2;
          hist_entry++)
         *hist_entry /= 2;    
     
@@ -169,19 +169,19 @@ void MoveOrder::updateQuietEntry(Move32b move,
         Sign * mhist_bonus - quiet_value * mhist_bonus / HistoryTables::_MaxAbsQuietsHistory
     );
 
-    for (uint i = 0; i < HistoryTables::_ContinuationPly and i < static_cast<uint32_t>(ply); i++) {
+    for (uint i = 0; i < HistoryTables::_ContinuationPly; i++) {
         const search::NodeInfo* prev_node = node - i - 1;
 
         const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
         const Square prev_dst = prev_node->move.getTarget();
-        auto& cont_refute_table = _hist_tables->_cont_history[i][prev_node->move.isCapture()][side][prev_piece][prev_dst];
+        auto& cont_refute_table = _hist_tables->_cont_history[i][prev_node->side2move][prev_piece][prev_dst];
 
         const int32_t mcont_bonus = std::min(cont_bonus, HistoryTables::_MaxAbsContinuationHistory);
-        const int32_t cont_value = static_cast<int32_t>(cont_refute_table[piece][dst]);
+        const int32_t cont_value = static_cast<int32_t>(cont_refute_table[side][piece][dst]);
 
         assert(abs(cont_value) <= HistoryTables::_MaxAbsContinuationHistory);
 
-        cont_refute_table[piece][dst] += static_cast<int16_t>(
+        cont_refute_table[side][piece][dst] += static_cast<int16_t>(
             Sign * mcont_bonus - cont_value * mcont_bonus / HistoryTables::_MaxAbsContinuationHistory
         );
     }
@@ -311,7 +311,7 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
     _LC_PARAM_ATTRIBS const Array1d<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
         MvOrdContinuation1Scale,
-        MvOrdContinuation2Scale,
+        //MvOrdContinuation2Scale,
     };
 
     for (size_t i = first_ind; i < _move_list.count(); i++) {
@@ -328,15 +328,15 @@ void MoveOrder::scoreQuiets(size_t first_ind,
 
         /* Apply continuation score */
 
-        for (uint j = 0; j < HistoryTables::_ContinuationPly and j < static_cast<uint32_t>(ply); j++) {
+        for (uint j = 0; j < HistoryTables::_ContinuationPly; j++) {
             const search::NodeInfo* prev_node = node - j - 1;
 
             const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
             const Square prev_dst = prev_node->move.getTarget();
 
-            auto& cont_refute_table = _hist_tables->_cont_history[j][prev_node->move.isCapture()][side][prev_piece][prev_dst];
+            auto& cont_refute_table = _hist_tables->_cont_history[j][prev_node->side2move][prev_piece][prev_dst];
 
-            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_refute_table[piece][dst] / 1024;
+            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_refute_table[side][piece][dst] / 1024;
             score += scaled_cont_value;
         }
     }

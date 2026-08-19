@@ -92,11 +92,11 @@ public:
         _NODISCARD _INLINE int16_t getNormalizedHistQuietScore(Move32b move, enumColor side);
 
         static inline constexpr int16_t _MaxAbsQuietsHistory  = 8192;
-        static inline constexpr int16_t _MaxAbsContinuationHistory = 4096;
-        static inline constexpr int16_t _ContinuationPly = 2;
+        static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
+        static inline constexpr int16_t _ContinuationPly = 1;
         
         Array3d<int16_t, 2, 6, 64>      _quiets_history;
-        Array3d<Array2d<Array2d<int16_t, 6, 64>, 6, 64>, _ContinuationPly, 2, 2>
+        Array1d<Array3d<Array3d<int16_t, 2, 6, 64>, 2, 6, 64>, _ContinuationPly>
                                         _cont_history;
     };
 
