@@ -86,7 +86,7 @@ public:
     ull               nodes_cnt  = 0,
     // `qnodes_cnt` - nodes count in quiescent search
                       qnodes_cnt = 0;
-    std::size_t            tt_entries = 0;
+    std::size_t       tt_entries = 0;
     Move32b           best_move  = NullMove;
     clk::milliseconds duration   = 0;
     MultiArray<ull, MaxDepth + 1> 
@@ -185,6 +185,8 @@ public:
     uint16_t                  pv_line_len;
     bool                      is_cut;
     bool                      mate_thread;
+    mvorder::mvhist::ContinuationSubtable*
+                              continuation_subtable_ptr;
 };
 
 /*

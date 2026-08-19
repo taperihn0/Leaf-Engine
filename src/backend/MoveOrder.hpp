@@ -72,7 +72,7 @@ enum class enumStage {
 
 struct HistoryTablesCluster {
     void clear();
-    void onNewSearch();
+    void onSearch();
 
     _NODISCARD ml::MoveScore getQuietMoveScore(enumColor side, Move32b move);
     _NODISCARD static ml::MoveScore centeredQuietScore(ml::MoveScore s);
@@ -100,12 +100,13 @@ public:
     */
 
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool nextMoveWithPolicy(const search::NodeInfo* node, 
+    _NODISCARD bool nextMoveWithPolicy(search::NodeInfo* node, 
                                        Position& pos, 
                                        Move32b& next_move,
                                        ml::MoveScore& move_score,
                                        int ply);
 
+    void clear();
     void setHashMove(Move32b m);
     void setKillerMove(Move32b m, uint64_t parent_hash);
 
@@ -116,8 +117,7 @@ public:
                              int depth, 
                              int ply,
                              const search::NodeInfo* node);
-    
-    void clear();
+
     void skipQuiets();
 
     _NODISCARD static int32_t getQuietDepthReduction(ml::MoveScore quiet_score);
@@ -174,14 +174,12 @@ private:
     static mem::AlignedSharedPtr<HistoryTablesCluster> _history_cluster;
 
     enumPrivateStage _stage = enumPrivateStage::NONE;
-    std::size_t    _iterator     = 0;
-    std::size_t    _quiets_ind   = 0;
-
-    Move32b  _hash_move     = NullMove;
-    Move32b  _killer_move   = NullMove;
-    uint64_t _killer_move_parent_hash = 0;
-
-    ml::MoveList _move_list;
+    std::size_t      _iterator     = 0;
+    std::size_t      _quiets_ind   = 0;
+    Move32b          _hash_move    = NullMove;
+    Move32b          _killer_move  = NullMove;
+    uint64_t         _killer_move_parent_hash = 0;
+    ml::MoveList     _move_list;
 };
 
 _INLINE void MoveOrder::setHistoryBuffer(mem::AlignedSharedPtr<HistoryTablesCluster> history_tables) {
@@ -241,33 +239,6 @@ uint MoveOrder::getMovesLeft() {
 template <enumOrderPolicy Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getTotalMoves() {
     return static_cast<uint>(_move_list.count());
-}
-
-_NODISCARD _FORCEINLINE enumStage MoveOrder::getStage() const {
-    switch (_stage) {
-    case enumPrivateStage::NONE:
-    case enumPrivateStage::FIRST_STAGE:
-    case enumPrivateStage::STAGED_CAPTURES:
-    case enumPrivateStage::STAGED_QUIETS:
-    case enumPrivateStage::ONCEGEN_ALL:
-        return enumStage::STAGE_PRIVATE;
-    
-    case enumPrivateStage::ONCEGEN_HASH_MOVE:
-    case enumPrivateStage::STAGED_HASH_MOVE:
-    case enumPrivateStage::STAGED_KILLER:
-        return enumStage::STAGE_PRIORITY_MOVES;    
-        
-    case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
-    case enumPrivateStage::STAGED_PICK_CAPTURES:
-        return enumStage::STAGE_CAPTURES;
-
-    case enumPrivateStage::ONCEGEN_PICK_QUIETS:
-    case enumPrivateStage::STAGED_PICK_QUIETS:
-        return enumStage::STAGE_QUIETS;
-
-    default:
-        return enumStage::STAGE_PRIVATE;
-    }
 }
 
 } // namespace mvorder

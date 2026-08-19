@@ -38,7 +38,7 @@ public:
     SearchLimitsWrapper() = default;
     explicit SearchLimitsWrapper(const SearchLimits& base);
 
-    void onNewSearch(const Position& pos);
+    void onSearch(const Position& pos);
     _NODISCARD _FORCEINLINE bool isTimeLeft() const;
     _NODISCARD const clk::Timer& getTimer() const;
     _NODISCARD _FORCEINLINE clk::milliseconds getSearchTime() const;
@@ -94,7 +94,7 @@ private:
 SearchLimitsWrapper::SearchLimitsWrapper(const SearchLimits& base) 
     : SearchLimits(base) {}
 
-void SearchLimitsWrapper::onNewSearch(const Position& pos) {
+void SearchLimitsWrapper::onSearch(const Position& pos) {
     _side2move = pos.getTurn();
     _timer.reset();
     _timer.go();
@@ -304,6 +304,8 @@ void NodeInfo::clear() {
     mem::fill(pv_line.begin(), pv_line.end(), PvInfo());
 
     pv_line_len = 0;
+
+    continuation_subtable_ptr = nullptr;
 }
 
 void Search::clearHash() {
@@ -473,10 +475,10 @@ Move32b Search::findBestMove(Position& pos,
     ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
     _tt.newGeneration();
-    _history_cluster->onNewSearch();
+    _history_cluster->onSearch();
     
     SearchLimitsWrapper search_limits(limits);
-    search_limits.onNewSearch(pos);
+    search_limits.onSearch(pos);
 
     SearchResultsWrapper search_results(results);
     search_results.best_move = NullMove;

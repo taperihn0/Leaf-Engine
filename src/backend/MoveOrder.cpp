@@ -29,7 +29,7 @@ void HistoryTablesCluster::clear() {
     continuation_history.clear();
 }
 
-void HistoryTablesCluster::onNewSearch() {
+void HistoryTablesCluster::onSearch() {
     quiet_history.reduce();
     continuation_history.reduce();
 }
@@ -51,7 +51,7 @@ _NODISCARD ml::MoveScore HistoryTablesCluster::centeredQuietScore(ml::MoveScore 
 */
 
 template <enumOrderPolicy Policy, bool Root>
-bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
+bool MoveOrder::nextMoveWithPolicy(search::NodeInfo* node,
                                    Position& pos, 
                                    Move32b& next_move,
                                    ml::MoveScore& move_score,
@@ -108,13 +108,13 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
 
         _stage = enumPrivateStage::STAGED_QUIETS;
         _quiets_ind = _iterator;
-        
+
         {
             uint64_t parent_hash = ZHash::Undef;
 
             if constexpr (!Root) {
-                const search::NodeInfo* const parent_node = node - 1;
-                parent_hash = parent_node->state.hash_key;
+                const search::NodeInfo* const prev_node = node - 1;
+                parent_hash = prev_node->state.hash_key;
             }
 
             if (!_killer_move.isNullMove() and
@@ -132,6 +132,12 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     case enumPrivateStage::STAGED_QUIETS:
         assert(Policy != QUIESCENT);
         MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
+
+        for (int i = 0; i < ContinuationPlyCount and i < ply; i++) {
+            search::NodeInfo* prev_node = node - i - 1;
+            prev_node->continuation_subtable_ptr = 
+                &_history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_node->move);
+        }
 
         _stage = enumPrivateStage::STAGED_PICK_QUIETS;
         [[fallthrough]];
@@ -164,11 +170,10 @@ void MoveOrder::updateQuietEntry(Move32b move,
     for (int i = 0; i < ContinuationPlyCount and i < ply; i++) {
         const search::NodeInfo* prev_node = node - i - 1;
 
-        const Move32b prev_move = prev_node->move;
-        auto& cont_refute_table = _history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_move);
+        auto& continuation_subtable = (*prev_node->continuation_subtable_ptr);
 
         const int32_t mcont_bonus = std::min(cont_bonus, mvhist::ContinuationSubtable::Entry::MaxAbsBound);
-        cont_refute_table.update<Sign>(side, move, mcont_bonus);
+        continuation_subtable.update<Sign>(side, move, mcont_bonus);
     }
 }
 
@@ -311,12 +316,11 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
         for (int j = 0; j < ContinuationPlyCount and j < ply; j++) {
             const search::NodeInfo* prev_node = node - j - 1;
             
-            const Move32b prev_move = prev_node->move;
-            auto& cont_refute_table = _history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_move);
+            auto& continuation_subtable = (*prev_node->continuation_subtable_ptr);
             
-            const int16_t cont_value = cont_refute_table.getValue(side, move);
-
+            const int16_t cont_value = continuation_subtable.getValue(side, move);
             const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_value / 1024;
+
             score += scaled_cont_value;
         }
     }
@@ -376,8 +380,35 @@ _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, e
     return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
 }
 
-template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(const search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
-template bool MoveOrder::nextMoveWithPolicy<QUIESCENT, false>(const search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
-template bool MoveOrder::nextMoveWithPolicy<ONCE_GEN_LEGAL, true>(const search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
+_NODISCARD enumStage MoveOrder::getStage() const {
+    switch (_stage) {
+    case enumPrivateStage::NONE:
+    case enumPrivateStage::FIRST_STAGE:
+    case enumPrivateStage::STAGED_CAPTURES:
+    case enumPrivateStage::STAGED_QUIETS:
+    case enumPrivateStage::ONCEGEN_ALL:
+        return enumStage::STAGE_PRIVATE;
+    
+    case enumPrivateStage::ONCEGEN_HASH_MOVE:
+    case enumPrivateStage::STAGED_HASH_MOVE:
+    case enumPrivateStage::STAGED_KILLER:
+        return enumStage::STAGE_PRIORITY_MOVES;    
+        
+    case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
+    case enumPrivateStage::STAGED_PICK_CAPTURES:
+        return enumStage::STAGE_CAPTURES;
+
+    case enumPrivateStage::ONCEGEN_PICK_QUIETS:
+    case enumPrivateStage::STAGED_PICK_QUIETS:
+        return enumStage::STAGE_QUIETS;
+
+    default:
+        return enumStage::STAGE_PRIVATE;
+    }
+}
+
+template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<QUIESCENT, false>(search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<ONCE_GEN_LEGAL, true>(search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);
 
 } // namespace mvorder

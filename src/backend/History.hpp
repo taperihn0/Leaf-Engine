@@ -42,7 +42,7 @@ public:
 
     static constexpr T MaxAbsBound = MaxAbsValue;
 private:
-    T _v = 0;
+    T _v;
 };
 
 class ContinuationSubtable {
