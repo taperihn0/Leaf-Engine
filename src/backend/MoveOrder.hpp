@@ -91,7 +91,7 @@ public:
     private:
         _NODISCARD _INLINE int16_t getNormalizedHistQuietScore(Move32b move, enumColor side);
 
-        static inline constexpr int16_t _MaxAbsQuietsHistory  = 8192;
+        static inline constexpr int16_t _MaxAbsQuietsHistory = 8192;
         static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
         static inline constexpr int16_t _ContinuationPly = 1;
         
