@@ -304,7 +304,7 @@ public:
     // it does exactly the same as isAttackedSquare, but with custom occupancies
     _NODISCARD static bool isAttackedSquareWithOccupancies(Square sq, 
                                                            enumColor side,
-                                                           const MultiArray<MultiArray<BitBoard, 6>, 2>& pc_bbs);
+                                                           const MultiArray<BitBoard, 2, 6>& pc_bbs);
 
     // returns mask of attackers pointed at given square that are opposite side
     _NODISCARD BitBoard getAttacksToSquare(Square sq, enumColor side, BitBoard occ) const;
@@ -378,7 +378,7 @@ private:
     BitBoard getAttackedMaskWithMask(enumColor side, BitBoard occ) const;
 
     void clearPieces();
-    void setGameStatesFromStr(const std::string fen, size_t i);
+    void setGameStatesFromStr(const std::string fen, std::size_t i);
 
     BitBoard getWeakestAttacker(BitBoard bb,
                                 enumColor side,
@@ -549,11 +549,12 @@ _INLINE bool Position::isAttackedSquareWithOccupancies(Square sq,
                                                        enumColor side,
                                                        const MultiArray<BitBoard, 2, 6>& pc_bbs)
 {
-    const BitBoard occ = std::accumulate(dataOfMultiArray(pc_bbs), dataOfMultiArray(pc_bbs) + countOfMultiArray(pc_bbs), 
-        BitBoard::Empty, 
-        [](BitBoard prev, BitBoard bb) {
-            return prev | bb;
-        });
+    const BitBoard occ = std::accumulate(pc_bbs.begin(), 
+                                         pc_bbs.end(), 
+                                         BitBoard::Empty, 
+                                         [](BitBoard prev, BitBoard bb) {
+                                             return prev | bb;
+                                         });
     
     const BitBoard opp_bishop_queens = pc_bbs[!side][Piece::BISHOP] | pc_bbs[!side][Piece::QUEEN];
     const BitBoard opp_rook_queens = pc_bbs[!side][Piece::ROOK] | pc_bbs[!side][Piece::QUEEN];

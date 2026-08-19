@@ -11,7 +11,7 @@ namespace rh {
 
 struct EmbeddedResource {
     const std::byte* data;
-    size_t size;
+    std::size_t size;
 };
 
 _INTERNAL EmbeddedResource loadResource(int id)
@@ -36,7 +36,7 @@ _INTERNAL EmbeddedResource loadResource(int id)
     void* m = LockResource(handle);
 
     return { static_cast<const std::byte*>(m),
-             static_cast<size_t>(size) };
+             static_cast<std::size_t>(size) };
 }
 
 } // namespace rh

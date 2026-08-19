@@ -33,7 +33,7 @@ public:
     TournamentCollector() = default;
 
     struct TournamentPacket {
-        size_t                games_count; 
+        std::size_t                games_count; 
         uint                  thread_count;
         std::filesystem::path selfplay_filename;
         search::SearchLimits  limits;
@@ -44,20 +44,20 @@ public:
                                      sc::Score white_score);
 private:
     static bool internalFilterPolicy(Move32b internal_move,
-                                     size_t internal_total_positions_cnt);
+                                     std::size_t internal_total_positions_cnt);
     bool filterTrainPosition(const Position& pos, 
                              sc::Score white_score, 
                              Move32b internal_move,
-                             size_t internal_total_positions_cnt);
+                             std::size_t internal_total_positions_cnt);
 
     struct CommonThreadData {
-        std::atomic<size_t> games_ended;
-        size_t              games2play;
-        std::atomic<size_t> total_positions;
-        std::atomic<size_t> total_white_win_count;
-        std::atomic<size_t> total_black_win_count;
-        std::atomic<size_t> total_draw_count;
-        size_t              total_thread_cnt;
+        std::atomic<std::size_t> games_ended;
+        std::size_t              games2play;
+        std::atomic<std::size_t> total_positions;
+        std::atomic<std::size_t> total_white_win_count;
+        std::atomic<std::size_t> total_black_win_count;
+        std::atomic<std::size_t> total_draw_count;
+        std::size_t              total_thread_cnt;
         std::filesystem::path 
                             err_fp;
         std::mutex          err_output_lock;
@@ -68,11 +68,11 @@ private:
         std::ofstream output_black_win;
         std::ofstream output_draw;
         search::SearchLimits  limits;
-        size_t        games_ended;
-        size_t        white_win_count;
-        size_t        black_win_count;
-        size_t        draw_count;
-        size_t        total_positions;
+        std::size_t        games_ended;
+        std::size_t        white_win_count;
+        std::size_t        black_win_count;
+        std::size_t        draw_count;
+        std::size_t        total_positions;
         uint          id;
         std::shared_ptr<CommonThreadData> 
                       commons;

@@ -140,7 +140,7 @@ private:
     static void placeNextPieceFromNibble(Position& pos, BitBoard& occupied, uint8_t nibble_part);
 
     static constexpr int    _ClockBufferSize = 3;
-    static constexpr size_t _PackedBufferSize = _PackedPosBufferSize + _ClockBufferSize;
+    static constexpr std::size_t _PackedBufferSize = _PackedPosBufferSize + _ClockBufferSize;
 
     // apart from 16-byte pieces buffer,
     // we also store fullmove count and fullmove count

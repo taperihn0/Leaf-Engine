@@ -73,7 +73,7 @@ public:
     TreeStack& operator=(const TreeStack&) = delete;
     TreeStack& operator=(TreeStack&&)      = delete;
 
-    void clear(mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> history_buffer);
+    void clear(mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> history_buffer);
 
     NodeInfo*       getRootNode();
     const NodeInfo* getRootNode() const;
@@ -87,7 +87,7 @@ public:
     void updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
                                  AccumulatorCluster* const accum_cluster);
 private:
-    static constexpr size_t _Count = MaxSelDepth;
+    static constexpr std::size_t _Count = MaxSelDepth;
     mem::AlignedUniquePtr<NodeInfo> _stack;
 };
 
@@ -258,7 +258,7 @@ void SearchResults::printSearchStats() {
     // Move index stats
     std::cout << "\n------ MOVE STATS ------";
 
-    for (size_t i = 0; i < MaxNodeMoves / 2; i++) {
+    for (std::size_t i = 0; i < MaxNodeMoves / 2; i++) {
         const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
         const float ind_reduced_fail_high_rate = move_reduced_cnt[i] > 0 ? static_cast<float>(move_reduced_fail_high_cnt[i]) 
                                                                                               / move_reduced_cnt[i] * 100
@@ -301,8 +301,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    PvInfo* p = dataOfMultiArray(pv_line);
-    mem::fill(p, p + countOfMultiArray(pv_line), PvInfo());
+    mem::fill(pv_line.begin(), pv_line.end(), PvInfo());
 
     pv_line_len = 0;
 }
@@ -312,7 +311,7 @@ void Search::clearHash() {
     _tt.clearHashfull();
 }
 
-void Search::resizeHash(size_t tt_size_mb) {
+void Search::resizeHash(std::size_t tt_size_mb) {
     if (tt_size_mb > 0 and 
         tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) 
     {
@@ -324,8 +323,8 @@ void Search::resizeHash(size_t tt_size_mb) {
 
 void Search::onNewGame() {
     clearHash();
-    _history_buff->clearHistoryTables();
-    _tree_stack->clear(_history_buff);
+    _history_cluster->clear();
+    _tree_stack->clear(_history_cluster);
 }
 
 TreeStack::TreeStack()
@@ -334,7 +333,7 @@ TreeStack::TreeStack()
     ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::clear(mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> history_buffer) {
+void TreeStack::clear(mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> history_buffer) {
     ASSERT_NOLOG(history_buffer);
 
     mvorder::MoveOrder::setHistoryBuffer(history_buffer);
@@ -394,7 +393,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
 
         nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
-        for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
+        for (std::size_t i = 0; i < accum_cache.added_features_cnt; i++) {
             nn::FeatureData feature_data = accum_cache.added_features[i];
 
             added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
@@ -408,7 +407,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
                                                                     feature_data.side);
         }
 
-        for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
+        for (std::size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
             nn::FeatureData feature_data = accum_cache.removed_features[i];
 
             removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
@@ -446,9 +445,9 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
 Search::Search(TranspositionTable&& tt) 
     : _tt(std::move(tt))
     , _tree_stack(std::make_unique<TreeStack>())
-    , _history_buff(mem::makeAlignedShared<mvorder::MoveOrder::HistoryTables>(1, CachelineSize))
+    , _history_cluster(mem::makeAlignedShared<mvorder::HistoryTablesCluster>(1, CachelineSize))
 {
-    ASSERT(_history_buff != nullptr, "Failed to allocate memory");
+    ASSERT(_history_cluster != nullptr, "Failed to allocate memory");
     onNewGame();
     _cuckoo_tables.init();
 }
@@ -474,7 +473,7 @@ Move32b Search::findBestMove(Position& pos,
     ASSERT(1 <= limits.depth and limits.depth <= MaxDepth, "Invalid depth");
 
     _tt.newGeneration();
-    _history_buff->onNewSearch();
+    _history_cluster->onNewSearch();
     
     SearchLimitsWrapper search_limits(limits);
     search_limits.onNewSearch(pos);
@@ -1172,7 +1171,8 @@ sc::Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    mvorder::MoveOrder::centeredQuietScore(move_score).value() * FutilityScoreMult / 8192;
+                                                    mvorder::HistoryTablesCluster::centeredQuietScore(move_score).value() 
+                                                    * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1837,8 +1837,7 @@ _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
     const Move32b prev_move = parent_node->move;
 
     if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
-        const int unorm_score = parent_node->move_picker.getQuietMoveScore(prev_move, 
-                                                                           parent_node->side2move);
+        const int unorm_score = _history_cluster->getQuietMoveScore(parent_node->side2move, prev_move).value();
         return unorm_score * RfpQuietPenaltyMult / 8192;
     }
 
@@ -2018,7 +2017,7 @@ bool Search::canRepetitionDraw(const Position& pos,
     if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
         return false;
 
-    size_t idx = static_cast<size_t>(-1);
+    std::size_t idx = static_cast<std::size_t>(-1);
 
     for (int p = ply - 1; 
          p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 

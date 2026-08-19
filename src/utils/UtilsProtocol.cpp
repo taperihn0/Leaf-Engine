@@ -53,7 +53,7 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
     search::SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
     const TournamentCollector::TournamentPacket packet = {
-        static_cast<size_t>(games_count),
+        static_cast<std::size_t>(games_count),
         static_cast<uint>(thread_cnt),
         log_dir,
         limits,
@@ -79,14 +79,14 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
     strm >> std::skipws >> begin >> std::skipws >> count;
 
     std::vector<ExtPackedPosition> pack_positions = ExtPackedPosition::fullRead(input);
-    size_t n = pack_positions.size();
+    std::size_t n = pack_positions.size();
 
     if (begin < 0 or begin + count > n) {
         std::cout << "Invalid access indexes" << std::endl;
         return;
     }
 
-    for (size_t i = begin; i < begin + count; i++) {
+    for (std::size_t i = begin; i < begin + count; i++) {
         Position unpack = ExtPackedPosition::unpacked(pack_positions[i]);
         unpack.print();
     }
@@ -95,7 +95,7 @@ void UtilsProtocol::parseShowPositions(std::istringstream& strm) {
 }
 
 bool verifyTrainData(std::ifstream& input, 
-                     size_t& verified_cnt, 
+                     std::size_t& verified_cnt, 
                      TrainingDataEntry::Result8b expected_result) 
 {
     ASSERT_NOLOG(input.is_open());
@@ -139,7 +139,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
         dirs.emplace_back(curr_dir);
     }
 
-    size_t total_verified_positions = 0;
+    std::size_t total_verified_positions = 0;
 
     for (const auto& tournament_dir : dirs) {
         for (uint session = 1; session <= SelfPlaySessionCountLimit; session++) {
@@ -157,7 +157,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                     if (input) {
                         std::cout << "Verificating " << fp << "..." << std::endl;
                         
-                        size_t verified_cnt = 0;
+                        std::size_t verified_cnt = 0;
 
                         if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::WHITE_WIN)) {
                             std::cout << "Verification failed on file: " << fp << std::endl;
@@ -176,7 +176,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                     if (input) {
                         std::cout << "Verificating " << fp << "..." << std::endl;
                         
-                        size_t verified_cnt = 0;
+                        std::size_t verified_cnt = 0;
 
                         if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::BLACK_WIN)) {
                             std::cout << "Verification failed on file: " << fp << std::endl;
@@ -195,7 +195,7 @@ void UtilsProtocol::parseVerifySession(std::istringstream& strm) {
                     if (input) {
                         std::cout << "Verificating " << fp << "..." << std::endl;
                         
-                        size_t verified_cnt = 0;
+                        std::size_t verified_cnt = 0;
 
                         if (!verifyTrainData(input, verified_cnt, TrainingDataEntry::DRAW)) {
                             std::cout << "Verification failed on file: " << fp << std::endl;

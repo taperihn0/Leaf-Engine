@@ -33,7 +33,7 @@ public:
         _move_history[_idx++] = move;
     }
 
-    _NODISCARD _INLINE Move32b getPrevMove(size_t halfmove_cnt) const {
+    _NODISCARD _INLINE Move32b getPrevMove(std::size_t halfmove_cnt) const {
         assert(halfmove_cnt < _idx);
         return _move_history[halfmove_cnt];
     }
@@ -43,11 +43,11 @@ public:
         return getPrevMove(_idx - 1);
     }
 
-    _NODISCARD _INLINE size_t getMoveCount() const { return _idx; }
+    _NODISCARD _INLINE std::size_t getMoveCount() const { return _idx; }
     _INLINE void clear()                 { _idx = 0; }
 private:
     MultiArray<Move32b, MaxGameMoves> _move_history = {};
-    size_t _idx = 0;
+    std::size_t _idx = 0;
 };
 
 class FullInfoRecord : public MoveRecord {
@@ -55,14 +55,14 @@ public:
     _INLINE FullInfoRecord() = default;
 
     _INLINE void recordInfo(uint64_t key, Move32b move) {
-        size_t curr_idx = getMoveCount();
+        std::size_t curr_idx = getMoveCount();
         assert(curr_idx < MaxGameMoves);
         _key_history[curr_idx] = key;
         // MoveRecord takes care of shifting _idx by one
         MoveRecord::recordMove(move);
     }
 
-    _NODISCARD _INLINE uint64_t getPrevKey(size_t halfmove_cnt) const {
+    _NODISCARD _INLINE uint64_t getPrevKey(std::size_t halfmove_cnt) const {
         assert(halfmove_cnt < getMoveCount());
         return _key_history[halfmove_cnt];
     }
@@ -108,7 +108,7 @@ public:
     _NODISCARD FullInfoRecord& getHistoryRecord();
     _NODISCARD const FullInfoRecord& getHistoryRecord() const;
 
-    _NODISCARD size_t getMoveCount() const;
+    _NODISCARD std::size_t getMoveCount() const;
 
     static constexpr clk::milliseconds MoveOverhead = 15_ms;
     static constexpr clk::milliseconds TimeMargin   = 40_ms;

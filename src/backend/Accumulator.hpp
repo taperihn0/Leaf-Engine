@@ -23,7 +23,7 @@
 
 namespace nn {
 
-static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
+static constexpr std::size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
 class alignas(CachelineSize) Accumulator {
 public:
@@ -61,27 +61,27 @@ public:
                  const int16_t* _RESTRICT weights, 
                  enumColor side, 
                  const uint16_t* _RESTRICT side_active_features,
-                 size_t side_active_features_cnt);
+                 std::size_t side_active_features_cnt);
 
     void update(const PackedNeuralNetwork& network,
                 const Accumulator* _RESTRICT prev_accum,
                 const uint16_t* _RESTRICT added_features,
-                size_t added_features_cnt,
+                std::size_t added_features_cnt,
                 const uint16_t* _RESTRICT removed_features,
-                size_t removed_features_cnt,
+                std::size_t removed_features_cnt,
                 enumColor side);
 
     void update(const int16_t* _RESTRICT weights,
                 const Accumulator* _RESTRICT prev_accum,
                 const uint16_t* _RESTRICT added_features,
-                size_t added_features_cnt,
+                std::size_t added_features_cnt,
                 const uint16_t* _RESTRICT removed_features,
-                size_t removed_features_cnt,
+                std::size_t removed_features_cnt,
                 enumColor side);
 
     void clear(enumColor side);
 
-    _NODISCARD const MultiArray<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
+    _NODISCARD const std::array<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
@@ -120,8 +120,8 @@ struct AccumulatorCache {
     Accumulator             accum;
     MultiArray<FeatureData, 2> added_features;
     MultiArray<FeatureData, 2> removed_features;
-    size_t                  added_features_cnt   = 0;
-    size_t                  removed_features_cnt = 0;
+    std::size_t                  added_features_cnt   = 0;
+    std::size_t                  removed_features_cnt = 0;
     bool                    dirty                = false;
 };
 

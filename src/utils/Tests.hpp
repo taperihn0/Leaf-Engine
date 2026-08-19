@@ -52,7 +52,7 @@ bool samesign(const T& a, const T& b) {
            or (a == 0ll and b == 0ll);
 }
 
-_INTERNAL size_t _TestCounter = 0;
+_INTERNAL std::size_t _TestCounter = 0;
 
 template <typename T>
 using _cmp_func_t = bool(*)(const T&, const T&);
@@ -94,8 +94,8 @@ _INTERNAL bool seeTests() {
     
     std::cout << _COLOR_BRIGHT_BLUE "####### SEE TESTING #######\n" _COLOR_RESET;
 
-    static auto next_token = [&](const std::string& line, size_t first) -> size_t {
-        size_t last = first;
+    static auto next_token = [&](const std::string& line, std::size_t first) -> std::size_t {
+        std::size_t last = first;
         while (last < line.size() and line[last] != ';')
             last++;
         return last;
@@ -104,12 +104,12 @@ _INTERNAL bool seeTests() {
     for (uint cnt = 0; cnt < SeeTestSet.size(); cnt++) {
         const std::string fen = static_cast<std::string>(SeeTestSet.at(cnt));
 
-        size_t ind = 0;
+        std::size_t ind = 0;
         Move32b move = NullMove;
         int expected = 0;
 
         for (int i = 0; i < 3; i++) {
-            size_t first = ind;
+            std::size_t first = ind;
             while (fen[first] == ';' or fen[first] == ' ') first++;
 
             ind = next_token(fen, first);
@@ -162,8 +162,8 @@ _INTERNAL bool ccrOneHourTest() {
 
     search::Search search{TranspositionTable(DefaultTTSizeMb)};
 
-    static auto next_token = [&](const std::string& line, size_t first) -> size_t {
-        size_t last = first;
+    static auto next_token = [&](const std::string& line, std::size_t first) -> std::size_t {
+        std::size_t last = first;
         while (last < line.size() and line[last] != ';')
             last++;
         return last;
@@ -176,13 +176,13 @@ _INTERNAL bool ccrOneHourTest() {
         search.onNewGame();
 
         const std::string full_fen = static_cast<std::string>(sv_fen);
-        size_t next = next_token(full_fen, 0);
+        std::size_t next = next_token(full_fen, 0);
 
         std::string fen = full_fen.substr(0, next);
         pos.setByFEN(fen);
         
         std::string opt = full_fen.substr(next, full_fen.size());
-        size_t ind = opt.find("bm");
+        std::size_t ind = opt.find("bm");
 
         std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
 
@@ -191,7 +191,7 @@ _INTERNAL bool ccrOneHourTest() {
 
         if (ind != std::string::npos) {
             ind += 3;
-            size_t last = next_token(opt, ind);
+            std::size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
             _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
@@ -199,7 +199,7 @@ _INTERNAL bool ccrOneHourTest() {
             ind = opt.find("am");
             ASSERT(ind != std::string::npos, "Invalid line");
             ind += 3;
-            size_t last = next_token(opt, ind);
+            std::size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
             _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
@@ -230,8 +230,8 @@ _INTERNAL bool nullMoveTest() {
 
     search::Search search{TranspositionTable(DefaultTTSizeMb)};
 
-    static auto next_token = [&](const std::string& line, size_t first) -> size_t {
-        size_t last = first;
+    static auto next_token = [&](const std::string& line, std::size_t first) -> std::size_t {
+        std::size_t last = first;
         while (last < line.size() and line[last] != ';')
             last++;
         return last;
@@ -243,19 +243,19 @@ _INTERNAL bool nullMoveTest() {
     int lcnt = 0;
     for (const auto& sv_fen : NullMoveSet) {
         const std::string full_fen = static_cast<std::string>(sv_fen);
-        size_t next = next_token(full_fen, 0);
+        std::size_t next = next_token(full_fen, 0);
 
         std::string fen = full_fen.substr(0, next);
         pos.setByFEN(fen);
 
         std::string opt = full_fen.substr(next, full_fen.size());
-        size_t ind = opt.find("bm");
+        std::size_t ind = opt.find("bm");
 
         std::cout << "[EPD, LINE " << std::setw(3) << lcnt << "]: " << full_fen << '\n';
 
         if (ind != std::string::npos) {
             ind += 3;
-            size_t last = next_token(opt, ind);
+            std::size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
             _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
@@ -263,7 +263,7 @@ _INTERNAL bool nullMoveTest() {
             ind = opt.find("am");
             ASSERT(ind != std::string::npos, "Invalid line");
             ind += 3;
-            size_t last = next_token(opt, ind);
+            std::size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
             _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
@@ -288,7 +288,7 @@ _INTERNAL bool packedPositionTests() {
     
     const std::vector<std::string>& testset = getLichessUHO_Openings();
 
-    for (size_t i = 0; i < testset.size(); i++) {
+    for (std::size_t i = 0; i < testset.size(); i++) {
         const std::string fen = testset.at(i);
         
         Position pos(fen);
@@ -403,7 +403,7 @@ _INTERNAL void parseExtPackedFile(std::istringstream& strm) {
            + std::to_string(packed_positions.size()) + " != "
            + std::to_string(full_positions.size()));
 
-    for (size_t i = 0; i < packed_positions.size(); i++) {
+    for (std::size_t i = 0; i < packed_positions.size(); i++) {
         Position unpack = utils::ExtPackedPosition::unpacked(packed_positions[i]);
 
         if (utils::ExtPackedPosition::unpacked(packed_positions[i]) != full_positions[i]) {
@@ -455,7 +455,7 @@ _INTERNAL void parsePackedFile(std::istringstream& strm) {
 
     std::vector<utils::PackedPosition> packed_positions = utils::PackedPosition::fullRead(tmp_stream);
 
-    for (size_t i = 0; i < packed_positions.size(); i++) {
+    for (std::size_t i = 0; i < packed_positions.size(); i++) {
         if (packed_positions[i] != utils::PackedPosition(full_positions[i])) {
             full_positions[i].print();
             std::cout << "Position number " << i << " does not match (while sf-style packing)" << std::endl;

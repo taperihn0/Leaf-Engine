@@ -45,7 +45,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     }
 
     const auto& tunable_options = UniversalChessInterface::getTunableOptions();
-    const size_t param_count = tunable_options.size();
+    const std::size_t param_count = tunable_options.size();
 
     std::vector<SPSA_Parameter> params;
     params.reserve(param_count);
@@ -125,7 +125,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     auto& is1 = *engine1.proc_stdin;
     auto& os1 = *engine1.proc_stdout;
 
-    const size_t param_count = theta.size();
+    const std::size_t param_count = theta.size();
 
     std::vector<SPSA_PackedParameter> theta_plus;
     std::vector<SPSA_PackedParameter> theta_minus;
@@ -161,7 +161,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
 
         // set TT sizes
         
-        static const size_t mb_tt_size = 32;
+        static const std::size_t mb_tt_size = 32;
 
         std::stringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
@@ -200,7 +200,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        uint id)
 {
     const uint A = n / 10;
-    const size_t param_count = params.size();
+    const std::size_t param_count = params.size();
 
     uint theta_plus_win_cnt = 0;
     uint theta_minus_win_cnt = 0;

@@ -37,8 +37,7 @@ void CastlingRights::printByColor(enumColor col_type) const {
 }
 
 Position::Position() {
-    BitBoard* p = dataOfMultiArray(_piece_bb);
-    mem::fill(p, p + countOfMultiArray(_piece_bb), 0);
+    mem::fill(_piece_bb.begin(), _piece_bb.end(), 0);
     _occupied[0] = BitBoard::Empty;
     _occupied[1] = BitBoard::Empty;
 }
@@ -52,13 +51,13 @@ Position::Position(std::string_view init_fen)
 {}
 
 void Position::setByFEN(std::string fen) {
-    size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
+    std::size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
 
     clearPieces();
     
     int x = 0, y = 7;
 
-    for (size_t i = first; i < size(fen); i++) {
+    for (std::size_t i = first; i < size(fen); i++) {
         const char c = fen[i];
 
         if (isdigit(c)) {
@@ -306,8 +305,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
     accum_cache->clearBuffers();
 
-    size_t& added_feature_cnt = accum_cache->added_features_cnt;
-    size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
+    std::size_t& added_feature_cnt = accum_cache->added_features_cnt;
+    std::size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
 
     assert(added_feature_cnt == 0 and removed_feature_cnt == 0);
 
@@ -566,7 +565,7 @@ uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
     return new_zhash;
 }
 
-void Position::setGameStatesFromStr(const std::string fen, size_t i) {
+void Position::setGameStatesFromStr(const std::string fen, std::size_t i) {
     std::stringstream ss(fen.substr(i));
     std::string turn, 
                 castling, 
@@ -769,7 +768,7 @@ uint64_t Position::perft(unsigned depth) {
 
     std::stringstream ss;
 
-    for (size_t i = 0; i < move_list.count(); i++) {
+    for (std::size_t i = 0; i < move_list.count(); i++) {
         Move32b move = move_list.getMove(i);
 
         if (make(move)) {

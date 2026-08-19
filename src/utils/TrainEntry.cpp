@@ -119,7 +119,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         rel_own_pieces = rel_own_pieces.swapBytes();
     }
 
-    for (size_t i = 0; rel_occ > 0; i++) {
+    for (std::size_t i = 0; rel_occ > 0; i++) {
         const Square sq(rel_occ.dropForward());
         const BitBoard bb(sq);
 

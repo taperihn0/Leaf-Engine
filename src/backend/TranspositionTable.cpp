@@ -30,7 +30,7 @@ TTEntry::TTEntry()
     , eval(sc::Undef)
 {}
 
-TranspositionTable::TranspositionTable(size_t mb_size)
+TranspositionTable::TranspositionTable(std::size_t mb_size)
     : _mem(getPageAlignedMemoryHandle(mb_size / sizeof(Bucket)))
 {
     ASSERT(isExp2(mb_size), "Transposition table must be size of 2 power");
@@ -40,10 +40,10 @@ TranspositionTable::TranspositionTable(size_t mb_size)
     clear();
 }
 
-void TranspositionTable::resize(size_t size_mb) {
+void TranspositionTable::resize(std::size_t size_mb) {
     ASSERT(isExp2(size_mb), "Transposition table must be size of 2 power");
 
-    const size_t bucket_cnt = size_mb / sizeof(Bucket);
+    const std::size_t bucket_cnt = size_mb / sizeof(Bucket);
     _mem = getPageAlignedMemoryHandle(bucket_cnt);
     
     ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
@@ -74,9 +74,9 @@ void TranspositionTable::write(uint64_t node_key64,
     const uint32_t keyhi = static_cast<uint32_t>((node_key64 >> _buckets_pow_2) & 0x3FFFF);
 
     int16_t min_relevance = maxof<int16_t>();
-    size_t ind = 0;
+    std::size_t ind = 0;
 
-    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
+    for (std::size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
         if (bucket->entries[i].getHash() == keyhi or bucket->entries[i].isEmpty()) {
             ind = i;
             break;
@@ -127,9 +127,9 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 
     const uint32_t keyhi = static_cast<uint32_t>((key64 >> _buckets_pow_2) & 0x3FFFF);
 
-    size_t ind = Bucket::InternalEntriesCnt;
+    std::size_t ind = Bucket::InternalEntriesCnt;
 
-    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
+    for (std::size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
         if (bucket->entries[i].getHash() == keyhi) {
             ind = i;
             break;
@@ -184,7 +184,7 @@ void TranspositionTable::printDebug() {
 }
 #endif
 
-size_t TranspositionTable::getEntriesCount() const {
+std::size_t TranspositionTable::getEntriesCount() const {
     return _buckets_cnt * Bucket::InternalEntriesCnt;
 }
 
@@ -200,7 +200,7 @@ void TranspositionTable::clearHashfull() {
     _hits = 0;
 }
 
-mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
+mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(std::size_t bucket_cnt) {
     auto m = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
 
 #if defined(__GNUC__) and !defined(_WIN32)

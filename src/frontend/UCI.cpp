@@ -458,7 +458,7 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
         depth = BenchDepth;
 
     clk::Timer timer;
-    size_t total_nodes = 0;
+    std::size_t total_nodes = 0;
 
     timer.go();
 

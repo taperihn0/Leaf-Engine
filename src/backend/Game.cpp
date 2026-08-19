@@ -92,7 +92,7 @@ const FullInfoRecord& Game::getHistoryRecord() const {
     return _pos_record;
 }
 
-size_t Game::getMoveCount() const {
+std::size_t Game::getMoveCount() const {
     return getHistoryRecord().getMoveCount();
 }
 

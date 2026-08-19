@@ -86,7 +86,7 @@ public:
     ull               nodes_cnt  = 0,
     // `qnodes_cnt` - nodes count in quiescent search
                       qnodes_cnt = 0;
-    size_t            tt_entries = 0;
+    std::size_t            tt_entries = 0;
     Move32b           best_move  = NullMove;
     clk::milliseconds duration   = 0;
     MultiArray<ull, MaxDepth + 1> 
@@ -347,7 +347,7 @@ public:
                                           SearchLimits limits);
     
     void clearHash();
-    void resizeHash(size_t tt_size_mb);
+    void resizeHash(std::size_t tt_size_mb);
     void onNewGame();
 private:
     Move32b goIterativeDeepening(Position& pos, 
@@ -428,8 +428,8 @@ private:
     *  for very MoveOrder in TreeStack.
     *  Also, Search class in responsible for allocation and deallocation.
     */
-    mem::AlignedSharedPtr<mvorder::MoveOrder::HistoryTables> 
-                     _history_buff;
+    mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> 
+                     _history_cluster;
     sc::Score _contempt = sc::Undef;
 };
 

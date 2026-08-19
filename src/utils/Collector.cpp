@@ -55,7 +55,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         engine0.syncUntilReady(thread_label);
         engine1.syncUntilReady(thread_label);
 
-        static const size_t mb_tt_size = 8;
+        static const std::size_t mb_tt_size = 8;
 
         std::ostringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
@@ -109,7 +109,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
     std::mt19937_64 mt = rnd::getRandomEngine();
 
-    for (size_t i = 0; 
+    for (std::size_t i = 0; 
          thr_data.commons->games_ended < thr_data.commons->games2play; 
          i++) 
     {
@@ -158,7 +158,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
 
-        const size_t total_positions_cnt = positions.size();
+        const std::size_t total_positions_cnt = positions.size();
         ASSERT_NOLOG(total_positions_cnt == white_scores.size() and 
                      total_positions_cnt == moves.size());
 
@@ -179,7 +179,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
             labelLog(err_output, LOG_INFO | thread_label, "Game specs: " + ss.str());
 
-            for (size_t i = 0; i < total_positions_cnt; i++) {
+            for (std::size_t i = 0; i < total_positions_cnt; i++) {
                 positions[i].print(err_output);
                 err_output << "Following move: ";
                 moves[i].print(err_output);
@@ -199,7 +199,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                                                      isBlackWin(*game_result) ? TrainingDataEntry::BLACK_WIN :
                                                                                 TrainingDataEntry::DRAW;
 
-        for (size_t i = 0; i < positions.size(); i++) {
+        for (std::size_t i = 0; i < positions.size(); i++) {
             Position& pos = positions[i];
             const sc::Score white_score = white_scores[i];
 
@@ -273,7 +273,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
             positions.back().print();
             labelLog(std::cout, LOG_INFO | thread_label, toStr(*game_result) + ": ");
 
-            for (size_t i = 0; i < std::min<size_t>(120, white_scores.size()); i++)
+            for (std::size_t i = 0; i < std::min<std::size_t>(120, white_scores.size()); i++)
                 std::cout << static_cast<int16_t>(white_scores.at(i)) << ' ';
 
             std::cout << std::endl;
@@ -401,7 +401,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 
     labelLog(std::cout, LOG_INFO, ss.str());
 
-    for (size_t i = 0; i < packet.thread_count; i++) {
+    for (std::size_t i = 0; i < packet.thread_count; i++) {
         threads.emplace_back([this](PerThreadData& thread_data) {
             this->perThread(thread_data);
         }, 
@@ -445,7 +445,7 @@ bool TournamentCollector::explicitFilterPolicy(const Position& pos,
 }
 
 _FORCEINLINE bool TournamentCollector::internalFilterPolicy(Move32b internal_move,
-                                                            _UNUSED size_t internal_total_positions_cnt)
+                                                            _UNUSED std::size_t internal_total_positions_cnt)
 {
     if (internal_move.isCapture() or internal_move.isPromotion())
         return false;
@@ -456,7 +456,7 @@ _FORCEINLINE bool TournamentCollector::internalFilterPolicy(Move32b internal_mov
 _FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
                                                            sc::Score white_score,
                                                            Move32b internal_move,
-                                                           size_t internal_total_positions_cnt) 
+                                                           std::size_t internal_total_positions_cnt) 
 {
     return explicitFilterPolicy(pos, white_score) and 
            internalFilterPolicy(internal_move, internal_total_positions_cnt);

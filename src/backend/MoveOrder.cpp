@@ -22,25 +22,26 @@
 
 namespace mvorder {
 
-mem::AlignedSharedPtr<MoveOrder::HistoryTables> MoveOrder::_hist_tables;
+mem::AlignedSharedPtr<HistoryTablesCluster> MoveOrder::_history_cluster;
 
-MoveOrder::HistoryTables::HistoryTables() { clearHistoryTables(); }
-
-void MoveOrder::HistoryTables::clearHistoryTables() {
-    mem::memSet(dataOfMultiArray(_quiets_history), 0, sizeof(_quiets_history));
-    mem::memSet(dataOfMultiArray(_cont_history), 0, sizeof(_cont_history));
+void HistoryTablesCluster::clear() {
+    quiet_history.clear();
+    continuation_history.clear();
 }
 
-void MoveOrder::HistoryTables::onNewSearch() {
-    for (auto* hist_entry = dataOfMultiArray(_quiets_history); 
-         hist_entry < dataOfMultiArray(_quiets_history) + sizeof(_quiets_history) / 2;
-         hist_entry++)
-        *hist_entry /= 2;    
-    
-    for (auto* cont_entry = reinterpret_cast<int16_t*>(dataOfMultiArray(_cont_history)); 
-         cont_entry < reinterpret_cast<int16_t*>(dataOfMultiArray(_cont_history)) + sizeof(_cont_history) / 2;
-         cont_entry++)
-        *cont_entry /= 2;  
+void HistoryTablesCluster::onNewSearch() {
+    quiet_history.reduce();
+    continuation_history.reduce();
+}
+
+_NODISCARD ml::MoveScore HistoryTablesCluster::getQuietMoveScore(enumColor side, Move32b move) {
+    // TODO
+    return quiet_history.getValue(side, move) + mvhist::HistoryTable::Entry::MaxAbsBound;
+}
+
+_NODISCARD ml::MoveScore HistoryTablesCluster::centeredQuietScore(ml::MoveScore s) {
+    // TODO
+    return s -  mvhist::HistoryTable::Entry::MaxAbsBound;
 }
 
 /* 
@@ -59,7 +60,7 @@ bool MoveOrder::nextMoveWithPolicy(const search::NodeInfo* node,
     static_assert(!Root or Policy == ONCE_GEN_LEGAL);
     static_assert(Root or Policy != ONCE_GEN_LEGAL);
 
-    assert(_hist_tables != nullptr);
+    assert(_history_cluster != nullptr);
 
     if constexpr (Root) {
         _killer_move = NullMove;
@@ -155,35 +156,19 @@ void MoveOrder::updateQuietEntry(Move32b move,
                                  int ply) 
 {
     static_assert(Sign == -1 or Sign == 1);
-    assert(_hist_tables != nullptr);
+    assert(_history_cluster != nullptr);
 
-    const Piece::uint_t piece = index(move.getPiece());
-    const Square dst = move.getTarget();
+    const int32_t mhist_bonus = std::min(hist_bonus, mvhist::HistoryTable::Entry::MaxAbsBound);
+    _history_cluster->quiet_history.update<Sign>(side, move, mhist_bonus);
 
-    const int32_t mhist_bonus = std::min(hist_bonus, HistoryTables::_MaxAbsQuietsHistory);
-    const int32_t quiet_value = static_cast<int32_t>(_hist_tables->_quiets_history[side][piece][dst]);
-
-    assert(abs(quiet_value) <= HistoryTables::_MaxAbsQuietsHistory);
-
-    _hist_tables->_quiets_history[side][piece][dst] += static_cast<int16_t>(
-        Sign * mhist_bonus - quiet_value * mhist_bonus / HistoryTables::_MaxAbsQuietsHistory
-    );
-
-    for (int i = 0; i < HistoryTables::_ContinuationPly and i < ply; i++) {
+    for (int i = 0; i < ContinuationPlyCount and i < ply; i++) {
         const search::NodeInfo* prev_node = node - i - 1;
 
-        const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
-        const Square prev_dst = prev_node->move.getTarget();
-        auto& cont_refute_table = _hist_tables->_cont_history[i][prev_node->side2move][prev_piece][prev_dst];
+        const Move32b prev_move = prev_node->move;
+        auto& cont_refute_table = _history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_move);
 
-        const int32_t mcont_bonus = std::min(cont_bonus, HistoryTables::_MaxAbsContinuationHistory);
-        const int32_t cont_value = static_cast<int32_t>(cont_refute_table[side][piece][dst]);
-
-        assert(abs(cont_value) <= HistoryTables::_MaxAbsContinuationHistory);
-
-        cont_refute_table[side][piece][dst] += static_cast<int16_t>(
-            Sign * mcont_bonus - cont_value * mcont_bonus / HistoryTables::_MaxAbsContinuationHistory
-        );
+        const int32_t mcont_bonus = std::min(cont_bonus, mvhist::ContinuationSubtable::Entry::MaxAbsBound);
+        cont_refute_table.update<Sign>(side, move, mcont_bonus);
     }
 }
 
@@ -213,7 +198,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
                                   MvOrContPenaltyHistoryScore1Coeff * depth
                                  ) / 1024;
 
-    for (size_t i = _quiets_ind; i < _move_list.count(); i++) {
+    for (std::size_t i = _quiets_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
         const Move32b& move = entry.move;
 
@@ -229,7 +214,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
 /* Search for another move in a `_move_list` starting from current `_iterator`
 *  up to the possible `end_idx` position.
 */
-_INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, size_t end_idx) {
+_INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, std::size_t end_idx) {
     assert(_iterator <= end_idx);
 
     while (_iterator < _move_list.count() and _iterator < end_idx) {
@@ -245,13 +230,13 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, si
     return false;
 }
 
-_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, size_t end_idx) {
+_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, std::size_t end_idx) {
     const bool found = nextMoveFromList(move, score, end_idx);
     score = outputMoveScore(move, side, score);
     return found;
 }
 
-void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
+void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
 
     _LC_PARAM_ATTRIBS MultiArray<const int16_t, 5> CaptureScore = {
         static_cast<int16_t>(MvOrPawnCapturedScore), 
@@ -269,7 +254,7 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
         static_cast<int16_t>(MvOrToQueenPromoScore)
     };
 
-    for (size_t i = first_ind; i < _move_list.count(); i++) {
+    for (std::size_t i = first_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
         const Move32b& move = entry.move;
         ml::MoveScore& score = entry.score;
@@ -300,43 +285,38 @@ void MoveOrder::scoreCaptures(size_t first_ind, const Position& pos) {
     }
 }
 
-static constexpr size_t ContinuationPly = MoveOrder::HistoryTables::getContinuationPly();
-
-void MoveOrder::scoreQuiets(size_t first_ind, 
+void MoveOrder::scoreQuiets(std::size_t first_ind, 
                             enumColor side, 
                             const search::NodeInfo* node, 
                             int ply) 
 {
-    assert(_hist_tables != nullptr);
+    assert(_history_cluster != nullptr);
 
-    _LC_PARAM_ATTRIBS const MultiArray<int32_t, ContinuationPly> MvOrdContinuationPlyScale = {
+    _LC_PARAM_ATTRIBS const MultiArray<int32_t, ContinuationPlyCount> MvOrdContinuationPlyScale = {
         MvOrdContinuation1Scale,
         MvOrdContinuation2Scale,
     };
 
-    for (size_t i = first_ind; i < _move_list.count(); i++) {
+    for (std::size_t i = first_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
         const Move32b& move = entry.move;
         ml::MoveScore& score = entry.score;
 
         assert(move.isQuiet());
 
-        const Piece::uint_t piece = index(move.getPiece());
-        const Square dst = move.getTarget();
-
-        score = _hist_tables->_quiets_history[side][piece][dst];
+        score = _history_cluster->quiet_history.getValue(side, move);
 
         /* Apply continuation score */
 
-        for (int j = 0; j < HistoryTables::_ContinuationPly and j < ply; j++) {
+        for (int j = 0; j < ContinuationPlyCount and j < ply; j++) {
             const search::NodeInfo* prev_node = node - j - 1;
+            
+            const Move32b prev_move = prev_node->move;
+            auto& cont_refute_table = _history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_move);
+            
+            const int16_t cont_value = cont_refute_table.getValue(side, move);
 
-            const Piece::uint_t prev_piece = index(prev_node->move.getPiece());
-            const Square prev_dst = prev_node->move.getTarget();
-
-            auto& cont_refute_table = _hist_tables->_cont_history[j][prev_node->side2move][prev_piece][prev_dst];
-
-            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_refute_table[side][piece][dst] / 1024;
+            const int32_t scaled_cont_value = MvOrdContinuationPlyScale[j] * cont_value / 1024;
             score += scaled_cont_value;
         }
     }
@@ -393,7 +373,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 }
 
 _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept {
-    return move.isCapture() or move.isPromotion() ? s : _hist_tables->getNormalizedHistQuietScore(move, side); // TODO
+    return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
 }
 
 template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(const search::NodeInfo*, Position&, Move32b&, ml::MoveScore&, int);

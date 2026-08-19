@@ -92,7 +92,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
                short_castle = str == "O-O" or str == "0-0",
                long_castle = str == "O-O-O" or str == "0-0-0";
 
-    const size_t last = str.back() == '+' ? str.size() - 2 : str.size() - 1;
+    const std::size_t last = str.back() == '+' ? str.size() - 2 : str.size() - 1;
 
     if (short_castle) {
         ASSERT(pos.getOwnCastling().isShortPossible(), "Invalid castling move");
@@ -149,7 +149,7 @@ Move32b Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(const Position& pos, cons
 
             if (bb.popCount() > 1) {
                 char id = str[1];
-                size_t idn = 0;
+                std::size_t idn = 0;
 
                 if ((idn = static_cast<int>(std::string_view("abcdefgh").find(id))) != std::string::npos) {
                     BitBoard file = BitBoard::file(static_cast<int>(idn));

@@ -353,7 +353,7 @@ void SlidersAttacks::initAttackTables() {
             const BitBoard subset = indexToSubset(i, relv_occ, relv_bits);
 
             BitBoard sq_magic_bb = BitBoard::Empty;
-            size_t sq_idx = 0;
+            std::size_t sq_idx = 0;
 
             if constexpr (Piece == Piece::BISHOP) {
 #if !defined(LEAF_ENABLE_BMI2)

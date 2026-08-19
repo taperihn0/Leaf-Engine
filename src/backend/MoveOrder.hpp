@@ -55,6 +55,8 @@ _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation2Scale, int32_t, 800.f, 600.f, 1000.f, 1.f);
 
+static inline constexpr int16_t ContinuationPlyCount = 2;
+
 enum enumOrderPolicy : uint8_t {
     STAGED         = 1, // At nmSearch nodes
     QUIESCENT      = 2, // At qSearch nodes
@@ -68,42 +70,25 @@ enum class enumStage {
     STAGE_QUIETS
 };
 
+struct HistoryTablesCluster {
+    void clear();
+    void onNewSearch();
+
+    _NODISCARD ml::MoveScore getQuietMoveScore(enumColor side, Move32b move);
+    _NODISCARD static ml::MoveScore centeredQuietScore(ml::MoveScore s);
+
+    mvhist::HistoryTable      quiet_history;
+    mvhist::ContinuationTable continuation_history;
+};
+
 /* Here we generate and sort moves.
 *  It wrapps `MoveList` class with actual moves and scores.
 */
 class MoveOrder {
 public:
-
-    /* It is basically a part of `MoveOrder` interface.
-    *  It contains tables used in move ordering with history data, for instance 
-    *  piece-square or from-to tables.
-    *  It implements differentiation of history data between each Search object,
-    *  as it is part of Search class.
-    */
-    class HistoryTables {
-    public:
-        friend class MoveOrder;
-        
-        HistoryTables();
-        void clearHistoryTables();
-        void onNewSearch();
-
-        _NODISCARD static constexpr int16_t getContinuationPly() { return _ContinuationPly; }
-    private:
-        _NODISCARD _INLINE int16_t getNormalizedHistQuietScore(Move32b move, enumColor side);
-
-        static inline constexpr int16_t _MaxAbsQuietsHistory = 8192;
-        static inline constexpr int16_t _MaxAbsContinuationHistory = 8192;
-        static inline constexpr int16_t _ContinuationPly = 2;
-        
-        MultiArray<int16_t, 2, 6, 64>      _quiets_history;
-        MultiArray<MultiArray<Array3d<int16_t, 2, 6, 64>, 2, 6, 64>, _ContinuationPly>
-                                        _cont_history;
-    };
-
     MoveOrder() = default;
 
-    static void setHistoryBuffer(mem::AlignedSharedPtr<HistoryTables> history_tables);
+    static void setHistoryBuffer(mem::AlignedSharedPtr<HistoryTablesCluster> history_tables);
 
     /*
     *   nextMoveWithPolicy<STAGED>:
@@ -135,9 +120,6 @@ public:
     void clear();
     void skipQuiets();
 
-    // Returns score in range [0, +MaxQuietMoveScore]
-    _NODISCARD int16_t getQuietMoveScore(Move32b move, enumColor side) const;
-
     _NODISCARD static int32_t getQuietDepthReduction(ml::MoveScore quiet_score);
     _NODISCARD static float getCaptureDepthReduction(ml::MoveScore capture_score);
 
@@ -148,8 +130,6 @@ public:
     _NODISCARD uint getTotalMoves();
 
     _NODISCARD enumStage getStage() const;
-
-    _NODISCARD static ml::MoveScore centeredQuietScore(ml::MoveScore s) noexcept;
 private:
     template <int8_t Sign>
     void updateQuietEntry(Move32b move, 
@@ -159,11 +139,11 @@ private:
                           const search::NodeInfo* node,
                           int ply);
 
-    bool nextMoveFromList(Move32b& move, ml::MoveScore& score, size_t end_idx);
-    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, size_t end_idx = maxof<size_t>());
+    bool nextMoveFromList(Move32b& move, ml::MoveScore& score, std::size_t end_idx);
+    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, enumColor side, std::size_t end_idx = maxof<std::size_t>());
 
-    void scoreCaptures(size_t first_ind, const Position& pos);
-    void scoreQuiets(size_t first_ind, 
+    void scoreCaptures(std::size_t first_ind, const Position& pos);
+    void scoreQuiets(std::size_t first_ind, 
                      enumColor side, 
                      const search::NodeInfo* node, 
                      int ply);
@@ -191,11 +171,11 @@ private:
         STAGED_PICK_QUIETS,
     };
 
-    static mem::AlignedSharedPtr<HistoryTables> _hist_tables;
+    static mem::AlignedSharedPtr<HistoryTablesCluster> _history_cluster;
 
     enumPrivateStage _stage = enumPrivateStage::NONE;
-    size_t    _iterator     = 0;
-    size_t    _quiets_ind   = 0;
+    std::size_t    _iterator     = 0;
+    std::size_t    _quiets_ind   = 0;
 
     Move32b  _hash_move     = NullMove;
     Move32b  _killer_move   = NullMove;
@@ -204,8 +184,8 @@ private:
     ml::MoveList _move_list;
 };
 
-_INLINE void MoveOrder::setHistoryBuffer(mem::AlignedSharedPtr<HistoryTables> history_tables) {
-    _hist_tables = history_tables;
+_INLINE void MoveOrder::setHistoryBuffer(mem::AlignedSharedPtr<HistoryTablesCluster> history_tables) {
+    _history_cluster = history_tables;
 }
 
 _INLINE void MoveOrder::setHashMove(Move32b m) {
@@ -235,22 +215,12 @@ _FORCEINLINE void MoveOrder::skipQuiets() {
     _iterator = _move_list.count();
 }
 
-_NODISCARD _FORCEINLINE int16_t MoveOrder::HistoryTables::getNormalizedHistQuietScore(Move32b move, enumColor side) {
-    const Piece::uint_t piece_ind = index(move.getPiece());
-    const Square dst = move.getTarget();
-    return _hist_tables->_quiets_history[side][piece_ind][dst] + _MaxAbsQuietsHistory;
-}
-
- _NODISCARD _FORCEINLINE int16_t MoveOrder::getQuietMoveScore(Move32b move, enumColor side) const {
-    return _hist_tables->getNormalizedHistQuietScore(move, side);
-}
-
 /* Search utilities - move reductions
 *  =================================
 */
 
 _NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
-    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * HistoryTables::_MaxAbsQuietsHistory / 256;
+    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * mvhist::HistoryTable::Entry::MaxAbsBound / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = MvOrQuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
@@ -298,10 +268,6 @@ _NODISCARD _FORCEINLINE enumStage MoveOrder::getStage() const {
     default:
         return enumStage::STAGE_PRIVATE;
     }
-}
-
-_NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::centeredQuietScore(ml::MoveScore s) noexcept {
-    return ml::MoveScore(s.value() - HistoryTables::_MaxAbsQuietsHistory);
 }
 
 } // namespace mvorder

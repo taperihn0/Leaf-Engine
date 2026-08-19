@@ -64,7 +64,7 @@ void CuckooTables::init() {
 
                     Move16b move16b = Move16b::makePackedSimple(from, to);
 
-                    size_t idx = cuckooIndex1(move_hash);
+                    std::size_t idx = cuckooIndex1(move_hash);
 
                     for (uint kick = 0; kick < _KickThreshold; kick++) {
                         std::swap(_cuckoo_entry_buff.get()[idx].move_hash, move_hash);
@@ -88,9 +88,9 @@ void CuckooTables::init() {
 }
 
 void CuckooTables::validate() {
-    size_t count = 0;
+    std::size_t count = 0;
 
-    for (size_t i = 0; i < _CuckooTableSize; i++) {
+    for (std::size_t i = 0; i < _CuckooTableSize; i++) {
         const uint32_t move_hash = _cuckoo_entry_buff.get()[i].move_hash;
         const Move16b move16b = _cuckoo_entry_buff.get()[i].move16;
 

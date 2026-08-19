@@ -61,11 +61,11 @@ public:
 
     MoveList() = default;
 
-    _INLINE void sort(size_t first, size_t end) {
+    _INLINE void sort(std::size_t first, std::size_t end) {
         std::sort(_moves.data() + first, _moves.data() + end, _GreaterScore);
     }
 
-    _INLINE void partialSort(size_t first, size_t mid, size_t end) {
+    _INLINE void partialSort(std::size_t first, std::size_t mid, std::size_t end) {
         std::partial_sort(_moves.data() + first, 
                           _moves.data() + mid, 
                           _moves.data() + end, 
@@ -77,22 +77,22 @@ public:
         _moves[_idx++].move = new_move;
     }
 
-    _INLINE Entry& getEntry(size_t idx) {
+    _INLINE Entry& getEntry(std::size_t idx) {
         assert(idx < _idx);
         return _moves[idx];
     }
 
-    _INLINE Move32b getMove(size_t idx) const {
+    _INLINE Move32b getMove(std::size_t idx) const {
         assert(idx < _idx);
         return _moves[idx].move;
     }
 
-    _INLINE MoveScore getScore(size_t idx) const {
+    _INLINE MoveScore getScore(std::size_t idx) const {
         assert(idx < _idx);
         return _moves[idx].score;
     }
 
-    _INLINE size_t count() const {
+    _INLINE std::size_t count() const {
         return _idx;
     }
 
@@ -106,17 +106,17 @@ public:
     _INLINE void clear() { _idx = 0; }
 
     void print() const {
-        for (size_t i = 0; i < _idx; i++)
+        for (std::size_t i = 0; i < _idx; i++)
             _moves[i].move.print(), std::cout << '\n';
     }
 
-    void selectSort(size_t first_ind);
+    void selectSort(std::size_t first_ind);
 
     _INLINE Move32b getRandomMove() const {
         if (!_idx) 
             return NullMove;
 
-        size_t random_idx = rnd::random<size_t>(0, _idx - 1);
+        std::size_t random_idx = rnd::random<std::size_t>(0, _idx - 1);
         return _moves[random_idx].move;
     }
 
@@ -126,7 +126,7 @@ public:
                                          >
     >
     _INLINE bool any(Pred&& pred) const {
-        for (size_t i = 0; i < _idx; i++) {
+        for (std::size_t i = 0; i < _idx; i++) {
             if (pred(_moves[i]))
                 return true;
         }
@@ -149,23 +149,23 @@ public:
     }
 
 private:
-    static constexpr size_t _MaxSize = MaxNodeMoves;
+    static constexpr std::size_t _MaxSize = MaxNodeMoves;
 
     inline static const constexpr auto _GreaterScore = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
         return a.score > b.score;
     };
 
-    size_t                   _idx = 0;
+    std::size_t                   _idx = 0;
     MultiArray<Entry, _MaxSize> _moves = {};
 };
 
-_INLINE void MoveList::selectSort(size_t first_ind) {
+_INLINE void MoveList::selectSort(std::size_t first_ind) {
     assert(first_ind < _idx);
 
     MoveScore best = _moves[first_ind].score;
-    size_t ind = first_ind;
+    std::size_t ind = first_ind;
 
-    for (size_t i = first_ind + 1; i < _idx; i++) {
+    for (std::size_t i = first_ind + 1; i < _idx; i++) {
         if (_moves[i].score > best) {
             best = _moves[i].score;
             ind = i;
