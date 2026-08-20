@@ -82,7 +82,7 @@ public:
     _NODISCARD _FORCEINLINE ContinuationSubtable& getSubtable(enumColor side, Move32b move);
     _INLINE void reduce(); 
 private:
-    MultiArray<ContinuationSubtable, 2, 6, 64> _continuation_tables;
+    MultiArray<ContinuationSubtable, 2, 2, 6, 64> _continuation_tables;
 };
 
 class HistoryTable {
@@ -164,7 +164,7 @@ _INTERNAL void ContinuationTable::clear() {
 
 _NODISCARD _FORCEINLINE ContinuationSubtable& ContinuationTable::getSubtable(enumColor side, Move32b move) {
     const auto& [piece, to] = extractMoveIndexes(move);
-    return _continuation_tables[side][piece][to];
+    return _continuation_tables[side][move.isCapture()][piece][to];
 }
 
 _INTERNAL void ContinuationTable::reduce() {
