@@ -373,7 +373,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept {
     //return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
     //return s;
-    return mvhist::HistoryTable::Entry::MaxAbsBound * s.value() /
+    return move.isCapture() or move.isPromotion() ? s : 8192 + 8192 * s.value() /
             (mvhist::HistoryTable::Entry::MaxAbsBound + (MvOrdContinuation1Scale + MvOrdContinuation2Scale) * mvhist::ContinuationSubtable::Entry::MaxAbsBound / 1024);
 }
 
