@@ -1122,8 +1122,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->best_score     = -sc::Infinity;
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
-
-    node->move_score = sc::Undef;
+    node->move_score     = sc::Undef;
 
     for (node->move_index = 0; 
          node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, node->move_score, ply);
@@ -1844,7 +1843,7 @@ _FORCEINLINE sc::Score Search::correctedEvalScore(sc::Score eval, sc::Score scor
 _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
     const Move32b prev_move = parent_node->move;
 
-    if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
+    if (!prev_move.isNullMove() and prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
         const int unorm_score = parent_node->move_score.value();
         return unorm_score * RfpQuietPenaltyMult / 8192;
     }
