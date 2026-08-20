@@ -1123,10 +1123,10 @@ sc::Score Search::nmSearch(Position& pos,
     node->moves_searched = 0;
     node->bound          = TTBound::UPPERBOUND;
 
-    ml::MoveScore move_score = sc::Undef;
+    node->move_score = sc::Undef;
 
     for (node->move_index = 0; 
-         node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, move_score, ply);
+         node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, node->move_score, ply);
          node->move_index++) 
     {
         /* Singular Move -
@@ -1165,7 +1165,7 @@ sc::Score Search::nmSearch(Position& pos,
                             pos.badStaticExchangeEval(node->move, SeeCapturePruneThreshold * depth))
                         continue;
                     else if (!node->move.isCapture() and
-                             move_score < SeeQuietScoreThreshold and
+                             node->move_score < SeeQuietScoreThreshold and
                              pos.badStaticExchangeEval(node->move, SeeQuietPruneThreshold * depth))
                         continue;
                 }
@@ -1179,7 +1179,7 @@ sc::Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    mvorder::HistoryTablesCluster::centeredQuietScore(move_score).value() 
+                                                    mvorder::HistoryTablesCluster::centeredQuietScore(node->move_score).value() 
                                                     * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
@@ -1292,8 +1292,8 @@ sc::Score Search::nmSearch(Position& pos,
                 if (!killer.isNullMove() and node->move == killer) 
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
-                if (move_score.isValid()) 
-                    move_reduction += mvorder::MoveOrder::getQuietDepthReduction(move_score) * FixedPointMult;
+                if (node->move_score.isValid()) 
+                    move_reduction += mvorder::MoveOrder::getQuietDepthReduction(node->move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     QuietExtensionReduction / FixedPointMult;
@@ -1320,8 +1320,8 @@ sc::Score Search::nmSearch(Position& pos,
                 if (!killer.isNullMove() and node->move == killer)
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
-                if (move_score.isValid() and !node->move.isPromotion())
-                    move_reduction += mvorder::MoveOrder::getCaptureDepthReduction(move_score) * FixedPointMult;
+                if (node->move_score.isValid() and !node->move.isPromotion())
+                    move_reduction += mvorder::MoveOrder::getCaptureDepthReduction(node->move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     CaptureExtensionReduction / FixedPointMult;

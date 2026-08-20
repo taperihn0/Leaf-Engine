@@ -185,6 +185,7 @@ public:
     uint16_t                  pv_line_len;
     bool                      is_cut;
     bool                      mate_thread;
+    ml::MoveScore             move_score;
     mvorder::mvhist::ContinuationSubtable*
                               continuation_subtable_ptr;
 };
@@ -213,7 +214,7 @@ _DEFINE_TUNABLE_PARAMETER(RfpMarginThreshold, int32_t, 4.2035f, 1.f, 30.f, 1.2f)
 _DEFINE_TUNABLE_PARAMETER(RfpReturnValueWeight, int32_t, 62.5048f, 4.f, 128.f, 0.5f);
 _DEFINE_TUNABLE_PARAMETER(FutilityMoveCount, int32_t, 7.81757f, 1.f, 16.f, 0.5f);
 _DEFINE_TUNABLE_PARAMETER(FutilityDelta, int32_t, 15.5301f, 2.f, 50.f, 0.7f);
-_DEFINE_TUNABLE_PARAMETER(FutilityScoreMult, int32_t, 9.75754f, 5.f, 13.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(FutilityScoreMult, int32_t, 5.75754f, 2.f, 13.f, 0.9f);
 _DEFINE_TUNABLE_PARAMETER(RazorBaseDelta, int32_t, 106.164f, 20.f, 500.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(QMaterialDelta, int32_t, 1119.44f, 700.f, 1200.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(NNEvalScale, int32_t, 7.70538f, 7.f, 17.f, 1.3f);

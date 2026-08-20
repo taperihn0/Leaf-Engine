@@ -41,7 +41,7 @@ _NODISCARD ml::MoveScore HistoryTablesCluster::getQuietMoveScore(enumColor side,
 
 _NODISCARD ml::MoveScore HistoryTablesCluster::centeredQuietScore(ml::MoveScore s) {
     // TODO
-    return s -  mvhist::HistoryTable::Entry::MaxAbsBound;
+    return s.value() - mvhist::HistoryTable::Entry::MaxAbsBound - ContinuationPlyCount * mvhist::ContinuationSubtable::Entry::MaxAbsBound;
 }
 
 /* 
@@ -187,7 +187,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
                                  MvOrContBonusHistoryScore1Coeff * depth
                                 ) / 1024;
 
-    updateQuietEntry<1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
+    updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
 
     const int16_t hist_penalty = (MvOrQuietPenaltyHistoryScore2Coeff * sq(depth) + 
                                    MvOrQuietPenaltyHistoryScore1Coeff * depth
@@ -217,7 +217,7 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, st
     assert(_iterator <= end_idx);
 
     while (_iterator < _move_list.count() and _iterator < end_idx) {
-        _move_list.selectBest(_iterator/*, end_idx*/);
+        _move_list.selectBest(_iterator, end_idx);
 
         const ml::MoveList::Entry entry = _move_list.getEntry(_iterator++);
 
@@ -302,12 +302,11 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
 
     for (std::size_t i = first_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b move = entry.move();
-        ml::MoveScore score = entry.score();
 
+        const Move32b move = entry.move();
         assert(move.isQuiet());
 
-        score = _history_cluster->quiet_history.getValue(side, move);
+        ml::MoveScore score = _history_cluster->quiet_history.getValue(side, move);
 
         /* Apply continuation score */
 
@@ -322,7 +321,7 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
             score += scaled_cont_value;
         }
 
-        entry.setScore(score);
+        entry.setScore(score);  
     }
 }
 
@@ -363,10 +362,10 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         if (getNextMoveInfo(next_move, move_score, s2m, _quiets_ind))
             return true;
 
-        scoreQuiets(_quiets_ind, s2m, node, ply);
         _stage = enumPrivateStage::ONCEGEN_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_QUIETS:
+        scoreQuiets(_iterator, s2m, node, ply);
         return getNextMoveInfo(next_move, move_score, s2m);
     default:
         assert(false);
@@ -377,7 +376,8 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 }
 
 _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept {
-    return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
+    //return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
+    return s;
 }
 
 _NODISCARD enumStage MoveOrder::getStage() const {
