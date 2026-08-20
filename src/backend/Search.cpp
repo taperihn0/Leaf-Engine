@@ -1165,7 +1165,7 @@ sc::Score Search::nmSearch(Position& pos,
                             pos.badStaticExchangeEval(node->move, SeeCapturePruneThreshold * depth))
                         continue;
                     else if (!node->move.isCapture() and
-                             node->move_score < SeeQuietScoreThreshold and
+                             node->move_score < SeeQuietScoreThreshold * 3 and
                              pos.badStaticExchangeEval(node->move, SeeQuietPruneThreshold * depth))
                         continue;
                 }
