@@ -218,7 +218,7 @@ _FORCEINLINE void MoveOrder::skipQuiets() {
 */
 
 _NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
-    const int32_t centered_score = HistoryTablesCluster::centeredQuietScore(quiet_score).value() / 3;
+    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * mvhist::HistoryTable::Entry::MaxAbsBound / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = MvOrQuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;

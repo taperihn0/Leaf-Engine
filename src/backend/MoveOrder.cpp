@@ -34,14 +34,9 @@ void HistoryTablesCluster::onSearch() {
     continuation_history.reduce();
 }
 
-_NODISCARD ml::MoveScore HistoryTablesCluster::getQuietMoveScore(enumColor side, Move32b move) {
-    // TODO
-    return quiet_history.getValue(side, move) + mvhist::HistoryTable::Entry::MaxAbsBound;
-}
-
 _NODISCARD ml::MoveScore HistoryTablesCluster::centeredQuietScore(ml::MoveScore s) {
     // TODO
-    return s.value() - mvhist::HistoryTable::Entry::MaxAbsBound - ContinuationPlyCount * mvhist::ContinuationSubtable::Entry::MaxAbsBound;
+    return s.value() - 8192;
 }
 
 /* 
@@ -377,7 +372,9 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 
 _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, enumColor side, ml::MoveScore s) noexcept {
     //return move.isCapture() or move.isPromotion() ? s : _history_cluster->getQuietMoveScore(side, move); // TODO
-    return s;
+    //return s;
+    return mvhist::HistoryTable::Entry::MaxAbsBound * s.value() /
+            (mvhist::HistoryTable::Entry::MaxAbsBound + (MvOrdContinuation1Scale + MvOrdContinuation2Scale) * mvhist::ContinuationSubtable::Entry::MaxAbsBound / 1024);
 }
 
 _NODISCARD enumStage MoveOrder::getStage() const {

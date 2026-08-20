@@ -1164,7 +1164,7 @@ sc::Score Search::nmSearch(Position& pos,
                             pos.badStaticExchangeEval(node->move, SeeCapturePruneThreshold * depth))
                         continue;
                     else if (!node->move.isCapture() and
-                             node->move_score < SeeQuietScoreThreshold * 3 and
+                             node->move_score < SeeQuietScoreThreshold and
                              pos.badStaticExchangeEval(node->move, SeeQuietPruneThreshold * depth))
                         continue;
                 }
@@ -1179,7 +1179,7 @@ sc::Score Search::nmSearch(Position& pos,
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
                                                     mvorder::HistoryTablesCluster::centeredQuietScore(node->move_score).value() 
-                                                    * FutilityScoreMult / (3 * 8192);
+                                                    * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
