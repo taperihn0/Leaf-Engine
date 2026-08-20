@@ -27,11 +27,11 @@ namespace util {
 template <typename Derived, typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 class ScoreBase {
 public:
-    using int_t = T;
+    using value_type = T;
 
     ScoreBase() noexcept = default;
     _INLINE constexpr ScoreBase(int32_t val) noexcept
-        : _v(static_cast<int_t>(val)) {}
+        : _v(static_cast<value_type>(val)) {}
 
     _FORCEINLINE constexpr Derived  operator-()           const noexcept { return Derived(-_v); }
     _FORCEINLINE constexpr Derived  operator+()           const noexcept { return Derived(_v); }
@@ -53,7 +53,7 @@ public:
     _FORCEINLINE constexpr explicit operator float()      const noexcept { return static_cast<float>(_v); }
 
     _FORCEINLINE constexpr Derived& operator=(int32_t v) noexcept {
-        _v = static_cast<int_t>(v);
+        _v = static_cast<value_type>(v);
         return asDerived();
     }
 
@@ -76,7 +76,7 @@ public:
 
     _NODISCARD _INLINE constexpr bool isValid() const;
 
-    int_t _v;
+    value_type _v;
 protected:
     using base = ScoreBase<Derived, T>;
 private:
@@ -116,7 +116,7 @@ inline constexpr Score Win       = Score(6000);
 inline constexpr Score KnownWin  = Score(18000);
 inline constexpr Score Mate      = Score(32000);
 inline constexpr Score MateBound = Score(32000 - MaxDepth);
-inline constexpr Score Infinity  = Score(maxof<Score::int_t>());
+inline constexpr Score Infinity  = Score(maxof<Score::value_type>());
 inline constexpr Score Undef     = Score(32500);
 
 template <typename Derived, typename T, typename _>

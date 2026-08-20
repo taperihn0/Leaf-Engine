@@ -33,7 +33,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
         return GAME_INVALID;
     }
 
-    MultiArray<EngineProcess*, 2> player;
+    std::array<EngineProcess*, 2> player;
     
     // true zero_player_white means (is0, os0) engine is white player
     const bool zero_player_white = rnd::random<int>(0, 1);

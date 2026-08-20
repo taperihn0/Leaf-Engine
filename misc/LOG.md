@@ -1,3 +1,13 @@
+### [commit:1b1c637] fix: History + Continuation values used in Search as score of quiet move
+```
+Score of leaf-cont-capt-hist-2ply vs leaf-base: 619 - 556 - 1819  [0.511] 2994
+...      leaf-cont-capt-hist-2ply playing White: 395 - 187 - 915  [0.569] 1497
+...      leaf-cont-capt-hist-2ply playing Black: 224 - 369 - 904  [0.452] 1497
+...      White vs Black: 764 - 411 - 1819  [0.559] 2994
+Elo difference: 7.3 +/- 7.8, LOS: 96.7 %, DrawRatio: 60.8 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:577d0f3] feature: Capture-indexed Continuation History & lazy cached Continuation pointers
 ```
 Score of leaf-cont-capt-hist-2ply vs leaf-base: 663 - 580 - 999 [0.519] 2242

@@ -48,6 +48,8 @@
 #include <x86gprintrin.h>
 #endif
 
+#include "MultiArray.hpp"
+
 #if defined(_WIN32)
 #undef min
 #undef max
@@ -330,79 +332,3 @@ _INLINE T sparseRandom(T l, T r) {
 }
 
 } // namespace rnd
-
-namespace multiarr {
-
-template<typename T, std::size_t N, std::size_t... Ns>
-struct MultiArray {
-    using type = std::array<typename MultiArray<T, Ns...>::type, N>;
-};
-
-template<typename T, std::size_t N>
-struct MultiArray<T, N> {
-    using type = std::array<T, N>;
-};
-
-template<typename T, std::size_t... Ns>
-struct MultiArrayWrapper {
-    using MultiArray = typename MultiArray<T, Ns...>::type;
-
-    using value_type             = T;
-    using size_type              = std::size_t;
-    using difference_type        = std::ptrdiff_t;
-    using reference              = value_type&;
-    using const_reference        = const value_type&;
-    using pointer                = value_type*;
-    using const_pointer          = const value_type*;
-    using iterator               = pointer;
-    using const_iterator         = const_pointer;
-    using reverse_iterator       = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    static constexpr size_type Count = (Ns * ...);
-
-    MultiArray arr;
-
-    constexpr auto& operator[](size_type pos) noexcept { return arr[pos]; }
-    constexpr const auto& operator[](size_type pos) const noexcept { return arr[pos]; }
-
-    constexpr bool operator==(const MultiArrayWrapper& a) const noexcept { return arr == a.arr; }
-
-    constexpr auto& at(size_type pos) { return arr.at(pos); }
-    constexpr const auto& at(size_type pos) const { return arr.at(pos); }
-
-    constexpr auto& front() noexcept { return arr.front(); }
-    constexpr const auto& front() const noexcept { return arr.front(); }
-
-    constexpr auto& back() noexcept { return arr.back(); }
-    constexpr const auto& back() const noexcept { return arr.back(); }
-
-    constexpr pointer data() noexcept { 
-        return reinterpret_cast<pointer>(&arr); 
-    }
-    constexpr const_pointer data() const noexcept { 
-        return reinterpret_cast<const_pointer>(&arr); 
-    }
-
-    constexpr iterator begin() noexcept { return data(); }
-    constexpr const_iterator begin() const noexcept { return data(); }
-    constexpr const_iterator cbegin() const noexcept { return data(); }
-
-    constexpr iterator end() noexcept { return data() + Count; }
-    constexpr const_iterator end() const noexcept { return data() + Count; }
-    constexpr const_iterator cend() const noexcept { return data() + Count; }
-
-    constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
-    constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-    constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
-
-    constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-    constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
-    constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
-};
-
-} // namespace multiarr
-
-template<typename T, std::size_t... Ns>
-using MultiArray = multiarr::MultiArrayWrapper<T, Ns...>;
-

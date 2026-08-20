@@ -103,14 +103,14 @@ private:
 
 #if !defined(LEAF_ENABLE_BMI2)
     // magic bitboards for bishop and rook
-    static const MultiArray<uint64_t, 64> _magics_bishop, 
+    static const std::array<uint64_t, 64> _magics_bishop, 
                                        _magics_rook;
 #endif // !LEAF_ENABLE_BMI2
 
     /* relevant occupancy bits count for bishop and rook - later used in 'mIndexHash' hash function
     *  while shifting product number
     */
-    static const MultiArray<uint8_t, 64> _relv_bits_cnt_bishop, 
+    static const std::array<uint8_t, 64> _relv_bits_cnt_bishop, 
                                       _relv_bits_cnt_rook;
 
     /* look-up tables of rook and bishop attacks in Plain Magic Bitboards implementation 
@@ -121,6 +121,6 @@ private:
     static MultiArray<uint64_t, 64, 512>  _mbishop_att;
 
     // relevant occupancy pre-computed masks
-    static const MultiArray<uint64_t, 64> _relv_occupancy_bishop, 
+    static const std::array<uint64_t, 64> _relv_occupancy_bishop, 
                                        _relv_occupancy_rook;
 };

@@ -34,7 +34,7 @@ _DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 305.347f, 270.f, 340.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 489.203f, 450.f, 550.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 916.466f, 820.f, 980.f, 1.1f);
 
-inline MultiArray<const int32_t*, 5> PieceValue = {
+inline std::array<const int32_t*, 5> PieceValue = {
     reinterpret_cast<const int32_t*>(&PawnValue), 
     reinterpret_cast<const int32_t*>(&KnightValue), 
     reinterpret_cast<const int32_t*>(&BishopValue), 
@@ -55,7 +55,7 @@ private:
     static sc::Score queensStaticEval(const Position& pos, enumColor side);
     static sc::Score kingsStaticEval(const Position& pos, enumColor side);
 
-    static MultiArray<int16_t, 64>
+    static std::array<int16_t, 64>
         _mg_pawn_tables, 
         _mg_knight_tables, 
         _mg_bishop_tables, 

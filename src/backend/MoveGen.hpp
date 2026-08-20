@@ -24,19 +24,25 @@
 class MoveGen {
 public:
 
-    /*
-    *    Generation mode:
-    *    <CAPTURES> - all pseudo-legal captures and queen promotions
-    *    <TACTICALS> - all pseudo-legal captures and all promotions
-    *    <QUIETS> - all pseudo-legal non-captures and promotions without queen promotions
-    *    <ALL> - all pseudo-legal moves in given position
-    */
     enum enumGenMoves : uint8_t {
-        CAPTURES,
-        TACTICALS,
-        QUIETS,
-        ALL,
+        CAPTURES                   = 1,
+        NON_CAPTURES               = 1 << 1,
+        QUEENPROMOS                = 1 << 2,
+        UNDERPROMOS                = 1 << 3,
+        TACTICALS_ONLY_QUEENPROMOS = CAPTURES | QUEENPROMOS,
+        TACTICALS_ALL_PROMOS       = CAPTURES | QUEENPROMOS | UNDERPROMOS,
+        QUIETS_NO_PROMOS           = NON_CAPTURES,
+        QUIETS_ONLY_UNDERPROMOS    = NON_CAPTURES | UNDERPROMOS,
+        ALL                        = CAPTURES | NON_CAPTURES | QUEENPROMOS | UNDERPROMOS
     };
+
+    /*
+    *   Generation mode:
+    *   <CAPTURES> - all pseudo-legal captures and queen promotions
+    *   <TACTICALS> - all pseudo-legal captures and all promotions
+    *   <QUIEST> - all pseudo-legal non-captures and promotions without queen promotions
+    *   <ALL> - all pseudo-legal moves in given position
+    */
 
     template <enumGenMoves Moves2Gen>
     static void generatePseudoLegalMoves(const Position& pos, ml::MoveList& move_list);
@@ -49,3 +55,8 @@ public:
 
     _NODISCARD static bool isAnyCapture(Position& pos);
 };
+
+constexpr MoveGen::enumGenMoves operator|(MoveGen::enumGenMoves node0, MoveGen::enumGenMoves node1) {
+    return static_cast<MoveGen::enumGenMoves>(static_cast<int>(node0) | static_cast<int>(node1));
+}
+

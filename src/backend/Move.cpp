@@ -247,7 +247,7 @@ template <>
 template <bool onlyQuiets>
 bool Move32b::isPseudoLegal_fromList(const Position& pos) const {
     ml::MoveList mlist;
-    MoveGen::generatePseudoLegalMoves<onlyQuiets ? MoveGen::QUIETS : MoveGen::ALL>(pos, mlist);
+    MoveGen::generatePseudoLegalMoves<onlyQuiets ? MoveGen::QUIETS_ONLY_UNDERPROMOS : MoveGen::ALL>(pos, mlist);
     return mlist.contains(*this);
 }
 

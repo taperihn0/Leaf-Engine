@@ -118,8 +118,8 @@ struct AccumulatorCache {
     void clearBuffers();
 
     Accumulator             accum;
-    MultiArray<FeatureData, 2> added_features;
-    MultiArray<FeatureData, 2> removed_features;
+    std::array<FeatureData, 2> added_features;
+    std::array<FeatureData, 2> removed_features;
     std::size_t                  added_features_cnt   = 0;
     std::size_t                  removed_features_cnt = 0;
     bool                    dirty                = false;

@@ -367,11 +367,11 @@ public:
     struct ReversibleState {
         Square                     ep_sq;
         uint8_t                    halfmove_count;
-        MultiArray<CastlingRights, 2> castling_rights;
+        std::array<CastlingRights, 2> castling_rights;
         // It is not really required to store previous hash key,
         // since it can be recomputed. But keep it here for simplicity and efficiency.
         uint64_t                   hash_key;
-        MultiArray<int16_t, 2>        non_pawn_material;
+        std::array<int16_t, 2>        non_pawn_material;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
@@ -388,15 +388,15 @@ private:
     uint64_t perft(uint depth);
 
     MultiArray<BitBoard, 2, 6>     _piece_bb = {};
-    MultiArray<BitBoard, 2>        _occupied = {};
-    MultiArray<CastlingRights, 2>  _castling_rights = {};
-    MultiArray<Square, 2>          _king_sq = { Square::None, Square::None };
+    std::array<BitBoard, 2>        _occupied = {};
+    std::array<CastlingRights, 2>  _castling_rights = {};
+    std::array<Square, 2>          _king_sq = { Square::None, Square::None };
     Turn                        _s2m = WHITE;
     Square                      _ep_square = Square::None;
     ZHash                       _zhash = ZHash::Undef;
     uint8_t                     _halfmove_count = 0;
     uint16_t                    _fullmove_count = 0;
-    MultiArray<int16_t, 2>         _non_pawn_material = {};
+    std::array<int16_t, 2>         _non_pawn_material = {};
 };
 
 _INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {

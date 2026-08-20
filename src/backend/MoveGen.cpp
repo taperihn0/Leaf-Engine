@@ -38,14 +38,15 @@ _INLINE void generatePromotions(Square origin,
                                 Square target, 
                                 ml::MoveList& move_list) 
 {
-    if constexpr (Moves2Gen == MoveGen::CAPTURES or 
-                  Moves2Gen == MoveGen::TACTICALS) {
+    constexpr bool is_tactical_capture = Capture && (Moves2Gen & MoveGen::CAPTURES);
+    constexpr bool gen_queen = (Moves2Gen & MoveGen::QUEENPROMOS) || is_tactical_capture;
+    constexpr bool gen_under = (Moves2Gen & MoveGen::UNDERPROMOS) || is_tactical_capture;
+
+    if constexpr (gen_queen) {
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::QUEEN));
     }
 
-    if constexpr (Capture or 
-                  Moves2Gen == MoveGen::QUIETS or 
-                  Moves2Gen == MoveGen::TACTICALS) {
+    if constexpr (gen_under) {
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::KNIGHT));
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::BISHOP));
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::ROOK));
@@ -284,7 +285,7 @@ void generatePawnPushes(const Position& pos,
         generatePromotions<Moves2Gen, nonCaptures>(dst - Dir, dst, move_list);
     }
 
-    if constexpr (Moves2Gen == MoveGen::QUIETS) {
+    if constexpr (Moves2Gen & MoveGen::NON_CAPTURES) {
         BitBoard double_pushable = pushable & DoublePushable;
         double_pushable = double_pushable.genShift<Dir>();
         double_pushable &= empties & mask;
@@ -341,11 +342,15 @@ _FORCEINLINE void generatePawnMoves(const Position& pos,
                                     BitBoard empties,
                                     const CacheKingRelated& cache) 
 {
-    if constexpr (Moves2Gen != MoveGen::QUIETS) {
+    if constexpr (Moves2Gen & MoveGen::CAPTURES) {
         generatePawnCaptures<Moves2Gen, LMode, Side>(pos, move_list, mask, enemies, cache);
     }
 
-    generatePawnPushes<Moves2Gen, LMode, Side>(pos, move_list, mask, empties, cache);
+    if constexpr ((Moves2Gen & MoveGen::NON_CAPTURES) || 
+                  (Moves2Gen & MoveGen::QUEENPROMOS) || 
+                  (Moves2Gen & MoveGen::UNDERPROMOS)) {
+        generatePawnPushes<Moves2Gen, LMode, Side>(pos, move_list, mask, empties, cache);
+    }
 }
 
 template <enumColor Side, enumLegality LMode, bool isCapture>
@@ -535,9 +540,9 @@ void generateByColor(const Position& pos,
                      const BitBoard checkers,
                      const CacheKingRelated& cache) 
 {
-    static constexpr bool areCaptures = Moves2Gen != MoveGen::QUIETS;
+    static constexpr bool areCaptures = (Moves2Gen & MoveGen::CAPTURES);
     const BitBoard        empties = ~occupied,
-                          base_gen_mask = Moves2Gen == MoveGen::QUIETS ? empties : enemy_pieces;
+                          base_gen_mask = areCaptures ? enemy_pieces : empties;
     const bool            single_check = checkers.isSingleBit(),
                           multiple_check = checkers and !single_check,
                           check = single_check | multiple_check;
@@ -552,16 +557,16 @@ void generateByColor(const Position& pos,
         BitBoard check_cover_mask = BitBoard::Universe;
         BitBoard base_pieces_mask = base_gen_mask;
 
-		if (check) {
-			if (knight_checker) {
-				check_cover_mask = knight_checker;
+        if (check) {
+            if (knight_checker) {
+                check_cover_mask = knight_checker;
             }
             else  {
-				check_cover_mask = inBetween(cache.ksq, checkers.bitScanForward());
+                check_cover_mask = inBetween(cache.ksq, checkers.bitScanForward());
             }
 
             base_pieces_mask &= check_cover_mask;
-		}
+        }
 
         generatePawnMoves<Moves2Gen, LMode, Side>(pos, move_list, check_cover_mask, enemy_pieces, empties, cache);
 
@@ -584,20 +589,22 @@ void generateMovesInMode(const Position& pos, ml::MoveList& move_list) {
 
     const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 
-    if (side2move == WHITE) {
-        if constexpr (Moves2Gen == MoveGen::ALL) {
-            generateByColor<MoveGen::CAPTURES, LMode, WHITE>(pos, move_list, occupied, enemy_pieces, checkers, cache);
-            generateByColor<MoveGen::QUIETS, LMode, WHITE>  (pos, move_list, occupied, enemy_pieces, checkers, cache);
+    if constexpr ((Moves2Gen & MoveGen::CAPTURES) && (Moves2Gen & MoveGen::NON_CAPTURES)) {
+        constexpr auto tactical_flags = static_cast<MoveGen::enumGenMoves>(Moves2Gen & ~MoveGen::NON_CAPTURES);
+        constexpr auto quiet_flags    = MoveGen::QUIETS_NO_PROMOS;
+
+        if (side2move == WHITE) {
+            generateByColor<tactical_flags, LMode, WHITE>(pos, move_list, occupied, enemy_pieces, checkers, cache);
+            generateByColor<quiet_flags,    LMode, WHITE>(pos, move_list, occupied, enemy_pieces, checkers, cache);
+        } else {
+            generateByColor<tactical_flags, LMode, BLACK>(pos, move_list, occupied, enemy_pieces, checkers, cache);
+            generateByColor<quiet_flags,    LMode, BLACK>(pos, move_list, occupied, enemy_pieces, checkers, cache);
         }
-        else /* Moves2Gen != MoveGen::ALL */ {
+    } 
+    else {
+        if (side2move == WHITE) {
             generateByColor<Moves2Gen, LMode, WHITE>(pos, move_list, occupied, enemy_pieces, checkers, cache);
-        }
-    } else /* side2move == BLACK */ {
-        if constexpr (Moves2Gen == MoveGen::ALL) {
-            generateByColor<MoveGen::CAPTURES, LMode, BLACK>(pos, move_list, occupied, enemy_pieces, checkers, cache);
-            generateByColor<MoveGen::QUIETS, LMode, BLACK>  (pos, move_list, occupied, enemy_pieces, checkers, cache);
-        }
-        else /* Moves2Gen != MoveGen::ALL */ {
+        } else {
             generateByColor<Moves2Gen, LMode, BLACK>(pos, move_list, occupied, enemy_pieces, checkers, cache);
         }
     }
@@ -657,17 +664,21 @@ bool MoveGen::isAnyCapture(Position& pos) {
     });
 }
 
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES> (const Position&, ml::MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS>(const Position&, ml::MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>   (const Position&, ml::MoveList&);
-template void    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>      (const Position&, ml::MoveList&);
-
-template void    MoveGen::generateLegalMoves<MoveGen::CAPTURES> (Position&, ml::MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS>(Position&, ml::MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::QUIETS>   (Position&, ml::MoveList&);
-template void    MoveGen::generateLegalMoves<MoveGen::ALL>      (Position&, ml::MoveList&);
-
-template Move32b MoveGen::getRandomLegalMove<MoveGen::CAPTURES> (Position&);
-template Move32b MoveGen::getRandomLegalMove<MoveGen::TACTICALS>(Position&);
-template Move32b MoveGen::getRandomLegalMove<MoveGen::QUIETS>   (Position&);
-template Move32b MoveGen::getRandomLegalMove<MoveGen::ALL>      (Position&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::CAPTURES>                  (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS_ALL_PROMOS>      (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS_NO_PROMOS>          (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS_ONLY_UNDERPROMOS>   (const Position&, ml::MoveList&);
+template void    MoveGen::generatePseudoLegalMoves<MoveGen::ALL>                       (const Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::CAPTURES>                  (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::TACTICALS_ALL_PROMOS>      (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::QUIETS_NO_PROMOS>          (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::QUIETS_ONLY_UNDERPROMOS>   (Position&, ml::MoveList&);
+template void    MoveGen::generateLegalMoves<MoveGen::ALL>                       (Position&, ml::MoveList&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::CAPTURES>                  (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::TACTICALS_ALL_PROMOS>      (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::QUIETS_NO_PROMOS>          (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::QUIETS_ONLY_UNDERPROMOS>   (Position&);
+template Move32b MoveGen::getRandomLegalMove<MoveGen::ALL>                       (Position&);

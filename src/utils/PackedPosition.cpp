@@ -93,7 +93,7 @@ PackedPosition PackedPosition::fromExt(const ExtPackedPosition& ext_pack) {
 bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
     assert(output);
 
-    MultiArray<std::byte, _PackedPosBufferSize> mem;
+    std::array<std::byte, _PackedPosBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pos._occupancy_mask;
 
     std::size_t piece_bytes = static_cast<std::size_t>((pos._piece_cnt + 1) / 2);
@@ -110,7 +110,7 @@ bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
 bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos) {
     assert(output);
 
-    MultiArray<std::byte, _PackedPosBufferSize> mem;
+    std::array<std::byte, _PackedPosBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pos._occupancy_mask;
 
     for (std::size_t j = 0; j < MaxNibbles; j++) {
@@ -143,7 +143,7 @@ bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
 
-    MultiArray<Nibble, MaxNibbles> piece_mem;
+    std::array<Nibble, MaxNibbles> piece_mem;
 
     input.read(reinterpret_cast<char*>(piece_mem.data()), piece_bytes);
 
@@ -186,7 +186,7 @@ std::vector<PackedPosition> PackedPosition::fullRead(std::istream& input) {
 std::pair<Square, Square> PackedPosition::getKingsSquares() const {
     BitBoard occ = _occupancy_mask;
 
-    MultiArray<Square, 2> ksq;
+    std::array<Square, 2> ksq;
     SpecialMasks flags;
 
     enumColor side2move = WHITE; // may be BLACK, but we will see
@@ -245,7 +245,7 @@ Turn PackedPosition::getTurn() const {
     return Turn(static_cast<enumColor>(white_to_move));
 }
 
-MultiArray<PackedPosition::Nibble, PackedPosition::MaxNibbles> PackedPosition::getNibbles() const {
+std::array<PackedPosition::Nibble, PackedPosition::MaxNibbles> PackedPosition::getNibbles() const {
     return _pieces;
 }
 
@@ -471,7 +471,7 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
 bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pack) {
     assert(output);
 
-    MultiArray<std::byte, _PackedBufferSize> mem;
+    std::array<std::byte, _PackedBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pack._occupancy_mask;
     
     std::size_t piece_bytes = static_cast<std::size_t>((pack._piece_cnt + 1) / 2);
@@ -510,7 +510,7 @@ bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes + _ClockBufferSize);
 
-    MultiArray<std::byte, MaxNibbles + _ClockBufferSize> details_mem;
+    std::array<std::byte, MaxNibbles + _ClockBufferSize> details_mem;
     input.read(reinterpret_cast<char*>(details_mem.data()), piece_bytes + _ClockBufferSize);
 
     std::size_t i = 0;

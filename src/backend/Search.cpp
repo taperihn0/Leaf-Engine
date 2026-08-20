@@ -136,7 +136,7 @@ void SearchResults::printBestMove() {
     std::cout << '\n';
 }
 
-void SearchResults::print(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::print(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                           uint16_t pv_len, 
                           const TranspositionTable& tt) 
 {
@@ -173,7 +173,7 @@ void SearchResults::printShort() {
 #endif
 }
 
-void SearchResults::printPV(const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
+void SearchResults::printPV(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                             uint16_t pv_len) 
 {
     for (uint16_t i = 0; i < pv_len; i++) {
@@ -573,7 +573,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         // Adjust contempt factor based on a corrected evaluation
         const sc::Score corr_eval = correctedEvalScore(eval, prev_best_score);
 
-        _contempt = unstable ? 0 : static_cast<sc::Score::int_t>(corr_eval / ContemptDiv);
+        _contempt = unstable ? 0 : static_cast<sc::Score::value_type>(corr_eval / ContemptDiv);
 
         // Inject previous PV line to hash table
         refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
@@ -585,9 +585,9 @@ Move32b Search::goIterativeDeepening(Position& pos,
         sc::Score alpha = -sc::Mate;
         sc::Score beta = +sc::Mate;
 
-        if (abs<sc::Score::int_t>(prev_best_score.value()) < sc::Win.value()) {
-            const sc::Score::int_t prev_best_score_abs = abs<sc::Score::int_t>(
-                                                           static_cast<sc::Score::int_t>(prev_best_score));
+        if (abs<sc::Score::value_type>(prev_best_score.value()) < sc::Win.value()) {
+            const sc::Score::value_type prev_best_score_abs = abs<sc::Score::value_type>(
+                                                           static_cast<sc::Score::value_type>(prev_best_score));
             aspiration_win += sq(prev_best_score_abs) / AspirationWindowScoreDiv;
 
             if (d >= AspirationSearchDepth)    {
@@ -987,10 +987,10 @@ sc::Score Search::nmSearch(Position& pos,
         }
     }
 
-    for (int i = 0; i < 2 and i < ply; i++) {
+    for (int i = 0; i < mvorder::ContinuationPlyCount and i < ply; i++) {
         search::NodeInfo* prev_node = node - i - 1;
         prev_node->continuation_subtable_ptr = 
-            &_history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_node->move);
+            &_history_cluster->getContinuationTable().getSubtable(prev_node->side2move, prev_node->move);
     }
 
     /* Reverse Futility Pruning (Static Null Move Pruning) -
@@ -1175,10 +1175,11 @@ sc::Score Search::nmSearch(Position& pos,
                 if (depth <= FutilityDepth and
                     node->moves_searched >= FutilityMoveCount and
                     node->move.isQuiet() and
+                    !node->move.isQueenPromotion() and
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    mvorder::HistoryTablesCluster::centeredQuietScore(node->move_score).value() 
+                                                    node->move_score.centered().value() 
                                                     * FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
@@ -1743,8 +1744,8 @@ _FORCEINLINE bool Search::isTablebaseScore(sc::Score score) const {
                                                           - MaxSelDepth 
                                                           - 15 * TablebasePieceDiffMult) 
                                                         / 16;
-    return score.isValid() and abs<sc::Score::int_t>(
-        static_cast<sc::Score::int_t>(score)) >= TablebaseLowestWinScore;
+    return score.isValid() and abs<sc::Score::value_type>(
+        static_cast<sc::Score::value_type>(score)) >= TablebaseLowestWinScore;
 }
 
 _FORCEINLINE sc::Score Search::applyContempt(sc::Score score, const NodeInfo* node) const {
@@ -1809,12 +1810,12 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
         case sc::Win.value():
         case -sc::Win.value():
             scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::int_t>(scaled_eval, sc::KnownWin.value() - sc::Win.value() - 1, 0);
+                          std::clamp<sc::Score::value_type>(scaled_eval, sc::KnownWin.value() - sc::Win.value() - 1, 0);
             break;
         case sc::KnownWin.value():
         case -sc::KnownWin.value(): 
             scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::int_t>(scaled_eval, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
+                          std::clamp<sc::Score::value_type>(scaled_eval, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
             break;
         default: 
             assert("Invalid endgame score");
@@ -1825,7 +1826,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? EvalEgHalfMovesEvalLimit : EvalHalfMovesEvalLimit;
     const int32_t clock_mult = std::min<int32_t>(halfmoves_left, halfmoves_left_limit);
-    sc::Score::int_t result = static_cast<sc::Score::int_t>(static_cast<int32_t>(scaled_eval) * clock_mult / halfmoves_left_limit);
+    sc::Score::value_type result = static_cast<sc::Score::value_type>(static_cast<int32_t>(scaled_eval) * clock_mult / halfmoves_left_limit);
 
     return result;
 }
@@ -1865,7 +1866,7 @@ _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
 }
 
 void Search::refreshPVinTT(const Position& pos, 
-                           const MultiArray<PvInfo, MaxSelDepth>& root_pv_line, 
+                           const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                            uint16_t pv_len,
                            SearchResultsWrapper& results) 
 {

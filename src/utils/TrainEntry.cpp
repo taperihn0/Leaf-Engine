@@ -143,7 +143,7 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         bullet_entry.pcs[i / 2] |= mask << (4 * (i & 1));
     }
 
-    const sc::Score::int_t white_score = static_cast<sc::Score::int_t>(entry.getWhiteScore());
+    const sc::Score::value_type white_score = static_cast<sc::Score::value_type>(entry.getWhiteScore());
     bullet_entry.score = side2move == WHITE ? white_score : -white_score;
 
     // Result

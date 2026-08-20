@@ -663,7 +663,7 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
-    _LC_PARAM_ATTRIBS const MultiArray<int32_t, 7> SeePieceValue = {
+    _LC_PARAM_ATTRIBS const std::array<int32_t, 7> SeePieceValue = {
         SeePawnValue,
         SeeKnightValue,
         SeeBishopValue,
@@ -679,7 +679,7 @@ int Position::staticExchangeEval(Square org,
             return gain;
     }
     
-    MultiArray<int, 32> gain;
+    std::array<int, 32> gain;
     int i = 0;
 
     const BitBoard bishopsQueens = getBishops() | getQueens();

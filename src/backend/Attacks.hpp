@@ -71,7 +71,7 @@ struct StaticAttackTables {
     }
 
     MultiArray<BitBoard, 2, 64> pawns_attacks_mask;
-    MultiArray<BitBoard, 64> knights_attacks_mask, 
+    std::array<BitBoard, 64> knights_attacks_mask, 
                              kings_attacks_mask;
 };
 

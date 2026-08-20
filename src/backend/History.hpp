@@ -22,13 +22,11 @@
 
 namespace mvorder::mvhist {    
 
-static constexpr int16_t MaxAbsContinuationValue = 8192;
-static constexpr int16_t MaxAbsHistoryValue = 8192;
-
 template <typename T, T MaxAbsValue, typename = std::enable_if_t<std::is_integral_v<T>>>
 class HistoryEntry {
 public:
     using value_type = T;
+    static constexpr value_type MaxEntryAbsValue = MaxAbsValue;
 
     HistoryEntry() = default;
 
@@ -39,14 +37,28 @@ public:
 
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
     _FORCEINLINE static void applyGravityFormula(HistoryEntry& entry, T bonus);
-
-    static constexpr T MaxAbsBound = MaxAbsValue;
 private:
     T _v;
 };
 
+template <typename Derived>
+struct HistoryTableBase {
+    static constexpr auto getMaxAbsValueOfEntry() { 
+        return Derived::Entry::MaxEntryAbsValue; 
+    }
+
+    void clear() {
+        reinterpret_cast<Derived*>(this)->clear();
+    }
+
+    void reduce() {
+        reinterpret_cast<Derived*>(this)->reduce();
+    }
+};
+
 class ContinuationSubtable {
 public:
+    static constexpr int16_t MaxAbsContinuationValue = 8192;
     using Entry = HistoryEntry<int16_t, MaxAbsContinuationValue>;
 
     ContinuationSubtable() = default;
@@ -57,11 +69,9 @@ public:
     ContinuationSubtable& operator=(ContinuationSubtable&&) = delete;
 
     void clear();
-
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
     _FORCEINLINE void update(enumColor side, Move32b move, int16_t bonus);
-
-    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move);
+    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move) const;
 
     Entry* begin();
     Entry* end();
@@ -69,8 +79,10 @@ private:
     MultiArray<Entry, 2, 6, 64> _continuation_subtable;
 };
 
-class ContinuationTable {
+class ContinuationTable final : public HistoryTableBase<ContinuationTable> {
 public:
+    using Entry = ContinuationSubtable::Entry;
+
     ContinuationTable() = default;
     ContinuationTable(const ContinuationTable&) = delete;
     ContinuationTable(ContinuationTable&&) = delete;
@@ -80,22 +92,23 @@ public:
 
     void clear();
     _NODISCARD _FORCEINLINE ContinuationSubtable& getSubtable(enumColor side, Move32b move);
-    _INLINE void reduce(); 
+    _INLINE void reduce();
 private:
     MultiArray<ContinuationSubtable, 2, 2, 6, 64> _continuation_tables;
 };
 
-class HistoryTable {
+class HistoryTable final : public HistoryTableBase<HistoryTable> {
 public:
+    static constexpr int16_t MaxAbsHistoryValue = 8192;
     using Entry = HistoryEntry<int16_t, MaxAbsHistoryValue>;
 
     HistoryTable() = default;
 
     void clear();
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
-    _FORCEINLINE void update(enumColor side, Move32b move, int16_t bonus);
-    _INLINE void reduce(); 
-    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move);
+    _FORCEINLINE void update(enumColor side, Move32b move, Entry::value_type bonus);
+    _INLINE void reduce();
+    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move) const;
 private:
     MultiArray<Entry, 2, 6, 64> _quiets_history;
 };
@@ -119,10 +132,10 @@ _NODISCARD _FORCEINLINE T HistoryEntry<T, MaxAbsValue, _>::value() const noexcep
 template <typename T, T MaxAbsValue, typename _/* = std::enable_if_t<std::is_integral_v<T>> */>
 template <int8_t Sign, typename __ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void HistoryEntry<T, MaxAbsValue, _>::applyGravityFormula(HistoryEntry& entry, T bonus) {
-    const int32_t mbonus = std::min(bonus, MaxAbsBound);
+    const int32_t mbonus = std::min(bonus, MaxAbsValue);
 
     entry._v += static_cast<T>(
-        Sign * mbonus - entry.value() * mbonus / MaxAbsBound
+        Sign * mbonus - entry.value() * mbonus / MaxAbsValue
     );
 }
 
@@ -130,22 +143,23 @@ _INTERNAL void ContinuationSubtable::clear() {
     std::fill(std::begin(_continuation_subtable), std::end(_continuation_subtable), 0);
 }
 
-_FORCEINLINE std::pair<Piece::uint_t, Square> extractMoveIndexes(Move32b move) {
+_FORCEINLINE std::tuple<Piece::uint_t, Square, bool> extractMoveIndexes(Move32b move) {
     const Piece::uint_t piece = index(move.getPiece());
     const Square to = move.getTarget();
-    return std::make_pair(piece, to);
+    const bool capture = move.isCapture();
+    return std::make_tuple(piece, to, capture);
 }
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void ContinuationSubtable::update(enumColor side, Move32b move, int16_t bonus) {
-    const auto& [piece, to] = extractMoveIndexes(move);
+    const auto& [piece, to, __] = extractMoveIndexes(move);
     Entry& entry = _continuation_subtable[side][piece][to];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
 
-_FORCEINLINE ContinuationSubtable::Entry::value_type ContinuationSubtable::getValue(enumColor side, Move32b move) {
-    const auto& [piece, to] = extractMoveIndexes(move);
-    Entry& entry = _continuation_subtable[side][piece][to];
+_FORCEINLINE ContinuationSubtable::Entry::value_type ContinuationSubtable::getValue(enumColor side, Move32b move) const {
+    const auto& [piece, to, _] = extractMoveIndexes(move);
+    const Entry& entry = _continuation_subtable[side][piece][to];
     return entry.value();
 }
 
@@ -163,8 +177,8 @@ _INTERNAL void ContinuationTable::clear() {
 }
 
 _NODISCARD _FORCEINLINE ContinuationSubtable& ContinuationTable::getSubtable(enumColor side, Move32b move) {
-    const auto& [piece, to] = extractMoveIndexes(move);
-    return _continuation_tables[side][move.isCapture()][piece][to];
+    const auto& [piece, to, capture] = extractMoveIndexes(move);
+    return _continuation_tables[side][capture][piece][to];
 }
 
 _INTERNAL void ContinuationTable::reduce() {
@@ -178,8 +192,8 @@ _INTERNAL void HistoryTable::clear() {
 }
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
-_FORCEINLINE void HistoryTable::update(enumColor side, Move32b move, int16_t bonus) {
-    const auto& [piece, to] = extractMoveIndexes(move);
+_FORCEINLINE void HistoryTable::update(enumColor side, Move32b move, Entry::value_type bonus) {
+    const auto& [piece, to, __] = extractMoveIndexes(move);
     Entry& entry = _quiets_history[side][piece][to];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
@@ -189,8 +203,8 @@ _INTERNAL void HistoryTable::reduce() {
         entry.reduce();
 }
 
-_NODISCARD _FORCEINLINE HistoryTable::Entry::value_type HistoryTable::getValue(enumColor side, Move32b move) {
-    const auto& [piece, to] = extractMoveIndexes(move);
+_NODISCARD _FORCEINLINE HistoryTable::Entry::value_type HistoryTable::getValue(enumColor side, Move32b move) const {
+    const auto& [piece, to, _] = extractMoveIndexes(move);
     return _quiets_history[side][piece][to].value();
 }
 

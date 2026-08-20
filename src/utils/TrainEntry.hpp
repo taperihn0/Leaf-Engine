@@ -36,12 +36,12 @@ struct BulletChessBoard {
     _INLINE bool operator!=(const BulletChessBoard& bf) const { return !(*this == bf); }
 
     BitBoard occ;
-    MultiArray<uint8_t, 16> pcs;
+    std::array<uint8_t, 16> pcs;
     int16_t score;
     uint8_t result;
     uint8_t ksq;
     uint8_t opp_ksq;
-    MultiArray<std::byte, 3> __align;
+    std::array<std::byte, 3> __align;
 };
 
 /* TrainingDataEntry is like bullet-format,
@@ -95,7 +95,7 @@ private:
         // Training data that was generated before adding this mark
         // might have this flag set to 'true'.
         bool                  relative = false;
-        MultiArray<std::byte, 2> __align;
+        std::array<std::byte, 2> __align;
     };
 #pragma pack(pop)
 

@@ -26,8 +26,10 @@ class MoveScore final : public sc::util::ScoreBase<MoveScore, int32_t> {
 public:
     friend class sc::util::ScoreBase<MoveScore, int32_t>;
     using Base = sc::util::ScoreBase<MoveScore, int32_t>;
-
     using Base::operator=;
+
+    static constexpr int32_t MinQuietValue = 0;
+    static constexpr int32_t MaxQuietValue = 16384;
 
     MoveScore() = default;
     _INLINE constexpr MoveScore(const MoveScore&) = default;
@@ -35,6 +37,15 @@ public:
         : ScoreBase(s.value()) {}
     _INLINE constexpr MoveScore(int32_t val) noexcept
         : ScoreBase(val) {}
+
+    _NODISCARD _FORCEINLINE int32_t value() const {
+        return _v; 
+    }
+
+    _NODISCARD _FORCEINLINE ml::MoveScore centered() const {
+        ASSERT_NOLOG(_v >= MinQuietValue and _v <= MaxQuietValue);
+        return value() - ml::MoveScore::MaxQuietValue / 2;
+    }
 
     _FORCEINLINE constexpr MoveScore& operator=(const sc::Score& s) noexcept {
         _v = static_cast<const sc::Score::Base&>(s)._v;
@@ -109,7 +120,7 @@ public:
 private:
     static constexpr std::size_t     _MaxSize = MaxNodeMoves;
     std::size_t                      _tail_idx = 0;
-    MultiArray<ScoredMove, _MaxSize> _moves = {};
+    std::array<ScoredMove, _MaxSize> _moves = {};
 };
 
 _INTERNAL void MoveList::sort(std::size_t first, std::size_t end) {

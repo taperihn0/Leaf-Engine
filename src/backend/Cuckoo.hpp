@@ -61,7 +61,7 @@ private:
     struct CuckooEntry {
         uint32_t move_hash;
         Move16b  move16;
-        MultiArray<std::byte, 2> __align;
+        std::array<std::byte, 2> __align;
     };
 
     mem::AlignedUniquePtr<CuckooEntry> _cuckoo_entry_buff;

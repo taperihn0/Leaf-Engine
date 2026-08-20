@@ -33,9 +33,9 @@ public:
     _NODISCARD static ZobristMasks& get();
 
     uint64_t                    black_key;
-    MultiArray<uint64_t, 8>        ep_file_keys;
-    MultiArray<uint64_t, 2>        short_castle_keys;
-    MultiArray<uint64_t, 2>        long_castle_keys;
+    std::array<uint64_t, 8>        ep_file_keys;
+    std::array<uint64_t, 2>        short_castle_keys;
+    std::array<uint64_t, 2>        long_castle_keys;
     MultiArray<uint64_t, 2, 6, 64> piece_keys;
 private:
     ZobristMasks();
