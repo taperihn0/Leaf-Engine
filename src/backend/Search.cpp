@@ -1180,7 +1180,7 @@ sc::Score Search::nmSearch(Position& pos,
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
                                                     mvorder::HistoryTablesCluster::centeredQuietScore(node->move_score).value() 
-                                                    * FutilityScoreMult / 8192;
+                                                    * FutilityScoreMult / (3 * 8192);
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
@@ -1845,7 +1845,7 @@ _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(NodeInfo* parent_node) {
     const Move32b prev_move = parent_node->move;
 
     if (prev_move.isQuiet() and !prev_move.isQueenPromotion()) {
-        const int unorm_score = _history_cluster->getQuietMoveScore(parent_node->side2move, prev_move).value();
+        const int unorm_score = parent_node->move_score.value();
         return unorm_score * RfpQuietPenaltyMult / 8192;
     }
 
