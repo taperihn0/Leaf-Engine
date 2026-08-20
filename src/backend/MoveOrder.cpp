@@ -133,12 +133,6 @@ bool MoveOrder::nextMoveWithPolicy(search::NodeInfo* node,
         assert(Policy != QUIESCENT);
         MoveGen::generatePseudoLegalMoves<MoveGen::QUIETS>(pos, _move_list);
 
-        for (int i = 0; i < ContinuationPlyCount and i < ply; i++) {
-            search::NodeInfo* prev_node = node - i - 1;
-            prev_node->continuation_subtable_ptr = 
-                &_history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_node->move);
-        }
-
         _stage = enumPrivateStage::STAGED_PICK_QUIETS;
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_QUIETS:

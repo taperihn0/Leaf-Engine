@@ -987,6 +987,12 @@ sc::Score Search::nmSearch(Position& pos,
         }
     }
 
+    for (int i = 0; i < 2 and i < ply; i++) {
+        search::NodeInfo* prev_node = node - i - 1;
+        prev_node->continuation_subtable_ptr = 
+            &_history_cluster->continuation_history.getSubtable(prev_node->side2move, prev_node->move);
+    }
+
     /* Reverse Futility Pruning (Static Null Move Pruning) -
     *  basically, when we're doing very well, we can prune.
     *  Idea similar to Standing Pat cutoff in Q-Search.
