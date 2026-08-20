@@ -20,8 +20,6 @@
 
 #include "Move.hpp"
 
-#include <algorithm>
-
 namespace ml {
 
 class MoveScore final : public sc::util::ScoreBase<MoveScore, int32_t> {
@@ -46,134 +44,130 @@ private:
     using Base::_v;
 };
 
+class ScoredMove {
+public:
+    ScoredMove() = default;
+
+    _INLINE constexpr explicit ScoredMove(Move32b move, MoveScore score = MoveScore()) noexcept
+        : _move(move), _score(score) {}
+
+    _INLINE constexpr bool operator==(ScoredMove sm) const noexcept { return _move == sm._move; }
+    _INLINE constexpr bool operator>(ScoredMove sm) const noexcept { return _score > sm._score; }
+
+    _INLINE constexpr Move32b move() const noexcept { return _move; }
+    _INLINE constexpr MoveScore score() const noexcept { return _score; }
+
+    _INLINE constexpr void setMove(Move32b move) noexcept { _move = move; }
+    _INLINE constexpr void setScore(MoveScore score) noexcept { _score = score; }
+
+private:
+    Move32b   _move;
+    MoveScore _score;
+};
+
 class MoveList {
 public:
-    struct Entry {
-        constexpr bool operator==(Entry b) const noexcept {
-            return move == b.move;
-        }
-
-        Move32b   move;
-        MoveScore score;
-    };
-
-    static_assert(is_same<MoveScore::int_t, int32_t>);
+    using Entry = ScoredMove;
 
     MoveList() = default;
 
-    _INLINE void sort(std::size_t first, std::size_t end) {
-        std::sort(_moves.data() + first, _moves.data() + end, _GreaterScore);
-    }
+    _INLINE void sort(std::size_t first, std::size_t end);
+    _INLINE void partialSort(std::size_t first, std::size_t mid, std::size_t end);
 
-    _INLINE void partialSort(std::size_t first, std::size_t mid, std::size_t end) {
-        std::partial_sort(_moves.data() + first, 
-                          _moves.data() + mid, 
-                          _moves.data() + end, 
-                          _GreaterScore);
-    }
+    _INLINE void push(Move32b new_move) { assert(_idx < _MaxSize); _moves[_idx++].setMove(new_move); }
+    _INLINE ScoredMove& getEntry(std::size_t idx) { assert(idx < _idx); return _moves[idx]; }
+    _INLINE std::size_t count() const { return _idx; }
 
-    _INLINE void push(Move32b new_move) {
-        assert(_idx < _MaxSize);
-        _moves[_idx++].move = new_move;
-    }
+    _INLINE bool contains(Move32b m) const { return std::find_if(begin(), end(), [m](ScoredMove e) { return e.move() == m; }) != end(); }
+    _FORCEINLINE void clear() { _idx = 0; }
 
-    _INLINE Entry& getEntry(std::size_t idx) {
-        assert(idx < _idx);
-        return _moves[idx];
-    }
+    _INLINE void print() const;
+    _INLINE void selectBest(std::size_t first_idx, std::size_t end_idx = -1);
 
-    _INLINE Move32b getMove(std::size_t idx) const {
-        assert(idx < _idx);
-        return _moves[idx].move;
-    }
-
-    _INLINE MoveScore getScore(std::size_t idx) const {
-        assert(idx < _idx);
-        return _moves[idx].score;
-    }
-
-    _INLINE std::size_t count() const {
-        return _idx;
-    }
-
-    _INLINE bool contains(Move32b m) const {
-        return std::find_if(_moves.data(), _moves.data() + _idx, 
-            [m](Entry e) { 
-                return e.move == m; 
-            }) != _moves.data() + _idx;
-    }
-
-    _INLINE void clear() { _idx = 0; }
-
-    void print() const {
-        for (std::size_t i = 0; i < _idx; i++)
-            _moves[i].move.print(), std::cout << '\n';
-    }
-
-    void selectSort(std::size_t first_ind);
-
-    _INLINE Move32b getRandomMove() const {
-        if (!_idx) 
-            return NullMove;
-
-        std::size_t random_idx = rnd::random<std::size_t>(0, _idx - 1);
-        return _moves[random_idx].move;
-    }
+    _INLINE Move32b getRandomMove() const;
 
     template <typename Pred, 
               typename = std::enable_if_t<std::is_invocable_v<
-                                            std::remove_reference_t<Pred>, Entry>
+                                            std::remove_reference_t<Pred>, ScoredMove>
                                          >
     >
-    _INLINE bool any(Pred&& pred) const {
-        for (std::size_t i = 0; i < _idx; i++) {
-            if (pred(_moves[i]))
-                return true;
-        }
-
-        return false;
-    }
+    _INLINE bool any(Pred&& pred) const;
 
     template <typename Pred, 
               typename = std::enable_if_t<std::is_invocable_v<
-                                            std::remove_reference_t<Pred>, Entry>
+                                            std::remove_reference_t<Pred>, ScoredMove>
                                          >
     >
-    _INLINE MoveList& remove(Pred&& pred) {
-        auto last = std::remove_if(_moves.begin(), 
-                                   std::next(_moves.begin(), _idx), 
-                                   pred);
+    _INLINE MoveList& remove(Pred&& pred);
 
-        _idx = std::distance(_moves.begin(), last);
-        return *this;
-    }
+    _INLINE ScoredMove* begin() { return _moves.data(); }
+    _INLINE ScoredMove* end() { return _moves.data() + _idx; }
+    _INLINE const ScoredMove* begin() const { return _moves.data(); }
+    _INLINE const ScoredMove* end() const { return _moves.data() + _idx; }
 
 private:
     static constexpr std::size_t _MaxSize = MaxNodeMoves;
 
-    inline static const constexpr auto _GreaterScore = [](Entry a, Entry b) _LAMBDA_FORCEINLINE {
-        return a.score > b.score;
-    };
-
-    std::size_t                   _idx = 0;
-    MultiArray<Entry, _MaxSize> _moves = {};
+    std::size_t                      _idx = 0;
+    MultiArray<ScoredMove, _MaxSize> _moves = {};
 };
 
-_INLINE void MoveList::selectSort(std::size_t first_ind) {
-    assert(first_ind < _idx);
+_INLINE void MoveList::sort(std::size_t first, std::size_t end) {
+    std::sort(_moves.data() + first, _moves.data() + end, std::greater<ScoredMove>{});
+}
 
-    MoveScore best = _moves[first_ind].score;
-    std::size_t ind = first_ind;
+_INLINE void MoveList::partialSort(std::size_t first, std::size_t mid, std::size_t end) {
+    std::partial_sort(_moves.data() + first, 
+                      _moves.data() + mid, 
+                      _moves.data() + end, 
+                      std::greater<ScoredMove>{});
+}
 
-    for (std::size_t i = first_ind + 1; i < _idx; i++) {
-        if (_moves[i].score > best) {
-            best = _moves[i].score;
-            ind = i;
+_INLINE void MoveList::print() const {
+    for (const auto& m : *this)
+        m.move().print(), std::cout << '\n';
+}
+
+_INLINE void MoveList::selectBest(std::size_t first_idx, std::size_t end_idx) {
+    assert(first_idx < end_idx);
+    assert(end_idx <= _idx);
+
+    ScoredMove best = _moves[first_idx];
+    std::size_t idx = first_idx;
+
+    for (std::size_t i = first_idx + 1; i < end_idx and i < _idx; i++) {
+        if (_moves[i] > best) {
+            best = _moves[i];
+            idx = i;
         }
     }
 
-    std::swap(_moves[ind], _moves[first_ind]);
+    std::swap(_moves[idx], _moves[first_idx]);
+}
+
+_INLINE Move32b MoveList::getRandomMove() const {
+    if (!_idx) 
+        return NullMove;
+
+    std::size_t random_idx = rnd::random<std::size_t>(0, _idx - 1);
+    return _moves[random_idx].move();
+}
+
+template <typename Pred, typename>
+_INLINE bool MoveList::any(Pred&& pred) const {
+    for (const auto& m : *this) {
+        if (pred(m))
+            return true;
+    }
+
+    return false;
+}
+
+template <typename Pred, typename>
+_INLINE MoveList& MoveList::remove(Pred&& pred) {
+    auto last = std::remove_if(begin(), end(), pred);
+    _idx = std::distance(begin(), last);
+    return *this;
 }
 
 } // namespace ml
-

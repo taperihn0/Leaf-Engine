@@ -199,7 +199,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
 
     for (std::size_t i = _quiets_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b& move = entry.move;
+        const Move32b move = entry.move();
 
         assert(move.isQuiet() and !move.isQueenPromotion());
 
@@ -217,10 +217,12 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, ml::MoveScore& score, st
     assert(_iterator <= end_idx);
 
     while (_iterator < _move_list.count() and _iterator < end_idx) {
-        _move_list.selectSort(_iterator);
+        _move_list.selectBest(_iterator/*, end_idx*/);
 
-        move = _move_list.getMove(_iterator);
-        score = _move_list.getScore(_iterator++);
+        const ml::MoveList::Entry entry = _move_list.getEntry(_iterator++);
+
+        move = entry.move();
+        score = entry.score();
 
         if (move != _hash_move and move != _killer_move)
             return true;
@@ -255,8 +257,8 @@ void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
 
     for (std::size_t i = first_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b& move = entry.move;
-        ml::MoveScore& score = entry.score;
+        const Move32b move = entry.move();
+        ml::MoveScore score = entry.score();
 
         assert(move.isCapture() or 
                (move.isPromotion() and 
@@ -281,6 +283,8 @@ void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
             const Piece::uint_t promo = index(move.getPromoPiece());
             score += PromotionScore[promo];
         }
+
+        entry.setScore(score);
     }
 }
 
@@ -298,8 +302,8 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
 
     for (std::size_t i = first_ind; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b& move = entry.move;
-        ml::MoveScore& score = entry.score;
+        const Move32b move = entry.move();
+        ml::MoveScore score = entry.score();
 
         assert(move.isQuiet());
 
@@ -317,6 +321,8 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
 
             score += scaled_cont_value;
         }
+
+        entry.setScore(score);
     }
 }
 

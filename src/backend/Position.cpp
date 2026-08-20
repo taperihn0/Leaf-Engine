@@ -769,7 +769,7 @@ uint64_t Position::perft(unsigned depth) {
     std::stringstream ss;
 
     for (std::size_t i = 0; i < move_list.count(); i++) {
-        Move32b move = move_list.getMove(i);
+        Move32b move = move_list.getEntry(i).move();
 
         if (make(move)) {
             assert(_zhash == ZHash::generateOnFly(*this));

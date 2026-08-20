@@ -653,7 +653,7 @@ bool MoveGen::isAnyCapture(Position& pos) {
     generateLegalMoves<MoveGen::CAPTURES>(pos, ml);
     
     return ml.any([](ml::MoveList::Entry en) {
-        return en.move.isCapture();
+        return en.move().isCapture();
     });
 }
 

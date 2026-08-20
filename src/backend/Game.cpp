@@ -127,7 +127,7 @@ _INLINE bool Game::isAnyResponse() {
     MoveGen::generatePseudoLegalMoves<MoveGen::ALL>(_current_pos, ml);
 
     return ml.any([&](ml::MoveList::Entry en) { 
-        return en.move.isLegal(_current_pos); 
+        return en.move().isLegal(_current_pos); 
     });
 }
 

@@ -1,3 +1,13 @@
+### [commit:577d0f3] feature: Capture-indexed Continuation History & lazy cached Continuation pointers
+```
+Score of leaf-cont-capt-hist-2ply vs leaf-base: 663 - 580 - 999 [0.519] 2242
+... leaf-cont-capt-hist-2ply playing White: 378 - 224 - 519 [0.569] 1121
+... leaf-cont-capt-hist-2ply playing Black: 285 - 356 - 480 [0.468] 1121
+... White vs Black: 734 - 509 - 999 [0.550] 2242
+Elo difference: 12.9 +/- 10.7, LOS: 99.1 %, DrawRatio: 44.6 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:6f1a367] feature: 2-Ply Continuation History
 ```
 Score of leaf-cont-hist-2ply vs leaf-base: 89 - 76 - 152  [0.521] 317
