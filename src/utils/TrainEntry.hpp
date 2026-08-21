@@ -36,12 +36,14 @@ struct BulletChessBoard {
     _INLINE bool operator!=(const BulletChessBoard& bf) const { return !(*this == bf); }
 
     BitBoard occ;
-    std::array<uint8_t, 16> pcs;
-    int16_t score;
-    uint8_t result;
-    uint8_t ksq;
-    uint8_t opp_ksq;
-    std::array<std::byte, 3> __align;
+    std::array<uint8_t, 16> 
+             pcs;
+    int16_t  score;
+    uint8_t  result;
+    uint8_t  ksq;
+    uint8_t  opp_ksq;
+    std::array<std::byte, 3> 
+             __align;
 };
 
 /* TrainingDataEntry is like bullet-format,

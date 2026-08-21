@@ -150,7 +150,7 @@ private:
     bool nextMoveFromList(Move32b& move, ml::MoveScore& score, std::size_t end_idx);
     bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, std::size_t end_idx = maxof<std::size_t>());
 
-    void scoreCaptures(std::size_t first_ind, const Position& pos);
+    void scoreTacticals(std::size_t first_ind, const Position& pos);
     void scoreQuiets(std::size_t first_ind, 
                      enumColor side, 
                      const search::NodeInfo* node, 

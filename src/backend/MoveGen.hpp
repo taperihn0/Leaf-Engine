@@ -36,14 +36,6 @@ public:
         ALL                        = CAPTURES | NON_CAPTURES | QUEENPROMOS | UNDERPROMOS
     };
 
-    /*
-    *   Generation mode:
-    *   <CAPTURES> - all pseudo-legal captures and queen promotions
-    *   <TACTICALS> - all pseudo-legal captures and all promotions
-    *   <QUIEST> - all pseudo-legal non-captures and promotions without queen promotions
-    *   <ALL> - all pseudo-legal moves in given position
-    */
-
     template <enumGenMoves Moves2Gen>
     static void generatePseudoLegalMoves(const Position& pos, ml::MoveList& move_list);
 

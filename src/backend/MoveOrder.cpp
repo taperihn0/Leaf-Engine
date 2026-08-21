@@ -133,7 +133,7 @@ bool MoveOrder::nextMoveWithPolicy(search::NodeInfo* node,
         [[fallthrough]];
     case enumPrivateStage::STAGED_CAPTURES:
         MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(pos, _move_list);
-        scoreCaptures(0, pos);
+        scoreTacticals(0, pos);
 
         _stage = enumPrivateStage::STAGED_PICK_CAPTURES;
         [[fallthrough]];
@@ -285,8 +285,7 @@ _INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, ml::MoveScore& score, std
     return found;
 }
 
-void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
-
+void MoveOrder::scoreTacticals(std::size_t first_ind, const Position& pos) {
     _LC_PARAM_ATTRIBS std::array<const int16_t, 5> CaptureScore = {
         static_cast<int16_t>(MvOrPawnCapturedScore), 
         static_cast<int16_t>(MvOrKnightCapturedScore), 
@@ -300,7 +299,7 @@ void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
         static_cast<int16_t>(MvOrToKnightPromoScore), 
         static_cast<int16_t>(MvOrToBishopPromoScore), 
         static_cast<int16_t>(MvOrToRookPromoScore),
-        static_cast<int16_t>(MvOrToQueenPromoScore)
+        static_cast<int16_t>(MvOrToQueenPromoScore),
     };
 
     for (std::size_t i = first_ind; i < _move_list.count(); i++) {
@@ -310,8 +309,8 @@ void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
 
         assert(move.isCapture() or 
                (move.isPromotion() and 
-                move.isQueenPromotion() and 
-               !move.isLegalAfterMove())); // legality not checked yet
+                move.isQueenPromotion()
+               ));
 
         score = 0;
 
@@ -324,9 +323,6 @@ void MoveOrder::scoreCaptures(std::size_t first_ind, const Position& pos) {
             score = CaptureScore[vic] - piece_ind;
         }
         
-        /* We treat promotions as 'captures' here, since it 
-        *  is obviously a tactical move.
-        */
         if (move.isPromotion()) {
             const Piece::uint_t promo = index(move.getPromoPiece());
             score += PromotionScore[promo];
@@ -347,7 +343,7 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
 
         const Move32b move = entry.move();
-        assert(move.isQuiet());
+        assert(move.isQuiet() or move.isUnderPromotion());
 
         const auto& hist_table = _history_cluster->getHistoryTable();
 
@@ -363,6 +359,11 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
             const int32_t scaled_cont_value = getContinuationPlyScale(j) * cont_value / 1024;
 
             score += scaled_cont_value;
+        }
+
+        if (move.isUnderPromotion()) {
+            const Piece::uint_t promo = index(move.getPromoPiece());
+            score -= (5 - promo);
         }
 
         entry.setScore(score);  
@@ -390,7 +391,7 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
         _stage = enumPrivateStage::ONCEGEN_PICK_CAPTURES;
 
         MoveGen::generateLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(pos, _move_list);
-        scoreCaptures(0, pos);
+        scoreTacticals(0, pos);
 
         _quiets_ind = _move_list.count();
         MoveGen::generateLegalMoves<MoveGen::QUIETS_ONLY_UNDERPROMOS>(pos, _move_list);
@@ -418,11 +419,13 @@ bool MoveOrder::nextMoveFromOnceGen(Position& pos,
 }
 
 _NODISCARD _FORCEINLINE ml::MoveScore MoveOrder::outputMoveScore(Move32b move, ml::MoveScore s) {
-    if (move.isCapture() or move.isPromotion())
+    if (move.isCapture() or move.isQueenPromotion())
         return s;
 
-    return ml::MoveScore::MaxQuietValue / 2 + 
-           ml::MoveScore::MaxQuietValue / 2 * s.value() / _history_cluster->getMaxTotalAbsValue();
+    s = ml::MoveScore::MaxQuietValue / 2 + 
+        ml::MoveScore::MaxQuietValue / 2 * s.value() / _history_cluster->getMaxTotalAbsValue();
+
+    return s;
 }
 
 _NODISCARD enumStage MoveOrder::getStage() const {

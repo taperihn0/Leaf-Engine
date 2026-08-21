@@ -43,7 +43,7 @@ public:
     }
 
     _NODISCARD _FORCEINLINE ml::MoveScore centered() const {
-        ASSERT_NOLOG(_v >= MinQuietValue and _v <= MaxQuietValue);
+        assert(_v >= MinQuietValue and _v <= MaxQuietValue);
         return value() - ml::MoveScore::MaxQuietValue / 2;
     }
 

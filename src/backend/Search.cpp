@@ -1179,8 +1179,8 @@ sc::Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    node->move_score.centered().value() 
-                                                    * FutilityScoreMult / 8192;
+                                                    node->move_score.centered().value() * 
+                                                    FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
                         node->move_picker.skipQuiets();
