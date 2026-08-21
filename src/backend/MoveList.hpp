@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Move.hpp"
+#include "Score.hpp"
 
 namespace ml {
 
@@ -62,18 +63,18 @@ public:
 
     MoveList() = default;
 
-    void sort(std::size_t first, std::size_t end);
-    void partialSort(std::size_t first, std::size_t mid, std::size_t end);
+    void sort(size_t first, size_t end);
+    void partialSort(size_t first, size_t mid, size_t end);
 
     void push(Move32b new_move);
-    ScoredMove& getEntry(std::size_t idx);
-    _INLINE std::size_t count() const { return _tail_idx; }
+    ScoredMove& getEntry(size_t idx);
+    _INLINE size_t count() const { return _tail_idx; }
 
     bool contains(Move32b m) const;
     _FORCEINLINE void clear() { _tail_idx = 0; }
 
     void print() const;
-    void selectBest(std::size_t idx, std::size_t end_idx = maxof<std::size_t>());
+    void selectBest(size_t idx, size_t end_idx = maxof<size_t>());
 
     Move32b getRandomMove() const;
 
@@ -97,16 +98,16 @@ public:
     _INLINE const ScoredMove* end() const { return _moves.data() + _tail_idx; }
 
 private:
-    static constexpr std::size_t     _MaxSize = MaxNodeMoves;
-    std::size_t                      _tail_idx = 0;
+    static constexpr size_t     _MaxSize = MaxNodeMoves;
+    size_t                      _tail_idx = 0;
     std::array<ScoredMove, _MaxSize> _moves = {};
 };
 
-_INTERNAL void MoveList::sort(std::size_t first, std::size_t end) {
+_INTERNAL void MoveList::sort(size_t first, size_t end) {
     std::sort(_moves.data() + first, _moves.data() + end);
 }
 
-_INTERNAL void MoveList::partialSort(std::size_t first, std::size_t mid, std::size_t end) {
+_INTERNAL void MoveList::partialSort(size_t first, size_t mid, size_t end) {
     std::partial_sort(_moves.data() + first, 
                       _moves.data() + mid, 
                       _moves.data() + end);
@@ -117,7 +118,7 @@ _INLINE void MoveList::push(Move32b new_move) {
     _moves[_tail_idx++].setMove(new_move); 
 }
 
-_INLINE ScoredMove& MoveList::getEntry(std::size_t idx) { 
+_INLINE ScoredMove& MoveList::getEntry(size_t idx) { 
     assert(idx < _tail_idx); 
     return _moves[idx]; 
 }
@@ -134,7 +135,7 @@ _INLINE void MoveList::print() const {
         m.move().print(), std::cout << '\n';
 }
 
-_INLINE void MoveList::selectBest(std::size_t idx, std::size_t end_idx) {
+_INLINE void MoveList::selectBest(size_t idx, size_t end_idx) {
     assert(idx < end_idx);
 
     ScoredMove& best = *std::max_element(_moves.data() + idx,
@@ -147,7 +148,7 @@ _INTERNAL Move32b MoveList::getRandomMove() const {
     if (!_tail_idx) 
         return NullMove;
 
-    const std::size_t random_idx = rnd::random<std::size_t>(0, _tail_idx - 1);
+    const size_t random_idx = rnd::random<size_t>(0, _tail_idx - 1);
     return _moves[random_idx].move();
 }
 

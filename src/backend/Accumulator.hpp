@@ -23,7 +23,7 @@
 
 namespace nn {
 
-static constexpr std::size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
+static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
 class alignas(CachelineSize) Accumulator {
 public:
@@ -61,22 +61,22 @@ public:
                  const int16_t* _RESTRICT weights, 
                  enumColor side, 
                  const uint16_t* _RESTRICT side_active_features,
-                 std::size_t side_active_features_cnt);
+                 size_t side_active_features_cnt);
 
     void update(const PackedNeuralNetwork& network,
                 const Accumulator* _RESTRICT prev_accum,
                 const uint16_t* _RESTRICT added_features,
-                std::size_t added_features_cnt,
+                size_t added_features_cnt,
                 const uint16_t* _RESTRICT removed_features,
-                std::size_t removed_features_cnt,
+                size_t removed_features_cnt,
                 enumColor side);
 
     void update(const int16_t* _RESTRICT weights,
                 const Accumulator* _RESTRICT prev_accum,
                 const uint16_t* _RESTRICT added_features,
-                std::size_t added_features_cnt,
+                size_t added_features_cnt,
                 const uint16_t* _RESTRICT removed_features,
-                std::size_t removed_features_cnt,
+                size_t removed_features_cnt,
                 enumColor side);
 
     void clear(enumColor side);
@@ -120,8 +120,8 @@ struct AccumulatorCache {
     Accumulator             accum;
     std::array<FeatureData, 2> added_features;
     std::array<FeatureData, 2> removed_features;
-    std::size_t                  added_features_cnt   = 0;
-    std::size_t                  removed_features_cnt = 0;
+    size_t                  added_features_cnt   = 0;
+    size_t                  removed_features_cnt = 0;
     bool                    dirty                = false;
 };
 

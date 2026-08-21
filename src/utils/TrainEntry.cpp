@@ -119,25 +119,25 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         rel_own_pieces = rel_own_pieces.swapBytes();
     }
 
-    for (std::size_t i = 0; rel_occ > 0; i++) {
+    for (size_t i = 0; rel_occ > 0; i++) {
         const Square sq(rel_occ.dropForward());
         const BitBoard bb(sq);
 
         uint8_t opp_piece = bb & rel_own_pieces ? 0 : 1;
-        uint8_t val_piece = index(Piece::NONE);
+        uint8_t val_piece = pc::value(Piece::NONE);
 
-        const Square abs_sq = side2move == BLACK ? sqVerticalFlip(sq) : sq;
+        const Square abs_sq = side2move == BLACK ? sq::verticalFlip(sq) : sq;
 
         for (Piece::enumType pc : Piece::PieceTypeList) {
             const BitBoard pc_bb = pos.get(pc, opp_piece ? !side2move : side2move);
 
             if (pc_bb.isOccupiedSq(abs_sq)) {
-                val_piece = index(pc);
+                val_piece = pc::value(pc);
                 break;
             }
         }
 
-        ASSERT(val_piece != index(Piece::NONE), "No piece found");
+        ASSERT(val_piece != pc::value(Piece::NONE), "No piece found");
 
         const uint8_t mask = (opp_piece << 3) | val_piece;
         bullet_entry.pcs[i / 2] |= mask << (4 * (i & 1));
@@ -153,10 +153,10 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
     // King squares
     if (side2move == WHITE) {
         bullet_entry.ksq = pos.getKingSquareBySide(WHITE);
-        bullet_entry.opp_ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
+        bullet_entry.opp_ksq = sq::verticalFlip(pos.getKingSquareBySide(BLACK));
     } 
     else {
-        bullet_entry.ksq = sqVerticalFlip(pos.getKingSquareBySide(BLACK));
+        bullet_entry.ksq = sq::verticalFlip(pos.getKingSquareBySide(BLACK));
         bullet_entry.opp_ksq = pos.getKingSquareBySide(WHITE);
     }
 

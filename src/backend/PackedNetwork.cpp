@@ -39,7 +39,7 @@
 INCBIN(PackedNetwork, DEFAULT_NEURAL_NET_FILE_NAME);
 
 static const void* EmbeddedNetworkAddr = GlobPackedNetworkData;
-static std::size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
+static size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
 
 #elif defined(_USE_EMBEDDED_NEURAL_NET) and defined(_WIN32)
 /* Embed resources on MSVC */
@@ -49,7 +49,7 @@ static std::size_t EmbeddedNetworkSize = GlobPackedNetworkSize;
 
 static auto NeuralNetResource = rh::loadResource(IDR_NNUE);
 static const void* EmbeddedNetworkAddr = NeuralNetResource.data;
-static std::size_t EmbeddedNetworkSize = NeuralNetResource.size;
+static size_t EmbeddedNetworkSize = NeuralNetResource.size;
 
 #endif
 
@@ -104,7 +104,7 @@ bool PackedNeuralNetwork::isValid() const {
     if (!_header.layer_count or _header.layer_size[2] != 1)
         return false;
 
-    for (std::size_t i = 0; i < _header.layer_count; i++) {
+    for (size_t i = 0; i < _header.layer_count; i++) {
         if (!_header.layer_size[i])
             return false;
 
@@ -155,7 +155,7 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
         return false;
     }
 
-    _mem_size = (static_cast<std::size_t>(high_size) << 32) | low_size;
+    _mem_size = (static_cast<size_t>(high_size) << 32) | low_size;
     _file_mem_buf = MapViewOfFile(_maph, FILE_MAP_READ, 0, 0, 0);
 
     if (!_file_mem_buf.value()) {
@@ -180,7 +180,7 @@ bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
         return false;
     }
 
-    _mem_size = static_cast<std::size_t>(st.st_size);
+    _mem_size = static_cast<size_t>(st.st_size);
     _file_mem_buf = mmap(nullptr, _mem_size, PROT_READ, MAP_PRIVATE, _fd, 0);
 
     if (_file_mem_buf == MAP_FAILED) {
@@ -217,8 +217,8 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
     return initLayerWeightsBiases(m);
 }
 
-_INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffer(std::size_t size, const void* data) {
-    const std::size_t align_size = mem::getAlignedUpSize(size, CachelineSize);
+_INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffer(size_t size, const void* data) {
+    const size_t align_size = mem::getAlignedUpSize(size, CachelineSize);
 
     auto aligned_ptr = mem::makeAlignedUnique<std::byte>(align_size, CachelineSize);
 
@@ -260,25 +260,25 @@ uint PackedNeuralNetwork::getAccumulatorSize() const {
     return getLayerSize(0);
 }
 
-uint PackedNeuralNetwork::getLayerSize(std::size_t layer_num) const {
+uint PackedNeuralNetwork::getLayerSize(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
-const int16_t* PackedNeuralNetwork::getLayerWeights(std::size_t layer_num) const {
+const int16_t* PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_weights[layer_num];
 }
 
-const int16_t* PackedNeuralNetwork::getLayerBiases(std::size_t layer_num) const {
+const int16_t* PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_biases[layer_num];
 }
 
-std::size_t PackedNeuralNetwork::getLayerWeightsCount(std::size_t layer_num) const {
+size_t PackedNeuralNetwork::getLayerWeightsCount(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num + 1 < _header.layer_count);
 
-    std::size_t weight_cnt = _header.layer_size[layer_num] * _header.layer_size[layer_num + 1];
+    size_t weight_cnt = _header.layer_size[layer_num] * _header.layer_size[layer_num + 1];
 
     if (layer_num == 1 and _header.dual_hl)
         weight_cnt *= 2;
@@ -286,7 +286,7 @@ std::size_t PackedNeuralNetwork::getLayerWeightsCount(std::size_t layer_num) con
     return weight_cnt;
 }
 
-std::size_t PackedNeuralNetwork::getLayerBiasesCount(std::size_t layer_num) const {
+size_t PackedNeuralNetwork::getLayerBiasesCount(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
@@ -316,7 +316,7 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
         return false;
     }
 
-    const std::size_t in_size = static_cast<std::size_t>(st.st_size);
+    const size_t in_size = static_cast<size_t>(st.st_size);
 
     std::vector<std::byte> buffer(in_size);
     ssize_t read_bytes = read(in_fd, buffer.data(), in_size);
@@ -350,10 +350,10 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
 
 bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
     const int16_t* it = reinterpret_cast<const int16_t*>(m) + sizeof(Header) / sizeof(int16_t);
-    std::size_t byte_offset = sizeof(Header);
+    size_t byte_offset = sizeof(Header);
 
     for (uint layer_num = 0; layer_num + 1 < _header.layer_count; layer_num++) {
-        std::size_t weight_cnt = getLayerWeightsCount(layer_num);
+        size_t weight_cnt = getLayerWeightsCount(layer_num);
 
         _layer_weights[layer_num] = it;
         it += weight_cnt;
@@ -361,7 +361,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
 
         ASSERT_NO_LOG(byte_offset <= _mem_size);
 
-        std::size_t biases_cnt = _header.layer_size[layer_num + 1];
+        size_t biases_cnt = _header.layer_size[layer_num + 1];
 
         _layer_biases[layer_num] = it;
         it += biases_cnt;
@@ -388,7 +388,7 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
     network._file_mem_buf = nullptr;
     network._mem_size = 0;
 
-    for (std::size_t i = 0; i < MaxLayerCount; i++) {
+    for (size_t i = 0; i < MaxLayerCount; i++) {
         _layer_weights[i] = network._layer_weights[i];
         _layer_biases[i] = network._layer_biases[i];
         network._layer_weights[i] = nullptr;

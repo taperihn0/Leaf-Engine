@@ -81,16 +81,16 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     const _max_platf_register_i_t* const _RESTRICT ns2m_base = (_max_platf_register_i_t*)ns2m_accumulator;
     const _max_platf_register_i_t* const weights_base = (_max_platf_register_i_t*)weights;
 
-    assert(reinterpret_cast<std::size_t>(s2m_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(ns2m_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(s2m_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(ns2m_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
 
     // Assert that we won't overflow in int16 range.
 #if defined(_NN_VERIFY_SCRELU_OVERFLOW)
     static constexpr int Int16Max = maxof<int16_t>();
     static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
 
-    for (std::size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         ASSERT_NOLOG(weights[i] >= -MaxWeight and weights[i] <= MaxWeight);
         ASSERT_NOLOG(weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight 
                      and weights[NetworkAccumulatorSizePerSide + i] <= MaxWeight);
@@ -105,7 +105,7 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     }
 #endif
 
-    for (std::size_t i = 0; i < ChunkCount; i++) {
+    for (size_t i = 0; i < ChunkCount; i++) {
         const _max_platf_register_i_t  s2m_clamp = _max_register_min_i16(_max_register_max_i16(s2m_base[i], zero_vec), qa_vec);
         const _max_platf_register_i_t ns2m_clamp = _max_register_min_i16(_max_register_max_i16(ns2m_base[i], zero_vec), qa_vec);
 
@@ -120,7 +120,7 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 
 #else
 
-    for (std::size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         output += screlu(s2m_accumulator[i], 0, NetworkWeightQuant) 
                 * weights[i];
         output += screlu(ns2m_accumulator[i], 0, NetworkWeightQuant) 

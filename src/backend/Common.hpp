@@ -133,7 +133,7 @@
 #define _GNU_TARGET_BMI2_AVX2
 #endif
 
-static constexpr std::size_t CachelineSize = 64;
+static constexpr size_t CachelineSize = 64;
 
 #if (defined(__GNUC__) and !defined(DEBUG)) or \
     defined(_MSC_VER)                          \
@@ -164,10 +164,22 @@ static constexpr std::string_view EngineAuthor = "Szymon Belz";
 #pragma warning(disable: 28020)
 #endif
 
-using uint = unsigned int;
-using byte = uint8_t;
-using ll   = long long;
-using ull  = unsigned long long;
+using uint      = unsigned int;
+using byte      = uint8_t;
+using ll        = long long;
+using ull       = unsigned long long;
+using size_t    = std::size_t;
+using ptrdiff_t = std::ptrdiff_t;
+using uintptr_t = std::uintptr_t;
+using intptr_t  = std::intptr_t;
+using uint8_t   = std::uint8_t;
+using uint16_t  = std::uint16_t;
+using uint32_t  = std::uint32_t;
+using uint64_t  = std::uint64_t;
+using int8_t    = std::int8_t;
+using int16_t   = std::int16_t;
+using int32_t   = std::int32_t;
+using int64_t   = std::int64_t;
 
 template <typename T1, typename T2>
 constexpr bool is_same = std::is_same_v<T1, T2>;
@@ -200,7 +212,7 @@ inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
     return static_cast<uint64_t>(a);
 }
 
-inline constexpr std::size_t operator""_MB(ull mb_count) {
+inline constexpr size_t operator""_MB(ull mb_count) {
     return mb_count * 1024 * 1024;
 }
 
@@ -247,11 +259,6 @@ static constexpr int MaxNodeMoves = 128;
 static constexpr int MaxDepth     = 96;
 static constexpr int MaxSelDepth  = 128;
 static constexpr int MaxGameMoves = 1024;
-
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-_FORCEINLINE constexpr T sq(T x) {
-    return x * x;
-}
 
 template <typename T, typename = std::enable_if_t<is_numeric<T>>>
 _FORCEINLINE constexpr T abs(T x) {

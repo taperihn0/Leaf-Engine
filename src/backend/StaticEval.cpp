@@ -20,6 +20,8 @@
 #include "Search.hpp"
 #include "Position.hpp"
 
+namespace hce {
+
 sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
 
     // Pawnless endgames:
@@ -237,7 +239,7 @@ _INLINE sc::Score StaticEval::pawnsStaticEval(const Position& pos, enumColor sid
 
     while (pawns) {
         const Square sq = pawns.dropForward();
-        res += _mg_pawn_tables[sqBlackPerspectiveFlip(sq, side)];
+        res += _mg_pawn_tables[sq::blackPerspectiveFlip(sq, side)];
     }
 
     return sc::Score(res);
@@ -249,7 +251,7 @@ _INLINE sc::Score StaticEval::knightsStaticEval(const Position& pos, enumColor s
 
     while (knights) {
         const Square sq = knights.dropForward();
-        res += _mg_knight_tables[sqBlackPerspectiveFlip(sq, side)];
+        res += _mg_knight_tables[sq::blackPerspectiveFlip(sq, side)];
     }
 
     return sc::Score(res);
@@ -261,7 +263,7 @@ _INLINE sc::Score StaticEval::bishopsStaticEval(const Position& pos, enumColor s
 
     while (bishops) {
         const Square sq = bishops.dropForward();
-        res += _mg_bishop_tables[sqBlackPerspectiveFlip(sq, side)];
+        res += _mg_bishop_tables[sq::blackPerspectiveFlip(sq, side)];
     }
 
     return sc::Score(res);
@@ -273,7 +275,7 @@ _INLINE sc::Score StaticEval::rooksStaticEval(const Position& pos, enumColor sid
 
     while (rooks) {
         const Square sq = rooks.dropForward();
-        res += _mg_rook_tables[sqBlackPerspectiveFlip(sq, side)];
+        res += _mg_rook_tables[sq::blackPerspectiveFlip(sq, side)];
     }
 
     return sc::Score(res);
@@ -285,7 +287,7 @@ _INLINE sc::Score StaticEval::queensStaticEval(const Position& pos, enumColor si
 
     while (queens) {
         const Square sq = queens.dropForward();
-        res += _mg_queen_tables[sqBlackPerspectiveFlip(sq, side)];
+        res += _mg_queen_tables[sq::blackPerspectiveFlip(sq, side)];
     }
 
     return res;
@@ -293,7 +295,7 @@ _INLINE sc::Score StaticEval::queensStaticEval(const Position& pos, enumColor si
 
 _INLINE sc::Score StaticEval::kingsStaticEval(const Position& pos, enumColor side) {
     const Square ksq = pos.getKingSquareBySide(side);
-    return sc::Score(_mg_king_tables[sqBlackPerspectiveFlip(ksq, side)]);
+    return sc::Score(_mg_king_tables[sq::blackPerspectiveFlip(ksq, side)]);
 }
 
 sc::Score StaticEval::staticEval(const Position& pos) {
@@ -307,3 +309,5 @@ sc::Score StaticEval::staticEval(const Position& pos) {
         + queensStaticEval(pos, side) - queensStaticEval(pos, !side)
         + kingsStaticEval(pos, side) - kingsStaticEval(pos, !side);
 }
+
+} // namespace hce

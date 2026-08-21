@@ -38,7 +38,7 @@
 
 namespace utils {
 
-_INLINE std::size_t getIStreamBytesLeft(std::istream& input) {
+_INLINE size_t getIStreamBytesLeft(std::istream& input) {
     auto curr_bytes = input.tellg();
     input.seekg(0, std::ios::end);
     auto end_bytes = input.tellg();

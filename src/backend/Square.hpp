@@ -58,12 +58,9 @@ public:
         RANK_8
     };
 
-    _INLINE constexpr Square() 
-        : _sq(None) {}
-    _INLINE constexpr Square(uint8_t sq)
-        : _sq(sq) {}
-    _INLINE constexpr Square(enumSquare sq)
-        : _sq(sq) {}
+    _INLINE constexpr Square()  : _sq(None) {}
+    _INLINE constexpr Square(uint8_t sq) : _sq(sq) {}
+    _INLINE constexpr Square(enumSquare sq) : _sq(sq) {}
 
     _INLINE constexpr Square operator=(uint8_t sq) {
         return _sq = sq;
@@ -108,8 +105,10 @@ private:
     uint8_t _sq;
 };
 
+namespace sq {
+
 // flipping square horizontally - a1 becomes a8 and vice versa.
-_NODISCARD static _INLINE Square sqVerticalFlip(Square sq) {
+_NODISCARD static _INLINE Square verticalFlip(Square sq) {
     return sq ^ 56;
 }
 
@@ -117,7 +116,10 @@ _NODISCARD static _INLINE Square sqVerticalFlip(Square sq) {
 *  when 'side' is BLACK, 'sq' is unchanged.
 *  when 'side' is WHITE, 'sq' is flipped vertically.
 */
-_NODISCARD static _INLINE Square sqBlackPerspectiveFlip(Square sq, enumColor side) {
+_NODISCARD static _INLINE Square blackPerspectiveFlip(Square sq, enumColor side) {
     static std::array<int8_t, 2> ConvertVal = { 56, 0 };
     return sq ^ ConvertVal[side];
 }
+
+} // namespace sq
+

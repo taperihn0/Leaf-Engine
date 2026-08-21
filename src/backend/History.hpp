@@ -143,8 +143,8 @@ _INTERNAL void ContinuationSubtable::clear() {
     std::fill(std::begin(_continuation_subtable), std::end(_continuation_subtable), 0);
 }
 
-_FORCEINLINE std::tuple<Piece::uint_t, Square, bool> extractMoveIndexes(Move32b move) {
-    const Piece::uint_t piece = index(move.getPiece());
+_FORCEINLINE std::tuple<Piece::value_type, Square, bool> extractMoveIndexes(Move32b move) {
+    const Piece::value_type piece = pc::value(move.getPiece());
     const Square to = move.getTarget();
     const bool capture = move.isCapture();
     return std::make_tuple(piece, to, capture);

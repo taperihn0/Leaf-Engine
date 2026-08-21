@@ -68,7 +68,7 @@ public:
     void printBestMove();
     void print(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                uint16_t pv_len, 
-               const TranspositionTable& tt);
+               const tt::TranspositionTable& tt);
     void printShort();
     void printPV(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                  uint16_t pv_len);
@@ -86,7 +86,7 @@ public:
     ull               nodes_cnt  = 0,
     // `qnodes_cnt` - nodes count in quiescent search
                       qnodes_cnt = 0;
-    std::size_t       tt_entries = 0;
+    size_t       tt_entries = 0;
     Move32b           best_move  = NullMove;
     clk::milliseconds duration   = 0;
     std::array<ull, MaxDepth + 1> 
@@ -178,7 +178,7 @@ public:
     bool                      check;
     uint8_t                   moves_searched;
     uint8_t                   move_index;
-    TTBound                   bound;
+    tt::TTBound                   bound;
     AccumulatorCluster        cluster;
     std::array<PvInfo, MaxSelDepth> 
                               pv_line;
@@ -324,7 +324,7 @@ enum enumInfoLevel : int8_t {
 
 class Search {
 public:
-    explicit Search(TranspositionTable&& tt);
+    explicit Search(tt::TranspositionTable&& tt);
     ~Search();
     
     Search()                      = delete;
@@ -350,7 +350,7 @@ public:
                                           SearchLimits limits);
     
     void clearHash();
-    void resizeHash(std::size_t tt_size_mb);
+    void resizeHash(size_t tt_size_mb);
     void onNewGame();
 private:
     Move32b goIterativeDeepening(Position& pos, 
@@ -423,7 +423,7 @@ private:
 
     bool isInsufficientMaterial(const Position& pos);
 
-    TranspositionTable         _tt;
+    tt::TranspositionTable         _tt;
     std::unique_ptr<TreeStack> _tree_stack;
     CuckooTables               _cuckoo_tables;
 

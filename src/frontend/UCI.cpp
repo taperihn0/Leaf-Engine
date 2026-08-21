@@ -116,7 +116,7 @@ search::SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstrea
 }
 
 UniversalChessInterface::UniversalChessInterface()
-    : _search(TranspositionTable(DefaultTTSizeMb))
+    : _search(tt::TranspositionTable(tt::DefaultTTSizeMb))
     , _pos(StartposFEN)
 {}
 
@@ -458,7 +458,7 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
         depth = BenchDepth;
 
     clk::Timer timer;
-    std::size_t total_nodes = 0;
+    size_t total_nodes = 0;
 
     timer.go();
 

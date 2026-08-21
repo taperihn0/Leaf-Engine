@@ -28,11 +28,11 @@ static std::filesystem::path DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
 static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDir(
                                                 ::utils::paths::enumDir::NETS_DIRECTORY);
 
-static constexpr std::size_t  MaxLayerCount = 4;
-static constexpr std::size_t  NetworkInputSize = 768;
-static constexpr std::size_t  NetworkHiddenLayerSize = 128;
-static constexpr std::size_t  NetworkOutputSize = 1;
-static constexpr std::size_t  NetworkLayerCount = 3;
+static constexpr size_t  MaxLayerCount = 4;
+static constexpr size_t  NetworkInputSize = 768;
+static constexpr size_t  NetworkHiddenLayerSize = 128;
+static constexpr size_t  NetworkOutputSize = 1;
+static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
 static constexpr int16_t NetworkBiasQuant = 64;
 static constexpr int16_t NetworkOutputScale = 400;
@@ -68,13 +68,13 @@ public:
     bool loadFromFile(std::filesystem::path path);
 
     uint getAccumulatorSize() const;
-    uint getLayerSize(std::size_t layer_num) const;
+    uint getLayerSize(size_t layer_num) const;
 
-    const int16_t* getLayerWeights(std::size_t layer_num) const;
-    const int16_t* getLayerBiases(std::size_t layer_num) const;
+    const int16_t* getLayerWeights(size_t layer_num) const;
+    const int16_t* getLayerBiases(size_t layer_num) const;
 
-    std::size_t getLayerWeightsCount(std::size_t layer_num) const;
-    std::size_t getLayerBiasesCount(std::size_t layer_num) const;
+    size_t getLayerWeightsCount(size_t layer_num) const;
+    size_t getLayerBiasesCount(size_t layer_num) const;
 
     std::string getFilePath() const;
 
@@ -85,7 +85,7 @@ private:
     bool loadFromMemory(const void* m);
 
     /* Create own aligned buffer for embedded network and return handler. */
-    mem::AlignedUniquePtr<std::byte> createAlignedBuffer(std::size_t size, const void* data);
+    mem::AlignedUniquePtr<std::byte> createAlignedBuffer(size_t size, const void* data);
 
     bool initLayerWeightsBiases(const void* m);
     void fromRVal(PackedNeuralNetwork&& network) noexcept;
@@ -103,7 +103,7 @@ private:
     *  to guarantee proper alignment for SIMD operations.
     */
 	mem::AlignedUniquePtr<std::byte>	   _align_buf_handler;
-    std::size_t                                 _mem_size;
+    size_t                                 _mem_size;
     std::optional<void*>                   _file_mem_buf;
     Header                                 _header;
     std::optional<std::string>             _bin_path;

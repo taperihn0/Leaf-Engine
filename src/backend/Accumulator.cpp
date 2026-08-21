@@ -28,12 +28,12 @@ uint16_t Accumulator::featureIndex(Square sq,
 {
     if constexpr (Perspective == BLACK) {
         return static_cast<uint16_t>(!side) * 64 * 6 
-            + index(piece_type) * 64 
-            + static_cast<uint16_t>(sqVerticalFlip(sq));
+            + pc::value(piece_type) * 64 
+            + static_cast<uint16_t>(sq::verticalFlip(sq));
     }
 
     return static_cast<uint16_t>(side) * 64 * 6 
-        + index(piece_type) * 64 
+        + pc::value(piece_type) * 64 
         + static_cast<uint16_t>(sq);
 }
 
@@ -63,7 +63,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 
     MultiArray<uint16_t, 2, 32> side_active_features;
 
-    std::size_t active_features_cnt = 0;
+    size_t active_features_cnt = 0;
 
     for (Piece::enumType piece_type : Piece::PieceTypeList) {
         for (enumColor side : { WHITE, BLACK }) {
@@ -89,7 +89,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
                           const int16_t* _RESTRICT weights, 
                           enumColor side, 
                           const uint16_t* _RESTRICT side_active_features,
-                          std::size_t side_active_features_cnt) 
+                          size_t side_active_features_cnt) 
 {
     assert(biases != nullptr);
     assert(weights != nullptr);
@@ -106,32 +106,32 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     const _max_platf_register_i_t* const _RESTRICT biases_base = (_max_platf_register_i_t*)biases;
     const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
 
-    assert(reinterpret_cast<std::size_t>(values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(biases_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(biases_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
 
-    for (std::size_t i = 0; i < ChunkCount; i++) {
+    for (size_t i = 0; i < ChunkCount; i++) {
         _max_register_aligned_store_i(values_base + i, _max_register_aligned_load_i(biases_base + i));
     }
 
-    for (std::size_t i = 0; i < side_active_features_cnt; i++) {
-        const std::size_t base_offset = side_active_features[i] * ChunkCount;
+    for (size_t i = 0; i < side_active_features_cnt; i++) {
+        const size_t base_offset = side_active_features[i] * ChunkCount;
 
-        for (std::size_t j = 0; j < ChunkCount; j++) {
+        for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
         }
     }
     
 #else // Do not use SIMD Extensions
 
-    for (std::size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = biases[i];
     }
 
-    for (std::size_t i = 0; i < side_active_features_cnt; i++) {
-        const std::size_t base_offset = side_active_features[i] * NetworkAccumulatorSizePerSide;
+    for (size_t i = 0; i < side_active_features_cnt; i++) {
+        const size_t base_offset = side_active_features[i] * NetworkAccumulatorSizePerSide;
 
-        for (std::size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
         }
     }
@@ -142,9 +142,9 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 void Accumulator::update(const PackedNeuralNetwork& network,
                          const Accumulator* _RESTRICT prev_acc,
                          const uint16_t* _RESTRICT added_features,
-                         std::size_t added_features_cnt,
+                         size_t added_features_cnt,
                          const uint16_t* _RESTRICT removed_features,
-                         std::size_t removed_features_cnt,
+                         size_t removed_features_cnt,
                          enumColor side)
 {
     update(network.getLayerWeights(0),
@@ -160,9 +160,9 @@ void Accumulator::update(const PackedNeuralNetwork& network,
 void Accumulator::update(const int16_t* _RESTRICT weights,
                          const Accumulator* _RESTRICT prev_acc,
                          const uint16_t* _RESTRICT added_features,
-                         std::size_t added_features_cnt,
+                         size_t added_features_cnt,
                          const uint16_t* _RESTRICT removed_features,
-                         std::size_t removed_features_cnt,
+                         size_t removed_features_cnt,
                          enumColor side)
 {
     assert(weights != nullptr);
@@ -182,48 +182,48 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     const _max_platf_register_i_t* const _RESTRICT prev_values_base = (_max_platf_register_i_t*)prev_acc->_values[side].data();
     const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
 
-    assert(reinterpret_cast<std::size_t>(values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(prev_values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<std::size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(prev_values_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
 
-    for (std::size_t i = 0; i < ChunkCount; i++) {
+    for (size_t i = 0; i < ChunkCount; i++) {
         _max_register_aligned_store_i(values_base + i, _max_register_aligned_load_i(prev_values_base + i));
     }
 
-    for (std::size_t i = 0; i < removed_features_cnt; i++) {
-        const std::size_t base_offset = removed_features[i] * ChunkCount;
+    for (size_t i = 0; i < removed_features_cnt; i++) {
+        const size_t base_offset = removed_features[i] * ChunkCount;
         
-        for (std::size_t j = 0; j < ChunkCount; j++) {
+        for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_sub_i16(values_base[j], weights_base[base_offset + j]));
         }
     }
 
-    for (std::size_t i = 0; i < added_features_cnt; i++) {
-        const std::size_t base_offset = added_features[i] * ChunkCount;
+    for (size_t i = 0; i < added_features_cnt; i++) {
+        const size_t base_offset = added_features[i] * ChunkCount;
 
-        for (std::size_t j = 0; j < ChunkCount; j++) {
+        for (size_t j = 0; j < ChunkCount; j++) {
             _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
         }
     }
 
 #else // Do not use SIMD Extensions
 
-    for (std::size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
         _values[side][i] = prev_acc->_values[side][i];
     }
 
-    for (std::size_t i = 0; i < removed_features_cnt; i++) {
-        const std::size_t base_offset = removed_features[i] * NetworkAccumulatorSizePerSide;
+    for (size_t i = 0; i < removed_features_cnt; i++) {
+        const size_t base_offset = removed_features[i] * NetworkAccumulatorSizePerSide;
         
-        for (std::size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] -= weights[base_offset + j];
         }
     }
 
-    for (std::size_t i = 0; i < added_features_cnt; i++) {
-        const std::size_t base_offset = added_features[i] * NetworkAccumulatorSizePerSide;
+    for (size_t i = 0; i < added_features_cnt; i++) {
+        const size_t base_offset = added_features[i] * NetworkAccumulatorSizePerSide;
 
-        for (std::size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
+        for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
             _values[side][j] += weights[base_offset + j];
         }
     }

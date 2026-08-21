@@ -32,7 +32,7 @@ namespace opt {
     
 Options::Options() 
     // --- Regular parameters ---
-    : hash_opt(SpinType<ll>(DefaultTTSizeMb / 1_MB, 1, 512)),
+    : hash_opt(SpinType<ll>(tt::DefaultTTSizeMb / 1_MB, 1, 512)),
       clear_hash_opt(),
       syzygy_opt(    "SyzygyPath",    StringType("<empty>")),
       neural_net_opt("NeuralNetPath", StringType(DefaultNeuralNetOptionPath.string()))

@@ -32,7 +32,7 @@
 
 namespace mem {
 
-constexpr static _FORCEINLINE std::size_t getAlignedUpSize(std::size_t size, std::size_t align) {
+constexpr static _FORCEINLINE size_t getAlignedUpSize(size_t size, size_t align) {
     if (size % align == 0)
         return size;
     return size + (align - size % align);
@@ -48,14 +48,14 @@ static _FORCEINLINE void prefetch(const void* addr) {
 #endif // _ENABLE_PREFETCH
 }
 
-_INLINE void* memCopy(void* dst, const void* src, std::size_t cnt) {
+_INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
     std::byte* d = reinterpret_cast<std::byte*>(dst);
     const std::byte* s = reinterpret_cast<const std::byte*>(src);
     std::copy_n(s, cnt, d);
     return dst;
 }
 
-_INLINE void memSet(void* dst, uint8_t ch, std::size_t cnt) {
+_INLINE void memSet(void* dst, uint8_t ch, size_t cnt) {
     std::byte* d = reinterpret_cast<std::byte*>(dst);
     fill(d, d + cnt, std::byte(ch));
 }
@@ -65,7 +65,7 @@ _FORCEINLINE void fill(T* first, T* last, const Tv& value) {
     std::fill(first, last, value);
 }
 
-_NODISCARD _INLINE void* alignedMalloc(std::size_t size, std::size_t alignment) {
+_NODISCARD _INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined(_WIN32)
     void* m = _aligned_malloc(size, alignment);
 #else
@@ -124,7 +124,7 @@ _INTERNAL bool enableLargePagesPrivilegeWin32() {
 }
 #endif
 
-_NODISCARD _INLINE void* largePageAlignedMalloc(std::size_t size) {
+_NODISCARD _INLINE void* largePageAlignedMalloc(size_t size) {
     if (size == 0) {
         throw std::invalid_argument("Invalid allocation size: " + std::to_string(size));
     }
@@ -161,7 +161,7 @@ _NODISCARD _INLINE void* largePageAlignedMalloc(std::size_t size) {
 #endif
 }
 
-_INLINE void pageAlignedFree(void* m, _MAYBE_UNUSED std::size_t size) { 
+_INLINE void pageAlignedFree(void* m, _MAYBE_UNUSED size_t size) { 
     if (!m) return;
 
 #if defined(_WIN32)
@@ -190,13 +190,13 @@ template <typename T>
 using AlignedSharedPtr = std::shared_ptr<T>;
 
 template <typename T>
-_NODISCARD _INTERNAL AlignedUniquePtr<T> makeAlignedUnique(std::size_t count, std::size_t alignment = alignof(T)) {
+_NODISCARD _INTERNAL AlignedUniquePtr<T> makeAlignedUnique(size_t count, size_t alignment = alignof(T)) {
     T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
     return AlignedUniquePtr<T>(p);
 }
 
 template <typename T>
-_NODISCARD _INTERNAL AlignedSharedPtr<T> makeAlignedShared(std::size_t count, std::size_t alignment = alignof(T)) {
+_NODISCARD _INTERNAL AlignedSharedPtr<T> makeAlignedShared(size_t count, size_t alignment = alignof(T)) {
     T* p = reinterpret_cast<T*>(alignedMalloc(sizeof(T) * count, alignment));
     return AlignedSharedPtr<T>(p, AlignedDeleter<T>());
 }
@@ -212,7 +212,7 @@ public:
     PageDeleter& operator=(const PageDeleter&) noexcept = default;
     PageDeleter& operator=(PageDeleter&&) noexcept = default;
 
-    explicit PageDeleter(std::size_t size) noexcept
+    explicit PageDeleter(size_t size) noexcept
         : _size(size) {}
 
     void operator()(T* p) const {
@@ -220,15 +220,15 @@ public:
             pageAlignedFree(reinterpret_cast<T*>(p), _size);
     }
 private:
-    std::size_t _size;
+    size_t _size;
 };
 
 template <typename T>
 using PageAlignedUniquePtr = std::unique_ptr<T, PageDeleter<T>>;
 
 template <typename T>
-_NODISCARD _INTERNAL PageAlignedUniquePtr<T> makePageAlignedUnique(std::size_t count) {
-    const std::size_t size = sizeof(T) * count;
+_NODISCARD _INTERNAL PageAlignedUniquePtr<T> makePageAlignedUnique(size_t count) {
+    const size_t size = sizeof(T) * count;
     T* p = reinterpret_cast<T*>(largePageAlignedMalloc(size));
     return PageAlignedUniquePtr<T>(p, mem::PageDeleter<T>(size));
 }

@@ -27,6 +27,7 @@
 #include "Memory.hpp"
 #include "Time.hpp"
 #include "Tuning.hpp"
+#include "StaticEval.hpp"
 
 #include <numeric>
 
@@ -378,11 +379,11 @@ private:
     BitBoard getAttackedMaskWithMask(enumColor side, BitBoard occ) const;
 
     void clearPieces();
-    void setGameStatesFromStr(const std::string fen, std::size_t i);
+    void setGameStatesFromStr(const std::string fen, size_t i);
 
     BitBoard getWeakestAttacker(BitBoard bb,
                                 enumColor side,
-                                Piece::uint_t& piece) const;
+                                Piece::value_type& piece) const;
 
     template <bool Root = true>
     uint64_t perft(uint depth);

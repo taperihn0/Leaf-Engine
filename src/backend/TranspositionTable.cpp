@@ -19,6 +19,8 @@
 #include "TranspositionTable.hpp"
 #include "Search.hpp"
 
+namespace tt {
+
 TTEntry::TTEntry()
     : key16(0)
     , key18(0)
@@ -30,7 +32,7 @@ TTEntry::TTEntry()
     , eval(sc::Undef)
 {}
 
-TranspositionTable::TranspositionTable(std::size_t mb_size)
+TranspositionTable::TranspositionTable(size_t mb_size)
     : _mem(getPageAlignedMemoryHandle(mb_size / sizeof(Bucket)))
 {
     ASSERT(isExp2(mb_size), "Transposition table must be size of 2 power");
@@ -40,10 +42,10 @@ TranspositionTable::TranspositionTable(std::size_t mb_size)
     clear();
 }
 
-void TranspositionTable::resize(std::size_t size_mb) {
+void TranspositionTable::resize(size_t size_mb) {
     ASSERT(isExp2(size_mb), "Transposition table must be size of 2 power");
 
-    const std::size_t bucket_cnt = size_mb / sizeof(Bucket);
+    const size_t bucket_cnt = size_mb / sizeof(Bucket);
     _mem = getPageAlignedMemoryHandle(bucket_cnt);
     
     ASSERT(_mem.get() != nullptr, "Failed to allocate memory");
@@ -70,13 +72,12 @@ void TranspositionTable::write(uint64_t node_key64,
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
     Bucket* bucket = _mem.get() + (node_key64 & (_buckets_cnt - 1));
-
     const uint32_t keyhi = static_cast<uint32_t>((node_key64 >> _buckets_pow_2) & 0x3FFFF);
 
     int16_t min_relevance = maxof<int16_t>();
-    std::size_t ind = 0;
+    size_t ind = 0;
 
-    for (std::size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
+    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
         if (bucket->entries[i].getHash() == keyhi or bucket->entries[i].isEmpty()) {
             ind = i;
             break;
@@ -124,12 +125,11 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
     const Bucket* bucket = _mem.get() + (key64 & (_buckets_cnt - 1));
-
     const uint32_t keyhi = static_cast<uint32_t>((key64 >> _buckets_pow_2) & 0x3FFFF);
 
-    std::size_t ind = Bucket::InternalEntriesCnt;
+    size_t ind = Bucket::InternalEntriesCnt;
 
-    for (std::size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
+    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
         if (bucket->entries[i].getHash() == keyhi) {
             ind = i;
             break;
@@ -147,8 +147,6 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     if (entry->depth < node_depth) {
         out_entry.move = entry->move;
         out_entry.eval = entry->eval;
-        //out_entry.score = entry->score.isMateScore() ? entry->score : sc::Undef;
-        //return entry->score.isMateScore();
         return false;
     }
 
@@ -184,7 +182,7 @@ void TranspositionTable::printDebug() {
 }
 #endif
 
-std::size_t TranspositionTable::getEntriesCount() const {
+size_t TranspositionTable::getEntriesCount() const {
     return _buckets_cnt * Bucket::InternalEntriesCnt;
 }
 
@@ -200,7 +198,7 @@ void TranspositionTable::clearHashfull() {
     _hits = 0;
 }
 
-mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(std::size_t bucket_cnt) {
+mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
     auto m = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
 
 #if defined(__GNUC__) and !defined(_WIN32)
@@ -211,3 +209,5 @@ mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle
 
     return m;
 }
+
+} // namespace tt

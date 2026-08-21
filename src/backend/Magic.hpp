@@ -64,9 +64,9 @@ public:
 
     _NODISCARD static _FORCEINLINE BitBoard rookAttacks(Square sq, BitBoard occ) {
 #if defined(LEAF_ENABLE_BMI2)
-        const std::size_t sqidx = pextIndexHash(_relv_occupancy_rook[sq], occ);
+        const size_t sqidx = pextIndexHash(_relv_occupancy_rook[sq], occ);
 #else
-        const std::size_t sqidx = mIndexHash(_magics_rook[sq], 
+        const size_t sqidx = mIndexHash(_magics_rook[sq], 
                                         _relv_occupancy_rook[sq] & occ, 
                                         _relv_bits_cnt_rook[sq]);
 #endif

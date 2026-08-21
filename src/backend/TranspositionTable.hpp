@@ -23,11 +23,11 @@
 #include "Move.hpp"
 #include "Memory.hpp"
 
-struct SearchResults;
+namespace tt {
 
-static constexpr std::size_t  EntryTargetSize  = 10;
-static constexpr std::size_t  BucketTargetSize = 32;
-static constexpr std::size_t  EntryKeySize     = 18;
+static constexpr size_t  EntryTargetSize  = 10;
+static constexpr size_t  BucketTargetSize = 32;
+static constexpr size_t  EntryKeySize     = 18;
 static constexpr uint8_t EntryMaxDepth    = 64;
 
 enum class TTBound : uint8_t {
@@ -67,8 +67,8 @@ struct TTEntry {
 static_assert(sizeof(TTEntry) == EntryTargetSize);
 
 struct alignas(BucketTargetSize) Bucket {
-    static constexpr std::size_t InternalEntriesCnt = 3;
-    static constexpr std::size_t AlignmentSize = BucketTargetSize - InternalEntriesCnt * EntryTargetSize;
+    static constexpr size_t InternalEntriesCnt = 3;
+    static constexpr size_t AlignmentSize = BucketTargetSize - InternalEntriesCnt * EntryTargetSize;
 
     std::array<TTEntry, InternalEntriesCnt> entries;
     std::array<std::byte, AlignmentSize> __align;
@@ -77,18 +77,18 @@ struct alignas(BucketTargetSize) Bucket {
 static_assert(sizeof(Bucket) == BucketTargetSize);
 static_assert(sizeof(Bucket) == alignof(Bucket));
 
-static constexpr std::size_t DefaultTTSizeMb = 256_MB;
+static constexpr size_t DefaultTTSizeMb = 256_MB;
 
 class TranspositionTable {
 public:
-    explicit TranspositionTable(std::size_t mb_size = DefaultTTSizeMb);
+    explicit TranspositionTable(size_t mb_size = DefaultTTSizeMb);
     TranspositionTable(TranspositionTable&& tt) = default;
     TranspositionTable& operator=(TranspositionTable&&) = default;
 
     TranspositionTable(const TranspositionTable&) = delete;
     TranspositionTable& operator=(const TranspositionTable&) = delete;
 
-    void resize(std::size_t size_mb);
+    void resize(size_t size_mb);
     void clear();
 
     void write(uint64_t node_key, 
@@ -110,18 +110,20 @@ public:
     void printDebug();
 #endif
 
-    _NODISCARD std::size_t getEntriesCount() const;
+    _NODISCARD size_t getEntriesCount() const;
     _NODISCARD uint16_t getHashfull() const;
 
     void newGeneration();
     void clearHashfull();
 private:
-    mem::PageAlignedUniquePtr<Bucket> getPageAlignedMemoryHandle(std::size_t bucket_cnt);
+    mem::PageAlignedUniquePtr<Bucket> getPageAlignedMemoryHandle(size_t bucket_cnt);
 
     mem::PageAlignedUniquePtr<Bucket> 
             _mem;
-    std::size_t  _buckets_cnt;
+    size_t  _buckets_cnt;
     uint8_t _buckets_pow_2;
     uint8_t _generation;
     ull     _hits;
 };
+
+} // namespace tt

@@ -50,7 +50,7 @@ bool PackedPosition::operator==(const PackedPosition& p) const {
     if (_occupancy_mask != p._occupancy_mask)
         return false;
 
-    std::size_t cmp_bytes = static_cast<std::size_t>((_piece_cnt + 1) / 2);
+    size_t cmp_bytes = static_cast<size_t>((_piece_cnt + 1) / 2);
 
     return !static_cast<bool>(std::memcmp(&_pieces, &p._pieces, cmp_bytes));
 }
@@ -67,9 +67,9 @@ void PackedPosition::print(std::ostream& os) const {
     
     os << "\nNibbles:\n";
     
-    const std::size_t piece_bytes = static_cast<std::size_t>((_piece_cnt + 1) / 2);
+    const size_t piece_bytes = static_cast<size_t>((_piece_cnt + 1) / 2);
 
-    for (std::size_t j = 0; j < piece_bytes; j++) {
+    for (size_t j = 0; j < piece_bytes; j++) {
         os << (_pieces[j].lo & 0x0F) << ' ' 
            << (_pieces[j].hi & 0xF0) << '\n';
     }
@@ -96,8 +96,8 @@ bool PackedPosition::write(std::ostream& output, const PackedPosition& pos) {
     std::array<std::byte, _PackedPosBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pos._occupancy_mask;
 
-    std::size_t piece_bytes = static_cast<std::size_t>((pos._piece_cnt + 1) / 2);
-    std::size_t j = 0;
+    size_t piece_bytes = static_cast<size_t>((pos._piece_cnt + 1) / 2);
+    size_t j = 0;
 
     for (; j < piece_bytes; j++) {
         mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pos._pieces[j]);
@@ -113,7 +113,7 @@ bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos
     std::array<std::byte, _PackedPosBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pos._occupancy_mask;
 
-    for (std::size_t j = 0; j < MaxNibbles; j++) {
+    for (size_t j = 0; j < MaxNibbles; j++) {
         mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pos._pieces[j]);
     }
 
@@ -124,7 +124,7 @@ bool PackedPosition::writeStatic(std::ostream& output, const PackedPosition& pos
 bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
     assert(input);
 
-    std::size_t bytes_left = getIStreamBytesLeft(input);
+    size_t bytes_left = getIStreamBytesLeft(input);
 
     if (!bytes_left)
         return false;
@@ -136,10 +136,10 @@ bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
 
     pos._occupancy_mask = occupied;
 
-    std::size_t piece_cnt = pos._occupancy_mask.popCount();
+    size_t piece_cnt = pos._occupancy_mask.popCount();
     pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
-    std::size_t piece_bytes = static_cast<std::size_t>((piece_cnt + 1) / 2);
+    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes);
 
@@ -147,7 +147,7 @@ bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
 
     input.read(reinterpret_cast<char*>(piece_mem.data()), piece_bytes);
 
-    for (std::size_t i = 0; i < piece_bytes; i++) {
+    for (size_t i = 0; i < piece_bytes; i++) {
         pos._pieces[i] = piece_mem[i];
     }
 
@@ -157,7 +157,7 @@ bool PackedPosition::read(std::istream& input, PackedPosition& pos) {
 bool PackedPosition::readStatic(std::istream& input, PackedPosition& pos) {
     assert(input);
 
-    std::size_t bytes_left = getIStreamBytesLeft(input);
+    size_t bytes_left = getIStreamBytesLeft(input);
 
     if (!bytes_left)
         return false;
@@ -169,7 +169,7 @@ bool PackedPosition::readStatic(std::istream& input, PackedPosition& pos) {
 
     pos._occupancy_mask = occupied;
 
-    std::size_t piece_cnt = pos._occupancy_mask.popCount();
+    size_t piece_cnt = pos._occupancy_mask.popCount();
     pos._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
     assert(bytes_left - sizeof(BitBoard) >= MaxNibbles);
@@ -191,7 +191,7 @@ std::pair<Square, Square> PackedPosition::getKingsSquares() const {
 
     enumColor side2move = WHITE; // may be BLACK, but we will see
 
-    for (std::size_t j = 0; occ > 0; j++) {
+    for (size_t j = 0; occ > 0; j++) {
         Square sq = static_cast<Square>(occ.dropForward());
 
         uint8_t mask = j % 2 ? _pieces[j / 2].hi : _pieces[j / 2].lo;
@@ -226,9 +226,9 @@ uint8_t PackedPosition::getPieceCount() const {
 
 Turn PackedPosition::getTurn() const {
     bool white_to_move = true;
-    const std::size_t piece_cnt = getPieceCount();
+    const size_t piece_cnt = getPieceCount();
 
-    for (std::size_t i = 0; i < piece_cnt; i++) {
+    for (size_t i = 0; i < piece_cnt; i++) {
         if (_pieces[i].lo == BLACK_KING_TO_MOVE) {
             white_to_move = false;
             break;
@@ -330,7 +330,7 @@ ExtPackedPosition ExtPackedPosition::packed(const Position& pos) {
 
     packed._piece_cnt = 0;
 
-    for (std::size_t i = 0; occupied and i < MaxNibbles; i++) {
+    for (size_t i = 0; occupied and i < MaxNibbles; i++) {
         Nibble nibble;
         nibble.lo = 0;
         nibble.hi = 0;
@@ -421,7 +421,7 @@ void ExtPackedPosition::placeNextPieceFromNibble(Position& pos, BitBoard& occupi
         else if (file == Square::FILE_H)
             pos._castling_rights[color].setKingSide(true);
         else
-            assert(false);
+            FAILED_NO_LOG();
 
         break;
     }
@@ -445,7 +445,7 @@ Position ExtPackedPosition::unpacked(const ExtPackedPosition& pack) {
     pos._castling_rights[WHITE].clear();
     pos._castling_rights[BLACK].clear();
 
-    for (std::size_t i = 0; occupied and i < MaxNibbles; i++) {
+    for (size_t i = 0; occupied and i < MaxNibbles; i++) {
         ExtPackedPosition::Nibble nibble = pack._pieces[i];
 
         placeNextPieceFromNibble(pos, occupied, nibble.lo);
@@ -474,8 +474,8 @@ bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pac
     std::array<std::byte, _PackedBufferSize> mem;
     *reinterpret_cast<BitBoard*>(mem.data()) = pack._occupancy_mask;
     
-    std::size_t piece_bytes = static_cast<std::size_t>((pack._piece_cnt + 1) / 2);
-    std::size_t j = 0;
+    size_t piece_bytes = static_cast<size_t>((pack._piece_cnt + 1) / 2);
+    size_t j = 0;
 
     for (; j < piece_bytes; j++) {
         mem[j + sizeof(BitBoard)] = *reinterpret_cast<const std::byte*>(&pack._pieces[j]);
@@ -491,7 +491,7 @@ bool ExtPackedPosition::write(std::ostream& output, const ExtPackedPosition& pac
 bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
     assert(input);
 
-    std::size_t bytes_left = getIStreamBytesLeft(input);
+    size_t bytes_left = getIStreamBytesLeft(input);
 
     if (!bytes_left)
         return false;
@@ -503,17 +503,17 @@ bool ExtPackedPosition::read(std::istream& input, ExtPackedPosition& packed) {
 
     packed._occupancy_mask = occupied;
 
-    std::size_t piece_cnt = packed._occupancy_mask.popCount();
+    size_t piece_cnt = packed._occupancy_mask.popCount();
     packed._piece_cnt = static_cast<uint8_t>(piece_cnt);
 
-    std::size_t piece_bytes = static_cast<std::size_t>((piece_cnt + 1) / 2);
+    size_t piece_bytes = static_cast<size_t>((piece_cnt + 1) / 2);
 
     assert(bytes_left - sizeof(BitBoard) >= piece_bytes + _ClockBufferSize);
 
     std::array<std::byte, MaxNibbles + _ClockBufferSize> details_mem;
     input.read(reinterpret_cast<char*>(details_mem.data()), piece_bytes + _ClockBufferSize);
 
-    std::size_t i = 0;
+    size_t i = 0;
 
     for (; i < piece_bytes; i++) {
         packed._pieces[i] = static_cast<Nibble>(std::to_integer<uint8_t>(details_mem[i]));

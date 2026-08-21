@@ -87,7 +87,7 @@ public:
     void updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
                                  AccumulatorCluster* const accum_cluster);
 private:
-    static constexpr std::size_t _Count = MaxSelDepth;
+    static constexpr size_t    _Count = MaxSelDepth;
     mem::AlignedUniquePtr<NodeInfo> _stack;
 };
 
@@ -138,7 +138,7 @@ void SearchResults::printBestMove() {
 
 void SearchResults::print(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                           uint16_t pv_len, 
-                          const TranspositionTable& tt) 
+                          const tt::TranspositionTable& tt) 
 {
     const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
 
@@ -258,7 +258,7 @@ void SearchResults::printSearchStats() {
     // Move index stats
     std::cout << "\n------ MOVE STATS ------";
 
-    for (std::size_t i = 0; i < MaxNodeMoves / 2; i++) {
+    for (size_t i = 0; i < MaxNodeMoves / 2; i++) {
         const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
         const float ind_reduced_fail_high_rate = move_reduced_cnt[i] > 0 ? static_cast<float>(move_reduced_fail_high_cnt[i]) 
                                                                                               / move_reduced_cnt[i] * 100
@@ -293,7 +293,7 @@ void NodeInfo::clear() {
     check            = false;
     moves_searched   = 0;
     move_index       = 0;
-    bound            = TTBound::NONE;
+    bound            = tt::TTBound::NONE;
     is_cut           = false;
     mate_thread      = false;
 
@@ -313,9 +313,9 @@ void Search::clearHash() {
     _tt.clearHashfull();
 }
 
-void Search::resizeHash(std::size_t tt_size_mb) {
+void Search::resizeHash(size_t tt_size_mb) {
     if (tt_size_mb > 0 and 
-        tt_size_mb != _tt.getEntriesCount() * sizeof(TTEntry)) 
+        tt_size_mb != _tt.getEntriesCount() * sizeof(tt::TTEntry)) 
     {
         _tt.resize(tt_size_mb);
         _tt.clear();
@@ -395,7 +395,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
 
         nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
 
-        for (std::size_t i = 0; i < accum_cache.added_features_cnt; i++) {
+        for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
             nn::FeatureData feature_data = accum_cache.added_features[i];
 
             added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
@@ -409,7 +409,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
                                                                     feature_data.side);
         }
 
-        for (std::size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
+        for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
             nn::FeatureData feature_data = accum_cache.removed_features[i];
 
             removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
@@ -444,7 +444,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
     }
 }
 
-Search::Search(TranspositionTable&& tt) 
+Search::Search(tt::TranspositionTable&& tt) 
     : _tt(std::move(tt))
     , _tree_stack(std::make_unique<TreeStack>())
     , _history_cluster(mem::makeAlignedShared<mvo::HistoryTablesCluster>(1, CachelineSize))
@@ -588,7 +588,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         if (abs<sc::Score::value_type>(prev_best_score.value()) < sc::Win.value()) {
             const sc::Score::value_type prev_best_score_abs = abs<sc::Score::value_type>(
                                                            static_cast<sc::Score::value_type>(prev_best_score));
-            aspiration_win += sq(prev_best_score_abs) / AspirationWindowScoreDiv;
+            aspiration_win += prev_best_score_abs * prev_best_score_abs / AspirationWindowScoreDiv;
 
             if (d >= AspirationSearchDepth)    {
                 alpha = std::max<int16_t>(static_cast<int16_t>(prev_best_score) - aspiration_win, 
@@ -775,7 +775,7 @@ sc::Score Search::nmSearch(Position& pos,
     results.tt_probe_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
 
-    TTEntry tt_entry;
+    tt::TTEntry tt_entry;
     tt_entry.eval = sc::Undef;
     tt_entry.move = NullMove;
     tt_entry.score = sc::Undef;
@@ -849,8 +849,8 @@ sc::Score Search::nmSearch(Position& pos,
                     const sc::Score tb_score = getTablebaseScore(wdl, pos, node, ply);
 
                     _tt.write(hash,
-                              EntryMaxDepth, ply,
-                              TTBound::EXACT,
+                              tt::EntryMaxDepth, ply,
+                              tt::TTBound::EXACT,
                               tb_score, tt_entry.move, tt_entry.eval);
 
                     return tb_score;
@@ -949,7 +949,7 @@ sc::Score Search::nmSearch(Position& pos,
                                             4 * depth / IidDepthDiv,
                                             ply);
 
-            TTEntry iid_entry;
+            tt::TTEntry iid_entry;
             iid_entry.eval = sc::Undef;
             iid_entry.move = NullMove;
             iid_entry.score = sc::Undef;
@@ -985,12 +985,6 @@ sc::Score Search::nmSearch(Position& pos,
                                              -FixedPointMult, FixedPointMult);
             }
         }
-    }
-
-    for (int i = 0; i < mvo::HistoryTablesCluster::ContinuationPlyCount and i < ply; i++) {
-        search::NodeInfo* prev_node = node - i - 1;
-        prev_node->continuation_subtable_ptr = 
-            &_history_cluster->getContinuationTable().getSubtable(prev_node->side2move, prev_node->move);
     }
 
     /* Reverse Futility Pruning (Static Null Move Pruning) -
@@ -1109,11 +1103,11 @@ sc::Score Search::nmSearch(Position& pos,
     node->move_picker.clear();
     node->move_picker.setHashMove(tt_move);
 
-    _STACK_PARAM_ATTRIBS int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
-    _STACK_PARAM_ATTRIBS int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
-    _STACK_PARAM_ATTRIBS int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
-    _STACK_PARAM_ATTRIBS int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
-    _STACK_PARAM_ATTRIBS int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
+    _STACK_PARAM_ATTRIBS const int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
+    _STACK_PARAM_ATTRIBS const int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
+    _STACK_PARAM_ATTRIBS const int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
+    _STACK_PARAM_ATTRIBS const int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
+    _STACK_PARAM_ATTRIBS const int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     node->can_move       = false;
     node->score          = sc::Undef;
@@ -1121,7 +1115,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->best_move      = NullMove;
     node->best_score     = -sc::Infinity;
     node->moves_searched = 0;
-    node->bound          = TTBound::UPPERBOUND;
+    node->bound          = tt::TTBound::UPPERBOUND;
     node->move_score     = sc::Undef;
 
     for (node->move_index = 0; 
@@ -1215,7 +1209,7 @@ sc::Score Search::nmSearch(Position& pos,
                 node->move == tt_move and
                 !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
-                tt_entry.bound == TTBound::LOWERBOUND and
+                tt_entry.bound == tt::TTBound::LOWERBOUND and
                 tt_entry.score < sc::KnownWin and
                 tt_entry.score > -sc::KnownWin) 
             {
@@ -1409,7 +1403,7 @@ sc::Score Search::nmSearch(Position& pos,
 
             if (node->score > alpha) {
                 if (node->score >= beta) {
-                    node->bound = TTBound::LOWERBOUND;
+                    node->bound = tt::TTBound::LOWERBOUND;
 
                     if (node->move.isQuiet() and !node->move.isQueenPromotion())  {
                         node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth, ply, node);
@@ -1427,7 +1421,7 @@ sc::Score Search::nmSearch(Position& pos,
                     break;
                 }
 
-                node->bound = TTBound::EXACT;
+                node->bound = tt::TTBound::EXACT;
                 alpha = node->score;
                 
                 /* Collect Pv from the child */
@@ -1466,7 +1460,7 @@ sc::Score Search::nmSearch(Position& pos,
     
     // detect checkmate or stealmate
     if (!node->can_move) {
-        node->bound = TTBound::EXACT;
+        node->bound = tt::TTBound::EXACT;
         node->best_score = node->check ? -sc::Score::getMateScore(ply)
                                        : getDrawScore(node);
     }
@@ -1527,7 +1521,7 @@ sc::Score Search::qSearch(Position& pos,
     }
 
 #if defined(_TT_PROBE_QSEARCH)
-    TTEntry tt_entry;
+    tt::TTEntry tt_entry;
     tt_entry.eval = sc::Undef;
     tt_entry.move = NullMove;
     tt_entry.score = sc::Undef;
@@ -1542,7 +1536,7 @@ sc::Score Search::qSearch(Position& pos,
 
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
     const bool exact_hit = (!IsPv and tt_hit) or
-                           ( IsPv and tt_hit and tt_entry.bound == TTBound::EXACT);
+                           ( IsPv and tt_hit and tt_entry.bound == tt::TTBound::EXACT);
 
     if (exact_hit) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1601,7 +1595,7 @@ sc::Score Search::qSearch(Position& pos,
 #if defined(_TT_PROBE_QSEARCH)
     const Move16b ttm16b = tt_entry.move;
 
-    if ((!IsPv or tt_entry.bound != TTBound::LOWERBOUND) and 
+    if ((!IsPv or tt_entry.bound != tt::TTBound::LOWERBOUND) and 
         (ttm16b.isPackedCapture(pos) or ttm16b.isQueenPromotion()))
     {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1775,7 +1769,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     sc::Score pawnless_eg_eval = sc::Undef;
 
     if (!SyzygyTablebase::get().isLoaded()) {
-        pawnless_eg_eval = pos.getPawns().isEmpty() ? StaticEval::evaluatePawnlessEndgame(pos)
+        pawnless_eg_eval = pos.getPawns().isEmpty() ? hce::StaticEval::evaluatePawnlessEndgame(pos)
                                                     : sc::Undef;
 
         if (pawnless_eg_eval == sc::Draw)
@@ -1887,7 +1881,7 @@ void Search::refreshPVinTT(const Position& pos,
         assert(depth > 0);
         assert(!pv_move.isNullMove());
 
-        TTEntry tt_entry;
+        tt::TTEntry tt_entry;
         tt_entry.move = NullMove;
 
         const bool tt_hit = _tt.probe(tt_entry, 
@@ -1898,7 +1892,7 @@ void Search::refreshPVinTT(const Position& pos,
         if (!tt_hit or pv_move != tt_entry.move) {
             _tt.write(key,
                       static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
-                      TTBound::EXACT, 
+                      tt::TTBound::EXACT, 
                       score, pv_move, sc::Undef);
         }
         
@@ -1917,7 +1911,7 @@ void Search::refreshPVinTT(const Position& pos,
     const sc::Score score = results.score_cp;
 
     if (!pv_len) {
-        TTEntry tt_entry;
+        tt::TTEntry tt_entry;
         tt_entry.move = NullMove;
 
         const bool tt_hit = _tt.probe(tt_entry,
@@ -1928,7 +1922,7 @@ void Search::refreshPVinTT(const Position& pos,
         if (!tt_hit or root_best_move != tt_entry.move) {
             _tt.write(key,
                       depth, 0,
-                      TTBound::EXACT,
+                      tt::TTBound::EXACT,
                       score, root_best_move, sc::Undef);
         }
     }
@@ -2025,7 +2019,7 @@ bool Search::canRepetitionDraw(const Position& pos,
     if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
         return false;
 
-    std::size_t idx = static_cast<std::size_t>(-1);
+    size_t idx = static_cast<size_t>(-1);
 
     for (int p = ply - 1; 
          p >= 2 and p >= ply - pos.getHalfmoveClock() + 2; 

@@ -20,13 +20,12 @@
 
 #include "Common.hpp"
 #include "Color.hpp"
-#include "StaticEval.hpp"
 
 class Piece {
 public:
-    using uint_t = uint8_t;
+    using value_type = uint8_t;
 
-    enum enumType : uint_t {
+    enum enumType : value_type {
         PAWN,
         KNIGHT,
         BISHOP,
@@ -71,8 +70,8 @@ public:
         else os << _BlacksStr[_type];
     }
 
-    _NODISCARD _INLINE Piece::uint_t value() const {
-        return static_cast<Piece::uint_t>(_type);
+    _NODISCARD _INLINE Piece::value_type value() const {
+        return static_cast<Piece::value_type>(_type);
     }
 
     _NODISCARD _INLINE enumType type() const {
@@ -112,14 +111,15 @@ _INLINE std::ostream& operator<<(std::ostream& os, Piece p) {
     return os;
 }
 
-_NODISCARD _FORCEINLINE constexpr Piece::uint_t index(Piece::enumType p) {
-    return static_cast<Piece::uint_t>(p);
+namespace pc {
+
+_NODISCARD _FORCEINLINE constexpr Piece::value_type value(Piece::enumType p) {
+    return static_cast<Piece::value_type>(p);
 }
 
 _NODISCARD _FORCEINLINE constexpr bool isSlider(Piece::enumType p) {
     return p >= Piece::BISHOP and p <= Piece::QUEEN;
 }
 
-_NODISCARD _FORCEINLINE int pieceValue(Piece::enumType p) {
-    return *PieceValue[index(p)];
-}
+} // namespace pc
+

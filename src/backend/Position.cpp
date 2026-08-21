@@ -51,13 +51,13 @@ Position::Position(std::string_view init_fen)
 {}
 
 void Position::setByFEN(std::string fen) {
-    std::size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
+    size_t first = fen.find_first_of("pnbrqkPNBRQK12345678");
 
     clearPieces();
     
     int x = 0, y = 7;
 
-    for (std::size_t i = first; i < size(fen); i++) {
+    for (size_t i = first; i < size(fen); i++) {
         const char c = fen[i];
 
         if (isdigit(c)) {
@@ -249,7 +249,7 @@ bool Position::operator==(const Position& pos) const {
 }
 
 int Position::getOnBoardMaterialOnFly(enumColor side) const {
-    return getPawnsBySide(side).popCount() * PawnValue + 
+    return getPawnsBySide(side).popCount() * hce::PawnValue + 
            getNonPawnMaterialOnFly(side);
 }
 
@@ -259,7 +259,7 @@ int Position::getOnBoardMaterialOnFly() const {
 }
 
 int Position::getOnBoardMaterial(enumColor side) const {
-    return getPawnsBySide(side).popCount() * PawnValue + getNonPawnMaterial(side);
+    return getPawnsBySide(side).popCount() * hce::PawnValue + getNonPawnMaterial(side);
 }
 
 int Position::getOnBoardMaterial() const {
@@ -267,10 +267,10 @@ int Position::getOnBoardMaterial() const {
 }
 
 int Position::getNonPawnMaterialOnFly(enumColor side) const {
-    return getQueensBySide(side).popCount() * QueenValue +
-           getRooksBySide(side).popCount() * RookValue +
-           getBishopsBySide(side).popCount() * BishopValue +
-           getKnightsBySide(side).popCount() * KnightValue;
+    return getQueensBySide(side).popCount() * hce::QueenValue +
+           getRooksBySide(side).popCount() * hce::RookValue +
+           getBishopsBySide(side).popCount() * hce::BishopValue +
+           getKnightsBySide(side).popCount() * hce::KnightValue;
 }
 
 int Position::getNonPawnMaterialOnFly() const {
@@ -305,8 +305,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
     accum_cache->clearBuffers();
 
-    std::size_t& added_feature_cnt = accum_cache->added_features_cnt;
-    std::size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
+    size_t& added_feature_cnt = accum_cache->added_features_cnt;
+    size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
 
     assert(added_feature_cnt == 0 and removed_feature_cnt == 0);
 
@@ -333,7 +333,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
             _zhash ^= ZHashMasks->piece_keys[!_s2m][captured][dst];
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst, captured, !_s2m);
-            _non_pawn_material[!_s2m] -= captured != Piece::PAWN ? *PieceValue[index(captured)] : 0;
+            _non_pawn_material[!_s2m] -= captured != Piece::PAWN ? hce::getPieceValue(captured): 0;
 
             const Square right_corner_opp = _s2m == BLACK ? Square::SQ_H1 : Square::SQ_H8,
                          left_corner_opp = _s2m == BLACK ? Square::SQ_A1 : Square::SQ_A8;
@@ -363,7 +363,7 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _s2m);
         accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, promo_piece_t, _s2m);
 
-        _non_pawn_material[_s2m] += *PieceValue[index(promo_piece_t)];
+        _non_pawn_material[_s2m] += hce::getPieceValue(promo_piece_t);
     }
     else { // if not a promotion - just move a piece on its own bitboard 
         _piece_bb[_s2m][piece_t].moveBit(org, dst);
@@ -565,7 +565,7 @@ uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
     return new_zhash;
 }
 
-void Position::setGameStatesFromStr(const std::string fen, std::size_t i) {
+void Position::setGameStatesFromStr(const std::string fen, size_t i) {
     std::stringstream ss(fen.substr(i));
     std::string turn, 
                 castling, 
@@ -630,7 +630,7 @@ _INLINE BitBoard xRayAttackers(BitBoard occ, Square sq, BitBoard bishopsQueens, 
 
 _INLINE BitBoard Position::getWeakestAttacker(BitBoard bb,
                                               enumColor side,
-                                              Piece::uint_t& piece) const
+                                              Piece::value_type& piece) const
 {
     for (piece = Piece::PAWN; piece <= Piece::KING; piece++) {
         BitBoard mask = _piece_bb[side][piece] & bb;
@@ -693,8 +693,8 @@ int Position::staticExchangeEval(Square org,
 
     BitBoard attacks = (getAttacksToSquare(sq, !side2move, occ) ^ from) | getAttacksToSquare(sq, side2move, occ);
 
-    Piece::uint_t vic = target;
-    Piece::uint_t att = attacker;
+    Piece::value_type vic = target;
+    Piece::value_type att = attacker;
     gain[i] = SeePieceValue[vic];
 
     vic = att;
@@ -768,7 +768,7 @@ uint64_t Position::perft(unsigned depth) {
 
     std::stringstream ss;
 
-    for (std::size_t i = 0; i < move_list.count(); i++) {
+    for (size_t i = 0; i < move_list.count(); i++) {
         Move32b move = move_list.getEntry(i).move();
 
         if (make(move)) {

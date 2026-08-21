@@ -24,22 +24,22 @@
 
 namespace multiarr {
 
-template<typename T, std::size_t N, std::size_t... Ns>
+template<typename T, size_t N, size_t... Ns>
 struct MultiArray {
     using type = std::array<typename MultiArray<T, Ns...>::type, N>;
 };
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 struct MultiArray<T, N> {
     using type = std::array<T, N>;
 };
 
-template<typename T, std::size_t... Ns>
+template<typename T, size_t... Ns>
 struct MultiArrayWrapper {
     using MultiArray = typename MultiArray<T, Ns...>::type;
 
     using value_type             = T;
-    using size_type              = std::size_t;
+    using size_type              = size_t;
     using difference_type        = std::ptrdiff_t;
     using reference              = value_type&;
     using const_reference        = const value_type&;
@@ -94,5 +94,5 @@ struct MultiArrayWrapper {
 
 } // namespace multiarr
 
-template<typename T, std::size_t... Ns>
+template<typename T, size_t... Ns>
 using MultiArray = multiarr::MultiArrayWrapper<T, Ns...>;

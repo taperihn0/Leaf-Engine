@@ -184,8 +184,10 @@ private:
                                      SMoveScore& move_score,
                                      int ply);
 
+    void updateContinuationPointers(search::NodeInfo* node, int ply);
+
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth, bool hash_move_cutoff);
-    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth, bool hash_move_cutoff);
+    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth);
 
     template <int8_t Sign>
     void updateQuietEntry(Move32b move, 
@@ -195,11 +197,18 @@ private:
                           const search::NodeInfo* node,
                           int ply);
 
-    bool nextMoveFromList(Move32b& move, SMoveScore& score, std::size_t end_idx);
-    bool getNextMoveInfo(Move32b& move, SMoveScore& score, std::size_t end_idx = maxof<std::size_t>());
+    bool nextMoveFromList(Move32b& move, 
+                          SMoveScore& score, 
+                          size_t end_idx);
 
-    void scoreTacticals(std::size_t first_ind, const Position& pos);
-    void scoreQuiets(std::size_t first_ind, 
+    bool getNextMoveInfo(Move32b& move, 
+                         SMoveScore& score, 
+                         size_t end_idx = maxof<size_t>());
+
+    void scoreTacticals(size_t beg_idx, 
+                        const Position& pos);
+
+    void scoreQuiets(size_t beg_idx, 
                      enumColor side, 
                      const search::NodeInfo* node, 
                      int ply);
@@ -223,9 +232,9 @@ private:
 
     static mem::AlignedSharedPtr<HistoryTablesCluster> 
                      _history_cluster;
-    enumPrivateStage _stage = enumPrivateStage::NONE;
-    std::size_t      _idx          = 0;
-    std::size_t      _quiets_idx   = 0;
+    enumPrivateStage _stage        = enumPrivateStage::NONE;
+    size_t      _idx          = 0;
+    size_t      _quiets_idx   = 0;
     Move32b          _hash_move    = NullMove;
     Move32b          _killer_move  = NullMove;
     uint64_t         _killer_move_parent_hash = 0;
@@ -267,6 +276,8 @@ _FORCEINLINE void MoveOrder::skipQuiets() {
 *  =================================
 */
 
+// TODO: change that
+
 _NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(SMoveScore quiet_score) {
     const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * SMoveScore::HalfMaxQuietValue / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
@@ -282,12 +293,12 @@ _NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(SMoveScore cap
 // =================================
 
 template <enumOrderPolicy Policy, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
-uint MoveOrder::getMovesLeft() {
+_INLINE uint MoveOrder::getMovesLeft() {
     return _move_list.count() - _idx;
 }
 
 template <enumOrderPolicy Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
-uint MoveOrder::getTotalMoves() {
+_INLINE uint MoveOrder::getTotalMoves() {
     return static_cast<uint>(_move_list.count());
 }
 

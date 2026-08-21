@@ -140,6 +140,10 @@ _NODISCARD bool MoveOrder::internalNextMove(search::NodeInfo* node,
 
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
+
+        if constexpr (Policy != QUIESCENT)
+            updateContinuationPointers(node, ply);
+
         _stage = enumPrivateStage::STAGED_HASH_MOVE;
         [[fallthrough]];
     case enumPrivateStage::STAGED_HASH_MOVE:
@@ -203,10 +207,11 @@ _NODISCARD bool MoveOrder::internalNextMove(search::NodeInfo* node,
         scoreQuiets(_idx, pos.getTurn(), node, ply);
         return getNextMoveInfo(next_move, move_score);
     default:
-        assert(false);
+        FAILED_NO_LOG();
         break;
     }
 
+    unreachable();
     return false;
 }
 
@@ -225,6 +230,7 @@ _NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
 
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
+        updateContinuationPointers(node, ply);
         _stage = enumPrivateStage::ONCEGEN_HASH_MOVE;
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_HASH_MOVE:
@@ -258,10 +264,11 @@ _NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
         scoreQuiets(_idx, pos.getTurn(), node, ply);
         return getNextMoveInfo(next_move, move_score);
     default:
-        assert(false);
+        FAILED_NO_LOG();
         break;
     }
 
+    unreachable();
     return false;
 }
 
@@ -285,8 +292,10 @@ void MoveOrder::updateQuietEntry(Move32b move,
     const int32_t mhist_bonus = std::min<int32_t>(hist_bonus, MaxAbsHistValue);
     hist_table.update<Sign>(side, move, mhist_bonus);
 
-    for (int i = 0; i < HistoryTablesCluster::ContinuationPlyCount and i < ply; i++) {
+    for (int i = 0; i < HistoryTablesCluster::ContinuationPlyCount and i <= ply; i++) {
         const search::NodeInfo* prev_node = node - i - 1;
+        assert(prev_node->continuation_subtable_ptr != nullptr);
+
         auto& cont_subtable = *prev_node->continuation_subtable_ptr;
 
         const int32_t mcont_bonus = std::min<int32_t>(cont_bonus, MaxAbsContValue);
@@ -307,9 +316,9 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
     const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth, hash_move_cutoff);
     updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
 
-    const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth, hash_move_cutoff);
+    const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth);
 
-    for (std::size_t i = _quiets_idx; i < _move_list.count(); i++) {
+    for (size_t i = _quiets_idx; i < _idx and i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
         const Move32b move = entry.move();
 
@@ -322,38 +331,51 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
     }
 }
 
+void MoveOrder::updateContinuationPointers(search::NodeInfo* node, int ply) {
+    for (int i = 0; i < mvo::HistoryTablesCluster::ContinuationPlyCount and i <= ply; i++) {
+        search::NodeInfo* prev_node = node - i - 1;
+        prev_node->continuation_subtable_ptr = 
+            &_history_cluster->getContinuationTable().getSubtable(prev_node->side2move, prev_node->move);
+    }
+}
+
+// TODO: hash_move_cutoff weight in formula
+
 _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth, 
                                                                                     bool hash_move_cutoff) 
 {
-    const int16_t unscaled_hist_bonus = 
-        MvOrQuietBonusHistoryScore2Coeff * sq(depth) + 
-        MvOrQuietBonusHistoryScore1Coeff * depth - hash_move_cutoff * 0;
+    const int16_t unscaled_hist_bonus = std::max(0, 
+        MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
+        MvOrQuietBonusHistoryScore1Coeff * depth - 
+        4 * hash_move_cutoff * depth
+    );
 
-    const int16_t unscaled_cont_bonus = 
-        MvOrContBonusHistoryScore2Coeff * sq(depth) + 
-        MvOrContBonusHistoryScore1Coeff * depth  - hash_move_cutoff * 0;
+    const int16_t unscaled_cont_bonus = std::max(0, 
+        MvOrContBonusHistoryScore2Coeff * depth * depth + 
+        MvOrContBonusHistoryScore1Coeff * depth - 
+        4 * hash_move_cutoff * depth
+    );
 
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
 }
 
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth, 
-                                                                                      bool hash_move_cutoff) 
+_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) 
 {
     const int16_t unscaled_hist_penalty = 
-        MvOrQuietBonusHistoryScore2Coeff * sq(depth) + 
-        MvOrQuietBonusHistoryScore1Coeff * depth - hash_move_cutoff * 0;
+        MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
+        MvOrQuietBonusHistoryScore1Coeff * depth;
 
     const int16_t unscaled_cont_penalty = 
-        MvOrContBonusHistoryScore2Coeff * sq(depth) + 
-        MvOrContBonusHistoryScore1Coeff * depth  - hash_move_cutoff * 0;
+        MvOrContBonusHistoryScore2Coeff * depth * depth + 
+        MvOrContBonusHistoryScore1Coeff * depth;
 
     return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024);
 }
 
-/* Search for another move in a `_move_list` starting from current `_iterator`
-*  up to the possible `end_idx` position.
-*/
-_INLINE bool MoveOrder::nextMoveFromList(Move32b& move, SMoveScore& score, std::size_t end_idx) {
+_INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 
+                                         SMoveScore& score, 
+                                         size_t end_idx) 
+{
     assert(_idx <= end_idx);
 
     while (_idx < _move_list.count() and _idx < end_idx) {
@@ -371,15 +393,19 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, SMoveScore& score, std::
     return false;
 }
 
-_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, SMoveScore& score, std::size_t end_idx) {
+_INLINE bool MoveOrder::getNextMoveInfo(Move32b& move, 
+                                        SMoveScore& score, 
+                                        size_t end_idx) 
+{
     const bool found = nextMoveFromList(move, score, end_idx);
     score = getOutputMoveScore(move, score);
     return found;
 }
 
-void MoveOrder::scoreTacticals(std::size_t first_ind, const Position& pos) {
-    for (std::size_t i = first_ind; i < _move_list.count(); i++) {
+void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
+    for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
+
         const Move32b move = entry.move();
         ml::MoveScore score = entry.score();
 
@@ -391,10 +417,10 @@ void MoveOrder::scoreTacticals(std::size_t first_ind, const Position& pos) {
         score = 0;
 
         if (move.isEnPassant()) {
-            score = getCapturedScore(Piece::PAWN) - index(Piece::PAWN);
+            score = getCapturedScore(Piece::PAWN) - pc::value(Piece::PAWN);
         }
         else if (move.isCapture()) {
-            const Piece::uint_t piece_ind = index(move.getPiece());
+            const Piece::value_type piece_ind = pc::value(move.getPiece());
             const Piece::enumType vic = move.getCaptured(pos);
             score = getCapturedScore(vic) - piece_ind;
         }
@@ -408,14 +434,14 @@ void MoveOrder::scoreTacticals(std::size_t first_ind, const Position& pos) {
     }
 }
 
-void MoveOrder::scoreQuiets(std::size_t first_ind, 
+void MoveOrder::scoreQuiets(size_t beg_idx, 
                             enumColor side, 
                             const search::NodeInfo* node, 
                             int ply) 
 {
     assert(_history_cluster != nullptr);
 
-    for (std::size_t i = first_ind; i < _move_list.count(); i++) {
+    for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
 
         const Move32b move = entry.move();
@@ -427,10 +453,12 @@ void MoveOrder::scoreQuiets(std::size_t first_ind,
 
         /* Apply continuation score */
 
-        for (int j = 0; j < HistoryTablesCluster::ContinuationPlyCount and j < ply; j++) {
+        for (int j = 0; j < HistoryTablesCluster::ContinuationPlyCount and j <= ply; j++) {
             const search::NodeInfo* prev_node = node - j - 1;
+            assert(prev_node->continuation_subtable_ptr != nullptr);
+
             const auto& cont_subtable = *prev_node->continuation_subtable_ptr;
-            
+
             const int16_t cont_value = cont_subtable.getValue(side, move);
             const int32_t scaled_cont_value = getContinuationPlyScale(j) * cont_value / 1024;
 
