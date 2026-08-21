@@ -116,7 +116,7 @@ void HistoryTablesCluster::onSearch() {
 */
 
 template <enumOrderPolicy Policy, bool Root>
-bool MoveOrder::nextMoveWithPolicy(search::NodeInfo* node,
+bool MoveOrder::nextMoveWithPolicy(engine::NodeInfo* node,
                                    Position& pos, 
                                    Move32b& next_move,
                                    SMoveScore& move_score,
@@ -126,7 +126,7 @@ bool MoveOrder::nextMoveWithPolicy(search::NodeInfo* node,
 }
 
 template <enumOrderPolicy Policy, bool Root>
-_NODISCARD bool MoveOrder::internalNextMove(search::NodeInfo* node, 
+_NODISCARD bool MoveOrder::internalNextMove(engine::NodeInfo* node, 
                                             Position& pos, 
                                             Move32b& next_move,
                                             SMoveScore& move_score,
@@ -180,7 +180,7 @@ _NODISCARD bool MoveOrder::internalNextMove(search::NodeInfo* node,
             uint64_t parent_hash = ZHash::Undef;
 
             if constexpr (!Root) {
-                const search::NodeInfo* const prev_node = node - 1;
+                const engine::NodeInfo* const prev_node = node - 1;
                 parent_hash = prev_node->state.hash_key;
             }
 
@@ -217,7 +217,7 @@ _NODISCARD bool MoveOrder::internalNextMove(search::NodeInfo* node,
 
 template <>
 _NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
-                                            search::NodeInfo* node, 
+                                            engine::NodeInfo* node, 
                                             Position& pos, 
                                             Move32b& next_move,
                                             SMoveScore& move_score,
@@ -277,7 +277,7 @@ void MoveOrder::updateQuietEntry(Move32b move,
                                  enumColor side, 
                                  int16_t hist_bonus, 
                                  int16_t cont_bonus,
-                                 const search::NodeInfo* node,
+                                 const engine::NodeInfo* node,
                                  int ply) 
 {
     static_assert(Sign == -1 or Sign == 1);
@@ -293,7 +293,7 @@ void MoveOrder::updateQuietEntry(Move32b move,
     hist_table.update<Sign>(side, move, mhist_bonus);
 
     for (int i = 0; i < HistoryTablesCluster::ContinuationPlyCount and i <= ply; i++) {
-        const search::NodeInfo* prev_node = node - i - 1;
+        const engine::NodeInfo* prev_node = node - i - 1;
         assert(prev_node->continuation_subtable_ptr != nullptr);
 
         auto& cont_subtable = *prev_node->continuation_subtable_ptr;
@@ -307,7 +307,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
                                     enumColor side, 
                                     int depth, 
                                     int ply,
-                                    const search::NodeInfo* node) 
+                                    const engine::NodeInfo* node) 
 {
     assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
@@ -329,18 +329,17 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
     }
 }
 
-void MoveOrder::updateContinuationPointers(search::NodeInfo* node, int ply) {
+void MoveOrder::updateContinuationPointers(engine::NodeInfo* node, int ply) {
+    auto& cont_table = _history_cluster->getContinuationTable();
+
     for (int i = 0; i < mvo::HistoryTablesCluster::ContinuationPlyCount and i <= ply; i++) {
-        search::NodeInfo* prev_node = node - i - 1;
+        engine::NodeInfo* prev_node = node - i - 1;
         prev_node->continuation_subtable_ptr = 
-            &_history_cluster->getContinuationTable().getSubtable(prev_node->side2move, prev_node->move);
+            &cont_table.getSubtable(prev_node->side2move, prev_node->move);
     }
 }
 
-// TODO: hash_move_cutoff weight in formula
-
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth) 
-{
+_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth) {
     const int16_t unscaled_hist_bonus = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth
@@ -354,8 +353,7 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonu
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
 }
 
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) 
-{
+_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) {
     const int16_t unscaled_hist_penalty = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth
@@ -433,7 +431,7 @@ void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
 
 void MoveOrder::scoreQuiets(size_t beg_idx, 
                             enumColor side, 
-                            const search::NodeInfo* node, 
+                            const engine::NodeInfo* node, 
                             int ply) 
 {
     assert(_history_cluster != nullptr);
@@ -451,7 +449,7 @@ void MoveOrder::scoreQuiets(size_t beg_idx,
         /* Apply continuation score */
 
         for (int j = 0; j < HistoryTablesCluster::ContinuationPlyCount and j <= ply; j++) {
-            const search::NodeInfo* prev_node = node - j - 1;
+            const engine::NodeInfo* prev_node = node - j - 1;
             assert(prev_node->continuation_subtable_ptr != nullptr);
 
             const auto& cont_subtable = *prev_node->continuation_subtable_ptr;
@@ -498,8 +496,8 @@ _NODISCARD enumStage MoveOrder::getStage() const {
     }
 }
 
-template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(search::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
-template bool MoveOrder::nextMoveWithPolicy<QUIESCENT, false>(search::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
-template bool MoveOrder::nextMoveWithPolicy<ONCE_GEN_LEGAL, true>(search::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(engine::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<QUIESCENT, false>(engine::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<ONCE_GEN_LEGAL, true>(engine::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
 
 } // namespace mvo

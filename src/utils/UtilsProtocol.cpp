@@ -50,7 +50,7 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
     const std::filesystem::path log_dir = token;
 
     strm >> std::skipws >> token;
-    search::SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
+    engine::SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
     const TournamentCollector::TournamentPacket packet = {
         static_cast<size_t>(games_count),

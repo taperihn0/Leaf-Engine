@@ -62,7 +62,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     }
 
     clk::Timer timer;
-    search::SearchLimits limits = packet.limits;
+    engine::SearchLimits limits = packet.limits;
 
     const bool time_constraint = (limits.wtime != 0 and limits.btime != 0);
     int moves_done = 0;
@@ -214,7 +214,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
 }
 
 template <bool EnableLog>
-Move32b SelfGame::getPlayerMove(search::SearchLimits limits,
+Move32b SelfGame::getPlayerMove(engine::SearchLimits limits,
                                 Position& pos,
                                 EngineProcess& player, 
                                 sc::Score& score,

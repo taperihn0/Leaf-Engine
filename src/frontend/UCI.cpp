@@ -46,8 +46,8 @@ _INLINE bool isValidUnsigned(const std::string& str) {
 
 opt::Options UniversalChessInterface::_options;
 
-search::SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
-    search::SearchLimits limits;
+engine::SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
+    engine::SearchLimits limits;
     limits.depth = MaxDepth;
     limits.nodes = limits.qnodes = 0;
 
@@ -268,7 +268,7 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
         return;
     }
     
-    search::SearchLimits limits = loadSearchLimits(strm, token);
+    engine::SearchLimits limits = loadSearchLimits(strm, token);
     _declUnused(_search.findBestMove(_pos, _game, limits));
 }
 
@@ -466,20 +466,20 @@ void UniversalChessInterface::parseBench(std::istringstream& strm) {
         [&](const std::string_view& fen) {
             Position pos(fen);
 
-            search::SearchLimits limits;
+            engine::SearchLimits limits;
             limits.depth = depth;
             limits.nodes = 0; // no node limit
             limits.wtime = limits.btime = 0;
             limits.winc  = limits.binc =  0;
 
             FullInfoRecord tmpgame;
-            search::SearchResults results;
+            engine::SearchResults results;
 
 #if defined(DEBUG)
             std::cout << "Searching " << fen << "..." << std::endl;
 #endif
 
-            const Move32b bm = _search.findBestMove<search::SEARCH_NO_INFO>(pos, tmpgame, limits, results);
+            const Move32b bm = _search.findBestMove<engine::SEARCH_NO_INFO>(pos, tmpgame, limits, results);
             _declUnused(bm);
 
             total_nodes += results.nodes_cnt;

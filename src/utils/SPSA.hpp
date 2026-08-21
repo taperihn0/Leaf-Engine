@@ -52,13 +52,13 @@ private:
 
     void startThread(std::vector<SPSA_Parameter>& theta, 
                      std::ofstream& log_file, 
-                     search::SearchLimits limits,
+                     engine::SearchLimits limits,
                      uint id);
 
     void tune(std::vector<SPSA_Parameter>& params,
               std::vector<SPSA_PackedParameter>& theta_plus,
               std::vector<SPSA_PackedParameter>& theta_minus,
-              uint n, search::SearchLimits limits,
+              uint n, engine::SearchLimits limits,
               EngineProcess& engine0,
               EngineProcess& engine1,
               std::ofstream& log_file,
@@ -72,7 +72,7 @@ private:
                       EngineProcess& engine,
                       enumLogLabel ret_msg_label);
 
-    int match(search::SearchLimits limits,
+    int match(engine::SearchLimits limits,
               EngineProcess& engine0,
               EngineProcess& engine1,
               std::shared_ptr<Game::Result> result,

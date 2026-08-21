@@ -155,12 +155,12 @@ _INTERNAL bool ccrOneHourTest() {
     Move32b move;
 
     FullInfoRecord tmpgame;
-    search::SearchLimits limits;
+    engine::SearchLimits limits;
     limits.depth = SearchDepth;
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
 
-    search::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
+    engine::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;
@@ -193,7 +193,7 @@ _INTERNAL bool ccrOneHourTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(equal, move, engine::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
         else {
             ind = opt.find("am");
@@ -201,7 +201,7 @@ _INTERNAL bool ccrOneHourTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(nonequal, move, engine::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
 
         const clk::milliseconds duration_ms = timer.getDurationMs();
@@ -223,12 +223,12 @@ _INTERNAL bool nullMoveTest() {
     Move32b move;
 
     FullInfoRecord tmpgame;
-    search::SearchLimits limits;
+    engine::SearchLimits limits;
     limits.depth = SearchDepth;
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### NULL MOVE TESTING #######\n" _COLOR_RESET;
 
-    search::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
+    engine::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;
@@ -257,7 +257,7 @@ _INTERNAL bool nullMoveTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(equal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(equal, move, engine::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
         else {
             ind = opt.find("am");
@@ -265,7 +265,7 @@ _INTERNAL bool nullMoveTest() {
             ind += 3;
             size_t last = next_token(opt, ind);
             move = Move32b::fromStr<Move32b::Notation::ALGEBRAIC>(pos, opt.substr(ind, last - ind));
-            _TESTCASE(nonequal, move, search::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
+            _TESTCASE(nonequal, move, engine::Search::_findBestMove_unittest, search, pos, tmpgame, limits);
         }
 
         ++lcnt;

@@ -24,7 +24,7 @@
 #include "Tuning.hpp"
 #include "History.hpp"
 
-namespace search { class NodeInfo; }
+namespace engine { class NodeInfo; }
 
 namespace mvo {
 
@@ -146,7 +146,7 @@ public:
     */
 
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool nextMoveWithPolicy(search::NodeInfo* node, 
+    _NODISCARD bool nextMoveWithPolicy(engine::NodeInfo* node, 
                                        Position& pos, 
                                        Move32b& next_move,
                                        SMoveScore& move_score,
@@ -162,7 +162,7 @@ public:
                              enumColor side, 
                              int depth, 
                              int ply,
-                             const search::NodeInfo* node);
+                             const engine::NodeInfo* node);
 
     void skipQuiets();
 
@@ -178,13 +178,13 @@ public:
     _NODISCARD enumStage getStage() const;
 private:
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool internalNextMove(search::NodeInfo* node, 
+    _NODISCARD bool internalNextMove(engine::NodeInfo* node, 
                                      Position& pos, 
                                      Move32b& next_move,
                                      SMoveScore& move_score,
                                      int ply);
 
-    void updateContinuationPointers(search::NodeInfo* node, int ply);
+    void updateContinuationPointers(engine::NodeInfo* node, int ply);
 
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth);
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth);
@@ -194,7 +194,7 @@ private:
                           enumColor side, 
                           int16_t hist_bonus, 
                           int16_t cont_hist,
-                          const search::NodeInfo* node,
+                          const engine::NodeInfo* node,
                           int ply);
 
     bool nextMoveFromList(Move32b& move, 
@@ -210,7 +210,7 @@ private:
 
     void scoreQuiets(size_t beg_idx, 
                      enumColor side, 
-                     const search::NodeInfo* node, 
+                     const engine::NodeInfo* node, 
                      int ply);
 
     _NODISCARD static SMoveScore getOutputMoveScore(Move32b move, SMoveScore s);

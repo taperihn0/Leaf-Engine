@@ -22,7 +22,7 @@
 
 #include <chrono>
 
-namespace search { class SearchLimits; };
+namespace engine { class SearchLimits; };
 class Position;
 
 namespace clk {
@@ -57,7 +57,7 @@ private:
 class TimeManager {
 public:
     TimeManager() = delete;
-    _NODISCARD static milliseconds searchTimeMs(const Position& pos, const search::SearchLimits& limits);
+    _NODISCARD static milliseconds searchTimeMs(const Position& pos, const engine::SearchLimits& limits);
 };
 
 } // namespace clk

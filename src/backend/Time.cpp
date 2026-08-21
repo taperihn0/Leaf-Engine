@@ -50,7 +50,7 @@ milliseconds clk::Timer::getDurationMs() const {
     return _run ? ClockInstance.getMilliseconds(ClockInstance.getTimePoint(), _start_tp) : 0_ms;
 }
 
-milliseconds TimeManager::searchTimeMs(const Position& pos, const search::SearchLimits& limits) {
+milliseconds TimeManager::searchTimeMs(const Position& pos, const engine::SearchLimits& limits) {
     return pos.getTurn() == WHITE ? (limits.wtime / 20 + limits.winc / 2)
                                   : (limits.btime / 20 + limits.binc / 2);
 }

@@ -29,7 +29,7 @@
 #define _TT_PREFETCH_QSEARCH
 #define _CUCKOO_DRAW
 
-namespace search {
+namespace engine {
 
 /* Wrapping SearchLimits onto own, private class used in Search with some utilities
 */
@@ -62,33 +62,6 @@ public:
     // `anyQuiesceNodesLeft` compares current quiescent nodes count
     // and returns whether given number is below quiescent-node threshold.
     _NODISCARD _FORCEINLINE bool anyQuiesceNodesLeft(const SearchLimitsWrapper& limits);
-};
-
-class TreeStack {
-public:
-    TreeStack();
-
-    TreeStack(const TreeStack&)            = delete;
-    TreeStack(TreeStack&&)                 = delete;
-    TreeStack& operator=(const TreeStack&) = delete;
-    TreeStack& operator=(TreeStack&&)      = delete;
-
-    void clear(mem::AlignedSharedPtr<mvo::HistoryTablesCluster> history_buffer);
-
-    NodeInfo*       getRootNode();
-    const NodeInfo* getRootNode() const;
-    NodeInfo*       getPreRootNode();
-    const NodeInfo* getPreRootNode() const;
-    const NodeInfo* getNode(unsigned ply) const;
-
-    AccumulatorCluster* getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
-                                                   NodeInfo* const preroot);
-
-    void updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
-                                 AccumulatorCluster* const accum_cluster);
-private:
-    static constexpr size_t    _Count = MaxSelDepth;
-    mem::AlignedUniquePtr<NodeInfo> _stack;
 };
 
 SearchLimitsWrapper::SearchLimitsWrapper(const SearchLimits& base) 
@@ -124,189 +97,17 @@ _NODISCARD _FORCEINLINE bool SearchResultsWrapper::anyQuiesceNodesLeft(const Sea
     return !limits.qnodes or qnodes_cnt < limits.qnodes;
 }
 
-void SearchResults::clear() {
-    mem::memSet(this, 0, sizeof(SearchResults));
-}
-
-void SearchResults::printBestMove() {
-    ASSERT(!best_move.isNullMove(), "Null bestmove");
-
-    std::cout << "bestmove ";
-    best_move.print();
-    std::cout << '\n';
-}
-
-void SearchResults::print(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
-                          uint16_t pv_len, 
-                          const tt::TranspositionTable& tt) 
+Search::Search(tt::TranspositionTable&& tt) 
+    : _tt(std::move(tt))
+    , _stack(std::make_unique<SearchStack>())
+    , _history_cluster(mem::makeAlignedShared<mvo::HistoryTablesCluster>(1, CachelineSize))
 {
-    const uint64_t nps = static_cast<uint64_t>((nodes_cnt * 1000.f) / (duration ? duration : 1));
-
-    std::cout  
-        << "info depth " << depth            << ' '
-        << "seldepth "   << seldepth         << ' '
-        << "score "      << score_cp.toStr() << ' '
-        << "nodes "      << nodes_cnt        << ' '
-        << "time "       << duration         << ' '
-        << "nps "        << nps              << ' '
-        << "hashfull "   << tt.getHashfull() << ' '
-        << "pv ";
-
-    printPV(root_pv_line, pv_len);
-
-    // flush every line
-    std::cout << std::endl;
-
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-    printSearchStats();
-#endif
+    ASSERT(_history_cluster != nullptr, "Failed to allocate memory");
+    onNewGame();
+    _cuckoo_tables.init();
 }
 
-void SearchResults::printShort() {
-    std::cout << "Total nodes: " << nodes_cnt << '\n';
-
-    if (!best_move.isNullMove())
-        printBestMove();
-
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-    printSearchStats();
-#endif
-}
-
-void SearchResults::printPV(const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
-                            uint16_t pv_len) 
-{
-    for (uint16_t i = 0; i < pv_len; i++) {
-        const Move16b m16 = root_pv_line[i].best_move;
-        m16.print();
-        std::cout << ' ';
-    }
-}
-
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-void SearchResults::printSearchStats() {
-
-#define _MAKE_NONZERO(x)                 \
-    do { x = x ? x : 1; } while (false) \
-
-    ull nmnodes = nodes_cnt - qnodes_cnt;
-
-    _MAKE_NONZERO(nodes_cnt);
-    _MAKE_NONZERO(qnodes_cnt);
-    _MAKE_NONZERO(tt_probe_cnt);
-    _MAKE_NONZERO(qtt_probe_cnt);
-    _MAKE_NONZERO(beta_cut_cnt);
-    _MAKE_NONZERO(qtt_probe_cnt);
-    _MAKE_NONZERO(qbeta_cut_cnt);
-    _MAKE_NONZERO(nmnodes);
-
-    const float qnodes_rate      = static_cast<float>(qnodes_cnt) / nodes_cnt * 100;
-    const float pvnodes_rate     = static_cast<float>(pv_nodes_cnt) / nodes_cnt * 100;
-    const float npvnodes_rate    = static_cast<float>(npv_nodes_cnt) / nodes_cnt * 100;
-    const float cutnodes_rate    = static_cast<float>(cut_nodes_cnt) / nmnodes * 100;
-    const float allnodes_rate    = static_cast<float>(all_nodes_cnt) / nmnodes * 100;
-
-    const float qprobes_rate     = static_cast<float>(qtt_probe_cnt) / tt_probe_cnt * 100;
-    const float cuts_rate        = static_cast<float>(tt_cut_cnt) / tt_probe_cnt * 100;
-    const float qcuts_rate       = static_cast<float>(qtt_cut_cnt) / qtt_probe_cnt * 100;
-
-    const float ttmove_cut_rate  = static_cast<float>(ttmove_cut_cnt) / beta_cut_cnt * 100;
-    const float qttmove_rate     = static_cast<float>(qttmove_probe_cnt) / qtt_probe_cnt * 100;
-    const float qttmove_cut_rate = static_cast<float>(qttmove_cut_cnt) / qbeta_cut_cnt * 100;
-
-    const float nmeval_rate      = static_cast<float>(nmeval_cnt) / nmnodes * 100;
-    const float qeval_rate       = static_cast<float>(qeval_cnt) / qnodes_cnt * 100;
-
-    const float reduced_search_fail_rate = static_cast<float>(reduced_search_fail_low) / reduced_search_cnt * 100;
-    const float reduced_search_suc_rate = static_cast<float>(reduced_search_fail_high) / reduced_search_cnt * 100;
-
-    null_moves_cnt = null_moves_cnt ? null_moves_cnt : 1;
-
-    const float null_zungzwang_rate = static_cast<float>(null_zungzwang_detected) / null_moves_cnt * 100;
-
-    const float syzygy_tb_cuts_rate = static_cast<float>(syzygy_tb_cuts) / syzygy_tb_probe_cnt * 100;
-
-    std::cout << "\n--SEARCH STATISTICS--";
-
-    std::cout
-        << "\nQUIESCENT NODES:             " << qnodes_cnt << ", " << qnodes_rate << '%'
-        << "\nPV NODES:                    " << pv_nodes_cnt << ", " << pvnodes_rate << '%'
-        << "\nNON PV NODES:                " << npv_nodes_cnt << ", " << npvnodes_rate << '%'
-        << "\nCUT NODES:                   " << cut_nodes_cnt << ", " << cutnodes_rate << '%'
-        << "\nALL NODES:                   " << all_nodes_cnt << ", " << allnodes_rate << '%'
-        << "\nTT PROBES:                   " << tt_probe_cnt
-        << "\nTT PROBES IN QSEARCH:        " << qtt_probe_cnt << ", " << qprobes_rate << '%'
-        << "\nTT CUTS:                     " << tt_cut_cnt << ", " << cuts_rate << '%'
-        << "\nTT CUTS IN QSEARCH:          " << qtt_cut_cnt << ", " << qcuts_rate << '%'
-        << "\nHASH-MOVE CUT:               " << ttmove_cut_cnt << ", " << ttmove_cut_rate << '%'
-        << "\nHASH-MOVE PROBE IN QSEARCH:  " << qttmove_probe_cnt << ", " << qttmove_rate << '%'
-        << "\nHASH-MOVE CUT IN QSEARCH:    " << qttmove_cut_cnt << ", " << qttmove_cut_rate << '%'
-        << "\nEVAL CALLS IN NEGA-M-SEARCH: " << nmeval_cnt << ", " << nmeval_rate << '%'
-        << "\nEVAL CALLS IN QSEARCH:       " << qeval_cnt << ", " << qeval_rate << '%'
-        << "\nREPETITION CALLS:            " << rep_call_cnt
-        << "\nREPETITION CYCLES:           " << rep_cnt
-        << "\nCUCKOO CYCLES:               " << cuckoo_rep_cnt
-        << "\nREDUCTION SEARCHES:          " << reduced_search_cnt << ", "
-        << "\nREDUCTION SEARCH FAIL LOW:   " << reduced_search_fail_low << ", " << reduced_search_fail_rate << '%'
-        << "\nREDUCTION SEARCH FAIL HIGH:  " << reduced_search_fail_high << ", " << reduced_search_suc_rate << '%'
-        << "\nZUNGZWANGS DETECTED:         " << null_zungzwang_detected << ", " << null_zungzwang_rate << '%'
-        << "\nSYZYGY TB CUTS:              " << syzygy_tb_probe_cnt << ", " << syzygy_tb_cuts_rate << '%'
-        << "\n";
-
-    beta_cut_cnt = !beta_cut_cnt ? 1 : beta_cut_cnt;
-
-    // Move index stats
-    std::cout << "\n------ MOVE STATS ------";
-
-    for (size_t i = 0; i < MaxNodeMoves / 2; i++) {
-        const float ind_cut_rate = static_cast<float>(move_cut_cnt[i]) / beta_cut_cnt * 100;
-        const float ind_reduced_fail_high_rate = move_reduced_cnt[i] > 0 ? static_cast<float>(move_reduced_fail_high_cnt[i]) 
-                                                                                              / move_reduced_cnt[i] * 100
-                                                                         : 0.f;
-        const float ind_reduction_avg = move_reduced_cnt[i] > 0 ? move_reduction_sum[i] / move_reduced_cnt[i] 
-                                                                : 0.f;
-
-        std::cout << "\nMOVE INDEX " << std::setw(3) << i << " [BETA-CUTOFF, LATE-FAIL-HIGH, AVG-REDUCT]: "
-                  << std::setprecision(2) << std::setw(5) << std::fixed << ind_cut_rate << "%, "
-                  << std::setprecision(2) << std::setw(5) << std::fixed << ind_reduced_fail_high_rate << "%, "
-                  << std::setprecision(2) << std::setw(5) << std::fixed << ind_reduction_avg;
-    }
-
-    std::cout << "\n---------------------\n";
-
-#undef _MAKE_NONZERO
-
-}
-#endif
-
-NodeInfo::NodeInfo() { clear(); }
-
-void NodeInfo::clear() {
-    side2move        = WHITE;
-    state            = {};
-    best_move = move = NullMove;
-    score            = sc::Undef;
-    eval             = sc::Undef;
-    improving        = 0;
-    can_move         = false;
-    best_score       = sc::Undef;
-    check            = false;
-    moves_searched   = 0;
-    move_index       = 0;
-    bound            = tt::TTBound::NONE;
-    is_cut           = false;
-    mate_thread      = false;
-
-    cluster.accum_cache.clearBuffers();
-    cluster.next_cluster = nullptr;
-    cluster.prev_cluster = nullptr;
-
-    mem::fill(pv_line.begin(), pv_line.end(), PvInfo());
-
-    pv_line_len = 0;
-
-    continuation_subtable_ptr = nullptr;
-}
+Search::~Search() = default;
 
 void Search::clearHash() {
     _tt.clear();
@@ -326,135 +127,8 @@ void Search::resizeHash(size_t tt_size_mb) {
 void Search::onNewGame() {
     clearHash();
     _history_cluster->clear();
-    _tree_stack->clear(_history_cluster);
+    _stack->clear(_history_cluster);
 }
-
-TreeStack::TreeStack()
-    : _stack(mem::makeAlignedUnique<NodeInfo>(_Count, CachelineSize))
-{
-    ASSERT(_stack != nullptr, "Failed to allocate memory");
-}
-
-void TreeStack::clear(mem::AlignedSharedPtr<mvo::HistoryTablesCluster> history_buffer) {
-    ASSERT_NO_LOG(history_buffer);
-
-    mvo::MoveOrder::setHistoryBuffer(history_buffer);
-
-    for (int i = 0; i < static_cast<int>(_Count); i++) {
-        NodeInfo& node = _stack.get()[i];
-        node.clear();
-        node.cluster.prev_cluster = i - 1 >= 0 ? &_stack.get()[i - 1].cluster : nullptr;
-        node.cluster.next_cluster = i + 1 < static_cast<int>(_Count) ? &_stack.get()[i + 1].cluster : nullptr;
-    }
-}
-
-_INLINE const NodeInfo* TreeStack::getNode(unsigned ply) const {
-    assert(ply < _Count);
-    return _stack.get() + ply + 1;
-}
-
-_INLINE NodeInfo* TreeStack::getRootNode() {
-    return _stack.get() + 1;
-}
-
-_INLINE const NodeInfo* TreeStack::getRootNode() const {
-    return _stack.get() + 1;
-}
-
-_INLINE NodeInfo* TreeStack::getPreRootNode() {
-    return _stack.get();
-}
-
-_INLINE const NodeInfo* TreeStack::getPreRootNode() const {
-    return _stack.get();
-}
-
-AccumulatorCluster* TreeStack::getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
-                                                          NodeInfo* const preroot)
-{
-    for (AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
-         prev_accum_cluster != &preroot->cluster;
-         prev_accum_cluster = prev_accum_cluster->prev_cluster) {
-
-        if (!prev_accum_cluster->accum_cache.isDirty())
-            return prev_accum_cluster;
-    }
-
-    return &preroot->cluster;
-}
-
-void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
-                                        AccumulatorCluster* const accum_cluster)
-{
-    for (AccumulatorCluster* prev_cluster = clean_accum_cluster->next_cluster;
-         prev_cluster != accum_cluster;
-         prev_cluster = prev_cluster->next_cluster) {
-
-        MultiArray<uint16_t, 2, 2> added_features_index;
-        MultiArray<uint16_t, 2, 2> removed_features_index;
-
-        nn::AccumulatorCache& accum_cache = prev_cluster->accum_cache;
-
-        for (size_t i = 0; i < accum_cache.added_features_cnt; i++) {
-            nn::FeatureData feature_data = accum_cache.added_features[i];
-
-            added_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-                                                                    feature_data.sq,
-                                                                    feature_data.piece_type,
-                                                                    feature_data.side);
-
-            added_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-                                                                    feature_data.sq,
-                                                                    feature_data.piece_type,
-                                                                    feature_data.side);
-        }
-
-        for (size_t i = 0; i < accum_cache.removed_features_cnt; i++) {
-            nn::FeatureData feature_data = accum_cache.removed_features[i];
-
-            removed_features_index[WHITE][i] = nn::Accumulator::featureIndex<WHITE>(
-                                                                    feature_data.sq,
-                                                                    feature_data.piece_type,
-                                                                    feature_data.side);
-
-            removed_features_index[BLACK][i] = nn::Accumulator::featureIndex<BLACK>(
-                                                                    feature_data.sq,
-                                                                    feature_data.piece_type,
-                                                                    feature_data.side);
-        }
-
-        const nn::AccumulatorCache& prev_accum_cache = prev_cluster->prev_cluster->accum_cache;
-        assert(prev_accum_cache.isClean());
-
-        accum_cache.accum.update(nn::GlobPackedNetwork,
-                                 &prev_accum_cache.accum,
-                                 added_features_index[WHITE].data(),
-                                 accum_cache.added_features_cnt,
-                                 removed_features_index[WHITE].data(),
-                                 accum_cache.removed_features_cnt,
-                                 WHITE);
-        accum_cache.accum.update(nn::GlobPackedNetwork,
-                                 &prev_accum_cache.accum,
-                                 added_features_index[BLACK].data(),
-                                 accum_cache.added_features_cnt,
-                                 removed_features_index[BLACK].data(),
-                                 accum_cache.removed_features_cnt,
-                                 BLACK);
-        accum_cache.markClean();
-    }
-}
-
-Search::Search(tt::TranspositionTable&& tt) 
-    : _tt(std::move(tt))
-    , _tree_stack(std::make_unique<TreeStack>())
-    , _history_cluster(mem::makeAlignedShared<mvo::HistoryTablesCluster>(1, CachelineSize))
-{
-    ASSERT(_history_cluster != nullptr, "Failed to allocate memory");
-    onNewGame();
-    _cuckoo_tables.init();
-}
-
-Search::~Search() = default;
 
 template <enumInfoLevel InfoLevel>
 Move32b Search::findBestMove(Position& pos, 
@@ -502,7 +176,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
                                      SearchResultsWrapper& search_results,
                                      enumInfoLevel info_lv) 
 {    
-    NodeInfo* preroot = _tree_stack->getPreRootNode();
+    NodeInfo* preroot = _stack->getPreRootNode();
     preroot->cluster.accum_cache.accum.refresh(nn::GlobPackedNetwork, pos);
     preroot->cluster.accum_cache.markClean();
     preroot->move = preroot->best_move = game.getMoveCount() > 0 ? game.getCurrentMove() 
@@ -510,7 +184,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     preroot->side2move = !pos.getTurn();
     preroot->mate_thread = false;
 
-    NodeInfo* root = _tree_stack->getRootNode();
+    NodeInfo* root = _stack->getRootNode();
 
     root->cluster.prev_cluster = &preroot->cluster;
     preroot->cluster.next_cluster = &root->cluster;
@@ -522,7 +196,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
     root->best_move = NullMove;
     root->best_score = sc::Undef;
 
-    const sc::Score eval = evaluate<PV_NODE>(pos, _tree_stack.get(), 
+    const sc::Score eval = evaluate<PV_NODE>(pos, _stack.get(), 
                                              root, preroot, 
                                              pos.getTurn(), search_results);
     root->eval = eval;
@@ -680,7 +354,7 @@ bool Search::goSearch(Position& pos,
                       SearchResultsWrapper& results,
                       sc::Score alpha, sc::Score beta) 
 {
-    NodeInfo* root = _tree_stack->getRootNode();
+    NodeInfo* root = _stack->getRootNode();
 
     const sc::Score root_score = -nmSearch<PV_NODE, false, true>(pos, limits, results, game, root, 
                                                                  alpha, beta, 
@@ -718,7 +392,7 @@ sc::Score Search::nmSearch(Position& pos,
     if constexpr (Root) assert(!ply);
     else                assert(ply > 0);
 
-    NodeInfo* const preroot = _tree_stack->getPreRootNode();
+    NodeInfo* const preroot = _stack->getPreRootNode();
     node->side2move = pos.getTurn();
     node->pv_line_len = 0;
 
@@ -890,7 +564,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->mate_thread = false;
 
     if (!node->eval.isValid()) {
-        node->eval = evaluate<NmNodeType>(pos, _tree_stack.get(), 
+        node->eval = evaluate<NmNodeType>(pos, _stack.get(), 
                                           node, preroot, 
                                           node->side2move, results);
     }
@@ -1510,12 +1184,12 @@ sc::Score Search::qSearch(Position& pos,
         return -sc::Undef;
     }
     
-    NodeInfo* const preroot = _tree_stack->getPreRootNode();
+    NodeInfo* const preroot = _stack->getPreRootNode();
 
     if (!results.anyNodesLeft(limits) or
         !results.anyQuiesceNodesLeft(limits) or
         ply >= MaxSelDepth) {
-        return evaluate<QNodeType>(pos, _tree_stack.get(), 
+        return evaluate<QNodeType>(pos, _stack.get(), 
                                    node, preroot, 
                                    node->side2move, results);
     }
@@ -1552,7 +1226,7 @@ sc::Score Search::qSearch(Position& pos,
     results.qnodes_cnt++;
 
 #if defined(_TT_PROBE_QSEARCH)
-    node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _tree_stack.get(), 
+    node->eval = !tt_entry.eval.isValid() _LIKELY ? evaluate<QNodeType>(pos, _stack.get(), 
                                                                         node, preroot, 
                                                                         node->side2move, results)
                                                   : tt_entry.eval;
@@ -1743,7 +1417,7 @@ _FORCEINLINE bool Search::isTablebaseScore(sc::Score score) const {
 }
 
 _FORCEINLINE sc::Score Search::applyContempt(sc::Score score, const NodeInfo* node) const {
-    const NodeInfo* const root = _tree_stack->getRootNode();
+    const NodeInfo* const root = _stack->getRootNode();
     assert(_contempt.isValid());
     return root->side2move == node->side2move ? score - _contempt
                                               : score;
@@ -1751,7 +1425,7 @@ _FORCEINLINE sc::Score Search::applyContempt(sc::Score score, const NodeInfo* no
 
 template <enumNode NodeType>
 _INLINE sc::Score Search::evaluate(const Position& pos,
-                                   TreeStack* _tree_stack,
+                                   SearchStack* _tree_stack,
                                    NodeInfo* node,
                                    NodeInfo* preroot,
                                    enumColor side2move, 
@@ -2110,4 +1784,4 @@ template Move32b Search::findBestMove<SEARCH_SHORT_INFO>(Position&, const FullIn
 template Move32b Search::findBestMove<SEARCH_ONLY_BM_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
 template Move32b Search::findBestMove<SEARCH_NO_INFO>(Position&, const FullInfoRecord&, SearchLimits, SearchResults&);
 
-} // namespace search
+} // namespace engine

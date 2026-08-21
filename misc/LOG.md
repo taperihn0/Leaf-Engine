@@ -1,3 +1,13 @@
+### [commit:e5c8507] Bugs fixes and refactor
+```
+Score of leaf-cont-capt-hist-2ply vs leaf-base: 401 - 286 - 594  [0.545] 1281
+...      leaf-cont-capt-hist-2ply playing White: 93 - 189 - 359  [0.425] 641
+...      leaf-cont-capt-hist-2ply playing Black: 308 - 97 - 235  [0.665] 640
+...      White vs Black: 190 - 497 - 594  [0.380] 1281
+Elo difference: 31.3 +/- 13.9, LOS: 100.0 %, DrawRatio: 46.4 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:1b1c637] fix: History + Continuation values used in Search as score of quiet move
 ```
 Score of leaf-cont-capt-hist-2ply vs leaf-base: 619 - 556 - 1819  [0.511] 2994
