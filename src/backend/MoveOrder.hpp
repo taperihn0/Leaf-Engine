@@ -186,7 +186,7 @@ private:
 
     void updateContinuationPointers(search::NodeInfo* node, int ply);
 
-    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth, bool hash_move_cutoff);
+    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth);
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth);
 
     template <int8_t Sign>

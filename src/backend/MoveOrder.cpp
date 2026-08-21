@@ -311,9 +311,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
 {
     assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
-    const bool hash_move_cutoff = bestmove == _hash_move;
-
-    const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth, hash_move_cutoff);
+    const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth);
     updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
 
     const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth);
@@ -341,19 +339,16 @@ void MoveOrder::updateContinuationPointers(search::NodeInfo* node, int ply) {
 
 // TODO: hash_move_cutoff weight in formula
 
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth, 
-                                                                                    bool hash_move_cutoff) 
+_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth) 
 {
-    const int16_t unscaled_hist_bonus = std::max(0, 
+    const int16_t unscaled_hist_bonus = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
-        MvOrQuietBonusHistoryScore1Coeff * depth - 
-        0 * hash_move_cutoff * depth
+        MvOrQuietBonusHistoryScore1Coeff * depth
     );
 
-    const int16_t unscaled_cont_bonus = std::max(0, 
+    const int16_t unscaled_cont_bonus = (
         MvOrContBonusHistoryScore2Coeff * depth * depth + 
-        MvOrContBonusHistoryScore1Coeff * depth - 
-        0 * hash_move_cutoff * depth
+        MvOrContBonusHistoryScore1Coeff * depth 
     );
 
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
@@ -361,13 +356,15 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonu
 
 _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) 
 {
-    const int16_t unscaled_hist_penalty = 
+    const int16_t unscaled_hist_penalty = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
-        MvOrQuietBonusHistoryScore1Coeff * depth;
+        MvOrQuietBonusHistoryScore1Coeff * depth
+    );
 
-    const int16_t unscaled_cont_penalty = 
+    const int16_t unscaled_cont_penalty = (
         MvOrContBonusHistoryScore2Coeff * depth * depth + 
-        MvOrContBonusHistoryScore1Coeff * depth;
+        MvOrContBonusHistoryScore1Coeff * depth    
+    );
 
     return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024);
 }
