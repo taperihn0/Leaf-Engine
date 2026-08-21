@@ -97,6 +97,41 @@ _NODISCARD _FORCEINLINE bool SearchResultsWrapper::anyQuiesceNodesLeft(const Sea
     return !limits.qnodes or qnodes_cnt < limits.qnodes;
 }
 
+enum enumParameterIndex : uint8_t {
+    QUIET,
+    CAPTURE
+};
+
+/* Map tunable parameters onto friendly variable templates */
+
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto LmrBaseReduction = Index == CAPTURE ? LmrBaseCaptureReduction 
+                                                              : LmrBaseQuietReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto LmrLogDepthMovesMult = Index == CAPTURE ? LmrLogCaptureDepthMovesMult 
+                                                                  : LmrLogQuietDepthMovesMult;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto NotPvNodeReduction = Index == CAPTURE ? CaptureNotPvNodeReduction 
+                                                                : QuietNotPvNodeReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto CutNodeReduction = Index == CAPTURE ? CaptureCutNodeReduction 
+                                                              : QuietCutNodeReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto CheckReduction = Index == CAPTURE ? CaptureCheckReduction 
+                                                            : QuietCheckReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto ExtensionReduction = Index == CAPTURE ? CaptureExtensionReduction 
+                                                                : QuietExtensionReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto ImprovingReductionRate = Index == CAPTURE ? CaptureImprovingReductionRate 
+                                                                    : QuietImprovingReductionRate;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto HashCapReduction = Index == CAPTURE ? CaptureHashCapReduction 
+                                                              : QuietHashCapReduction;
+template <enumParameterIndex Index>
+_PARAM_ATTRIBS const auto KillerMoveReduction = Index == CAPTURE ? CaptureKillerMoveReduction 
+                                                                  : QuietKillerMoveReduction;
+
 Search::Search(tt::TranspositionTable&& tt) 
     : _tt(std::move(tt))
     , _stack(std::make_unique<SearchStack>())
@@ -934,68 +969,8 @@ sc::Score Search::nmSearch(Position& pos,
             !full_window_search and 
             depth >= LmrDepth and
             node->moves_searched >= LmrMoveCount) 
-        {                
-            const Piece::enumType pc = node->move.getPiece();
-
-            if (node->move.isQuiet() and !node->move.isPromotion()) {
-                move_reduction = (LmrBaseQuietReduction + 
-                                  LmrLogQuietDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
-                                  FixedPointMult;
-
-                if constexpr (!IsPv) 
-                    move_reduction += QuietNotPvNodeReduction * FixedPointMult;
-
-                if (node->is_cut) 
-                    move_reduction -= QuietCutNodeReduction * FixedPointMult;
-
-                if (node->check) 
-                    move_reduction -= QuietCheckReduction * FixedPointMult;
-
-                if (pc == Piece::PAWN) 
-                    move_reduction -= QuietPawnMoveReduction * FixedPointMult;
-
-                if (!tt_move.isNullMove() and tt_move.isCapture())
-                    move_reduction += QuietHashCapReduction * FixedPointMult;
-
-                if (!killer.isNullMove() and node->move == killer) 
-                    move_reduction -= QuietKillerMoveReduction * FixedPointMult;
-
-                if (node->move_score.isValid()) 
-                    move_reduction += mvo::MoveOrder::getQuietDepthReduction(node->move_score) * FixedPointMult;
-
-                move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
-                                    QuietExtensionReduction / FixedPointMult;
-                move_reduction -= node->improving * QuietImprovingReductionRate;
-                move_reduction /= QuietTotalReductionRate;
-            }
-            else {
-                move_reduction = (LmrBaseCaptureReduction + 
-                                  LmrLogCaptureDepthMovesMult * std::log(depth) * std::log(node->moves_searched)) * 
-                                  FixedPointMult;
-
-                if constexpr (!IsPv)
-                    move_reduction += CaptureNotPvNodeReduction * FixedPointMult;
-
-                if (node->is_cut)
-                    move_reduction -= CaptureCutNodeReduction * FixedPointMult;
-
-                if (node->check)
-                    move_reduction -= CaptureCheckReduction * FixedPointMult;
-
-                if (!tt_move.isNullMove() and tt_move.isCapture())
-                    move_reduction += CaptureHashCapReduction * FixedPointMult;
-
-                if (!killer.isNullMove() and node->move == killer)
-                    move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
-
-                if (node->move_score.isValid() and !node->move.isPromotion())
-                    move_reduction += mvo::MoveOrder::getCaptureDepthReduction(node->move_score) * FixedPointMult;
-
-                move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
-                                    CaptureExtensionReduction / FixedPointMult;
-                move_reduction -= node->improving * CaptureImprovingReductionRate;
-                move_reduction /= CaptureTotalReductionRate;
-            }
+        {
+            move_reduction = getMoveReduction<IsPv>(node, depth, move_extension, tt_move, killer);
         }
         
         const int reduction = std::clamp<int>((move_reduction + FixedPointMult / 2) / FixedPointMult, 0, depth - 1);
@@ -1532,6 +1507,81 @@ _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
     return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 64), 
                     1l);
 }
+
+template <bool IsPv>
+_NODISCARD _FORCEINLINE int32_t Search::getMoveReduction(const NodeInfo* node, 
+                                                         int depth, 
+                                                         int32_t move_extension,
+                                                         Move32b tt_move, 
+                                                         Move32b killer)
+{
+    if (node->move.isQuiet() and !node->move.isQueenPromotion())
+        return getMoveReduction<IsPv, QUIET>(node, depth, move_extension, tt_move, killer);
+    else
+        return getMoveReduction<IsPv, CAPTURE>(node, depth, move_extension, tt_move, killer);
+}
+
+template <bool IsPv, enumParameterIndex Index>
+_NODISCARD int32_t Search::getMoveReduction(const NodeInfo* node, 
+                                            int depth, 
+                                            int32_t move_extension,
+                                            Move32b tt_move, 
+                                            Move32b killer) 
+{
+    int32_t move_reduction = (LmrBaseReduction<Index> + 
+                              LmrLogDepthMovesMult<Index> * std::log(depth) * std::log(node->moves_searched)) * 
+                              FixedPointMult;
+
+    if constexpr (!IsPv) 
+        move_reduction += NotPvNodeReduction<Index> * FixedPointMult;
+
+    if (node->is_cut) 
+        move_reduction -= CutNodeReduction<Index> * FixedPointMult;
+
+    if (node->check) 
+        move_reduction -= CheckReduction<Index> * FixedPointMult;
+
+    if constexpr (Index == QUIET) {
+        if (node->move.getPiece() == Piece::PAWN) 
+            move_reduction -= QuietPawnMoveReduction * FixedPointMult;
+    }
+
+    if (!tt_move.isNullMove() and tt_move.isCapture())
+        move_reduction += HashCapReduction<Index> * FixedPointMult;
+
+    if (!killer.isNullMove() and node->move == killer) 
+        move_reduction -= KillerMoveReduction<Index> * FixedPointMult;
+
+    if (node->move_score.isValid()) 
+        move_reduction += getScoreMoveReduction<Index>(node->move_score) * FixedPointMult;
+
+    move_reduction -= static_cast<ll>(move_extension) * move_extension * ExtensionReduction<Index> / 
+                        FixedPointMult;
+    move_reduction -= node->improving * ImprovingReductionRate<Index>;
+
+    return move_reduction / MoveReductionBase;
+}
+
+/* Search utilities - move reductions
+*  =================================
+*/
+
+template <>
+_NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveScore s) {
+    const int32_t centered_score = s.value() - 
+                                   QuietDepthShiftMult * mvo::SMoveScore::HalfMaxQuietValue / 256;
+    const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
+    const int32_t val = QuietMoveScoreReductionRate * rt / 128;
+    return centered_score < 0 ? val : -val;
+}
+
+template <>
+_NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<CAPTURE>(mvo::SMoveScore s) {
+    // TODO: better fixed-point formula
+    return (CaptureMoveScoreReductionRate * s.value() + 64) / 128;
+}
+
+// =================================
 
 void Search::refreshPVinTT(const Position& pos, 
                            const std::array<PvInfo, MaxSelDepth>& root_pv_line, 

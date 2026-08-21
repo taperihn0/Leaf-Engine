@@ -69,9 +69,6 @@ private:
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(MvOrCaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
 _DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
@@ -165,9 +162,6 @@ public:
                              const engine::NodeInfo* node);
 
     void skipQuiets();
-
-    _NODISCARD static int32_t getQuietDepthReduction(SMoveScore quiet_score);
-    _NODISCARD static float getCaptureDepthReduction(SMoveScore capture_score);
 
     template <enumOrderPolicy Policy, typename = std::enable_if_t<Policy == ONCE_GEN_LEGAL>>
     _NODISCARD uint getMovesLeft();
@@ -271,26 +265,6 @@ _INLINE void MoveOrder::clear() {
 _FORCEINLINE void MoveOrder::skipQuiets() {
     _idx = _move_list.count();
 }
-
-/* Search utilities - move reductions
-*  =================================
-*/
-
-// TODO: change that
-
-_NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(SMoveScore quiet_score) {
-    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * SMoveScore::HalfMaxQuietValue / 256;
-    const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
-    const int32_t val = MvOrQuietMoveScoreReductionRate * rt / 128;
-    return centered_score < 0 ? val : -val;
-}
-
-_NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(SMoveScore capture_score) {
-    // TODO: better fixed-point formula
-    return static_cast<float>(MvOrCaptureMoveScoreReductionRate * capture_score.value() / 128);
-}
-
-// =================================
 
 template <enumOrderPolicy Policy, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 _INLINE uint MoveOrder::getMovesLeft() {

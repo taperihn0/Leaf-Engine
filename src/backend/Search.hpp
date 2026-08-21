@@ -119,6 +119,9 @@ _DEFINE_TUNABLE_PARAMETER(SeeQuietScoreThreshold, int32_t, 1719.19f, 1000.f, 400
 _DEFINE_TUNABLE_PARAMETER(SeeQuietPruneThreshold, int32_t, -71.9894f, -90.f, -30.f, 0.9f);
 _DEFINE_TUNABLE_PARAMETER(QDeltaPruningEvalWeight, int32_t, 5.17858f, 0.f, 128.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(QBetaCutoffEvalWeight, int32_t, 124.406f, 0.f, 128.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
 
 /* Static parameters -
 *  These are not tuned.
@@ -132,14 +135,14 @@ inline constexpr bool    UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
 inline constexpr double  MinTimeBranchFactor = 1.;
 inline constexpr double  MaxTimeBranchFactor = 5.;
 inline constexpr int32_t FixedPointMult = 65536;
-inline constexpr int32_t CaptureTotalReductionRate = 256;
-inline constexpr int32_t QuietTotalReductionRate = 256;
+inline constexpr int32_t MoveReductionBase = 256;
 inline constexpr int32_t TablebaseWinScore = 32000;
 inline constexpr int32_t TablebasePieceDiffMult = 116;
 inline constexpr int32_t TablebaseScoreScale = 16;
 
 class SearchLimitsWrapper;
 class SearchResultsWrapper;
+enum enumParameterIndex : uint8_t;
 
 enum enumNode : int8_t {
     PV_NODE             = 1,
@@ -239,12 +242,29 @@ private:
     int getNullSearchDepth(sc::Score eval, sc::Score beta, int depth);
     int getNullVerifyDepth(int nm_depth);
 
+    template <bool IsPv>
+    _NODISCARD int32_t getMoveReduction(const NodeInfo* node, 
+                                        int depth, 
+                                        int32_t move_extension,
+                                        Move32b tt_move, 
+                                        Move32b killer);
+
+    template <bool IsPv, enumParameterIndex Index>
+    _NODISCARD int32_t getMoveReduction(const NodeInfo* node, 
+                                        int depth, 
+                                        int32_t move_extension,
+                                        Move32b tt_move, 
+                                        Move32b killer);
+
+    template <enumParameterIndex Index>
+    _NODISCARD static int32_t getScoreMoveReduction(mvo::SMoveScore s);
+
     void refreshPVinTT(const Position& pos, 
                        const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
                        uint16_t pv_len,
                        SearchResultsWrapper& results);
 
-    template <bool IsPV>
+    template <bool IsPv>
     bool isRepetitionCycle(const Position& pos, 
                            const FullInfoRecord& game, 
                            const NodeInfo* node, 
