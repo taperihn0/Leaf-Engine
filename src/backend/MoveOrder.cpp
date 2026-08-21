@@ -347,13 +347,13 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonu
     const int16_t unscaled_hist_bonus = std::max(0, 
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth - 
-        4 * hash_move_cutoff * depth
+        0 * hash_move_cutoff * depth
     );
 
     const int16_t unscaled_cont_bonus = std::max(0, 
         MvOrContBonusHistoryScore2Coeff * depth * depth + 
         MvOrContBonusHistoryScore1Coeff * depth - 
-        4 * hash_move_cutoff * depth
+        0 * hash_move_cutoff * depth
     );
 
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
