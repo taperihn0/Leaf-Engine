@@ -318,7 +318,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
 
     const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth);
 
-    for (size_t i = _quiets_idx; i < _idx and i < _move_list.count(); i++) {
+    for (size_t i = _quiets_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
         const Move32b move = entry.move();
 
