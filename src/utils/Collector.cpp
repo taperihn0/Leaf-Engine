@@ -435,7 +435,7 @@ bool TournamentCollector::explicitFilterPolicy(const Position& pos,
         return false;
 
     else if (pos.getPiecesCount() <= 6 and 
-             StaticEval::evaluatePawnlessEndgame(pos) != sc::Undef)
+             hce::StaticEval::evaluatePawnlessEndgame(pos) != sc::Undef)
         return false;
 
     else if (pos.isInCheck(pos.getTurn()))

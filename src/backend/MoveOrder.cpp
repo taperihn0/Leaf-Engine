@@ -44,7 +44,7 @@ _NODISCARD _FORCEINLINE constexpr int16_t getPromotionScore(Piece::enumType prom
 }
 
 _NODISCARD _FORCEINLINE constexpr int32_t getContinuationPlyScale(int ago) {
-    assert(ago < ContinuationPlyCount);
+    assert(ago < HistoryTablesCluster::ContinuationPlyCount);
 
     switch (ago) {
     case 0: return MvOrdContinuation1Scale;

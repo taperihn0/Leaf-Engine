@@ -160,7 +160,7 @@ _INTERNAL bool ccrOneHourTest() {
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### CCR ONE HOUR STS TESTING #######\n" _COLOR_RESET;
 
-    engine::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
+    engine::Search search{tt::TranspositionTable(tt::DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;
@@ -228,7 +228,7 @@ _INTERNAL bool nullMoveTest() {
 
     std::cout << _COLOR_BRIGHT_BLUE "\n####### NULL MOVE TESTING #######\n" _COLOR_RESET;
 
-    engine::Search search{tt::TranspositionTable(DefaultTTSizeMb)};
+    engine::Search search{tt::TranspositionTable(tt::DefaultTTSizeMb)};
 
     static auto next_token = [&](const std::string& line, size_t first) -> size_t {
         size_t last = first;

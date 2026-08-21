@@ -432,7 +432,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->pv_line_len = 0;
 
     static constexpr mvo::enumOrderPolicy OrderPolicy = Root ? mvo::ONCE_GEN_LEGAL : mvo::STAGED;
-    static constexpr bool               IsPv        = NmNodeType & PV_NODE;
+    static constexpr bool                 IsPv        = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1453,12 +1453,14 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
         case sc::Win.value():
         case -sc::Win.value():
             scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::value_type>(scaled_eval, sc::KnownWin.value() - sc::Win.value() - 1, 0);
+                          std::clamp<sc::Score::value_type>(scaled_eval, 
+                                                            sc::KnownWin.value() - sc::Win.value() - 1, 0);
             break;
         case sc::KnownWin.value():
         case -sc::KnownWin.value(): 
             scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::value_type>(scaled_eval, sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
+                          std::clamp<sc::Score::value_type>(scaled_eval, 
+                                                            sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
             break;
         default: 
             assert("Invalid endgame score");
@@ -1504,8 +1506,7 @@ _FORCEINLINE int Search::getNullSearchDepth(sc::Score eval, sc::Score beta, int 
 }
 
 _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
-    return std::max(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 64), 
-                    1l);
+    return std::max<int>(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 64), 1);
 }
 
 template <bool IsPv>
@@ -1654,7 +1655,7 @@ void Search::refreshPVinTT(const Position& pos,
 #if defined(DEBUG)
 
     // Check if PV-move for root node is actually there
-    TTEntry tt_entry;
+    tt::TTEntry tt_entry;
     tt_entry.move = NullMove;
 
     _tt.probe(tt_entry,
@@ -1662,7 +1663,7 @@ void Search::refreshPVinTT(const Position& pos,
               -sc::MateBound, +sc::MateBound,
               depth);
 
-    ASSERT_NOLOG(!tt_entry.move.isNullMove());
+    ASSERT_NO_LOG(!tt_entry.move.isNullMove());
 
 #endif
 }

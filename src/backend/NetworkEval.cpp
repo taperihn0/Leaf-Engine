@@ -91,17 +91,17 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
-        ASSERT_NOLOG(weights[i] >= -MaxWeight and weights[i] <= MaxWeight);
-        ASSERT_NOLOG(weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight 
+        ASSERT_NO_LOG(weights[i] >= -MaxWeight and weights[i] <= MaxWeight);
+        ASSERT_NO_LOG(weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight 
                      and weights[NetworkAccumulatorSizePerSide + i] <= MaxWeight);
 
         const int32_t mul0 = static_cast<int32_t>(weights[i]) 
                              * static_cast<int32_t>(NetworkWeightQuant);
-        ASSERT_NOLOG(mul0 >= -Int16Max and mul0 <= Int16Max);
+        ASSERT_NO_LOG(mul0 >= -Int16Max and mul0 <= Int16Max);
 
         const int32_t mul1 = static_cast<int32_t>(weights[NetworkAccumulatorSizePerSide + i]) 
                              * static_cast<int32_t>(NetworkWeightQuant);
-        ASSERT_NOLOG(mul1 >= -Int16Max and mul1 <= Int16Max);
+        ASSERT_NO_LOG(mul1 >= -Int16Max and mul1 <= Int16Max);
     }
 #endif
 
