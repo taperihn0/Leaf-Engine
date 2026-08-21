@@ -26,7 +26,44 @@
 
 namespace search { class NodeInfo; }
 
-namespace mvorder {
+namespace mvo {
+
+class SMoveScore final : public ml::MoveScore {
+public:
+    using Base = ml::MoveScore;
+    using Base::operator=;
+
+    static constexpr value_type MinQuietValue = 0;
+    static constexpr value_type MaxQuietValue = 16384;
+    static constexpr value_type HalfMaxQuietValue = MaxQuietValue / 2;
+
+    SMoveScore() = default;
+    _INLINE constexpr explicit SMoveScore(const Base& s) noexcept : Base(s.value()) {}
+    _INLINE constexpr SMoveScore(const SMoveScore&) = default;
+    _INLINE constexpr SMoveScore(const sc::Score& s) noexcept : Base(s.value()) {}
+    _INLINE constexpr SMoveScore(int32_t val) noexcept : Base(val) {}
+
+    _NODISCARD _FORCEINLINE SMoveScore quietCentered() const {
+        assert(_v >= MinQuietValue and _v <= MaxQuietValue);
+        return value() - HalfMaxQuietValue;
+    }
+
+    _NODISCARD _FORCEINLINE SMoveScore quietTranslToPositive() const {
+        assert(_v >= -HalfMaxQuietValue and _v <= HalfMaxQuietValue);
+        return value() + HalfMaxQuietValue;
+    }
+
+    _NODISCARD _FORCEINLINE constexpr SMoveScore quietOntoOutputRange(value_type curr_max_abs) const {
+        return HalfMaxQuietValue + HalfMaxQuietValue * value() / curr_max_abs;
+    }
+
+    _FORCEINLINE constexpr SMoveScore& operator=(const sc::Score& s) noexcept {
+        _v = static_cast<const sc::Score::Base&>(s)._v;
+        return *this;
+    }
+private:
+    using Base::_v;
+};
 
 /*
 *  Tunable parameters in move ordering.
@@ -55,7 +92,26 @@ _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation2Scale, int32_t, 800.f, 600.f, 1000.f, 1.f);
 
-static inline constexpr int16_t ContinuationPlyCount = 2;
+class HistoryTablesCluster {
+public:
+    static inline constexpr int16_t ContinuationPlyCount = 2;
+
+    HistoryTablesCluster() = default;
+
+    void clear();
+    void onSearch();
+
+    _NODISCARD constexpr int32_t getMaxTotalAbsValue();
+
+    _NODISCARD hist::HistoryTable& getHistoryTable() noexcept;
+    _NODISCARD hist::ContinuationTable& getContinuationTable() noexcept;
+private:
+    enum enumHistIndex {
+        HISTORY_INDEX = 0, CONTINUATION_INDEX = 1
+    };
+
+    std::tuple<hist::HistoryTable, hist::ContinuationTable> _history_cluster;
+};
 
 enum enumOrderPolicy : uint8_t {
     STAGED         = 1, // At nmSearch nodes
@@ -70,25 +126,6 @@ enum class enumStage {
     STAGE_QUIETS
 };
 
-class HistoryTablesCluster {
-public:
-    HistoryTablesCluster() = default;
-
-    void clear();
-    void onSearch();
-
-    _NODISCARD constexpr int32_t getMaxTotalAbsValue();
-
-    _NODISCARD mvhist::HistoryTable& getHistoryTable() noexcept;
-    _NODISCARD mvhist::ContinuationTable& getContinuationTable() noexcept;
-private:
-    enum enumHistIndex {
-        HISTORY_INDEX = 0, CONTINUATION_INDEX = 1
-    };
-
-    std::tuple<mvhist::HistoryTable, mvhist::ContinuationTable> _history_cluster;
-};
-
 /* Here we generate and sort moves.
 *  It wrapps `MoveList` class with actual moves and scores.
 */
@@ -100,8 +137,9 @@ public:
 
     /*
     *   nextMoveWithPolicy<STAGED>:
-    *    - Generates moves by moving through generation stages (first <TACTICALS_ONLY_QUEENPROMOS>, then <QUIETS_ONLY_UNDERPROMOS>)
-    *   nextMoveWithPolicy<QUIESCE>:
+    *    - Generates moves by moving through generation stages 
+    *      (first <TACTICALS_ONLY_QUEENPROMOS>, then <QUIETS_ONLY_UNDERPROMOS>)
+    *   nextMoveWithPolicy<QUIESCENT>:
     *    - Generates only captures in quiescent node.
     *   nextMoveWithPolicy<ONCE_GEN_LEGAL>:
     *    - Generates all of the legal moves once.
@@ -111,7 +149,7 @@ public:
     _NODISCARD bool nextMoveWithPolicy(search::NodeInfo* node, 
                                        Position& pos, 
                                        Move32b& next_move,
-                                       ml::MoveScore& move_score,
+                                       SMoveScore& move_score,
                                        int ply);
 
     void clear();
@@ -128,8 +166,8 @@ public:
 
     void skipQuiets();
 
-    _NODISCARD static int32_t getQuietDepthReduction(ml::MoveScore quiet_score);
-    _NODISCARD static float getCaptureDepthReduction(ml::MoveScore capture_score);
+    _NODISCARD static int32_t getQuietDepthReduction(SMoveScore quiet_score);
+    _NODISCARD static float getCaptureDepthReduction(SMoveScore capture_score);
 
     template <enumOrderPolicy Policy, typename = std::enable_if_t<Policy == ONCE_GEN_LEGAL>>
     _NODISCARD uint getMovesLeft();
@@ -139,6 +177,16 @@ public:
 
     _NODISCARD enumStage getStage() const;
 private:
+    template <enumOrderPolicy Policy, bool Root>
+    _NODISCARD bool internalNextMove(search::NodeInfo* node, 
+                                     Position& pos, 
+                                     Move32b& next_move,
+                                     SMoveScore& move_score,
+                                     int ply);
+
+    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth, bool hash_move_cutoff);
+    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth, bool hash_move_cutoff);
+
     template <int8_t Sign>
     void updateQuietEntry(Move32b move, 
                           enumColor side, 
@@ -147,8 +195,8 @@ private:
                           const search::NodeInfo* node,
                           int ply);
 
-    bool nextMoveFromList(Move32b& move, ml::MoveScore& score, std::size_t end_idx);
-    bool getNextMoveInfo(Move32b& move, ml::MoveScore& score, std::size_t end_idx = maxof<std::size_t>());
+    bool nextMoveFromList(Move32b& move, SMoveScore& score, std::size_t end_idx);
+    bool getNextMoveInfo(Move32b& move, SMoveScore& score, std::size_t end_idx = maxof<std::size_t>());
 
     void scoreTacticals(std::size_t first_ind, const Position& pos);
     void scoreQuiets(std::size_t first_ind, 
@@ -156,13 +204,7 @@ private:
                      const search::NodeInfo* node, 
                      int ply);
 
-    bool nextMoveFromOnceGen(Position& pos, 
-                             Move32b& next_move,
-                             ml::MoveScore& move_score,
-                             const search::NodeInfo* node,
-                             int ply);
-
-    _NODISCARD static ml::MoveScore outputMoveScore(Move32b move, ml::MoveScore s);
+    _NODISCARD static SMoveScore getOutputMoveScore(Move32b move, SMoveScore s);
 
     enum class enumPrivateStage : uint8_t {
         NONE,
@@ -182,8 +224,8 @@ private:
     static mem::AlignedSharedPtr<HistoryTablesCluster> 
                      _history_cluster;
     enumPrivateStage _stage = enumPrivateStage::NONE;
-    std::size_t      _iterator     = 0;
-    std::size_t      _quiets_ind   = 0;
+    std::size_t      _idx          = 0;
+    std::size_t      _quiets_idx   = 0;
     Move32b          _hash_move    = NullMove;
     Move32b          _killer_move  = NullMove;
     uint64_t         _killer_move_parent_hash = 0;
@@ -210,29 +252,29 @@ _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
 
 _INLINE void MoveOrder::clear() {
     _stage = enumPrivateStage::FIRST_STAGE;
-    _iterator = 0;
-    _quiets_ind = 0;
+    _idx = 0;
+    _quiets_idx = 0;
     _hash_move = NullMove;
     _killer_move = NullMove;
     _move_list.clear();
 }
 
 _FORCEINLINE void MoveOrder::skipQuiets() {
-    _iterator = _move_list.count();
+    _idx = _move_list.count();
 }
 
 /* Search utilities - move reductions
 *  =================================
 */
 
-_NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(ml::MoveScore quiet_score) {
-    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * ml::MoveScore::MaxQuietValue / 512;
+_NODISCARD _FORCEINLINE int32_t MoveOrder::getQuietDepthReduction(SMoveScore quiet_score) {
+    const int32_t centered_score = quiet_score.value() - MvOrQuietDepthShiftMult * SMoveScore::HalfMaxQuietValue / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = MvOrQuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
 
-_NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore capture_score) {
+_NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(SMoveScore capture_score) {
     // TODO: better fixed-point formula
     return static_cast<float>(MvOrCaptureMoveScoreReductionRate * capture_score.value() / 128);
 }
@@ -241,7 +283,7 @@ _NODISCARD _FORCEINLINE float MoveOrder::getCaptureDepthReduction(ml::MoveScore 
 
 template <enumOrderPolicy Policy, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
 uint MoveOrder::getMovesLeft() {
-    return _move_list.count() - _iterator;
+    return _move_list.count() - _idx;
 }
 
 template <enumOrderPolicy Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
@@ -249,4 +291,4 @@ uint MoveOrder::getTotalMoves() {
     return static_cast<uint>(_move_list.count());
 }
 
-} // namespace mvorder
+} // namespace mvo

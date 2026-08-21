@@ -248,7 +248,7 @@ void UniversalChessInterface::parsePosition(std::istringstream& strm) {
             }
 
             _game.recordInfo(_pos.getZobristKey(), move);
-            ASSERT_NOLOG(_pos.make(move));
+            ASSERT_NO_LOG(_pos.make(move));
         }
     }
 }

@@ -22,37 +22,16 @@
 
 namespace ml {
 
-class MoveScore final : public sc::util::ScoreBase<MoveScore, int32_t> {
+class MoveScore : public sc::util::ScoreBase<MoveScore, int32_t> {
 public:
-    friend class sc::util::ScoreBase<MoveScore, int32_t>;
-    using Base = sc::util::ScoreBase<MoveScore, int32_t>;
+    friend class sc::util::ScoreBase<MoveScore, value_type>;
+    using Base = sc::util::ScoreBase<MoveScore, value_type>;
     using Base::operator=;
 
-    static constexpr int32_t MinQuietValue = 0;
-    static constexpr int32_t MaxQuietValue = 16384;
-
     MoveScore() = default;
-    _INLINE constexpr MoveScore(const MoveScore&) = default;
-    _INLINE constexpr MoveScore(const sc::Score& s) noexcept 
-        : ScoreBase(s.value()) {}
-    _INLINE constexpr MoveScore(int32_t val) noexcept
-        : ScoreBase(val) {}
-
-    _NODISCARD _FORCEINLINE int32_t value() const {
-        return _v; 
-    }
-
-    _NODISCARD _FORCEINLINE ml::MoveScore centered() const {
-        assert(_v >= MinQuietValue and _v <= MaxQuietValue);
-        return value() - ml::MoveScore::MaxQuietValue / 2;
-    }
-
-    _FORCEINLINE constexpr MoveScore& operator=(const sc::Score& s) noexcept {
-        _v = static_cast<const sc::Score::Base&>(s)._v;
-        return *this;
-    }
-private:
-    using Base::_v;
+    constexpr MoveScore(const MoveScore&) = default;
+    constexpr MoveScore(const sc::Score& s) noexcept : Base(s.value()) {}
+    constexpr MoveScore(value_type val) noexcept : Base(val) {}
 };
 
 class ScoredMove {
@@ -86,15 +65,15 @@ public:
     void sort(std::size_t first, std::size_t end);
     void partialSort(std::size_t first, std::size_t mid, std::size_t end);
 
-    _INLINE void push(Move32b new_move);
-    _INLINE ScoredMove& getEntry(std::size_t idx);
+    void push(Move32b new_move);
+    ScoredMove& getEntry(std::size_t idx);
     _INLINE std::size_t count() const { return _tail_idx; }
 
     bool contains(Move32b m) const;
     _FORCEINLINE void clear() { _tail_idx = 0; }
 
-    _INLINE void print() const;
-    _INLINE void selectBest(std::size_t idx, std::size_t end_idx = maxof<std::size_t>());
+    void print() const;
+    void selectBest(std::size_t idx, std::size_t end_idx = maxof<std::size_t>());
 
     Move32b getRandomMove() const;
 
@@ -103,14 +82,14 @@ public:
                                             std::remove_reference_t<Pred>, ScoredMove>
                                          >
     >
-    _INLINE bool any(Pred&& pred) const;
+    bool any(Pred&& pred) const;
 
     template <typename Pred, 
               typename = std::enable_if_t<std::is_invocable_v<
                                             std::remove_reference_t<Pred>, ScoredMove>
                                          >
     >
-    _INLINE MoveList& remove(Pred&& pred);
+    MoveList& remove(Pred&& pred);
 
     _INLINE ScoredMove* begin() { return _moves.data(); }
     _INLINE ScoredMove* end() { return _moves.data() + _tail_idx; }

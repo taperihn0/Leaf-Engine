@@ -88,7 +88,7 @@ _FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) 
 }
 
 _FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERT_NOLOG(1 <= id && id <= static_cast<uint>(PlatformThreadLimit));
+    ASSERT_NO_LOG(1 <= id && id <= static_cast<uint>(PlatformThreadLimit));
     return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
 }
 

@@ -24,19 +24,19 @@ const std::filesystem::path& ProjectPathsManager::getDir(enumDir dir) const {
 }
 
 std::filesystem::path ProjectPathsManager::getWhiteWinOutputFileName(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
     return std::filesystem::path("selfplay_white_win_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }
 
 std::filesystem::path ProjectPathsManager::getBlackWinOutputFileName(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
     return std::filesystem::path("selfplay_black_win_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }
 
 std::filesystem::path ProjectPathsManager::getDrawOutputFileName(int thread_num) {
-    ASSERT_NOLOG(thread_num <= PlatformThreadLimit);
+    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
     return std::filesystem::path("selfplay_draw_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }

@@ -20,7 +20,7 @@
 
 #include "Common.hpp"
 
-namespace mvorder::mvhist {    
+namespace mvo::hist {    
 
 template <typename T, T MaxAbsValue, typename = std::enable_if_t<std::is_integral_v<T>>>
 class HistoryEntry {
@@ -32,11 +32,11 @@ public:
 
     HistoryEntry& operator=(T v);
 
-    _INLINE void reduce() noexcept;
-    _NODISCARD _FORCEINLINE value_type value() const noexcept;
+    void reduce() noexcept;
+    _NODISCARD value_type value() const noexcept;
 
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
-    _FORCEINLINE static void applyGravityFormula(HistoryEntry& entry, T bonus);
+    static void applyGravityFormula(HistoryEntry& entry, T bonus);
 private:
     T _v;
 };
@@ -70,8 +70,8 @@ public:
 
     void clear();
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
-    _FORCEINLINE void update(enumColor side, Move32b move, int16_t bonus);
-    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move) const;
+    void update(enumColor side, Move32b move, int16_t bonus);
+    _NODISCARD Entry::value_type getValue(enumColor side, Move32b move) const;
 
     Entry* begin();
     Entry* end();
@@ -91,8 +91,8 @@ public:
     ContinuationTable& operator=(ContinuationTable&&) = delete;
 
     void clear();
-    _NODISCARD _FORCEINLINE ContinuationSubtable& getSubtable(enumColor side, Move32b move);
-    _INLINE void reduce();
+    _NODISCARD ContinuationSubtable& getSubtable(enumColor side, Move32b move);
+    void reduce();
 private:
     MultiArray<ContinuationSubtable, 2, 2, 6, 64> _continuation_tables;
 };
@@ -106,9 +106,9 @@ public:
 
     void clear();
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
-    _FORCEINLINE void update(enumColor side, Move32b move, Entry::value_type bonus);
-    _INLINE void reduce();
-    _NODISCARD _FORCEINLINE Entry::value_type getValue(enumColor side, Move32b move) const;
+    void update(enumColor side, Move32b move, Entry::value_type bonus);
+    void reduce();
+    _NODISCARD Entry::value_type getValue(enumColor side, Move32b move) const;
 private:
     MultiArray<Entry, 2, 6, 64> _quiets_history;
 };
@@ -208,4 +208,4 @@ _NODISCARD _FORCEINLINE HistoryTable::Entry::value_type HistoryTable::getValue(e
     return _quiets_history[side][piece][to].value();
 }
 
-} // namespace mvorder::mvhist
+} // namespace mvo::hist

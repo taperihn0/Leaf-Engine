@@ -73,7 +73,7 @@ public:
     TreeStack& operator=(const TreeStack&) = delete;
     TreeStack& operator=(TreeStack&&)      = delete;
 
-    void clear(mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> history_buffer);
+    void clear(mem::AlignedSharedPtr<mvo::HistoryTablesCluster> history_buffer);
 
     NodeInfo*       getRootNode();
     const NodeInfo* getRootNode() const;
@@ -335,10 +335,10 @@ TreeStack::TreeStack()
     ASSERT(_stack != nullptr, "Failed to allocate memory");
 }
 
-void TreeStack::clear(mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> history_buffer) {
-    ASSERT_NOLOG(history_buffer);
+void TreeStack::clear(mem::AlignedSharedPtr<mvo::HistoryTablesCluster> history_buffer) {
+    ASSERT_NO_LOG(history_buffer);
 
-    mvorder::MoveOrder::setHistoryBuffer(history_buffer);
+    mvo::MoveOrder::setHistoryBuffer(history_buffer);
 
     for (int i = 0; i < static_cast<int>(_Count); i++) {
         NodeInfo& node = _stack.get()[i];
@@ -447,7 +447,7 @@ void TreeStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cl
 Search::Search(TranspositionTable&& tt) 
     : _tt(std::move(tt))
     , _tree_stack(std::make_unique<TreeStack>())
-    , _history_cluster(mem::makeAlignedShared<mvorder::HistoryTablesCluster>(1, CachelineSize))
+    , _history_cluster(mem::makeAlignedShared<mvo::HistoryTablesCluster>(1, CachelineSize))
 {
     ASSERT(_history_cluster != nullptr, "Failed to allocate memory");
     onNewGame();
@@ -722,7 +722,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->side2move = pos.getTurn();
     node->pv_line_len = 0;
 
-    static constexpr mvorder::enumOrderPolicy OrderPolicy = Root ? mvorder::ONCE_GEN_LEGAL : mvorder::STAGED;
+    static constexpr mvo::enumOrderPolicy OrderPolicy = Root ? mvo::ONCE_GEN_LEGAL : mvo::STAGED;
     static constexpr bool               IsPv        = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
@@ -987,7 +987,7 @@ sc::Score Search::nmSearch(Position& pos,
         }
     }
 
-    for (int i = 0; i < mvorder::ContinuationPlyCount and i < ply; i++) {
+    for (int i = 0; i < mvo::HistoryTablesCluster::ContinuationPlyCount and i < ply; i++) {
         search::NodeInfo* prev_node = node - i - 1;
         prev_node->continuation_subtable_ptr = 
             &_history_cluster->getContinuationTable().getSubtable(prev_node->side2move, prev_node->move);
@@ -1109,11 +1109,11 @@ sc::Score Search::nmSearch(Position& pos,
     node->move_picker.clear();
     node->move_picker.setHashMove(tt_move);
 
-    _LC_PARAM_ATTRIBS int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
-    _LC_PARAM_ATTRIBS int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
-    _LC_PARAM_ATTRIBS int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
-    _LC_PARAM_ATTRIBS int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
-    _LC_PARAM_ATTRIBS int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
+    _STACK_PARAM_ATTRIBS int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
+    _STACK_PARAM_ATTRIBS int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
+    _STACK_PARAM_ATTRIBS int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
+    _STACK_PARAM_ATTRIBS int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
+    _STACK_PARAM_ATTRIBS int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     node->can_move       = false;
     node->score          = sc::Undef;
@@ -1131,7 +1131,7 @@ sc::Score Search::nmSearch(Position& pos,
         /* Singular Move -
         *  return obvious move that is the only one in root
         */
-        if constexpr (Root and OrderPolicy == mvorder::ONCE_GEN_LEGAL) {
+        if constexpr (Root and OrderPolicy == mvo::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
                 node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
                 results.score_cp = sc::Undef;
@@ -1179,7 +1179,7 @@ sc::Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    node->move_score.centered().value() * 
+                                                    node->move_score.quietCentered().value() * 
                                                     FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
@@ -1293,7 +1293,7 @@ sc::Score Search::nmSearch(Position& pos,
                     move_reduction -= QuietKillerMoveReduction * FixedPointMult;
 
                 if (node->move_score.isValid()) 
-                    move_reduction += mvorder::MoveOrder::getQuietDepthReduction(node->move_score) * FixedPointMult;
+                    move_reduction += mvo::MoveOrder::getQuietDepthReduction(node->move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     QuietExtensionReduction / FixedPointMult;
@@ -1321,7 +1321,7 @@ sc::Score Search::nmSearch(Position& pos,
                     move_reduction -= CaptureKillerMoveReduction * FixedPointMult;
 
                 if (node->move_score.isValid() and !node->move.isPromotion())
-                    move_reduction += mvorder::MoveOrder::getCaptureDepthReduction(node->move_score) * FixedPointMult;
+                    move_reduction += mvo::MoveOrder::getCaptureDepthReduction(node->move_score) * FixedPointMult;
 
                 move_reduction -= static_cast<int64_t>(move_extension) * move_extension * 
                                     CaptureExtensionReduction / FixedPointMult;
@@ -1502,7 +1502,7 @@ sc::Score Search::qSearch(Position& pos,
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    static constexpr mvorder::enumOrderPolicy QuiescentOrderPolicy = mvorder::QUIESCENT;
+    static constexpr mvo::enumOrderPolicy QuiescentOrderPolicy = mvo::QUIESCENT;
     static constexpr bool               IsPv = QNodeType & PV_NODE; 
 
     assert(IsPv or alpha == beta - 1);
@@ -1627,7 +1627,7 @@ sc::Score Search::qSearch(Position& pos,
     node->score          = sc::Undef;
     node->best_score     = -sc::Infinity;
 
-    ml::MoveScore move_score = sc::Undef;
+    mvo::SMoveScore move_score = sc::Undef;
 
     for (node->move_index = 0;
          node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score, ply);

@@ -23,7 +23,6 @@
 
 class MoveGen {
 public:
-
     enum enumGenMoves : uint8_t {
         CAPTURES                   = 1,
         NON_CAPTURES               = 1 << 1,
@@ -51,4 +50,3 @@ public:
 constexpr MoveGen::enumGenMoves operator|(MoveGen::enumGenMoves node0, MoveGen::enumGenMoves node1) {
     return static_cast<MoveGen::enumGenMoves>(static_cast<int>(node0) | static_cast<int>(node1));
 }
-

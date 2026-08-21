@@ -212,7 +212,7 @@ bool PackedNeuralNetwork::loadFromMemory(const void* m) {
         return false;
     }
 
-    ASSERT_NOLOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
+    ASSERT_NO_LOG(_header.layer_count > 0 and _header.layer_count <= MaxLayerCount);
 
     return initLayerWeightsBiases(m);
 }
@@ -261,22 +261,22 @@ uint PackedNeuralNetwork::getAccumulatorSize() const {
 }
 
 uint PackedNeuralNetwork::getLayerSize(std::size_t layer_num) const {
-    ASSERT_NOLOG(layer_num < _header.layer_count);
+    ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
 const int16_t* PackedNeuralNetwork::getLayerWeights(std::size_t layer_num) const {
-    ASSERT_NOLOG(layer_num < _header.layer_count);
+    ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_weights[layer_num];
 }
 
 const int16_t* PackedNeuralNetwork::getLayerBiases(std::size_t layer_num) const {
-    ASSERT_NOLOG(layer_num < _header.layer_count);
+    ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_biases[layer_num];
 }
 
 std::size_t PackedNeuralNetwork::getLayerWeightsCount(std::size_t layer_num) const {
-    ASSERT_NOLOG(layer_num + 1 < _header.layer_count);
+    ASSERT_NO_LOG(layer_num + 1 < _header.layer_count);
 
     std::size_t weight_cnt = _header.layer_size[layer_num] * _header.layer_size[layer_num + 1];
 
@@ -287,7 +287,7 @@ std::size_t PackedNeuralNetwork::getLayerWeightsCount(std::size_t layer_num) con
 }
 
 std::size_t PackedNeuralNetwork::getLayerBiasesCount(std::size_t layer_num) const {
-    ASSERT_NOLOG(layer_num < _header.layer_count);
+    ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
@@ -359,7 +359,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
         it += weight_cnt;
         byte_offset += weight_cnt * sizeof(int16_t);
 
-        ASSERT_NOLOG(byte_offset <= _mem_size);
+        ASSERT_NO_LOG(byte_offset <= _mem_size);
 
         std::size_t biases_cnt = _header.layer_size[layer_num + 1];
 
@@ -367,7 +367,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
         it += biases_cnt;
         byte_offset += biases_cnt * sizeof(int16_t);
 
-        ASSERT_NOLOG(byte_offset <= _mem_size);
+        ASSERT_NO_LOG(byte_offset <= _mem_size);
     }
 
     return true;

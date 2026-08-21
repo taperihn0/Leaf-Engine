@@ -98,7 +98,7 @@ bool verifyTrainData(std::ifstream& input,
                      std::size_t& verified_cnt, 
                      TrainingDataEntry::Result8b expected_result) 
 {
-    ASSERT_NOLOG(input.is_open());
+    ASSERT_NO_LOG(input.is_open());
 
     verified_cnt = 0;
 

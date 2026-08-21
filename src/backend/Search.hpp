@@ -166,7 +166,7 @@ public:
     void clear();
 
     enumColor                 side2move;
-    mvorder::MoveOrder        move_picker;
+    mvo::MoveOrder        move_picker;
     Position::ReversibleState state;
     Move32b                   move;
     Move32b                   best_move;
@@ -185,8 +185,8 @@ public:
     uint16_t                  pv_line_len;
     bool                      is_cut;
     bool                      mate_thread;
-    ml::MoveScore             move_score;
-    mvorder::mvhist::ContinuationSubtable*
+    mvo::SMoveScore           move_score;
+    mvo::hist::ContinuationSubtable*
                               continuation_subtable_ptr;
 };
 
@@ -431,7 +431,7 @@ private:
     *  for very MoveOrder in TreeStack.
     *  Also, Search class in responsible for allocation and deallocation.
     */
-    mem::AlignedSharedPtr<mvorder::HistoryTablesCluster> 
+    mem::AlignedSharedPtr<mvo::HistoryTablesCluster> 
                      _history_cluster;
     sc::Score _contempt = sc::Undef;
 };

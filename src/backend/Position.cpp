@@ -546,7 +546,7 @@ void Position::unmakeNull(const ReversibleState& prev_state) {
 }
 
 uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
-    ASSERT_NOLOG(!move.isNullMove());
+    ASSERT_NO_LOG(!move.isNullMove());
 
     const Square          org = move.getOrigin(),
                           dst = move.getTarget();
@@ -663,7 +663,7 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
-    _LC_PARAM_ATTRIBS const std::array<int32_t, 7> SeePieceValue = {
+    _STACK_PARAM_ATTRIBS const std::array<int32_t, 7> SeePieceValue = {
         SeePawnValue,
         SeeKnightValue,
         SeeBishopValue,

@@ -125,7 +125,7 @@
 *  that are dynamically recalculated to sync with
 *  tunable parameters.
 */
-#define _LC_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
+#define _STACK_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
 
 #if defined(__GNUC__) and defined(LEAF_ARCHITECTURE_X86)
 #define _GNU_TARGET_BMI2_AVX2 [[gnu::target("bmi2", "avx2")]]
@@ -205,16 +205,16 @@ inline constexpr std::size_t operator""_MB(ull mb_count) {
 }
 
 #if defined(DEBUG)
-#define WARN(msg)                static_cast<void>(::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#define WARN(msg)                 static_cast<void>(::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
 #else
-#define WARN(msg)                static_cast<void>(0);
+#define WARN(msg)                 static_cast<void>(0);
 #endif
-#define ASSERT(s, msg)           static_cast<void>((s) or ::xxassertutil::releaseFailedAssertion(__FILE__, msg, __LINE__))
-#define ASSERT_NOLOG(s)          ASSERT(s, "Anonymous assertion failed")
-#define WARN_IFNOT(s, msg)       static_cast<void>((s) or ::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
-#define WARN_IFNOT_NOLOG(s, msg) WARN_IFNOT(s, "Anonymous warning point")
-#define FAILED(msg)              ASSERT(false, msg)
-#define FAILED_NOLOG()           ASSERT_NOLOG(false)
+#define ASSERT(s, msg)            static_cast<void>((s) or ::xxassertutil::releaseFailedAssertion(__FILE__, msg, __LINE__))
+#define ASSERT_NO_LOG(s)          ASSERT(s, "Anonymous assertion failed")
+#define WARN_IFNOT(s, msg)        static_cast<void>((s) or ::xxassertutil::logWarnMessage(__FILE__, msg, __LINE__))
+#define WARN_IFNOT_NO_LOG(s, msg) WARN_IFNOT(s, "Anonymous warning point")
+#define FAILED(msg)               ASSERT(false, msg)
+#define FAILED_NO_LOG()           ASSERT_NO_LOG(false)
 
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 #define DEBUG_BREAK() __debugbreak()
@@ -224,10 +224,9 @@ inline constexpr std::size_t operator""_MB(ull mb_count) {
 
 namespace xxassertutil {
 
-_INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
+_NORETURN _INTERNAL bool releaseFailedAssertion(std::string_view file, std::string_view text, int line) {
     std::cout << text << '\n' << file << ", line " << line << std::endl;
     exit(EXIT_FAILURE);
-    return false;
 }
 
 _INTERNAL bool logWarnMessage(std::string_view file, std::string_view text, int line) {
@@ -237,6 +236,12 @@ _INTERNAL bool logWarnMessage(std::string_view file, std::string_view text, int 
 }
 
 } // namespace xxassertutil
+
+_NORETURN _INTERNAL void unreachable() {
+#if defined(__GNUC__)
+    __builtin_unreachable();
+#endif
+}
 
 static constexpr int MaxNodeMoves = 128;
 static constexpr int MaxDepth     = 96;

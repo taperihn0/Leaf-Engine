@@ -39,7 +39,7 @@ void Game::applyMove(Move32b move, clk::milliseconds think_time) {
         _time_left_sided[side2move] -= think_time;
     }
 
-    ASSERT_NOLOG(_current_pos.make(move));
+    ASSERT_NO_LOG(_current_pos.make(move));
 
     uint64_t key = _current_pos.getZobristKey();
     _pos_record.recordInfo(key, move);

@@ -38,15 +38,15 @@ _INLINE void generatePromotions(Square origin,
                                 Square target, 
                                 ml::MoveList& move_list) 
 {
-    constexpr bool is_tactical_capture = Capture && (Moves2Gen & MoveGen::CAPTURES);
-    constexpr bool gen_queen = (Moves2Gen & MoveGen::QUEENPROMOS) || is_tactical_capture;
-    constexpr bool gen_under = (Moves2Gen & MoveGen::UNDERPROMOS) || is_tactical_capture;
+    constexpr bool IsTacticalCapture = Capture and (Moves2Gen & MoveGen::CAPTURES);
+    constexpr bool GenQueen = (Moves2Gen & MoveGen::QUEENPROMOS) or IsTacticalCapture;
+    constexpr bool GenUnder = (Moves2Gen & MoveGen::UNDERPROMOS) or IsTacticalCapture;
 
-    if constexpr (gen_queen) {
+    if constexpr (GenQueen) {
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::QUEEN));
     }
 
-    if constexpr (gen_under) {
+    if constexpr (GenUnder) {
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::KNIGHT));
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::BISHOP));
         move_list.push(Move32b::makePromotion(origin, target, Capture, Piece::ROOK));
@@ -346,8 +346,8 @@ _FORCEINLINE void generatePawnMoves(const Position& pos,
         generatePawnCaptures<Moves2Gen, LMode, Side>(pos, move_list, mask, enemies, cache);
     }
 
-    if constexpr ((Moves2Gen & MoveGen::NON_CAPTURES) || 
-                  (Moves2Gen & MoveGen::QUEENPROMOS) || 
+    if constexpr ((Moves2Gen & MoveGen::NON_CAPTURES) or 
+                  (Moves2Gen & MoveGen::QUEENPROMOS) or
                   (Moves2Gen & MoveGen::UNDERPROMOS)) {
         generatePawnPushes<Moves2Gen, LMode, Side>(pos, move_list, mask, empties, cache);
     }
@@ -589,7 +589,7 @@ void generateMovesInMode(const Position& pos, ml::MoveList& move_list) {
 
     const CacheKingRelated cache = getCache<LMode>(pos, side2move);
 
-    if constexpr ((Moves2Gen & MoveGen::CAPTURES) && (Moves2Gen & MoveGen::NON_CAPTURES)) {
+    if constexpr ((Moves2Gen & MoveGen::CAPTURES) and (Moves2Gen & MoveGen::NON_CAPTURES)) {
         constexpr auto tactical_flags = static_cast<MoveGen::enumGenMoves>(Moves2Gen & ~MoveGen::NON_CAPTURES);
         constexpr auto quiet_flags    = MoveGen::QUIETS_NO_PROMOS;
 
