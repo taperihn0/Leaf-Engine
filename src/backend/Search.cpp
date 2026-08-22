@@ -724,7 +724,7 @@ sc::Score Search::nmSearch(Position& pos,
         
             if (prev_eval_node) {
                 const int64_t diff = static_cast<int64_t>(node->eval - prev_eval_node->eval);
-                node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult * ImprovingRate / 1024, 
+                node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
                                                       -FixedPointMult, FixedPointMult);
             }
         }
@@ -852,11 +852,11 @@ sc::Score Search::nmSearch(Position& pos,
     node->bound          = tt::TTBound::UPPERBOUND;
     node->move_score     = sc::Undef;
 
-    _AUTO_PARAM_ATTRIBS const int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / 128;
-    _AUTO_PARAM_ATTRIBS const int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / 128;
-    _AUTO_PARAM_ATTRIBS const int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / 128;
-    _AUTO_PARAM_ATTRIBS const int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / 128;
-    _AUTO_PARAM_ATTRIBS const int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / 128;
+    _AUTO_PARAM_ATTRIBS const int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
+    _AUTO_PARAM_ATTRIBS const int32_t MoveCheckExtensionBase = 1.f * FixedPointMult * MoveCheckExtensionRate / MoveCheckExtensionDiv;
+    _AUTO_PARAM_ATTRIBS const int32_t MateThreadExtensionBase = 1.f * FixedPointMult * MateThreadFracExtensionRate / MateThreadFracExtensionDiv;
+    _AUTO_PARAM_ATTRIBS const int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
+    _AUTO_PARAM_ATTRIBS const int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
     for (node->move_index = 0; 
          node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, node->move_score, ply);
