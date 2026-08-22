@@ -12,7 +12,6 @@
 * Train bigger net: 256 HL
 * Improve README (version-strength tables) & explain commands
 * Update commands docs
-* Try to update Zobrish Key only when move is legal, in an if (legal) branch.
 * Include node type in history bonuses
 * Recapture heuristic (in move order try to apply capture that captures last moved piece)
 * You've got special ZobristKey datatype instead of uint64_t.

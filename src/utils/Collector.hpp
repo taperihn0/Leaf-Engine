@@ -36,7 +36,7 @@ public:
         size_t                games_count; 
         uint                  thread_count;
         std::filesystem::path selfplay_filename;
-        engine::SearchLimits  limits;
+        search::utils::SearchLimits  limits;
     };
     
     void startTournament(const TournamentPacket& packet);
@@ -67,7 +67,7 @@ private:
         std::ofstream output_white_win;
         std::ofstream output_black_win;
         std::ofstream output_draw;
-        engine::SearchLimits  limits;
+        search::utils::SearchLimits  limits;
         size_t        games_ended;
         size_t        white_win_count;
         size_t        black_win_count;

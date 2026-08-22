@@ -32,7 +32,7 @@ public:
     void init() override;
     void finish() override;
 
-    static engine::SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
+    static search::utils::SearchLimits loadSearchLimits(std::istringstream& strm, std::string token);
     static std::vector<opt::OptionTunableParam>& getTunableOptions();
 
     virtual void loop(int argc, const char* argv[]);
@@ -54,7 +54,7 @@ protected:
     void parseNNEval(std::istringstream& strm);
 #endif
 
-    engine::Search      _search;
+    search::Search      _search;
     Position            _pos;
     FullInfoRecord      _game;
     static opt::Options _options;

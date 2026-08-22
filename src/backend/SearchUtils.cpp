@@ -1,7 +1,6 @@
 #include "SearchUtils.hpp"
 
-namespace engine
-{
+namespace search::utils {
     
 void SearchResults::clear() {
     mem::memSet(this, 0, sizeof(SearchResults));
@@ -206,9 +205,9 @@ void SearchStack::clear(mem::AlignedSharedPtr<mvo::HistoryTablesCluster> history
     }
 }
 
-AccumulatorCluster* SearchStack::getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
-                                                            NodeInfo* const preroot)
-{
+AccumulatorCluster* SearchStack::getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster) {
+    NodeInfo* const preroot = getPreRootNode();
+
     for (AccumulatorCluster* prev_accum_cluster = accum_cluster->prev_cluster;
          prev_accum_cluster != &preroot->cluster;
          prev_accum_cluster = prev_accum_cluster->prev_cluster) {
@@ -281,4 +280,4 @@ void SearchStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_
     }
 }
 
-} // namespace engine
+} // namespace search::utils

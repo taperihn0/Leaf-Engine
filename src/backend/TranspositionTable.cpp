@@ -21,7 +21,7 @@
 
 namespace tt {
 
-TTEntry::TTEntry()
+/*TTEntry::TTEntry()
     : key16(0)
     , key18(0)
     , generation(0)
@@ -30,7 +30,7 @@ TTEntry::TTEntry()
     , score(sc::Undef)
     , move(NullMove)
     , eval(sc::Undef)
-{}
+{}*/
 
 TranspositionTable::TranspositionTable(size_t mb_size)
     : _mem(getPageAlignedMemoryHandle(mb_size / sizeof(Bucket)))

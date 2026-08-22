@@ -39,29 +39,29 @@ enum class TTBound : uint8_t {
 };
 
 struct TTEntry {
-    TTEntry();
+    TTEntry() = default;
 
-    _NODISCARD _INLINE bool isEmpty() const noexcept { 
+    _NODISCARD _FORCEINLINE bool isEmpty() const noexcept { 
         return depth == 0 and bound == TTBound::NONE; 
     }
 
-    _INLINE void writeHash(uint32_t keyhi) noexcept {
+    _FORCEINLINE void writeHash(uint32_t keyhi) noexcept {
         key16 = static_cast<uint16_t>(keyhi);
         key18 = (keyhi & 0x30000) >> 16;
     }
 
-    _NODISCARD _INLINE uint32_t getHash() const noexcept {
+    _NODISCARD _FORCEINLINE uint32_t getHash() const noexcept {
         return (static_cast<uint32_t>(key18) << 16) | key16;
     }
 
-    uint16_t key16;
-    uint8_t  key18 : 2;
-    uint8_t  generation : 6;
-    TTBound  bound : 2;
-    uint8_t  depth : 6;
-    sc::Score    score;
-    Move16b  move;
-    sc::Score    eval;
+    uint16_t  key16;
+    uint8_t   key18 : 2;
+    uint8_t   generation : 6;
+    TTBound   bound : 2;
+    uint8_t   depth : 6;
+    sc::Score score;
+    Move16b   move;
+    sc::Score eval;
 };
 
 static_assert(sizeof(TTEntry) == EntryTargetSize);
@@ -125,5 +125,18 @@ private:
     uint8_t _generation;
     ull     _hits;
 };
+
+_NODISCARD _FORCEINLINE static TTEntry getClearEntry() noexcept {
+    TTEntry entry;
+    entry.key16 = 0;
+    entry.key18 = 0;
+    entry.generation = 0;
+    entry.bound = TTBound::NONE;
+    entry.depth = 0;
+    entry.score = sc::Undef;
+    entry.move = NullMove;
+    entry.eval = sc::Undef;
+    return entry;
+}
 
 } // namespace tt

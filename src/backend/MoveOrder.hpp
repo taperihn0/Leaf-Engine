@@ -24,7 +24,7 @@
 #include "Tuning.hpp"
 #include "History.hpp"
 
-namespace engine { class NodeInfo; }
+namespace search::utils { class NodeInfo; }
 
 namespace mvo {
 
@@ -143,7 +143,7 @@ public:
     */
 
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool nextMoveWithPolicy(engine::NodeInfo* node, 
+    _NODISCARD bool nextMoveWithPolicy(search::utils::NodeInfo* node, 
                                        Position& pos, 
                                        Move32b& next_move,
                                        SMoveScore& move_score,
@@ -159,7 +159,7 @@ public:
                              enumColor side, 
                              int depth, 
                              int ply,
-                             const engine::NodeInfo* node);
+                             const search::utils::NodeInfo* node);
 
     void skipQuiets();
 
@@ -172,13 +172,13 @@ public:
     _NODISCARD enumStage getStage() const;
 private:
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool internalNextMove(engine::NodeInfo* node, 
+    _NODISCARD bool internalNextMove(search::utils::NodeInfo* node, 
                                      Position& pos, 
                                      Move32b& next_move,
                                      SMoveScore& move_score,
                                      int ply);
 
-    void updateContinuationPointers(engine::NodeInfo* node, int ply);
+    void updateContinuationPointers(search::utils::NodeInfo* node, int ply);
 
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth);
     _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth);
@@ -188,7 +188,7 @@ private:
                           enumColor side, 
                           int16_t hist_bonus, 
                           int16_t cont_hist,
-                          const engine::NodeInfo* node,
+                          const search::utils::NodeInfo* node,
                           int ply);
 
     bool nextMoveFromList(Move32b& move, 
@@ -204,7 +204,7 @@ private:
 
     void scoreQuiets(size_t beg_idx, 
                      enumColor side, 
-                     const engine::NodeInfo* node, 
+                     const search::utils::NodeInfo* node, 
                      int ply);
 
     _NODISCARD static SMoveScore getOutputMoveScore(Move32b move, SMoveScore s);
@@ -227,8 +227,8 @@ private:
     static mem::AlignedSharedPtr<HistoryTablesCluster> 
                      _history_cluster;
     enumPrivateStage _stage        = enumPrivateStage::NONE;
-    size_t      _idx          = 0;
-    size_t      _quiets_idx   = 0;
+    size_t           _idx          = 0;
+    size_t           _quiets_idx   = 0;
     Move32b          _hash_move    = NullMove;
     Move32b          _killer_move  = NullMove;
     uint64_t         _killer_move_parent_hash = 0;

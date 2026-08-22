@@ -23,7 +23,7 @@
 #include "SearchUtils.hpp"
 #include "Tablebase.hpp"
 
-namespace engine {
+namespace search {
 
 /*
 *   Tunable parameters in Search.
@@ -53,7 +53,7 @@ _DEFINE_TUNABLE_PARAMETER(FutilityScoreMult, int32_t, 9.75754f, 2.f, 13.f, 0.9f)
 _DEFINE_TUNABLE_PARAMETER(RazorBaseDelta, int32_t, 106.164f, 20.f, 500.f, 0.4f);
 _DEFINE_TUNABLE_PARAMETER(QMaterialDelta, int32_t, 1119.44f, 700.f, 1200.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(NNEvalScale, int32_t, 7.70538f, 7.f, 17.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(ImprovingRate, int32_t, 40.7981f, 30.f, 90.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(ImprovingRate, int32_t, 24.7981f, 12.f, 36.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(RfpImprovingSinkMult, int32_t, 127.949f, 100.f, 160.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(NullMargin, int32_t, 4.0552f, 1.f, 14.f, 0.5f);
 _DEFINE_TUNABLE_PARAMETER(NullImprovingSinkMult, int32_t, 29.7565f, 16.f, 38.f, 1.f);
@@ -83,22 +83,19 @@ _DEFINE_TUNABLE_PARAMETER(CaptureImprovingReductionRate, int32_t, 27.1306f, 8.f,
 _DEFINE_TUNABLE_PARAMETER(EvalHalfMovesEvalLimit, int32_t, 14.4607f, 6.f, 25.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(EvalEgHalfMovesEvalLimit, int32_t, 20.4607f, 6.f, 30.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(NullVerifyDepth, int32_t, 8.9219f, 5.f, 16.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionRate, int32_t, 10.5909f, 8.f, 16.f, 1.8f);
-_DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionDiv, int32_t, 9.53864f, 8.f, 16.f, 1.4f);
+_DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionRate, int32_t, 140.5909f, 100.f, 180.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(ImprovingExtensionMateRate, int32_t, 20.3026f, 12.f, 28.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionRate, int32_t, 10.4043f, 10.f, 30.f, 0.9f);
-_DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionDiv, int32_t, 16.7514f, 12.f, 26.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 14.2369f, 10.f, 30.f, 1.7f);
-_DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionDiv, int32_t, 10.0644f, 10.f, 18.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionRate, int32_t, 75.4043f, 40.f, 110.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 179.2369f, 120.f, 240.f, 1.7f);
 _DEFINE_TUNABLE_PARAMETER(NullVerifyDepthMult, int32_t, 15.8f, 6.f, 25.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(ExtensionDepth, int32_t, 15.9831f, 4.f, 32.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepth, int32_t, 3.4227f, 2.f, 8.f, 1.9f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 2.21081f, 1.f, 4.f, 1.2f);
-_DEFINE_TUNABLE_PARAMETER(SingularExtensionRate, int32_t, 1.20531f, 0.8f, 12.f, 1.8f);
+_DEFINE_TUNABLE_PARAMETER(SingularExtensionRate, int32_t, 8.20531f, 1.f, 16.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(SingularBetaDepthMult, int32_t, 54.2774f, 1.f, 96.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMult, int32_t, 129.993f, 90.f, 180.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 535.757f, 400.f, 650.f, 0.6f);
-_DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 10.5274f, 1.f, 15.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 43.5274f, 20.f, 65.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(TablebaseProbeDepth, int32_t, 8.29697f, 2.f, 16.f, 2.f);
 _DEFINE_TUNABLE_PARAMETER(TablebasePieceCountLimit, int32_t, 5.63622f, 2.f, 10.f, 1.7f);
 _DEFINE_TUNABLE_PARAMETER(AspirationSearchDepth, int32_t, 3.63818f, 2.f, 5.f, 1.5f);
@@ -127,8 +124,6 @@ _DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 
 *  These are not tuned.
 */
 
-inline constexpr int32_t SingularExtensionDiv = 16;
-inline constexpr int32_t SingularBetaExtensionDiv = 32;
 inline constexpr int32_t CheckNodeCount = 2048;
 inline constexpr bool    UseSyzygyTablebase = _USE_SYZYGY_TB;
 inline constexpr bool    UseSyzygyTablebaseRoot = _USE_SYZYGY_TB_ROOT;
@@ -173,18 +168,18 @@ public:
     template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
     _NODISCARD Move32b findBestMove(Position& pos, 
                                     const FullInfoRecord& game, 
-                                    SearchLimits limits);
+                                    utils::SearchLimits limits);
 
     template <enumInfoLevel InfoLevel = SEARCH_FULL_INFO>
     _NODISCARD Move32b findBestMove(Position& pos, 
                                     const FullInfoRecord& game, 
-                                    SearchLimits limits,
-                                    SearchResults& results);
+                                    utils::SearchLimits limits,
+                                    utils::SearchResults& results);
 
     static Move32b _findBestMove_unittest(Search& search, 
                                           Position& pos, 
                                           const FullInfoRecord& game, 
-                                          SearchLimits limits);
+                                          utils::SearchLimits limits);
     
     void clearHash();
     void resizeHash(size_t tt_size_mb);
@@ -207,7 +202,7 @@ private:
                        const SearchLimitsWrapper& limits, 
                        SearchResultsWrapper& results, 
                        const FullInfoRecord& game, 
-                       NodeInfo* node,
+                       utils::NodeInfo* node,
                        sc::Score alpha, sc::Score beta, 
                        int depth, int ply);
 
@@ -215,42 +210,40 @@ private:
     sc::Score qSearch(Position& pos, 
                       const SearchLimitsWrapper& limits, 
                       SearchResultsWrapper& results, 
-                      NodeInfo* node, 
+                      utils::NodeInfo* node, 
                       sc::Score alpha, sc::Score beta, 
                       int depth, int ply);
     
-    sc::Score getDrawScore(const NodeInfo* node) const;
+    sc::Score getDrawScore(const utils::NodeInfo* node) const;
     sc::Score getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
                                 const Position& pos, 
-                                const NodeInfo* node, 
+                                const utils::NodeInfo* node, 
                                 int ply) const;
     bool isTablebaseScore(sc::Score score) const;
-    sc::Score applyContempt(sc::Score score, const NodeInfo* node) const;
+    sc::Score applyContempt(sc::Score score, const utils::NodeInfo* node) const;
 
     template <enumNode NodeType>
     sc::Score evaluate(const Position& pos,
-                       SearchStack* tree_stack,
-                       NodeInfo* node,
-                       NodeInfo* preroot, 
+                       utils::NodeInfo* node,
                        enumColor side2move, 
                        _MAYBE_UNUSED SearchResultsWrapper& results);
 
     sc::Score correctedEvalScore(sc::Score eval, sc::Score score);
 
-    int16_t getRfpQuietHistPenalty(NodeInfo* parent_node);
+    int16_t getRfpQuietHistPenalty(utils::NodeInfo* parent_node);
 
     int getNullSearchDepth(sc::Score eval, sc::Score beta, int depth);
     int getNullVerifyDepth(int nm_depth);
 
     template <bool IsPv>
-    _NODISCARD int32_t getMoveReduction(const NodeInfo* node, 
+    _NODISCARD int32_t getMoveReduction(const utils::NodeInfo* node, 
                                         int depth, 
                                         int32_t move_extension,
                                         Move32b tt_move, 
                                         Move32b killer);
 
     template <bool IsPv, enumParameterIndex Index>
-    _NODISCARD int32_t getMoveReduction(const NodeInfo* node, 
+    _NODISCARD int32_t getMoveReduction(const utils::NodeInfo* node, 
                                         int depth, 
                                         int32_t move_extension,
                                         Move32b tt_move, 
@@ -260,29 +253,29 @@ private:
     _NODISCARD static int32_t getScoreMoveReduction(mvo::SMoveScore s);
 
     void refreshPVinTT(const Position& pos, 
-                       const std::array<PvInfo, MaxSelDepth>& root_pv_line, 
+                       const std::array<utils::PvInfo, MaxSelDepth>& root_pv_line, 
                        uint16_t pv_len,
                        SearchResultsWrapper& results);
 
     template <bool IsPv>
     bool isRepetitionCycle(const Position& pos, 
                            const FullInfoRecord& game, 
-                           const NodeInfo* node, 
+                           const utils::NodeInfo* node, 
                            int ply,
                            SearchResultsWrapper& results);
 
     bool canRepetitionDraw(const Position& pos, 
-                           const NodeInfo* node, 
+                           const utils::NodeInfo* node, 
                            int ply);
 
     bool isInsufficientMaterial(const Position& pos);
 
     tt::TranspositionTable       _tt;
-    std::unique_ptr<SearchStack> _stack;
+    std::unique_ptr<utils::SearchStack> _stack;
     CuckooTables                 _cuckoo_tables;
 
     /* Each Search instance should have own history buffer with tables 
-    *  for very MoveOrder in SearchStack.
+    *  for very MoveOrder in utils::SearchStack.
     *  Also, Search class in responsible for allocation and deallocation.
     */
     mem::AlignedSharedPtr<mvo::HistoryTablesCluster> 
@@ -294,4 +287,4 @@ constexpr enumNode operator|(enumNode node0, enumNode node1) {
     return static_cast<enumNode>(static_cast<int>(node0) | static_cast<int>(node1));
 }
 
-} // namespace engine
+} // namespace search

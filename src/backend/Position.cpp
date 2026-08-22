@@ -663,7 +663,7 @@ int Position::staticExchangeEval(Square org,
                                  Piece::enumType attacker,
                                  int threshold) const 
 {
-    _STACK_PARAM_ATTRIBS const std::array<int32_t, 7> SeePieceValue = {
+    _AUTO_PARAM_ATTRIBS const std::array<int32_t, 7> SeePieceValue = {
         SeePawnValue,
         SeeKnightValue,
         SeeBishopValue,

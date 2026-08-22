@@ -72,7 +72,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
         params[i].a = params[i].r * params[i].c * params[i].c * PowFactor;
     }
     
-    engine::SearchLimits limits;
+    search::utils::SearchLimits limits;
 
     // Game parameters
     limits.depth = MaxDepth; // avoid depth overflow
@@ -92,7 +92,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
     for (uint id = 1; id <= thread_count; id++) {
         threads.emplace_back([&](std::vector<SPSA_Parameter>& theta, 
                                  std::ofstream& log_file, 
-                                 engine::SearchLimits limits,
+                                 search::utils::SearchLimits limits,
                                  uint id) 
         {
             this->startThread(theta, log_file, limits, id);
@@ -106,7 +106,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
 
 void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta, 
                               std::ofstream& log_file, 
-                              engine::SearchLimits limits,
+                              search::utils::SearchLimits limits,
                               uint id) 
 {
     EngineProcess engine0;
@@ -193,7 +193,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
 void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        std::vector<SPSA_PackedParameter>& theta_plus,
                        std::vector<SPSA_PackedParameter>& theta_minus,
-                       uint n, engine::SearchLimits limits,
+                       uint n, search::utils::SearchLimits limits,
                        EngineProcess& engine0,
                        EngineProcess& engine1,
                        std::ofstream& log_file,
@@ -324,7 +324,7 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
     }
 }
 
-_INLINE int SPSA_Tuning::match(engine::SearchLimits limits,
+_INLINE int SPSA_Tuning::match(search::utils::SearchLimits limits,
                                EngineProcess& engine0,
                                EngineProcess& engine1,
                                std::shared_ptr<Game::Result> result,

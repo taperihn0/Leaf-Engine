@@ -26,7 +26,7 @@
 #include "TranspositionTable.hpp"
 #include "Accumulator.hpp" 
 
-namespace engine {
+namespace search::utils {
 
 /* Keeping our search limitations here.
 */
@@ -203,8 +203,7 @@ public:
     const NodeInfo* getPreRootNode() const;
     const NodeInfo* getNode(unsigned ply) const;
 
-    AccumulatorCluster* getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster,
-                                                   NodeInfo* const preroot);
+    AccumulatorCluster* getCleanAccumulatorCluster(AccumulatorCluster* const accum_cluster);
 
     void updateDirtyAccumulators(AccumulatorCluster* const clean_accum_cluster,
                                  AccumulatorCluster* const accum_cluster);
@@ -234,4 +233,4 @@ _INLINE const NodeInfo* SearchStack::getPreRootNode() const {
     return _stack.get();
 }
 
-} // namespace engine
+} // namespace search::utils

@@ -120,12 +120,12 @@
 
 /* When _ENABLE_TUNING is defined, it
 *  expands to nothing.
-*  That way, we can declare local variables
+*  That way, we can declare automatic (local) variables
 *  that may depent on tuned parameters and 
 *  that are dynamically recalculated to sync with
 *  tunable parameters.
 */
-#define _STACK_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
+#define _AUTO_PARAM_ATTRIBS _P_STATIC _P_CONSTEXPR
 
 #if defined(__GNUC__) and defined(LEAF_ARCHITECTURE_X86)
 #define _GNU_TARGET_BMI2_AVX2 [[gnu::target("bmi2", "avx2")]]
