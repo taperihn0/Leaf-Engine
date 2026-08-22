@@ -1,82 +1,78 @@
-# 🍃 Leaf Chess Engine 🍃
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/3eed7bfb-19d8-4373-8f82-7394b8eeae79" alt="Leaf logo" width="300">
+</p>
 
-**Leaf** is a modern, NNUE chess engine written from scratch in **C++17**. The project was created with a strong focus on maximum performance, clean architecture and friendly development workflow. Leaf codebase is developed and maintained almost entirelly without AI generated code.
+<h1 align="center">Leaf</h1>
 
----
-
-## 🏗️ Architecture & Features
-
-- ♟️ **Traditional Alpha-Beta Search Framework** – Principal Variation Search platform with handcrafted heuristics.
-- 🧠 **NNUE Evaluation** – Own evaluation featuring **handwritten SIMD code (AVX2/NEON) for the Lizard SCReLU** activation function.
-- ⚡ **Custom Move Generator** – A Bitboard-based generator supporting both **pseudo-legal** and **fully legal** move generation.
-- 📦 **Embedded Neural Network** – Network weights embedded into the executable, requiring no external `.bin` files to run.
-- 📚 **Syzygy Tablebase Support** – Endgame tablebase probing using **[Fathom](https://github.com/jdart1/Fathom/tree/master)** library.
-- ⚙️ **Multithreaded SPSA Tuning** – A built-in parallelized framework for automated search parameter optimization.
-- 🗄️ **Custom Data Collector** – A fully integrated pipeline generating self-play data for neural network training.
+<p align="center">A NNUE chess engine written from scratch in C++17.</p>
 
 ---
 
-## 🧠 Search & Heuristics
+Leaf is built around a traditional alpha-beta search with handwritten heuristics rather than borrowed frameworks, and the codebase is written and maintained almost entirely by hand — very little of it is AI-generated.
 
-Leaf's search algorithm is built on Principal Variation Search (PVS) combined with Iterative Deepening and Aspiration Windows. Key pruning and extension heuristics include:
+## Architecture & features
 
-- **Pruning:** Null Move Pruning (NMP) with dynamic verification, Reverse Futility Pruning (RFP), Razoring, Futility Pruning, and SEE Pruning.
-- **Reductions & Extensions:** Late Move Reductions (LMR) adjusted for move types (quiets / captures / checks), and Singular Extensions with dedicated Beta margins.
-- **Other Techniques:** Dynamic Contempt Factor, Internal Iterative Deepening (IID), Quiescence Search (QS).
+- **Search** — Principal Variation Search with handcrafted move ordering and pruning heuristics.
+- **Evaluation** — Own NNUE net, with hand-written SIMD (AVX2/NEON) for the Lizard SCReLU activation.
+- **Move generation** — Bitboard-based, supporting both pseudo-legal and fully legal generation.
+- **Network weights** — Embedded directly into the executable; no external `.bin` file needed at runtime.
+- **Endgame tablebases** — Syzygy support via [Fathom](https://github.com/jdart1/Fathom/tree/master).
+- **Tuning** — Multithreaded SPSA framework built in for search parameter optimization.
+- **Data generation** — Integrated self-play pipeline for producing NNUE training data.
 
-*Most critical depth and pruning parameters are optimized using an integrated SPSA tuning framework.*
+## Search & heuristics
 
----
+The search is PVS with iterative deepening and aspiration windows on top. Pruning and reduction techniques currently in use:
 
-## 📥 Installation (Binaries)
+- Null move pruning with dynamic verification
+- Reverse futility pruning, razoring, futility pruning
+- SEE-based pruning
+- Late move reductions, tuned separately for quiets, captures, and checks
+- Singular extensions with dedicated beta margins
+- Dynamic contempt, internal iterative deepening, quiescence search
 
-You do not need to build the engine from source to use it. 
-Ready-to-use, compiled binaries for both Windows and Linux are available in the **[Releases](../../releases)** tab of this repository. 
+Most of the depth and pruning parameters are tuned via the SPSA framework rather than by hand.
 
----
+## Installation
 
-## 🔮 Neural Network (NNUE)
+Prebuilt binaries for Windows and Linux are available under [Releases](../../releases) — building from source isn't required to use the engine.
 
-Leaf utilizes a custom binary format for its NNUE weights built upon `.bin` format utilized in **[Bullet](https://github.com/jw1912/bullet/tree/main)** trainer.
-- **Architecture:** Simple **(768->128)x2->1** architecture.
-- **Data Pipeline:** Full support for custom dataset generation exported in the [bullet-format](https://github.com/jw1912/bullet/blob/main/docs/3-data.md) (>200 million positions evaluated so far). There are some plans to use more optimized data packs.
+## Neural network
 
-Initial train data was generated on randomized 7k nodes limit with generated openings in selfplay.
+Leaf uses a custom binary weight format built on the `.bin` layout from [Bullet](https://github.com/jw1912/bullet/tree/main).
 
----
+- **Architecture:** (768→128)x2→1
+- **Data:** trained on self-play data in [bullet-format](https://github.com/jw1912/bullet/blob/main/docs/3-data.md), over 200 million positions so far, generated at a 7k-node limit per game from randomized openings. Data packing is on the list of things to improve.
 
-## 📁 Project Overview
+## Project layout
 
 ```text
 Leaf/
 ├── assets/
 │   ├── books/             # Internal opening books
 │   ├── nets/              # NNUE binary weight files (.bin)
-│   └── tb/                # Syzygy Tablebases
+│   └── tb/                # Syzygy tablebases
 ├── misc/                  # Miscellaneous docs
 ├── scripts/               # Automation scripts
 ├── src/
-│   ├── backend/           # Core engine 
-│   │   └── win-embed/     # Resource scripts for Windows embeddings
-│   ├── frontend/          # User communication - UCI Protocol
+│   ├── backend/           # Core engine
+│   │   └── win-embed/     # Resource scripts for Windows embedding
+│   ├── frontend/          # UCI protocol handling
 │   ├── utils/             # Helper tools and data generators
 │   └── vendor/            # Third-party libraries
-└── CMakeLists.txt         # Main project folder
+└── CMakeLists.txt
 ```
 
-## 🤝 Credits & Acknowledgments
+## Credits
 
-I wouldn't be spending hours developing Leaf without the passionate community of chess engine developers.
+Leaf wouldn't exist without the chess programming community.
 
-* **[Bullet contributors](https://github.com/jw1912/bullet/graphs/contributors?from=4%2F25%2F2026)** for providing excellent training platform.
-* **[BBC Chess Engine Tutorials by Maksim Korzh](https://www.youtube.com/playlist?list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)**
-whose tutorials were an introduction to the chess programming world and which helped me developing
-my previous engine from scratch.
-* **[ChessProgramming Wiki Team](https://www.chessprogramming.org/Main_Page)** 
-for the entire knowledge concentrated in one place.
-* **[Publius Chess Engine, especially Paweł Kozioł](https://github.com/nescitus/publius)** for providing starting-ground net.
-* **As well as all the helpful developers from Engine Programming Discord Group.**
+- [Bullet contributors](https://github.com/jw1912/bullet/graphs/contributors?from=4%2F25%2F2026) for the training platform
+- [Maksim Korzh's BBC tutorials](https://www.youtube.com/playlist?list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs), which got me started on my previous engine
+- The [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page)
+- [Paweł Kozioł / Publius](https://github.com/nescitus/publius) for the starting-ground net
+- Everyone on the Engine Programming Discord who's answered questions along the way
 
-## 📜 License
+## License
 
-This project is released under the GNU General Public License (GPL).
+GNU General Public License (GPL).
