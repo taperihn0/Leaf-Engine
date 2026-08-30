@@ -346,7 +346,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         sc::Score alpha = -sc::Mate;
         sc::Score beta = +sc::Mate;
 
-        if (abs<sc::Score::value_type>(prev_best_score.value()) < sc::Win.value()) {
+        if (!prev_best_score.isMateScore() and !isTablebaseScore(prev_best_score)) {
             const sc::Score::value_type prev_best_score_abs = abs<sc::Score::value_type>(
                                                            static_cast<sc::Score::value_type>(prev_best_score));
             aspiration_win += prev_best_score_abs * prev_best_score_abs / AspirationWindowScoreDiv;
@@ -687,8 +687,8 @@ sc::Score Search::nmSearch(Position& pos,
             depth <= RazorDepth and
             beta < RazorBetaLimit and
             !grandparent_node->mate_thread and 
-            tt_entry.score < sc::KnownWin and
-            tt_entry.score > -sc::KnownWin and
+            tt_entry.score < sc::Win and
+            tt_entry.score > -sc::Win and
             (tt_move.isNullMove() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
@@ -761,8 +761,8 @@ sc::Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             pos.getNonPawnMaterial() > 0 and
-            beta < sc::KnownWin and
-            beta > -sc::KnownWin) {
+            beta < sc::Win and
+            beta > -sc::Win) {
 
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
@@ -950,8 +950,8 @@ sc::Score Search::nmSearch(Position& pos,
                 !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == tt::TTBound::LOWERBOUND and
-                tt_entry.score < sc::KnownWin and
-                tt_entry.score > -sc::KnownWin) 
+                tt_entry.score < sc::Win and
+                tt_entry.score > -sc::Win) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
@@ -966,7 +966,7 @@ sc::Score Search::nmSearch(Position& pos,
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and score < sc::KnownWin and score > -sc::KnownWin) {
+                else if (score >= beta and score > -sc::Win and score < sc::Win) {
                     pos.unmake(node->move, node->state);
                     const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                         / (singular_depth + 1);
@@ -1385,8 +1385,8 @@ _FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
                                                  int ply) const 
 {
     static const auto get_win_tb_score = [](const Position& pos, int ply) -> sc::Score  _LAMBDA_FORCEINLINE {
-        const int16_t pc_cnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
-        const int16_t result = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pc_cnt_diff);
+        const int32_t pc_cnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
+        const int32_t result = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pc_cnt_diff);
         return static_cast<sc::Score>(result);
     };
 
@@ -1399,7 +1399,7 @@ _FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
     case SyzygyTablebase::WDL_LOSS: {
         const sc::Score tb_score = -get_win_tb_score(pos, ply);
         assert(tb_score < -sc::Win);
-        return -tb_score;
+        return tb_score;
     }
     case SyzygyTablebase::WDL_DRAW: {
         return getDrawScore(node);
@@ -1412,11 +1412,9 @@ _FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
 }
 
 _FORCEINLINE bool Search::isTablebaseScore(sc::Score score) const {
-    static constexpr int16_t TablebaseLowestWinScore = TablebaseScoreScale 
-                                                        * (TablebaseWinScore 
+    static constexpr int16_t TablebaseLowestWinScore = TablebaseWinScore 
                                                           - MaxSelDepth 
-                                                          - 15 * TablebasePieceDiffMult) 
-                                                        / 16;
+                                                          - 15 * TablebasePieceDiffMult;
     return score.isValid() and abs<sc::Score::value_type>(
         static_cast<sc::Score::value_type>(score)) >= TablebaseLowestWinScore;
 }
@@ -1443,14 +1441,11 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
         results.nmeval_cnt++;
 #endif
 
-    sc::Score pawnless_eg_eval = sc::Undef;
+    if (pos.getPiecesCount() <= 6) {
+        const sc::Score eval = hce::StaticEval::evaluatePawnlessEndgame(pos);
 
-    if (!SyzygyTablebase::get().isLoaded()) {
-        pawnless_eg_eval = pos.getPawns().isEmpty() ? hce::StaticEval::evaluatePawnlessEndgame(pos)
-                                                    : sc::Undef;
-
-        if (pawnless_eg_eval == sc::Draw)
-            return pawnless_eg_eval;
+        if (eval != sc::Undef)
+            return eval;
     }
 
     utils::AccumulatorCluster* curr_accum_cluster = &node->cluster;
@@ -1475,26 +1470,6 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
 
     // Assert we won't overflow into special winning scores
     assert(abs<int16_t>(scaled_eval) < sc::Win.value());
-
-    if (!SyzygyTablebase::get().isLoaded() and pawnless_eg_eval.isValid()) {
-        switch (pawnless_eg_eval.value()) {
-        case sc::Win.value():
-        case -sc::Win.value():
-            scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::value_type>(scaled_eval, 
-                                                            sc::KnownWin.value() - sc::Win.value() - 1, 0);
-            break;
-        case sc::KnownWin.value():
-        case -sc::KnownWin.value(): 
-            scaled_eval = pawnless_eg_eval.value() + 
-                          std::clamp<sc::Score::value_type>(scaled_eval, 
-                                                            sc::MateBound.value() - sc::KnownWin.value() - 1, 0);
-            break;
-        default: 
-            unreachable();
-            break;
-        }
-    }
  
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
     const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? EvalEgHalfMovesEvalLimit : EvalHalfMovesEvalLimit;
@@ -1507,7 +1482,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
 _FORCEINLINE sc::Score Search::correctedEvalScore(sc::Score eval, sc::Score score) {
     assert(eval.isValid());
 
-    if (!score.isValid())
+    if (!score.isValid() or score.isMateScore() or eval.isMateScore())
         return eval;
 
     const sc::Score tt_eval_diff = score - eval;
@@ -1581,7 +1556,7 @@ _NODISCARD int32_t Search::getMoveReduction(const utils::NodeInfo* node,
     if (!killer.isNullMove() and node->move == killer) 
         move_reduction -= killerMoveReduction<Index>() * FixedPointMult;
 
-    if (node->move_score.isValid()) 
+    if (node->move_score.isValid() and !node->move.isQueenPromotion()) 
         move_reduction += getScoreMoveReduction<Index>(node->move_score) * FixedPointMult;
 
     move_reduction -= static_cast<ll>(move_extension) * move_extension * extensionReduction<Index>() / 
@@ -1590,6 +1565,7 @@ _NODISCARD int32_t Search::getMoveReduction(const utils::NodeInfo* node,
 
     return move_reduction / MoveReductionBase;
 }
+
 /* Search utilities - move reductions
 *  =================================
 */
@@ -1606,7 +1582,7 @@ _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveS
 template <>
 _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<CAPTURE>(mvo::SMoveScore s) {
     // TODO: better fixed-point formula
-    return (CaptureMoveScoreReductionRate * s.value() + 64) / 128;
+    return (CaptureMoveScoreReductionRate * (50 - s.value())) / 128;
 }
 
 // =================================

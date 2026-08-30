@@ -340,12 +340,12 @@ void MoveOrder::updateContinuationPointers(search::utils::NodeInfo* node, int pl
 }
 
 _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth) {
-    const int16_t unscaled_hist_bonus = (
+    const int32_t unscaled_hist_bonus = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth
     );
 
-    const int16_t unscaled_cont_bonus = (
+    const int32_t unscaled_cont_bonus = (
         MvOrContBonusHistoryScore2Coeff * depth * depth + 
         MvOrContBonusHistoryScore1Coeff * depth 
     );
@@ -354,14 +354,14 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonu
 }
 
 _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) {
-    const int16_t unscaled_hist_penalty = (
-        MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
-        MvOrQuietBonusHistoryScore1Coeff * depth
+    const int32_t unscaled_hist_penalty = (
+        MvOrQuietPenaltyHistoryScore2Coeff * depth * depth + 
+        MvOrQuietPenaltyHistoryScore1Coeff * depth
     );
 
-    const int16_t unscaled_cont_penalty = (
-        MvOrContBonusHistoryScore2Coeff * depth * depth + 
-        MvOrContBonusHistoryScore1Coeff * depth    
+    const int32_t unscaled_cont_penalty = (
+        MvOrContPenaltyHistoryScore2Coeff * depth * depth + 
+        MvOrContPenaltyHistoryScore1Coeff * depth    
     );
 
     return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024);

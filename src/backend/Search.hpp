@@ -134,9 +134,8 @@ inline constexpr double  MinTimeBranchFactor = 1.;
 inline constexpr double  MaxTimeBranchFactor = 5.;
 inline constexpr int32_t FixedPointMult = 65536;
 inline constexpr int32_t MoveReductionBase = 256;
-inline constexpr int32_t TablebaseWinScore = 32000;
+inline constexpr int32_t TablebaseWinScore = 31000;
 inline constexpr int32_t TablebasePieceDiffMult = 116;
-inline constexpr int32_t TablebaseScoreScale = 16;
 inline constexpr int32_t SingularExtensionDiv = 16;
 inline constexpr int32_t SingularBetaExtensionDiv = 32;
 

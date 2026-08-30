@@ -23,135 +23,31 @@
 namespace hce {
 
 sc::Score StaticEval::evaluatePawnlessEndgame(const Position& pos) {
+    const int piece_cnt = pos.getPiecesCount();
 
     // Pawnless endgames:
     // https://en.wikipedia.org/wiki/Pawnless_chess_endgame
 
-    const int piece_cnt = pos.getPiecesCount();
-    const enumColor s2m = pos.getTurn();
+    if (pos.getPawns().isEmpty()) {
 
-    if (piece_cnt == 3) {
-
-        // K + R vs K
-        if (pos.getRooks().isSingleBit())
-            return pos.getRooksBySide(s2m) ? sc::KnownWin
-                                           : -sc::KnownWin;
-
-        // K + Q vs K
-        if (pos.getQueens().isSingleBit())
-            return pos.getQueensBySide(s2m) ? sc::KnownWin
-                                            : -sc::KnownWin;
-
-    }
-    else if (piece_cnt == 4) {
-
-        const int white_bishops = pos.getBishopsBySide(WHITE).popCount();
-        const int black_bishops = pos.getBishopsBySide(BLACK).popCount();
-
-        // K + BB vs K
-        if (white_bishops == 2 or black_bishops == 2)
-            return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                             : -sc::KnownWin;
-
-        const int white_queens  = pos.getQueensBySide(WHITE).popCount();
-        const int black_queens  = pos.getQueensBySide(BLACK).popCount();
-
-        // K + Q vs K + B
-        if ((white_queens == 1 and black_bishops == 1) or
-            (black_queens == 1 and white_bishops == 1))
-            return pos.getQueensBySide(s2m) ? sc::KnownWin
-                                            : -sc::KnownWin;
-
-        const int white_knights = pos.getKnightsBySide(WHITE).popCount();
-        const int black_knights = pos.getKnightsBySide(BLACK).popCount();
+        // K + R vs K + R
+        if (piece_cnt == 4 and
+            pos.getRooksBySide(WHITE).isSingleBit() and
+            pos.getRooksBySide(BLACK).isSingleBit())
+            return sc::Draw;
 
         // K + NN vs K
-        if (white_knights == 2 or black_knights == 2)
-            return sc::Draw;
-
-        // K + Q vs K + N
-        if ((white_queens == 1 and black_knights == 1) or
-            (black_queens == 1 and white_knights == 1))
-            return pos.getQueensBySide(s2m) ? sc::KnownWin
-                                            : -sc::KnownWin;
-
-        // K + BN vs K
-        if (white_bishops == 1 and white_knights == 1)
-            return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                             : -sc::KnownWin;
-
-        if (black_bishops == 1 and black_knights == 1)
-            return pos.getBishopsBySide(s2m) ? sc::KnownWin
-                                             : -sc::KnownWin;
-
-        const int white_rooks = pos.getRooksBySide(WHITE).popCount();
-        const int black_rooks = pos.getRooksBySide(BLACK).popCount();
-
-        // K + Q vs K + R
-        if ((white_queens == 1 and black_rooks == 1) or
-            (black_queens == 1 and white_rooks == 1))
-            return pos.getQueensBySide(s2m) ? sc::Win
-                                            : -sc::Win;
-
-        // K + R vs K + R                                    
         if (piece_cnt == 4 and
-            white_rooks == 1 and
-            black_rooks == 1)
+            (pos.getKnightsBySide(WHITE) == 2 or
+             pos.getKnightsBySide(BLACK) == 2))
             return sc::Draw;
-
-    }
-    else if (piece_cnt == 5) {
-
-        const int s2m_rooks  = pos.getRooksBySide(s2m).popCount();
-        const int ns2m_rooks = pos.getRooksBySide(!s2m).popCount();
-
-        // K + RR vs K + R
-        if (s2m_rooks == 2 and ns2m_rooks == 1)
-            return sc::KnownWin;
-
-        if (ns2m_rooks == 2 and s2m_rooks == 1)
-            return -sc::KnownWin;
 
         // K + NR vs K + R
-        if (s2m_rooks == 1 and
-            ns2m_rooks == 1 and
+        if (piece_cnt == 5 and
+            pos.getRooksBySide(WHITE).isSingleBit() and
+            pos.getBishopsBySide(BLACK).isSingleBit() and
             pos.getKnights().isSingleBit())
             return sc::Draw;
-
-    }
-    else if (piece_cnt == 6) {
-
-        const int white_knights = pos.getKnightsBySide(WHITE).popCount();
-        const int black_knights = pos.getKnightsBySide(BLACK).popCount();
-
-        const int s2m_rooks  = pos.getRooksBySide(s2m).popCount();
-        const int ns2m_rooks = pos.getRooksBySide(!s2m).popCount();
-
-        // K + RR vs K + BB, K + NN, K + NB
-        if (s2m_rooks == 2 and
-            (s2m ? white_knights : black_knights) == 2)
-            return sc::Win;
-
-        if (ns2m_rooks == 2 and
-            (s2m ? black_knights : white_knights) == 2)
-            return -sc::Win;
-
-        const int white_rooks = pos.getRooksBySide(WHITE).popCount();
-        const int black_rooks = pos.getRooksBySide(BLACK).popCount();
-
-        const int white_bishops = pos.getBishopsBySide(WHITE).popCount();
-        const int black_bishops = pos.getBishopsBySide(BLACK).popCount();
-
-        // K + RB vs K + NN
-        if ((white_rooks == 1 and
-             white_bishops == 1 and
-             black_knights == 2) or
-            (black_rooks == 1 and
-             black_bishops == 1 and
-             white_knights == 2))
-            return pos.getRooksBySide(s2m) ? sc::Win
-                                           : -sc::Win;
-
     }
 
     return sc::Undef;
