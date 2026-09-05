@@ -84,11 +84,15 @@ _NODISCARD constexpr int32_t HistoryTablesCluster::getMaxTotalAbsValue() {
 }
 
 _NODISCARD hist::HistoryTable& HistoryTablesCluster::getHistoryTable() noexcept {
-    return std::get<HISTORY_INDEX>(_history_cluster);
+    return std::get<QUIETS_HISTORY_INDEX>(_history_cluster);
 }
 
 _NODISCARD hist::ContinuationTable& HistoryTablesCluster::getContinuationTable() noexcept {
     return std::get<CONTINUATION_INDEX>(_history_cluster);
+}
+
+_NODISCARD hist::CaptureHistory& HistoryTablesCluster::getCapturesHistoryTable() noexcept {
+    return std::get<CAPTURES_HISTORY_INDEX>(_history_cluster);
 }
 
 void HistoryTablesCluster::clear() {
@@ -284,30 +288,48 @@ void MoveOrder::updateQuietEntry(Move32b move,
     assert(_history_cluster != nullptr);
 
     auto& hist_table = _history_cluster->getHistoryTable();
-    auto& cont_table = _history_cluster->getContinuationTable();
 
-    _AUTO_PARAM_ATTRIBS const auto MaxAbsHistValue = hist_table.getMaxAbsValueOfEntry();
-    _AUTO_PARAM_ATTRIBS const auto MaxAbsContValue = cont_table.getMaxAbsValueOfEntry();
-
-    const int32_t mhist_bonus = std::min<int32_t>(hist_bonus, MaxAbsHistValue);
-    hist_table.update<Sign>(side, move, mhist_bonus);
+    hist_table.update<Sign>(side, move, hist_bonus);
 
     for (int i = 0; i < HistoryTablesCluster::ContinuationPlyCount and i <= ply; i++) {
         const search::utils::NodeInfo* prev_node = node - i - 1;
         assert(prev_node->continuation_subtable_ptr != nullptr);
 
         auto& cont_subtable = *prev_node->continuation_subtable_ptr;
-
-        const int32_t mcont_bonus = std::min<int32_t>(cont_bonus, MaxAbsContValue);
-        cont_subtable.update<Sign>(side, move, mcont_bonus);
+        cont_subtable.update<Sign>(side, move, cont_bonus);
     }
 }
 
-void MoveOrder::updateQuietsHistory(Move32b bestmove, 
-                                    enumColor side, 
-                                    int depth, 
-                                    int ply,
-                                    const search::utils::NodeInfo* node) 
+void MoveOrder::updateCapturesHistories(Move32b bestmove, 
+                                        const Position& pos,
+                                        int depth) 
+{
+    assert(bestmove.isCapture());
+
+    auto& captures_history = _history_cluster->getCapturesHistoryTable();
+
+    const int16_t capt_bonus = getCaptureBonus(depth);
+    captures_history.update<+1>(bestmove, pos, capt_bonus);
+
+    const int16_t capt_penalty = getCapturePenalty(depth);
+
+    for (size_t i = 0; i < _idx; i++) {
+        ml::MoveList::Entry& entry = _move_list.getEntry(i);
+        const Move32b move = entry.move();
+
+        if (move == bestmove) break;
+
+        if (move.isCapture()) {
+            captures_history.update<-1>(bestmove, pos, capt_penalty);
+        }
+    }
+}
+
+void MoveOrder::updateQuietsHistories(Move32b bestmove, 
+                                      enumColor side, 
+                                      int depth, 
+                                      int ply,
+                                      const search::utils::NodeInfo* node) 
 {
     assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
 
@@ -322,8 +344,7 @@ void MoveOrder::updateQuietsHistory(Move32b bestmove,
 
         assert(move.isQuiet() and !move.isQueenPromotion());
 
-        if (move == bestmove)
-            return;
+        if (move == bestmove) return;
 
         updateQuietEntry<-1>(move, side, hist_penalty, cont_penalty, node, ply);
     }
@@ -339,7 +360,8 @@ void MoveOrder::updateContinuationPointers(search::utils::NodeInfo* node, int pl
     }
 }
 
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonuses(int depth) {
+_NODISCARD _FORCEINLINE std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+MoveOrder::getHistoriesBonuses(int depth) {
     const int32_t unscaled_hist_bonus = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth
@@ -353,7 +375,8 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesBonu
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
 }
 
-_NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPenalties(int depth) {
+_NODISCARD _FORCEINLINE std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+MoveOrder::getHistoriesPenalties(int depth) {
     const int32_t unscaled_hist_penalty = (
         MvOrQuietPenaltyHistoryScore2Coeff * depth * depth + 
         MvOrQuietPenaltyHistoryScore1Coeff * depth
@@ -365,6 +388,14 @@ _NODISCARD _FORCEINLINE std::tuple<int16_t, int16_t> MoveOrder::getHistoriesPena
     );
 
     return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024);
+}
+
+_NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCaptureBonus(int depth) {
+    return depth * depth;
+}
+
+_NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCapturePenalty(int depth) {
+    return depth * depth;
 }
 
 _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 
@@ -402,22 +433,23 @@ void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
 
         const Move32b move = entry.move();
-        ml::MoveScore score = entry.score();
+        ml::MoveScore score = 0;
 
         assert(move.isCapture() or 
                (move.isPromotion() and 
                 move.isQueenPromotion()
                ));
-
-        score = 0;
+        
+        const auto& captures_history = _history_cluster->getCapturesHistoryTable();
 
         if (move.isEnPassant()) {
-            score = getCapturedScore(Piece::PAWN) - pc::value(Piece::PAWN);
+            const int16_t hist_score = captures_history.getValue(move, Piece::PAWN);
+            score = getCapturedScore(Piece::PAWN) * 10 - hist_score;
         }
         else if (move.isCapture()) {
-            const Piece::value_type piece_ind = pc::value(move.getPiece());
             const Piece::enumType vic = move.getCaptured(pos);
-            score = getCapturedScore(vic) - piece_ind;
+            const int16_t hist_score = captures_history.getValue(move, vic);
+            score = getCapturedScore(vic) * 10 - hist_score;
         }
         
         if (move.isPromotion()) {

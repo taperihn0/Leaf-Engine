@@ -82,6 +82,7 @@ private:
 class ContinuationTable final : public HistoryTableBase<ContinuationTable> {
 public:
     using Entry = ContinuationSubtable::Entry;
+    using value_type = Entry::value_type;
 
     ContinuationTable() = default;
     ContinuationTable(const ContinuationTable&) = delete;
@@ -101,6 +102,7 @@ class HistoryTable final : public HistoryTableBase<HistoryTable> {
 public:
     static constexpr int16_t MaxAbsHistoryValue = 8192;
     using Entry = HistoryEntry<int16_t, MaxAbsHistoryValue>;
+    using value_type = Entry::value_type;
 
     HistoryTable() = default;
 
@@ -111,6 +113,23 @@ public:
     _NODISCARD Entry::value_type getValue(enumColor side, Move32b move) const;
 private:
     MultiArray<Entry, 2, 6, 64> _quiets_history;
+};
+
+class CaptureHistory final : public HistoryTableBase<CaptureHistory> {
+public:
+    static constexpr int16_t MaxAbsHistoryValue = 1024;
+    using Entry = HistoryEntry<int16_t, MaxAbsHistoryValue>;
+    using value_type = Entry::value_type;
+
+    CaptureHistory() = default;
+
+    void clear();
+    template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
+    void update(Move32b move, const Position& pos, Entry::value_type bonus);
+    void reduce();
+    _NODISCARD Entry::value_type getValue(Move32b move, Piece::enumType captured) const;
+private:
+    MultiArray<Entry, 6, 64, 6> _captures_history;
 };
 
 template <typename T, T MaxAbsValue, typename _/* = std::enable_if_t<std::is_integral_v<T>> */>
@@ -206,6 +225,40 @@ _INTERNAL void HistoryTable::reduce() {
 _NODISCARD _FORCEINLINE HistoryTable::Entry::value_type HistoryTable::getValue(enumColor side, Move32b move) const {
     const auto& [piece, to, _] = extractMoveIndexes(move);
     return _quiets_history[side][piece][to].value();
+}
+
+_FORCEINLINE std::tuple<Piece::value_type, Square, Piece::value_type> extractCaptureIndexes(Move32b capture, const Position& pos) {
+    const Piece::value_type piece = pc::value(capture.getPiece());
+    const Square to = capture.getTarget();
+    const Piece::value_type captured = pc::value(capture.getCaptured(pos));
+    return std::make_tuple(piece, to, captured);
+}
+
+_FORCEINLINE std::tuple<Piece::value_type, Square> extractCaptureIndexes(Move32b capture) {
+    const Piece::value_type piece = pc::value(capture.getPiece());
+    const Square to = capture.getTarget();
+    return std::make_tuple(piece, to);
+}
+
+_INTERNAL void CaptureHistory::clear() {
+    std::fill(std::begin(_captures_history), std::end(_captures_history), 0);
+}
+
+template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
+_FORCEINLINE void CaptureHistory::update(Move32b move, const Position& pos, Entry::value_type bonus) {
+    const auto& [piece, to, captured] = extractCaptureIndexes(move, pos);
+    Entry& entry = _captures_history[piece][to][captured];
+    Entry::applyGravityFormula<Sign>(entry, bonus);
+}
+
+_INTERNAL void CaptureHistory::reduce() {
+    for (auto& entry : _captures_history) 
+        entry.reduce();
+}
+
+_NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(Move32b move, Piece::enumType captured) const {
+    const auto& [piece, to] = extractCaptureIndexes(move);
+    return _captures_history[piece][to][pc::value(captured)].value();
 }
 
 } // namespace mvo::hist

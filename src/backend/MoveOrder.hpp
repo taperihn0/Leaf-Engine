@@ -69,13 +69,13 @@ private:
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
 _DEFINE_TUNABLE_PARAMETER(MvOrQueenCapturedScore, int32_t, 900.f, 820.f, 980.f, 0.8f);
 _DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
@@ -102,12 +102,16 @@ public:
 
     _NODISCARD hist::HistoryTable& getHistoryTable() noexcept;
     _NODISCARD hist::ContinuationTable& getContinuationTable() noexcept;
+    _NODISCARD hist::CaptureHistory& getCapturesHistoryTable() noexcept;
 private:
     enum enumHistIndex {
-        HISTORY_INDEX = 0, CONTINUATION_INDEX = 1
+        QUIETS_HISTORY_INDEX = 0, 
+        CONTINUATION_INDEX = 1,
+        CAPTURES_HISTORY_INDEX = 2,
     };
 
-    std::tuple<hist::HistoryTable, hist::ContinuationTable> _history_cluster;
+    std::tuple<hist::HistoryTable, hist::ContinuationTable, hist::CaptureHistory> 
+        _history_cluster;
 };
 
 enum enumOrderPolicy : uint8_t {
@@ -155,11 +159,14 @@ public:
 
     Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
-    void updateQuietsHistory(Move32b bestmove, 
-                             enumColor side, 
-                             int depth, 
-                             int ply,
-                             const search::utils::NodeInfo* node);
+    void updateCapturesHistories(Move32b bestmove, 
+                                 const Position& pos,
+                                 int depth);
+    void updateQuietsHistories(Move32b bestmove, 
+                               enumColor side, 
+                               int depth, 
+                               int ply,
+                               const search::utils::NodeInfo* node);
 
     void skipQuiets();
 
@@ -180,8 +187,12 @@ private:
 
     void updateContinuationPointers(search::utils::NodeInfo* node, int ply);
 
-    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesBonuses(int depth);
-    _NODISCARD std::tuple<int16_t, int16_t> getHistoriesPenalties(int depth);
+    _NODISCARD static std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+    getHistoriesBonuses(int depth);
+    _NODISCARD static std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+    getHistoriesPenalties(int depth);
+    _NODISCARD static hist::CaptureHistory::value_type getCaptureBonus(int depth);
+    _NODISCARD static hist::CaptureHistory::value_type getCapturePenalty(int depth);
 
     template <int8_t Sign>
     void updateQuietEntry(Move32b move, 

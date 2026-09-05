@@ -1005,7 +1005,7 @@ sc::Score Search::nmSearch(Position& pos,
         }
         
         const int reduction = std::clamp<int>((move_reduction + FixedPointMult / 2) / FixedPointMult, 0, depth - 1);
-        const int reduct_depth = std::clamp(depth - reduction, 0, depth - 1);
+        const int reduct_depth = std::clamp(depth - 1 - reduction, 0, depth - 1);
 
         child_node->is_cut = !node->is_cut;
 
@@ -1085,8 +1085,11 @@ sc::Score Search::nmSearch(Position& pos,
                 if (node->score >= beta) {
                     node->bound = tt::TTBound::LOWERBOUND;
 
-                    if (node->move.isQuiet() and !node->move.isQueenPromotion())  {
-                        node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth, ply, node);
+                    if (node->move.isCapture()) {
+                        node->move_picker.updateCapturesHistories(node->best_move, pos, depth);
+                    }
+                    else if (!node->move.isQueenPromotion())  {
+                        node->move_picker.updateQuietsHistories(node->best_move, node->side2move, depth, ply, node);
                         node->move_picker.setKillerMove(node->move, parent_hash);
                     }
 
@@ -1120,7 +1123,7 @@ sc::Score Search::nmSearch(Position& pos,
         else if (!limits.isTimeLeft() or
                  !results.anyNodesLeft(limits) or
                  !results.anyQuiesceNodesLeft(limits))
-        break;
+            break;
     }
 
     if (!limits.isTimeLeft() or
