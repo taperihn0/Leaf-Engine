@@ -7,7 +7,7 @@ from pathlib import Path
 
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
-THREAD_COUNT = 5
+THREAD_COUNT = 3
 TIME_CONTROL = "4+0.04"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
@@ -121,8 +121,8 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
         f"file={OPENING_BOOK}",
         f"format={OPENING_BOOK_FORMAT}", 
         f"order=random",
-         "plies=8",
-        f"policy=encounter",
+        # "plies=8",
+        #f"policy=encounter",
         "-repeat"
     ]
 
