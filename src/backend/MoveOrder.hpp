@@ -159,14 +159,12 @@ public:
 
     Move32b getKillerMove(uint64_t& killer_move_parent_hash);
 
-    void updateCapturesHistories(Move32b bestmove, 
-                                 const Position& pos,
-                                 int depth);
-    void updateQuietsHistories(Move32b bestmove, 
-                               enumColor side, 
-                               int depth, 
-                               int ply,
-                               const search::utils::NodeInfo* node);
+    void updateHistories(Move32b bestmove, 
+                         enumColor side, 
+                         int depth, 
+                         int ply,
+                         const Position& pos,
+                         const search::utils::NodeInfo* node);
 
     void skipQuiets();
 
@@ -239,7 +237,7 @@ private:
                      _history_cluster;
     enumPrivateStage _stage        = enumPrivateStage::NONE;
     size_t           _idx          = 0;
-    size_t           _quiets_idx   = 0;
+    size_t           _quiets_idx   = static_cast<size_t>(-1);
     Move32b          _hash_move    = NullMove;
     Move32b          _killer_move  = NullMove;
     uint64_t         _killer_move_parent_hash = 0;
@@ -267,7 +265,7 @@ _INLINE Move32b MoveOrder::getKillerMove(uint64_t& killer_move_parent_hash) {
 _INLINE void MoveOrder::clear() {
     _stage = enumPrivateStage::FIRST_STAGE;
     _idx = 0;
-    _quiets_idx = 0;
+    _quiets_idx = static_cast<size_t>(-1);
     _hash_move = NullMove;
     _killer_move = NullMove;
     _move_list.clear();

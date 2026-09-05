@@ -144,7 +144,6 @@ _NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node,
 
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
-
         if constexpr (Policy != QUIESCENT)
             updateContinuationPointers(node, ply);
 
@@ -300,52 +299,38 @@ void MoveOrder::updateQuietEntry(Move32b move,
     }
 }
 
-void MoveOrder::updateCapturesHistories(Move32b bestmove, 
-                                        const Position& pos,
-                                        int depth) 
+void MoveOrder::updateHistories(Move32b bestmove, 
+                                enumColor side, 
+                                int depth, 
+                                int ply,
+                                const Position& pos,
+                                const search::utils::NodeInfo* node) 
 {
-    assert(bestmove.isCapture());
-
     auto& captures_history = _history_cluster->getCapturesHistoryTable();
 
-    const int16_t capt_bonus = getCaptureBonus(depth);
-    captures_history.update<+1>(bestmove, pos, capt_bonus);
+    if (bestmove.isQuiet() and !bestmove.isQueenPromotion()) {
+        const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth);
+        updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
+    }
+    else if (bestmove.isCapture()) {
+        const int16_t capt_bonus = getCaptureBonus(depth);
+        captures_history.update<+1>(side, bestmove, pos, capt_bonus);
+    }
 
     const int16_t capt_penalty = getCapturePenalty(depth);
+    const int16_t first_quiet_idx = _quiets_idx != static_cast<size_t>(-1) ? _quiets_idx : _move_list.count();
+    const int16_t bestmove_idx = static_cast<int16_t>(_idx) - 1;
 
-    for (size_t i = 0; i < _idx; i++) {
-        ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b move = entry.move();
-
-        if (move == bestmove) break;
-
-        if (move.isCapture()) {
-            captures_history.update<-1>(bestmove, pos, capt_penalty);
-        }
+    for (int16_t i = 0; i < std::min<int16_t>(first_quiet_idx, bestmove_idx); i++) {
+        const Move32b move = _move_list.getEntry(i).move();
+        captures_history.update<-1>(side, move, pos, capt_penalty);
     }
-}
-
-void MoveOrder::updateQuietsHistories(Move32b bestmove, 
-                                      enumColor side, 
-                                      int depth, 
-                                      int ply,
-                                      const search::utils::NodeInfo* node) 
-{
-    assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
-
-    const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth);
-    updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
 
     const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth);
 
-    for (size_t i = _quiets_idx; i < _move_list.count(); i++) {
-        ml::MoveList::Entry& entry = _move_list.getEntry(i);
-        const Move32b move = entry.move();
-
-        assert(move.isQuiet() and !move.isQueenPromotion());
-
-        if (move == bestmove) return;
-
+    for (int16_t i = first_quiet_idx; i < bestmove_idx; i++) {
+        assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
+        const Move32b move = _move_list.getEntry(i).move();
         updateQuietEntry<-1>(move, side, hist_penalty, cont_penalty, node, ply);
     }
 }
@@ -404,7 +389,9 @@ _INLINE bool MoveOrder::nextMoveFromList(Move32b& move,
 {
     assert(_idx <= end_idx);
 
-    while (_idx < _move_list.count() and _idx < end_idx) {
+    const size_t end = std::min(end_idx, _move_list.count());
+
+    while (_idx < end) {
         _move_list.selectBest(_idx, end_idx);
 
         const ml::MoveList::Entry entry = _move_list.getEntry(_idx++);
@@ -430,6 +417,7 @@ _INLINE bool MoveOrder::getNextMoveInfo(Move32b& move,
 
 void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
     const auto& captures_history = _history_cluster->getCapturesHistoryTable();
+    const enumColor side = pos.getTurn();
     
     for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
@@ -440,13 +428,15 @@ void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
         assert(move.isCapture() or move.isQueenPromotion());
 
         if (move.isEnPassant()) {
-            const int16_t hist_score = captures_history.getValue(move, Piece::PAWN);
-            score = getCapturedScore(Piece::PAWN) * 10 + hist_score;
+            const int16_t hist_score = captures_history.getValue(side, move, Piece::PAWN);
+            const Piece::value_type attacker = pc::value(move.getPiece());
+            score = getCapturedScore(Piece::PAWN) * 10 - attacker + hist_score;
         }
         else if (move.isCapture()) {
             const Piece::enumType vic = move.getCaptured(pos);
-            const int16_t hist_score = captures_history.getValue(move, vic);
-            score = getCapturedScore(vic) * 10 + hist_score;
+            const int16_t hist_score = captures_history.getValue(side, move, vic);
+            const Piece::value_type attacker = pc::value(move.getPiece());
+            score = getCapturedScore(vic) * 10 - attacker + hist_score;
         }
         
         if (move.isPromotion()) {

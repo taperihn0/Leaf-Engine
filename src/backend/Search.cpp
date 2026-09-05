@@ -1085,11 +1085,9 @@ sc::Score Search::nmSearch(Position& pos,
                 if (node->score >= beta) {
                     node->bound = tt::TTBound::LOWERBOUND;
 
-                    if (node->move.isCapture()) {
-                        node->move_picker.updateCapturesHistories(node->best_move, pos, depth);
-                    }
-                    else if (!node->move.isQueenPromotion())  {
-                        node->move_picker.updateQuietsHistories(node->best_move, node->side2move, depth, ply, node);
+                    node->move_picker.updateHistories(node->best_move, node->side2move, depth, ply, pos, node);
+
+                    if (node->move.isQuiet() and !node->move.isQueenPromotion()) {
                         node->move_picker.setKillerMove(node->move, parent_hash);
                     }
 
