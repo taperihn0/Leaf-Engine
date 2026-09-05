@@ -1582,7 +1582,7 @@ _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveS
 template <>
 _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<CAPTURE>(mvo::SMoveScore s) {
     // TODO: better fixed-point formula
-    return (CaptureMoveScoreReductionRate * (50 - s.value())) / 128;
+    return 5 - (CaptureMoveScoreReductionRate * s.value()) / 128;
 }
 
 // =================================
