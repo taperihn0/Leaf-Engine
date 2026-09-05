@@ -429,27 +429,24 @@ _INLINE bool MoveOrder::getNextMoveInfo(Move32b& move,
 }
 
 void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
+    const auto& captures_history = _history_cluster->getCapturesHistoryTable();
+    
     for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
 
         const Move32b move = entry.move();
         ml::MoveScore score = 0;
 
-        assert(move.isCapture() or 
-               (move.isPromotion() and 
-                move.isQueenPromotion()
-               ));
-        
-        const auto& captures_history = _history_cluster->getCapturesHistoryTable();
+        assert(move.isCapture() or move.isQueenPromotion());
 
         if (move.isEnPassant()) {
             const int16_t hist_score = captures_history.getValue(move, Piece::PAWN);
-            score = getCapturedScore(Piece::PAWN) * 10 - hist_score;
+            score = getCapturedScore(Piece::PAWN) * 10 + hist_score;
         }
         else if (move.isCapture()) {
             const Piece::enumType vic = move.getCaptured(pos);
             const int16_t hist_score = captures_history.getValue(move, vic);
-            score = getCapturedScore(vic) * 10 - hist_score;
+            score = getCapturedScore(vic) * 10 + hist_score;
         }
         
         if (move.isPromotion()) {
@@ -468,13 +465,13 @@ void MoveOrder::scoreQuiets(size_t beg_idx,
 {
     assert(_history_cluster != nullptr);
 
+    const auto& hist_table = _history_cluster->getHistoryTable();
+
     for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
 
         const Move32b move = entry.move();
         assert(move.isQuiet() or move.isUnderPromotion());
-
-        const auto& hist_table = _history_cluster->getHistoryTable();
 
         SMoveScore score = hist_table.getValue(side, move);
 
