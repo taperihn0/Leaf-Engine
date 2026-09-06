@@ -913,7 +913,7 @@ sc::Score Search::nmSearch(Position& pos,
                     pos.getNonPawnMaterial() > 0) 
                 {
                     const int32_t futility_margin = FutilityDelta * depth * depth + 
-                                                    node->move_score.quietCentered().value() * 
+                                                    node->move_score.centered().value() * 
                                                     FutilityScoreMult / 8192;
 
                     if (node->eval + futility_margin < alpha) {
@@ -1574,7 +1574,7 @@ _NODISCARD int32_t Search::getMoveReduction(const utils::NodeInfo* node,
 template <>
 _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveScore s) {
     const int32_t centered_score = s.value() - 
-                                   QuietDepthShiftMult * mvo::SMoveScore::HalfMaxQuietValue / 256;
+                                   QuietDepthShiftMult * mvo::SMoveScore::HalfMaxValue / 256;
     const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
     const int32_t val = QuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;

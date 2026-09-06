@@ -377,11 +377,11 @@ MoveOrder::getHistoriesPenalties(int depth) {
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCaptureBonus(int depth) {
-    return (600 * depth * depth + 64 * depth) / 1024;
+    return (256 * depth * depth + 64 * depth) / 1024;
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCapturePenalty(int depth) {
-    return (512 * depth * depth + 32 * depth) / 1024;
+    return (256 * depth * depth + 32 * depth) / 1024;
 }
 
 _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 
@@ -485,8 +485,9 @@ void MoveOrder::scoreQuiets(size_t beg_idx,
 }
 
 _NODISCARD _FORCEINLINE SMoveScore MoveOrder::getOutputMoveScore(Move32b move, SMoveScore s) {
-    return move.isCapture() or move.isQueenPromotion() ? s 
-            : s.quietOntoOutputRange(_history_cluster->getMaxTotalAbsValue());
+    return move.isCapture() or move.isQueenPromotion() ? 
+            s.ontoOutputRange(getCapturedScore(Piece::QUEEN) + _history_cluster->getCapturesHistoryTable().getMaxAbsValueOfEntry()) 
+            : s.ontoOutputRange(_history_cluster->getMaxTotalAbsValue());
 }
 
 _NODISCARD enumStage MoveOrder::getStage() const {

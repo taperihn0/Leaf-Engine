@@ -120,7 +120,7 @@ _DEFINE_TUNABLE_PARAMETER(SeeQuietPruneThreshold, int32_t, -71.9894f, -90.f, -30
 _DEFINE_TUNABLE_PARAMETER(QDeltaPruningEvalWeight, int32_t, 5.17858f, 0.f, 128.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(QBetaCutoffEvalWeight, int32_t, 124.406f, 0.f, 128.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
-_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 8.4842f, 7.f, 15.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
 
 /* Static parameters -

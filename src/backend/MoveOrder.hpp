@@ -33,9 +33,9 @@ public:
     using Base = ml::MoveScore;
     using Base::operator=;
 
-    static constexpr value_type MinQuietValue = 0;
-    static constexpr value_type MaxQuietValue = 16384;
-    static constexpr value_type HalfMaxQuietValue = MaxQuietValue / 2;
+    static constexpr value_type MinValue = 0;
+    static constexpr value_type MaxValue = 16384;
+    static constexpr value_type HalfMaxValue = MaxValue / 2;
 
     SMoveScore() = default;
     _INLINE constexpr explicit SMoveScore(const Base& s) noexcept : Base(s.value()) {}
@@ -43,18 +43,18 @@ public:
     _INLINE constexpr SMoveScore(const sc::Score& s) noexcept : Base(s.value()) {}
     _INLINE constexpr SMoveScore(int32_t val) noexcept : Base(val) {}
 
-    _NODISCARD _FORCEINLINE SMoveScore quietCentered() const {
-        assert(_v >= MinQuietValue and _v <= MaxQuietValue);
-        return value() - HalfMaxQuietValue;
+    _NODISCARD _FORCEINLINE SMoveScore centered() const {
+        assert(_v >= MinValue and _v <= MaxValue);
+        return value() - HalfMaxValue;
     }
 
-    _NODISCARD _FORCEINLINE SMoveScore quietTranslToPositive() const {
-        assert(_v >= -HalfMaxQuietValue and _v <= HalfMaxQuietValue);
-        return value() + HalfMaxQuietValue;
+    _NODISCARD _FORCEINLINE SMoveScore translToPositive() const {
+        assert(_v >= -HalfMaxValue and _v <= HalfMaxValue);
+        return value() + HalfMaxValue;
     }
 
-    _NODISCARD _FORCEINLINE constexpr SMoveScore quietOntoOutputRange(value_type curr_max_abs) const {
-        return HalfMaxQuietValue + HalfMaxQuietValue * value() / curr_max_abs;
+    _NODISCARD _FORCEINLINE constexpr SMoveScore ontoOutputRange(value_type curr_max_abs) const {
+        return HalfMaxValue + HalfMaxValue * value() / curr_max_abs;
     }
 
     _FORCEINLINE constexpr SMoveScore& operator=(const sc::Score& s) noexcept {
