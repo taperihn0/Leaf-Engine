@@ -255,7 +255,7 @@ _FORCEINLINE void CaptureHistory::update(enumColor side, Move32b move, const Pos
 
 _INTERNAL void CaptureHistory::reduce() {
     for (auto& entry : _captures_history) 
-        entry.reduce<4>();
+        entry.reduce<2>();
 }
 
 _NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(enumColor side, Move32b move, Piece::enumType captured) const {
