@@ -376,11 +376,11 @@ MoveOrder::getHistoriesPenalties(int depth) {
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCaptureBonus(int depth) {
-    return depth * depth;
+    return depth * depth / 2;
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCapturePenalty(int depth) {
-    return depth * depth;
+    return depth * depth / 2;
 }
 
 _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 
@@ -428,20 +428,20 @@ void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
         assert(move.isCapture() or move.isQueenPromotion());
 
         if (move.isEnPassant()) {
-            const int16_t hist_score = captures_history.getValue(side, move, Piece::PAWN);
             const Piece::value_type attacker = pc::value(move.getPiece());
+            const int16_t hist_score = captures_history.getValue(side, move, Piece::PAWN);
             score = getCapturedScore(Piece::PAWN) * 10 - attacker + hist_score;
         }
         else if (move.isCapture()) {
             const Piece::enumType vic = move.getCaptured(pos);
-            const int16_t hist_score = captures_history.getValue(side, move, vic);
             const Piece::value_type attacker = pc::value(move.getPiece());
+            const int16_t hist_score = captures_history.getValue(side, move, vic);
             score = getCapturedScore(vic) * 10 - attacker + hist_score;
         }
         
         if (move.isPromotion()) {
             const Piece::enumType promo = move.getPromoPiece();
-            score += getPromotionScore(promo);
+            score += getPromotionScore(promo) * 10;
         }
 
         entry.setScore(score);

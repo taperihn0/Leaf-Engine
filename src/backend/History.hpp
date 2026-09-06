@@ -129,7 +129,7 @@ public:
     void reduce();
     _NODISCARD Entry::value_type getValue(enumColor side, Move32b move, Piece::enumType captured) const;
 private:
-    MultiArray<Entry, 2, 6, 64, 6> _captures_history;
+    MultiArray<Entry, 6, 64, 6> _captures_history;
 };
 
 template <typename T, T MaxAbsValue, typename _/* = std::enable_if_t<std::is_integral_v<T>> */>
@@ -247,7 +247,7 @@ _INTERNAL void CaptureHistory::clear() {
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void CaptureHistory::update(enumColor side, Move32b move, const Position& pos, Entry::value_type bonus) {
     const auto& [piece, to, captured] = extractCaptureIndexes(move, pos);
-    Entry& entry = _captures_history[side][piece][to][captured];
+    Entry& entry = _captures_history[piece][to][captured];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
 
@@ -258,7 +258,7 @@ _INTERNAL void CaptureHistory::reduce() {
 
 _NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(enumColor side, Move32b move, Piece::enumType captured) const {
     const auto& [piece, to] = extractCaptureIndexes(move);
-    return _captures_history[side][piece][to][pc::value(captured)].value();
+    return _captures_history[piece][to][pc::value(captured)].value();
 }
 
 } // namespace mvo::hist

@@ -73,7 +73,7 @@ _DEFINE_TUNABLE_PARAMETER(MvOrToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f
 _DEFINE_TUNABLE_PARAMETER(MvOrToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(MvOrPawnCapturedScore, int32_t, 105.f, 80.f, 120.f, 0.8f);
 _DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MvOrRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
