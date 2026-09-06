@@ -126,9 +126,9 @@ public:
 
     void clear();
     template <int8_t Sign, typename = std::enable_if_t<Sign == -1 or Sign == 1>>
-    void update(enumColor side, Move32b move, const Position& pos, Entry::value_type bonus);
+    void update(Move32b move, const Position& pos, Entry::value_type bonus);
     void reduce();
-    _NODISCARD Entry::value_type getValue(enumColor side, Move32b move, Piece::enumType captured) const;
+    _NODISCARD Entry::value_type getValue(Move32b move, Piece::enumType captured) const;
 private:
     MultiArray<Entry, 6, 64, 6> _captures_history;
 };
@@ -247,7 +247,7 @@ _INTERNAL void CaptureHistory::clear() {
 }
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
-_FORCEINLINE void CaptureHistory::update(enumColor side, Move32b move, const Position& pos, Entry::value_type bonus) {
+_FORCEINLINE void CaptureHistory::update(Move32b move, const Position& pos, Entry::value_type bonus) {
     const auto [piece, to, captured] = extractCaptureIndexes(move, pos);
     Entry& entry = _captures_history[piece][to][captured];
     Entry::applyGravityFormula<Sign>(entry, bonus);
@@ -258,7 +258,7 @@ _INTERNAL void CaptureHistory::reduce() {
         entry.reduce<2>();
 }
 
-_NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(enumColor side, Move32b move, Piece::enumType captured) const {
+_NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(Move32b move, Piece::enumType captured) const {
     const auto [piece, to] = extractCaptureIndexes(move);
     return _captures_history[piece][to][pc::value(captured)].value();
 }

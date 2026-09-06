@@ -86,6 +86,10 @@ _DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore2Coeff, int32_t, 1024.f, 724.
 _DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore1Coeff, int32_t, 16.f, 0.f, 300.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrCaptBonusHistoryScore2Coeff, int32_t, 256.f, 120.f, 400.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrCaptBonusHistoryScore1Coeff, int32_t, 64.f, 10.f, 120.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrCaptPenaltyHistoryScore2Coeff, int32_t, 256.f, 120.f, 400.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER(MvOrCaptPenaltyHistoryScore1Coeff, int32_t, 64.f, 10.f, 120.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MvOrdContinuation2Scale, int32_t, 800.f, 600.f, 1000.f, 1.f);
 
@@ -185,12 +189,15 @@ private:
 
     void updateContinuationPointers(search::utils::NodeInfo* node, int ply);
 
-    _NODISCARD static std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
-    getHistoriesBonuses(int depth);
-    _NODISCARD static std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+    using hist_value_type = hist::HistoryTable::value_type;
+    using cont_value_type = hist::ContinuationTable::value_type;
+    using capt_value_type = hist::CaptureHistory::value_type;
+
+    _NODISCARD static std::tuple<hist_value_type, cont_value_type> 
+    getQuietsHistoriesBonuses(int depth);
+    _NODISCARD static std::tuple<hist_value_type, cont_value_type, capt_value_type> 
     getHistoriesPenalties(int depth);
-    _NODISCARD static hist::CaptureHistory::value_type getCaptureBonus(int depth);
-    _NODISCARD static hist::CaptureHistory::value_type getCapturePenalty(int depth);
+    _NODISCARD static capt_value_type getCaptureBonus(int depth);
 
     template <int8_t Sign>
     void updateQuietEntry(Move32b move, 

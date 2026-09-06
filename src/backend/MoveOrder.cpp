@@ -310,24 +310,23 @@ void MoveOrder::updateHistories(Move32b bestmove,
     auto& captures_history = _history_cluster->getCapturesHistoryTable();
 
     if (bestmove.isQuiet() and !bestmove.isQueenPromotion()) {
-        const auto [hist_bonus, cont_bonus] = getHistoriesBonuses(depth);
+        const auto [hist_bonus, cont_bonus] = getQuietsHistoriesBonuses(depth);
         updateQuietEntry<+1>(bestmove, side, hist_bonus, cont_bonus, node, ply);
     }
     else if (bestmove.isCapture()) {
         const int16_t capt_bonus = getCaptureBonus(depth);
-        captures_history.update<+1>(side, bestmove, pos, capt_bonus);
+        captures_history.update<+1>(bestmove, pos, capt_bonus);
     }
 
-    const int16_t capt_penalty = getCapturePenalty(depth);
     const int16_t first_quiet_idx = _quiets_idx != static_cast<size_t>(-1) ? _quiets_idx : _move_list.count();
     const int16_t bestmove_idx = static_cast<int16_t>(_idx) - 1;
 
+    const auto [hist_penalty, cont_penalty, capt_penalty] = getHistoriesPenalties(depth);
+
     for (int16_t i = 0; i < std::min<int16_t>(first_quiet_idx, bestmove_idx); i++) {
         const Move32b move = _move_list.getEntry(i).move();
-        captures_history.update<-1>(side, move, pos, capt_penalty);
+        captures_history.update<-1>(move, pos, capt_penalty);
     }
-
-    const auto [hist_penalty, cont_penalty] = getHistoriesPenalties(depth);
 
     for (int16_t i = first_quiet_idx; i < bestmove_idx; i++) {
         assert(bestmove.isQuiet() and !bestmove.isQueenPromotion());
@@ -346,8 +345,8 @@ void MoveOrder::updateContinuationPointers(search::utils::NodeInfo* node, int pl
     }
 }
 
-_NODISCARD _FORCEINLINE std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
-MoveOrder::getHistoriesBonuses(int depth) {
+_NODISCARD _FORCEINLINE std::tuple<MoveOrder::hist_value_type, MoveOrder::cont_value_type> 
+MoveOrder::getQuietsHistoriesBonuses(int depth) {
     const int32_t unscaled_hist_bonus = (
         MvOrQuietBonusHistoryScore2Coeff * depth * depth + 
         MvOrQuietBonusHistoryScore1Coeff * depth
@@ -361,7 +360,7 @@ MoveOrder::getHistoriesBonuses(int depth) {
     return std::make_tuple(unscaled_hist_bonus / 1024, unscaled_cont_bonus / 1024);
 }
 
-_NODISCARD _FORCEINLINE std::tuple<hist::HistoryTable::value_type, hist::ContinuationTable::value_type> 
+_NODISCARD std::tuple<MoveOrder::hist_value_type, MoveOrder::cont_value_type, MoveOrder::capt_value_type> 
 MoveOrder::getHistoriesPenalties(int depth) {
     const int32_t unscaled_hist_penalty = (
         MvOrQuietPenaltyHistoryScore2Coeff * depth * depth + 
@@ -373,15 +372,19 @@ MoveOrder::getHistoriesPenalties(int depth) {
         MvOrContPenaltyHistoryScore1Coeff * depth    
     );
 
-    return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024);
+    const int32_t unscaled_capt_penalty = (
+        MvOrCaptPenaltyHistoryScore2Coeff * depth * depth + 
+        MvOrCaptPenaltyHistoryScore1Coeff * depth    
+    );
+
+    return std::make_tuple(unscaled_hist_penalty / 1024, unscaled_cont_penalty / 1024, unscaled_capt_penalty / 1024);
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCaptureBonus(int depth) {
-    return (256 * depth * depth + 64 * depth) / 1024;
-}
-
-_NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCapturePenalty(int depth) {
-    return (256 * depth * depth + 32 * depth) / 1024;
+    return (
+        MvOrCaptBonusHistoryScore2Coeff * depth * depth + 
+        MvOrCaptBonusHistoryScore1Coeff * depth
+    ) / 1024;
 }
 
 _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 
@@ -418,7 +421,6 @@ _INLINE bool MoveOrder::getNextMoveInfo(Move32b& move,
 
 void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
     const auto& captures_history = _history_cluster->getCapturesHistoryTable();
-    const enumColor side = pos.getTurn();
     
     for (size_t i = beg_idx; i < _move_list.count(); i++) {
         ml::MoveList::Entry& entry = _move_list.getEntry(i);
@@ -430,13 +432,13 @@ void MoveOrder::scoreTacticals(size_t beg_idx, const Position& pos) {
 
         if (move.isEnPassant()) {
             const Piece::value_type attacker = pc::value(move.getPiece());
-            const int16_t hist_score = captures_history.getValue(side, move, Piece::PAWN);
+            const int16_t hist_score = captures_history.getValue(move, Piece::PAWN);
             score = getCapturedScore(Piece::PAWN) * 10 - attacker + hist_score;
         }
         else if (move.isCapture()) {
             const Piece::enumType vic = move.getCaptured(pos);
             const Piece::value_type attacker = pc::value(move.getPiece());
-            const int16_t hist_score = captures_history.getValue(side, move, vic);
+            const int16_t hist_score = captures_history.getValue(move, vic);
             score = getCapturedScore(vic) * 10 - attacker + hist_score;
         }
         
@@ -485,9 +487,9 @@ void MoveOrder::scoreQuiets(size_t beg_idx,
 }
 
 _NODISCARD _FORCEINLINE SMoveScore MoveOrder::getOutputMoveScore(Move32b move, SMoveScore s) {
-    return move.isCapture() or move.isQueenPromotion() ? 
-            s.ontoOutputRange(getCapturedScore(Piece::QUEEN) + _history_cluster->getCapturesHistoryTable().getMaxAbsValueOfEntry()) 
-            : s.ontoOutputRange(_history_cluster->getMaxTotalAbsValue());
+    _AUTO_PARAM_ATTRIBS const int32_t MaxCaptureScore = getCapturedScore(Piece::QUEEN) + hist::CaptureHistory::getMaxAbsValueOfEntry();
+    return move.isCapture() or move.isQueenPromotion() ? s.ontoOutputRange(MaxCaptureScore) 
+        : s.ontoOutputRange(_history_cluster->getMaxTotalAbsValue());
 }
 
 _NODISCARD enumStage MoveOrder::getStage() const {
