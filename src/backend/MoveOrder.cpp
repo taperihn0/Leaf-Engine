@@ -160,11 +160,11 @@ _NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node,
         [[fallthrough]];
     case enumPrivateStage::STAGED_CAPTURES:
         MoveGen::generatePseudoLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(pos, _move_list);
-        scoreTacticals(0, pos);
-
         _stage = enumPrivateStage::STAGED_PICK_CAPTURES;
         [[fallthrough]];
     case enumPrivateStage::STAGED_PICK_CAPTURES:
+        scoreTacticals(_idx, pos);
+
         if (getNextMoveInfo(next_move, move_score))
             return true;
         
