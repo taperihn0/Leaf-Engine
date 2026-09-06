@@ -32,6 +32,7 @@ public:
 
     HistoryEntry& operator=(T v);
 
+    template <int Reduction = 2>
     void reduce() noexcept;
     _NODISCARD value_type value() const noexcept;
 
@@ -139,8 +140,9 @@ HistoryEntry<T, MaxAbsValue, _>& HistoryEntry<T, MaxAbsValue, _>::operator=(T v)
 }
 
 template <typename T, T MaxAbsValue, typename _/* = std::enable_if_t<std::is_integral_v<T>> */>
+template <int Reduction>
 _INLINE void HistoryEntry<T, MaxAbsValue, _>::reduce() noexcept {
-    _v /= 2;
+    _v /= Reduction;
 }
 
 template <typename T, T MaxAbsValue, typename _/* = std::enable_if_t<std::is_integral_v<T>> */>
@@ -253,7 +255,7 @@ _FORCEINLINE void CaptureHistory::update(enumColor side, Move32b move, const Pos
 
 _INTERNAL void CaptureHistory::reduce() {
     for (auto& entry : _captures_history) 
-        entry.reduce();
+        entry.reduce<4>();
 }
 
 _NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(enumColor side, Move32b move, Piece::enumType captured) const {

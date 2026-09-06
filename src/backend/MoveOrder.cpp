@@ -247,7 +247,6 @@ _NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
         _stage = enumPrivateStage::ONCEGEN_PICK_CAPTURES;
 
         MoveGen::generateLegalMoves<MoveGen::TACTICALS_ONLY_QUEENPROMOS>(pos, _move_list);
-        scoreTacticals(0, pos);
 
         _quiets_idx = _move_list.count();
         MoveGen::generateLegalMoves<MoveGen::QUIETS_ONLY_UNDERPROMOS>(pos, _move_list);
@@ -257,6 +256,8 @@ _NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
 
         [[fallthrough]];
     case enumPrivateStage::ONCEGEN_PICK_CAPTURES:
+        scoreTacticals(_idx, pos);
+
         // Search for another capture only, stop at quiets
         if (getNextMoveInfo(next_move, move_score, _quiets_idx))
             return true;
