@@ -377,11 +377,11 @@ MoveOrder::getHistoriesPenalties(int depth) {
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCaptureBonus(int depth) {
-    return depth * depth / 2;
+    return (600 * depth * depth + 64 * depth) / 1024;
 }
 
 _NODISCARD _FORCEINLINE hist::CaptureHistory::value_type MoveOrder::getCapturePenalty(int depth) {
-    return depth * depth / 2;
+    return (512 * depth * depth + 32 * depth) / 1024;
 }
 
 _INLINE bool MoveOrder::nextMoveFromList(Move32b& move, 

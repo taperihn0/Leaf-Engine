@@ -173,13 +173,13 @@ _FORCEINLINE std::tuple<Piece::value_type, Square, bool> extractMoveIndexes(Move
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void ContinuationSubtable::update(enumColor side, Move32b move, int16_t bonus) {
-    const auto& [piece, to, __] = extractMoveIndexes(move);
+    const auto [piece, to, __] = extractMoveIndexes(move);
     Entry& entry = _continuation_subtable[side][piece][to];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
 
 _FORCEINLINE ContinuationSubtable::Entry::value_type ContinuationSubtable::getValue(enumColor side, Move32b move) const {
-    const auto& [piece, to, _] = extractMoveIndexes(move);
+    const auto [piece, to, _] = extractMoveIndexes(move);
     const Entry& entry = _continuation_subtable[side][piece][to];
     return entry.value();
 }
@@ -198,7 +198,7 @@ _INTERNAL void ContinuationTable::clear() {
 }
 
 _NODISCARD _FORCEINLINE ContinuationSubtable& ContinuationTable::getSubtable(enumColor side, Move32b move) {
-    const auto& [piece, to, capture] = extractMoveIndexes(move);
+    const auto [piece, to, capture] = extractMoveIndexes(move);
     return _continuation_tables[side][capture][piece][to];
 }
 
@@ -214,7 +214,7 @@ _INTERNAL void HistoryTable::clear() {
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void HistoryTable::update(enumColor side, Move32b move, Entry::value_type bonus) {
-    const auto& [piece, to, __] = extractMoveIndexes(move);
+    const auto [piece, to, __] = extractMoveIndexes(move);
     Entry& entry = _quiets_history[side][piece][to];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
@@ -225,7 +225,7 @@ _INTERNAL void HistoryTable::reduce() {
 }
 
 _NODISCARD _FORCEINLINE HistoryTable::Entry::value_type HistoryTable::getValue(enumColor side, Move32b move) const {
-    const auto& [piece, to, _] = extractMoveIndexes(move);
+    const auto [piece, to, _] = extractMoveIndexes(move);
     return _quiets_history[side][piece][to].value();
 }
 
@@ -248,7 +248,7 @@ _INTERNAL void CaptureHistory::clear() {
 
 template <int8_t Sign, typename _ /* = std::enable_if_t<Sign == -1 or Sign == 1> */>
 _FORCEINLINE void CaptureHistory::update(enumColor side, Move32b move, const Position& pos, Entry::value_type bonus) {
-    const auto& [piece, to, captured] = extractCaptureIndexes(move, pos);
+    const auto [piece, to, captured] = extractCaptureIndexes(move, pos);
     Entry& entry = _captures_history[piece][to][captured];
     Entry::applyGravityFormula<Sign>(entry, bonus);
 }
@@ -259,7 +259,7 @@ _INTERNAL void CaptureHistory::reduce() {
 }
 
 _NODISCARD _FORCEINLINE CaptureHistory::Entry::value_type CaptureHistory::getValue(enumColor side, Move32b move, Piece::enumType captured) const {
-    const auto& [piece, to] = extractCaptureIndexes(move);
+    const auto [piece, to] = extractCaptureIndexes(move);
     return _captures_history[piece][to][pc::value(captured)].value();
 }
 
