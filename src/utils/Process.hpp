@@ -22,14 +22,16 @@
 
 #include <memory>
 
-#if defined(_MSC_VER)
-#include <io.h>
-#include <fcntl.h>
-#else
+#if defined(__GNUC__) and !defined(_WIN32)
 #include <sys/wait.h>
 #include <cstdio>
 #include <ext/stdio_filebuf.h>
+#else
+#include <io.h>
+#include <fcntl.h>
 #endif
+
+#include <ext/stdio_filebuf.h>
 
 namespace utils {
 
@@ -44,19 +46,19 @@ public:
     void waitForProcess();
     bool isAlive() const;
 
-#if defined(_MSC_VER)
+#if defined(__GNUC__) and !defined(_WIN32)
+    pid_t pid = 0;
+#else
     HANDLE hproc = nullptr;
     HANDLE hthread = nullptr;
-#else
-    pid_t pid = 0;
+#endif
+
+    std::unique_ptr<std::ostream> proc_stdin = nullptr;
+    std::unique_ptr<std::istream> proc_stdout = nullptr;
 private:
     using filebuf = __gnu_cxx::stdio_filebuf<char>;
     std::unique_ptr<filebuf> in_buf;
     std::unique_ptr<filebuf> out_buf;
-#endif
-public:
-    std::unique_ptr<std::ostream> proc_stdin = nullptr;
-    std::unique_ptr<std::istream> proc_stdout = nullptr;
 };
 
 } // namespace utils

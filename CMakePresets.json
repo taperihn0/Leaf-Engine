@@ -142,6 +142,27 @@
             }
         },
         {
+            "name": "finalutils-mingw-w64",
+            "displayName": "FinalUtils-MinGW-w64",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "Windows",
+                "CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
+                "CMAKE_CXX_COMPILER": "x86_64-w64-mingw32-g++",
+                "CMAKE_RC_COMPILER": "x86_64-w64-mingw32-windres",
+                "CMAKE_EXE_LINKER_FLAGS": "-static -static-libgcc -static-libstdc++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "COLLECT_SEARCH_STATS": "OFF",
+                "BUILD_UTILS": "ON",
+                "INCLUDE_TESTS": "OFF",
+                "ENABLE_SIMD_AVX2": "ON",
+                "ARCHITECTURE_X86_64_V3": "ON",
+                "ARCHITECTURE_X86_64_LEGACY": "OFF",
+                "ARCHITECTURE_ARM": "OFF"
+            }
+        },
+        {
             "name": "final-legacy",
             "displayName": "Final-Legacy",
             "generator": "Ninja",

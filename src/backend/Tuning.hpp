@@ -24,6 +24,20 @@
 
 #if defined(_ENABLE_TUNING)
 
+template <typename T>
+class TunableParameterValue {
+public:
+    TunableParameterValue(T v,
+                          const std::string& param, 
+                          void* addr, 
+                          float mi, 
+                          float ma, 
+                          float step_rate);
+    explicit operator T() const { return _v; }
+private:
+    T _v;
+};
+
 class TunableParametersMap {
 public:
     TunableParametersMap() = default;
@@ -54,11 +68,24 @@ private:
 
 inline TunableParametersMap GlobParamMapping;
 
-#define _DEFINE_TUNABLE_PARAMETER(parameter, type, value , mi, ma, step_rate)                     \
-_PARAM_ATTRIBS type parameter = [](std::string_view param_name) {                                 \
-    GlobParamMapping.addTunableParameter(std::string(param_name), &parameter, mi, ma, step_rate); \
-    return static_cast<type>(roundi<float>(value));                                               \
-}(#parameter)
+template <typename T>
+TunableParameterValue<T>::TunableParameterValue(T v,
+                                              const std::string& param, 
+                                              void* addr, 
+                                              float mi, 
+                                              float ma, 
+                                              float step_rate)
+    : _v(v) {
+    GlobParamMapping.addTunableParameter(param, addr, mi, ma, step_rate);  
+}
+
+#define _DEFINE_TUNABLE_PARAMETER(parameter, type, value , mi, ma, step_rate)                          \
+_PARAM_ATTRIBS type parameter = static_cast<type>(TunableParameterValue<type>(roundi<float>(value),    \
+                                                                              std::string(#parameter), \
+                                                                              &parameter,              \
+                                                                              mi,                      \
+                                                                              ma,                      \
+                                                                              step_rate))    
 
 #else 
 
