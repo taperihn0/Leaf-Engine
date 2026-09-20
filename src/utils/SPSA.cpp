@@ -17,6 +17,7 @@
  */
 
 #include "SPSA.hpp"
+#include "Log.hpp"
 #include "Process.hpp"
 #include "frontend/UCI.hpp"
 #include "SelfGame.hpp"
@@ -100,8 +101,9 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
         std::ref(params), std::ref(log_file), limits, id);
     }
 
-    for (auto& thread : threads)
+    for (auto& thread : threads) {
         thread.join();
+    }
 }
 
 void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta, 
@@ -116,7 +118,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     EngineProcess::initProc(engine1);
 
     if (!engine0.isAlive() or !engine1.isAlive()) {
-        labelLog(std::cout, LOG_INFO, "Process didn't initialize");
+        Log::sLog(LOG_INFO, "Process didn't initialize");
         return;
     }
 
@@ -147,7 +149,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         for (int i = 0; 
              i < param_count and readline(os0, line);
              i++) {
-            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
+            Log::sLog(LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
         }
 
         log(is1, "options");
@@ -155,7 +157,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         for (int i = 0; 
              i < param_count and readline(os1, line);
              i++) {
-            labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
+            Log::sLog(LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
         }
 #endif // DEBUG
 
@@ -167,10 +169,10 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         tt_log << "setoption name Hash value " << mb_tt_size;
 
         log(is0, tt_log.str());
-        labelLog(std::cout, LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
+        Log::sLog(LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
         log(is1, tt_log.str());
-        labelLog(std::cout, LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
+        Log::sLog(LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
     tune(theta, theta_plus, theta_minus, 
@@ -214,7 +216,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
 
         if (k >= IterCount) break;
 
-        labelLog(std::cout, LOG_INFO | curr_thread_label, "Iteration k = " + std::to_string(curr_iter));
+        Log::sLog(LOG_INFO | curr_thread_label, "Iteration k = " + std::to_string(curr_iter));
 
         std::vector<SPSA_Parameter> local_params(param_count);
 
@@ -279,7 +281,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                 writeCheckpoint(log_file, params, k);
         }
 
-        labelLog(std::cout, LOG_INFO | curr_thread_label, "Game info: " + toStr(*game_result) + 
+        Log::sLog(LOG_INFO | curr_thread_label, "Game info: " + toStr(*game_result) + 
                                                           ", numeric: " + std::to_string(res));
         
         std::stringstream info;
@@ -288,7 +290,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
              << theta_minus_win_cnt << " | "
              << draw_cnt;
 
-        labelLog(std::cout, LOG_INFO | curr_thread_label, info.str());
+        Log::sLog(LOG_INFO | curr_thread_label, info.str());
 
         theta_plus.clear();
         theta_minus.clear();
@@ -306,7 +308,7 @@ void SPSA_Tuning::writeCheckpoint(std::ofstream& file,
         ss << param.name << " = " << param.value << '\n';
     }
 
-    labelLog(file, LOG_INFO, ss.str());
+    Log(file).write(LOG_INFO, ss.str());
 }
 
 void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
@@ -320,7 +322,7 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
         cmd << "setoption name " << *param.name << " value " << std::to_string(param.value);
 
         log(*engine.proc_stdin, cmd.str());
-        labelLog(std::cout, ret_msg_label, cmd.str());
+        Log::sLog(ret_msg_label, cmd.str());
     }
 }
 

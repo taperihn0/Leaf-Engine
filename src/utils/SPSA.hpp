@@ -19,7 +19,7 @@
 #include "UtilsCommon.hpp"
 #include "frontend/Options.hpp"
 #include "Opening.hpp"
-#include "UtilsCommon.hpp"
+#include "Log.hpp"
 #include "Process.hpp"
 
 #include <vector>

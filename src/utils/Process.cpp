@@ -17,6 +17,7 @@
  */
 
 #include "Process.hpp"
+#include "Log.hpp"
 #include "backend/PackedNetwork.hpp"
 #include "backend/Tablebase.hpp"
 
@@ -212,7 +213,7 @@ void EngineProcess::syncUntilReady(enumLogLabel thread_label) {
     log(*proc_stdin, "isready");
 
     for (std::string line; readline(*proc_stdout, line) and line != "readyok"; ) {
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
+        Log::sLog(LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
     }
 }
 

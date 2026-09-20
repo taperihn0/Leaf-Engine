@@ -17,6 +17,7 @@
  */
 
 #include "SelfGame.hpp"
+#include "Log.hpp"
 #include "backend/Time.hpp"
 #include "StaticEval.hpp"
 #include "Process.hpp"
@@ -210,7 +211,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
     log(*player.proc_stdin, msg);
 
     if constexpr (EnableLog)
-        labelLog(std::cout, ret_msg_label, msg);
+        Log::sLog(ret_msg_label, msg);
 }
 
 template <bool EnableLog>
@@ -238,14 +239,14 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
     log(*player.proc_stdin, cmd.str());
 
     if constexpr (EnableLog)
-        labelLog(std::cout, ret_msg_label, cmd.str());
+        Log::sLog(ret_msg_label, cmd.str());
 
     std::string best_move_str;
 
     for (std::string line; readline(*player.proc_stdout, line); ) {
 
         if constexpr (EnableLog)
-            labelLog(std::cout, ret_msg_label, line);
+            Log::sLog(ret_msg_label, line);
 
         if (line.empty()) 
             continue;
@@ -278,14 +279,14 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
     }
 
     if (best_move_str.empty()) {
-        labelLog(std::cout, LOG_INFO, "Null best move");
+        Log::sLog(LOG_INFO, "Null best move");
         return NullMove;
     }
 
     Move32b best_move = Move32b::fromStr<Move32b::Notation::REGULAR>(pos, best_move_str);
 
     if (!best_move.isLegal(pos)) {
-        labelLog(std::cout, LOG_INFO, "Invalid best move");
+        Log::sLog(LOG_INFO, "Invalid best move");
         return NullMove;
     }
 

@@ -39,7 +39,7 @@
 namespace utils {
 
 _INLINE size_t getIStreamBytesLeft(std::istream& input) {
-    auto curr_bytes = input.tellg();
+    auto curr_bytes = input.tellg();    
     input.seekg(0, std::ios::end);
     auto end_bytes = input.tellg();
     input.seekg(curr_bytes);
@@ -92,46 +92,8 @@ _FORCEINLINE enumLogLabel threadLabel(uint id) {
     return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
 }
 
-_INLINE void labelLog(std::ostream& is, uint32_t label, const std::string& str) {
-    static std::mutex StdoutMutex;
-    const std::lock_guard<std::mutex> lock(StdoutMutex);
-
-    if (label == LOG_NO_LABEL) {
-        is << str << std::endl;
-        return;
-    }
-
-    std::string labels;
-    uint32_t working_label = label; 
-
-    auto add_label = [&](uint32_t bit, const char* name) {
-        if (working_label & bit) {
-            if (!labels.empty()) labels += "|";
-            labels += name;
-            working_label &= ~bit;
-        }
-    };
-
-    add_label(LOG_DEBUG,    "DEBUG");
-    add_label(LOG_INFO,     "INFO");
-    add_label(LOG_ENGINE_0, "PLAYER_0");
-    add_label(LOG_ENGINE_1, "PLAYER_1");
-
-    for (int id = 1; id <= PlatformThreadLimit; id++) {
-        uint32_t bit = static_cast<uint32_t>(1) << (3 + id);
-        
-        if (working_label & bit) {
-            if (!labels.empty()) labels += "|";
-            labels += "THREAD_" + std::to_string(id);
-            working_label &= ~bit;
-        }
-    }
-
-    is << "[" << labels << "] " << str << std::endl;
-}
-
 _FORCEINLINE void log(std::ostream& is, const std::string& str) {
-    labelLog(is, LOG_NO_LABEL, str);
+    is << str << std::endl;
 }
 
 _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {

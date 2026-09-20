@@ -108,9 +108,9 @@ public:
 protected:
     static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + MaxNibbles;
 
-    BitBoard                    _occupancy_mask;
+    BitBoard                       _occupancy_mask;
     std::array<Nibble, MaxNibbles> _pieces;
-    uint8_t                     _piece_cnt;
+    uint8_t                        _piece_cnt;
 };
 
 // ExtPackedPosition implements custom position compression.
