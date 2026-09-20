@@ -22,9 +22,24 @@
 
 #include <atomic>
 #include <mutex>
+#include <type_traits>
 
-namespace utils
-{
+namespace utils {
+
+template <typename T>
+class SelfplayPositionFilter {
+public:
+    SelfplayPositionFilter() = default;
+    explicit SelfplayPositionFilter(T&& f)
+        : _filter(std::forward<T>(f)) {}
+
+    void set(T&& f) { _filter = std::forward<T>(f); }
+
+    template <typename... Args>
+    bool apply(Args&&... args) const;
+private:
+    std::optional<T> _filter = std::nullopt;
+};
 
 /* Self-play tournament class with data collection system.
 */
@@ -36,7 +51,8 @@ public:
         size_t                games_count; 
         uint                  thread_count;
         std::filesystem::path selfplay_filename;
-        search::utils::SearchLimits  limits;
+        search::utils::SearchLimits  
+                              limits;
     };
     
     void startTournament(const TournamentPacket& packet);
@@ -67,7 +83,8 @@ private:
         std::ofstream output_white_win;
         std::ofstream output_black_win;
         std::ofstream output_draw;
-        search::utils::SearchLimits  limits;
+        search::utils::SearchLimits  
+                      limits;
         size_t        games_ended;
         size_t        white_win_count;
         size_t        black_win_count;

@@ -29,8 +29,31 @@
 #include <thread>
 #include <iomanip>
 
-namespace utils
-{
+namespace utils {
+
+template <typename T>
+template <typename... Args>
+bool SelfplayPositionFilter<T>::apply(Args&&... args) const {
+    return _filter.has_value() ? _filter.value()(std::forward<Args>(args)...) : false;
+}
+
+static const auto InternalFilter = SelfplayPositionFilter([](Move32b move) {
+    return !move.isCapture() and !move.isPromotion();
+});
+
+static const auto ExplicitFilter = SelfplayPositionFilter([](const Position& pos, sc::Score white_score) {
+    if (white_score.isMateScore())
+        return false;
+
+    else if (pos.getPiecesCount() <= 6 and 
+             hce::StaticEval::evaluatePawnlessEndgame(pos) != sc::Undef)
+        return false;
+
+    else if (pos.isInCheck(pos.getTurn()))
+        return false;
+
+    return true;
+});
 
 bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
                                                  enumLogLabel thread_label) 
@@ -160,7 +183,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         const size_t total_positions_cnt = positions.size();
         ASSERT_NO_LOG(total_positions_cnt == white_scores.size() and 
-                     total_positions_cnt == moves.size());
+                      total_positions_cnt == moves.size());
 
         if (*game_result == Game::GAME_INVALID) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
@@ -431,26 +454,13 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 bool TournamentCollector::explicitFilterPolicy(const Position& pos, 
                                                sc::Score white_score) 
 {
-    if (white_score.isMateScore())
-        return false;
-
-    else if (pos.getPiecesCount() <= 6 and 
-             hce::StaticEval::evaluatePawnlessEndgame(pos) != sc::Undef)
-        return false;
-
-    else if (pos.isInCheck(pos.getTurn()))
-        return false;
-
-    return true;
+    return ExplicitFilter.apply(pos, white_score);
 }
 
 _FORCEINLINE bool TournamentCollector::internalFilterPolicy(Move32b internal_move,
                                                             _UNUSED size_t internal_total_positions_cnt)
 {
-    if (internal_move.isCapture() or internal_move.isPromotion())
-        return false;
-
-    return true;
+    return InternalFilter.apply(internal_move);
 }
 
 _FORCEINLINE bool TournamentCollector::filterTrainPosition(const Position& pos, 
