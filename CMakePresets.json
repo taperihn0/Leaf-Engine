@@ -155,7 +155,6 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "COLLECT_SEARCH_STATS": "OFF",
                 "BUILD_UTILS": "ON",
-                "INCLUDE_TESTS": "OFF",
                 "ENABLE_SIMD_AVX2": "ON",
                 "ARCHITECTURE_X86_64_V3": "ON",
                 "ARCHITECTURE_X86_64_LEGACY": "OFF",
@@ -223,6 +222,16 @@
             "name": "finalutils",
             "configurePreset": "finalutils",
             "targets": [ "LeafUtils" ]
+        },
+        {
+            "name": "final-mingw",
+            "configurePreset": "final-mingw-w64",
+            "targets": [ "Leaf" ]
+        },
+        {
+            "name": "finalutils-mingw",
+            "configurePreset": "finalutils-mingw-w64",
+            "targets": [ "Leaf" ]
         },
         {
             "name": "finallegacy",
