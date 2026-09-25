@@ -210,7 +210,7 @@ bool EngineProcess::isAlive() const {
 #endif
 
 void EngineProcess::syncUntilReady(enumLogLabel thread_label) {
-    log(*proc_stdin, "isready");
+    Log(*proc_stdin).log("isready");
 
     for (std::string line; readline(*proc_stdout, line) and line != "readyok"; ) {
         Log::sLog(LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);

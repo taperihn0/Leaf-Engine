@@ -59,8 +59,8 @@ private:
               std::vector<SPSA_PackedParameter>& theta_plus,
               std::vector<SPSA_PackedParameter>& theta_minus,
               uint n, search::utils::SearchLimits limits,
-              EngineProcess& engine0,
-              EngineProcess& engine1,
+              std::tuple<EngineProcess, EngineProcess>& engine,
+              std::tuple<Log, Log>& log_is,
               std::ofstream& log_file,
               uint id);
 
@@ -69,12 +69,11 @@ private:
                          uint k);
 
     void applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
-                      EngineProcess& engine,
+                      Log& log_engine,
                       enumLogLabel ret_msg_label);
 
     int match(search::utils::SearchLimits limits,
-              EngineProcess& engine0,
-              EngineProcess& engine1,
+              std::tuple<EngineProcess, EngineProcess>& engine,
               std::shared_ptr<Game::Result> result,
               uint id,
               enumLogLabel thread_label);

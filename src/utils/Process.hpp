@@ -19,6 +19,7 @@
 #pragma once
 
 #include "UtilsCommon.hpp"
+#include "Log.hpp"
 
 #include <memory>
 

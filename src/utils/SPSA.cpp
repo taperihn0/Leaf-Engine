@@ -111,21 +111,28 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
                               search::utils::SearchLimits limits,
                               uint id) 
 {
-    EngineProcess engine0;
-    EngineProcess engine1;
+    std::tuple<EngineProcess, EngineProcess> engine;
 
-    EngineProcess::initProc(engine0);
-    EngineProcess::initProc(engine1);
+    EngineProcess::initProc(std::get<0>(engine));
+    EngineProcess::initProc(std::get<1>(engine));
 
-    if (!engine0.isAlive() or !engine1.isAlive()) {
+    if (!std::get<0>(engine).isAlive() or !std::get<1>(engine).isAlive()) {
         Log::sLog(LOG_INFO, "Process didn't initialize");
         return;
     }
 
-    auto& is0 = *engine0.proc_stdin;
-    auto& os0 = *engine0.proc_stdout;
-    auto& is1 = *engine1.proc_stdin;
-    auto& os1 = *engine1.proc_stdout;
+    auto is = std::make_tuple(
+        std::get<0>(engine).proc_stdin.get(), 
+        std::get<1>(engine).proc_stdin.get()
+    );
+    auto os = std::make_tuple(
+        std::get<0>(engine).proc_stdout.get(), 
+        std::get<1>(engine).proc_stdout.get()
+    );
+    auto log_is = std::make_tuple(
+        Log(*std::get<0>(is)), 
+        Log(*std::get<1>(is))
+    );
 
     const size_t param_count = theta.size();
 
@@ -138,24 +145,24 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     const enumLogLabel thread_label = threadLabel(id);
 
     {
-        engine0.syncUntilReady(thread_label);
-        engine1.syncUntilReady(thread_label);
+        std::get<0>(engine).syncUntilReady(thread_label);
+        std::get<1>(engine).syncUntilReady(thread_label);
 
         std::string line;
 
 #if defined(DEBUG)
-        log(is0, "options");
+        log(*std::get<0>(is), "options");
         
         for (int i = 0; 
-             i < param_count and readline(os0, line);
+             i < param_count and readline(*std::get<0>(os), line);
              i++) {
             Log::sLog(LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
         }
 
-        log(is1, "options");
+        log(*std::get<1>(is), "options");
 
         for (int i = 0; 
-             i < param_count and readline(os1, line);
+             i < param_count and readline(*std::get<1>(os), line);
              i++) {
             Log::sLog(LOG_DEBUG | LOG_ENGINE_1 | thread_label, line);
         }
@@ -168,36 +175,36 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         std::stringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
 
-        log(is0, tt_log.str());
+        std::get<0>(log_is).log(tt_log.str());
         Log::sLog(LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
-        log(is1, tt_log.str());
+        std::get<1>(log_is).log(tt_log.str());
         Log::sLog(LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
     tune(theta, theta_plus, theta_minus, 
          IterCount, 
          limits,
-         engine0, engine1, 
+         engine,
+         log_is,
          log_file, 
          id);
 
     {
-        std::string msg = "quit";
-        log(is0, msg);
-        log(is1, msg);
+        std::get<0>(log_is).log("quit");
+        std::get<1>(log_is).log("quit");
     }
 
-    engine0.waitForProcess();
-    engine1.waitForProcess();
+    std::get<0>(engine).waitForProcess();
+    std::get<1>(engine).waitForProcess();
 }
 
 void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                        std::vector<SPSA_PackedParameter>& theta_plus,
                        std::vector<SPSA_PackedParameter>& theta_minus,
                        uint n, search::utils::SearchLimits limits,
-                       EngineProcess& engine0,
-                       EngineProcess& engine1,
+                       std::tuple<EngineProcess, EngineProcess>& engine,
+                       std::tuple<Log, Log>& log_is,
                        std::ofstream& log_file,
                        uint id)
 {
@@ -252,13 +259,15 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             return packed;
                        });
 
-        applyOptions(theta_plus, engine0, LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
-        applyOptions(theta_minus, engine1, LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
+        applyOptions(theta_plus, std::get<0>(log_is), LOG_INFO | LOG_ENGINE_0 | curr_thread_label);
+        applyOptions(theta_minus, std::get<1>(log_is), LOG_INFO | LOG_ENGINE_1 | curr_thread_label);
 
         auto game_result = std::make_shared<Game::Result>();
         const int res = match(limits, 
-                              engine0, engine1, 
-                              game_result, id, curr_thread_label);
+                              engine,
+                              game_result, 
+                              id, 
+                              curr_thread_label);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -312,7 +321,7 @@ void SPSA_Tuning::writeCheckpoint(std::ofstream& file,
 }
 
 void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
-                               EngineProcess& engine,
+                               Log& log_engine,
                                enumLogLabel ret_msg_label) 
 {
     // Setup option value using "setoption name OPTION value VALUE"
@@ -320,15 +329,13 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
     for (const SPSA_PackedParameter& param : tunable_options) {
         std::stringstream cmd;
         cmd << "setoption name " << *param.name << " value " << std::to_string(param.value);
-
-        log(*engine.proc_stdin, cmd.str());
+        log_engine.log(cmd.str());
         Log::sLog(ret_msg_label, cmd.str());
     }
 }
 
 _INLINE int SPSA_Tuning::match(search::utils::SearchLimits limits,
-                               EngineProcess& engine0,
-                               EngineProcess& engine1,
+                               std::tuple<EngineProcess, EngineProcess>& engine,
                                std::shared_ptr<Game::Result> result,
                                uint id,
                                enumLogLabel thread_label)
@@ -341,10 +348,10 @@ _INLINE int SPSA_Tuning::match(search::utils::SearchLimits limits,
         nullptr,
     };
 
-    engine0.syncUntilReady(thread_label);
-    engine1.syncUntilReady(thread_label);
+    std::get<0>(engine).syncUntilReady(thread_label);
+    std::get<1>(engine).syncUntilReady(thread_label);
 
-    const auto game_result = SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
+    const auto game_result = SelfGame().mixedMatch<_EnableSelfPlayLog>(std::get<0>(engine), std::get<1>(engine), game_packet);
 
     //  1. - if player zero wins
     // -1. - if player one wins

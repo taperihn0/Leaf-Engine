@@ -30,8 +30,7 @@
 #include <thread>
 #include <iomanip>
 
-namespace utils
-{
+namespace utils {
 
 bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
                                                  enumLogLabel thread_label) 
@@ -41,35 +40,36 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
 
-    EngineProcess engine0;
-    EngineProcess engine1;
+    std::tuple<EngineProcess, EngineProcess> engine;
 
-    EngineProcess::initProc(engine0);
-    EngineProcess::initProc(engine1);
+    EngineProcess::initProc(std::get<0>(engine));
+    EngineProcess::initProc(std::get<1>(engine));
 
-    if (!engine0.isAlive() or !engine1.isAlive()) {
+    if (!std::get<0>(engine).isAlive() or !std::get<1>(engine).isAlive()) {
         Log::sLog(LOG_INFO | thread_label, "Process didn't initialize");
         return false;
     }
 
+    std::tuple<Log, Log> log(*std::get<0>(engine).proc_stdin, *std::get<1>(engine).proc_stdin);
+
     {
-        engine0.syncUntilReady(thread_label);
-        engine1.syncUntilReady(thread_label);
+        std::get<0>(engine).syncUntilReady(thread_label);
+        std::get<1>(engine).syncUntilReady(thread_label);
 
         static const size_t mb_tt_size = 8;
 
         std::ostringstream tt_log;
         tt_log << "setoption name Hash value " << mb_tt_size;
 
-        log(*engine0.proc_stdin, tt_log.str());
+        std::get<0>(log).log(tt_log.str());
         Log::sLog(LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
 
-        log(*engine1.proc_stdin, tt_log.str());
+        std::get<1>(log).log(tt_log.str());
         Log::sLog(LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
     }
 
-    engine0.syncUntilReady(thread_label);
-    engine1.syncUntilReady(thread_label);
+    std::get<0>(engine).syncUntilReady(thread_label);
+    std::get<1>(engine).syncUntilReady(thread_label);
 
     std::vector<Position> positions;
     positions.reserve(MaxGameMoves);
@@ -136,7 +136,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         *game_result = Game::GAME_INVALID;
 
-        if (!engine0.isAlive() or !engine1.isAlive()) {
+        if (!std::get<0>(engine).isAlive() or !std::get<1>(engine).isAlive()) {
             {
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
 
@@ -144,20 +144,20 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 Log(err_output).write(LOG_INFO | thread_label, "Engine disconnected");
             }
 
-            engine0.waitForProcess();
-            engine1.waitForProcess();
+            std::get<0>(engine).waitForProcess();
+            std::get<1>(engine).waitForProcess();
 
             return false;
         }
 
-        engine0.syncUntilReady(thread_label);
-        engine1.syncUntilReady(thread_label);
+        std::get<0>(engine).syncUntilReady(thread_label);
+        std::get<1>(engine).syncUntilReady(thread_label);
 
         positions.clear();
         white_scores.clear();
         moves.clear();
 
-        SelfGame().mixedMatch<_EnableSelfPlayLog>(engine0, engine1, game_packet);
+        SelfGame().mixedMatch<_EnableSelfPlayLog>(std::get<0>(engine), std::get<1>(engine), game_packet);
 
         const size_t total_positions_cnt = positions.size();
         ASSERT_NO_LOG(total_positions_cnt == white_scores.size() and 
@@ -296,14 +296,14 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         Log::sLog(LOG_INFO | thread_label, ss.str());
     }
 
-    if (engine0.isAlive())
-        log(*engine0.proc_stdin, "quit");
+    if (std::get<0>(engine).isAlive())
+        std::get<0>(log).log("quit");
     
-    if (engine1.isAlive())
-        log(*engine1.proc_stdin, "quit");
+    if (std::get<1>(engine).isAlive())
+        std::get<1>(log).log("quit");
 
-    engine0.waitForProcess();
-    engine1.waitForProcess();
+    std::get<0>(engine).waitForProcess();
+    std::get<1>(engine).waitForProcess();
 
     return true;
 }

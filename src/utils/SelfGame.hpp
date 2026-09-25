@@ -21,6 +21,7 @@
 #include "UtilsCommon.hpp"
 #include "Opening.hpp"
 #include "PackedPosition.hpp"
+#include "Log.hpp"
 
 namespace utils {
 
