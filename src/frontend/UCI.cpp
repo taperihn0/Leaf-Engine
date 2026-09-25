@@ -298,11 +298,12 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
         pos.setStartingPos();
 	else if (fen == "kiwipete")
         pos.setByFEN(std::string(KiwipeteFEN));
+    else if (fen == "current")
+        pos = _pos;
     else
         pos.setByFEN(fen);
 
     const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
-
     std::cout << static_cast<int>(score) << std::endl;
 }
 

@@ -1,3 +1,4 @@
+TODO:
 * Create config file
 * Checkout some possible leaftovers after new changes
 * Simplify paths passing in commands in utils
@@ -18,3 +19,5 @@
 * Better search explosion handling
 * Experiment with correctedEvalScore
 * More fixed endgames
+UTILS:
+* nneval without argument
