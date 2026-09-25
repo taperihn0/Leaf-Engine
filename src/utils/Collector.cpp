@@ -141,7 +141,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
 
                 std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
-                Log(err_output).write(LOG_INFO | thread_label, "Engine disconnected");
+                Log(err_output).message(LOG_INFO | thread_label, "Engine disconnected");
             }
 
             std::get<0>(engine).waitForProcess();
@@ -167,7 +167,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
 
             std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
-            Log(err_output).write(LOG_INFO | thread_label, "Error: Invalid game");
+            Log(err_output).message(LOG_INFO | thread_label, "Error: Invalid game");
             
             std::ostringstream ss;
             ss  << " nodes " << game_packet.limits.nodes
@@ -178,7 +178,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 << " winc "  << game_packet.limits.winc 
                 << " binc "  << game_packet.limits.binc;
 
-            Log(err_output).write(LOG_INFO | thread_label, "Game specs: " + ss.str());
+            Log(err_output).message(LOG_INFO | thread_label, "Game specs: " + ss.str());
 
             for (size_t i = 0; i < total_positions_cnt; i++) {
                 positions[i].print(err_output);

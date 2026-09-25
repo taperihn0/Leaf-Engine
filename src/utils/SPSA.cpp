@@ -317,7 +317,7 @@ void SPSA_Tuning::writeCheckpoint(std::ofstream& file,
         ss << param.name << " = " << param.value << '\n';
     }
 
-    Log(file).write(LOG_INFO, ss.str());
+    Log(file).message(LOG_INFO, ss.str());
 }
 
 void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,

@@ -178,7 +178,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     }
 
     *packet.result = game_result;
-    return resultToPerspectiveResult(game_result, zero_player_white);
+    return resultToPerspectiveResult(game_resu, zero_player_white);
 }
 
 template <bool EnableLog>
