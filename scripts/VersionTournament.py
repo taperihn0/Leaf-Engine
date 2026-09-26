@@ -4,11 +4,12 @@ import shutil
 import subprocess
 import argparse
 from pathlib import Path
+from datetime import datetime
 
 # --- Tournament configurations ---
 GAMES_COUNT = 8000
-THREAD_COUNT = 3
-TIME_CONTROL = "5+0.05"
+THREAD_COUNT = 5
+TIME_CONTROL = "6+0.06"
 CMAKE_PRESET = "final"
 OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
 OPENING_BOOK_FORMAT = "epd"
@@ -17,6 +18,7 @@ SYZYGY_PATH = "/home/Szymek/Source/Leaf/assets/tb/Syzygy"
 TT_MB_SIZE = 64
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
+PGN_OUTPUT_DIR = Path("workspaces/pgns/")
 BINARY_PRESET_DIR = "Release" if CMAKE_PRESET == "final" or CMAKE_PRESET == "release" else "Debug"
 
 curr_working_dir = Path(os.getcwd())
@@ -85,9 +87,16 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
     version_0_name = f"Leaf_{version_0_id}" if not version_0_name else version_0_name
     version_1_name = f"Leaf_{version_1_id}" if not version_1_name else version_1_name
 
+    PGN_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    pgn_filename = f"{version_0_name}_vs_{version_1_name}_{timestamp}.pgn"
+    pgn_path = PGN_OUTPUT_DIR / pgn_filename
+
     print(f"\n------------------- Starting tournament ---------------------")
     print(f"Version 0 ({version_0_id}): {bin_0_dir}")
     print(f"Version 1 ({version_1_id}): {bin_1_dir}")
+    print(f"Games will be saved to: {pgn_path}")
     print("------------------------------------------------------------")
 
     cmd = [
@@ -115,6 +124,9 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
         "-games", str(HALFED_GAMES_COUNT),
         "-draw", "movenumber=36", "movecount=8", "score=10", 
         "-concurrency", str(THREAD_COUNT),
+
+        # Game saving
+        "-pgnout", str(pgn_path),
 
         # Opening book mode
         "-openings",

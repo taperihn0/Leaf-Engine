@@ -51,8 +51,7 @@ public:
         size_t                games_count; 
         uint                  thread_count;
         std::filesystem::path selfplay_filename;
-        search::utils::SearchLimits  
-                              limits;
+        search::utils::SearchLimits limits;
     };
     
     void startTournament(const TournamentPacket& packet);
@@ -96,15 +95,11 @@ private:
     };
 
     bool threadTournamentWorker(PerThreadData& thread, 
-                                enumLogLabel thread_label);
+                                lg::logLabel thread_label);
     void perThread(PerThreadData& thread);
 
     static constexpr float _NodesRandomFactor = 0.18f;
-#if defined(DEBUG)
-    static constexpr bool  _EnableSelfPlayLog = true;
-#else
-    static constexpr bool  _EnableSelfPlayLog = false;
-#endif
+    static constexpr bool  _EnableSelfPlayLog = DebugBuild;
 };
 
 } // namespace utils

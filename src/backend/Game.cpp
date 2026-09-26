@@ -54,6 +54,7 @@ void Game::applyMove(Move32b move, clk::milliseconds think_time) {
 
 bool Game::isWin(Game::Result& full) const {
     bool side2move = _current_pos.getTurn();
+    full = GAME_INVALID;
 
     if (_time_constraint and _time_left_sided[side2move] + TimeMargin < 0) {
         full = WIN_BY_TIMEOUT(!side2move);
@@ -65,6 +66,8 @@ bool Game::isWin(Game::Result& full) const {
 }
 
 bool Game::isDraw(Game::Result& full) const {
+    full = GAME_INVALID;
+
     if (_current_pos.getHalfmoveClock() >= 100) {
         full = DRAW_BY_HALF_MOVES_LIMIT;
         return true;
@@ -77,7 +80,12 @@ bool Game::isDraw(Game::Result& full) const {
         full = DRAW_BY_STALMATE;
         return true;
     }
+
     return false;
+}
+
+bool Game::isGameEnd(Game::Result& full) const {
+    return isWin(full) or isDraw(full);
 }
 
 Position& Game::getPosition() {

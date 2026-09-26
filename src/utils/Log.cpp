@@ -18,7 +18,7 @@
 
 #include "Log.hpp"
 
-namespace utils {
+namespace lg {
 
 Log::Log()
     : _os(&std::cout)
@@ -26,7 +26,6 @@ Log::Log()
 {}
 
 Log::Log(const std::filesystem::path& filepath, 
-         bool also_stdout, 
          std::ios::openmode mode)
     : _os(nullptr)
     , _file_stream(nullptr)
@@ -63,14 +62,21 @@ Log::~Log() {
     }
 }
 
+std::ostream& Log::output() {
+    if (_os != nullptr)
+        return *_os;
+
+    throw std::runtime_error("Invalid output");
+}
+
 void Log::flush() {
     if (_os != nullptr) {
         _os->flush();
     }
 }
 
-std::string Log::parse(enumLogLabel label) {
-    if (label == LOG_NO_LABEL) {
+std::string Log::parse(logLabel label) {
+    if (label == logLabel::LOG_NO_LABEL) {
         return "";
     }
 
@@ -85,16 +91,14 @@ std::string Log::parse(enumLogLabel label) {
         }
     };
 
-    add_label(LOG_DEBUG,    "DEBUG");
-    add_label(LOG_INFO,     "INFO");
-    add_label(LOG_WARNING,  "WARNING");
-    add_label(LOG_ENGINE_0, "PLAYER_0");
-    add_label(LOG_ENGINE_1, "PLAYER_1");
+    add_label(static_cast<uint32_t>(logLabel::LOG_DEBUG),   "DEBUG");
+    add_label(static_cast<uint32_t>(logLabel::LOG_INFO),    "INFO");
+    add_label(static_cast<uint32_t>(logLabel::LOG_WARNING), "WARNING");
 
-    const int max_threads = std::max(16, PlatformThreadLimit);
+    const int max_threads = std::max(16, ::utils::PlatformThreadLimit);
 
     for (int id = 1; id <= max_threads && id <= 28; ++id) {
-        uint32_t bit = static_cast<uint32_t>(LOG_THREAD_1) << (id - 1);
+        uint32_t bit = static_cast<uint32_t>(logLabel::LOG_THREAD_1) << (id - 1);
         
         if (working_label & bit) {
             if (!labels.empty()) labels += "|";
@@ -113,34 +117,34 @@ std::string Log::parse(enumLogLabel label) {
     return "[" + labels + "] ";
 }
 
-void Log::message(enumLogLabel label, const std::string& msg) {
+void Log::message(logLabel label, const std::string& msg) {
     if (_os != nullptr) {
         *_os << parse(label) << msg << std::endl;
     }
 }
 
 void Log::warning(const std::string& msg) {
-    message(LOG_WARNING, msg);
+    message(logLabel::LOG_WARNING, msg);
 }
 
-void Log::warning(enumLogLabel label, const std::string& msg) {
-    message(LOG_WARNING | label, msg);
+void Log::warning(logLabel label, const std::string& msg) {
+    message(logLabel::LOG_WARNING | label, msg);
 }
 
 void Log::info(const std::string& msg) {
-    message(LOG_INFO, msg);
+    message(logLabel::LOG_INFO, msg);
 }
 
-void Log::info(enumLogLabel label, const std::string& msg) {
-    message(LOG_INFO | label, msg);
+void Log::info(logLabel label, const std::string& msg) {
+    message(logLabel::LOG_INFO | label, msg);
 }
 
 void Log::debug(const std::string& msg) {
-    message(LOG_DEBUG, msg);
+    message(logLabel::LOG_DEBUG, msg);
 }
 
-void Log::debug(enumLogLabel label, const std::string& msg) {
-    message(LOG_DEBUG | label, msg);
+void Log::debug(logLabel label, const std::string& msg) {
+    message(logLabel::LOG_DEBUG | label, msg);
 }
 
 Log& Log::get() {
@@ -148,4 +152,4 @@ Log& Log::get() {
     return DefaultLog;
 }
 
-} // namespace utils
+} // namespace lg

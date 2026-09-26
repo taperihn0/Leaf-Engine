@@ -22,27 +22,45 @@
 #include "Opening.hpp"
 #include "PackedPosition.hpp"
 #include "Log.hpp"
+#include "Process.hpp"
 
 namespace utils {
 
-class EngineProcess;
+class ForkedProcess;
+
+class PairOfForks {
+public:
+    PairOfForks();
+
+    _NODISCARD std::pair<ForkedProcess&, ForkedProcess&> raw();
+    _NODISCARD ForkedProcess& getFork(bool idx);
+    /* Returns true when placement is swapped */
+    _NODISCARD bool shuffleOrder();
+
+    using iterator = ForkedProcess*;
+
+    iterator begin();
+    iterator end();
+private:
+    std::pair<ForkedProcess, ForkedProcess>   _forks;
+    std::pair<ForkedProcess*, ForkedProcess*> _ordered_forks;
+};
 
 class SelfGame {
 public:
-    SelfGame() = default;
-
-    struct TrainDataSpec {
-        std::vector<Position>* positions_buf;
-        std::vector<sc::Score>*    white_scores_buf;
-        std::vector<Move32b>*  moves_buf;
+    struct PositionInfo {
+        Position* pos;
+        sc::Score white_score;
+        Move32b   moves;
     };
 
     struct GameSpecPacket {
-        search::utils::SearchLimits           limits;
-        uint                           thread_id;
-        std::shared_ptr<Game::Result>  result;
-        OpeningManBase*                openings; 
-        std::shared_ptr<TrainDataSpec> train_data_spec;
+        search::utils::SearchLimits limits;
+        uint                        thread_id;
+        Game::Result                result;
+        OpeningManBase*             openings; 
+        std::shared_ptr<std::vector<PositionInfo>> 
+                                    data_buffer;
     };
 
     enum PlayerPerspectiveResult {
@@ -59,35 +77,40 @@ public:
         DRAW_BY_ADJUCATION
     };
 
+    _NODISCARD static bool isZeroPlayerWin(PlayerPerspectiveResult result);
+    _NODISCARD static bool isOnePlayerWin(PlayerPerspectiveResult result);
+    _NODISCARD static bool isDraw(PlayerPerspectiveResult result);
+
+    _NODISCARD static SelfGame& get();
+
     /* Before seting up a match between given engines,
     *  we also mix their sides.
     */
     template <bool EnableLog>
-    PlayerPerspectiveResult mixedMatch(EngineProcess& engine0, 
-                                       EngineProcess& engine1, 
-                                       GameSpecPacket& packet);
+    _NODISCARD PlayerPerspectiveResult mixedMatch(PairOfForks& competitors,
+                                                  GameSpecPacket& packet,
+                                                  Game* game = nullptr);
 private:
+    SelfGame() = default;
+
     template <bool EnableLog>
     void sentPosition(const std::string& start_fen, 
                       const FullInfoRecord& record,
-                      EngineProcess& player,
-                      enumLogLabel ret_msg_label);
+                      ForkedProcess& player,
+                      lg::logLabel thread_label);
     
     template <bool EnableLog>
-    Move32b getPlayerMove(search::utils::SearchLimits limits, 
-                          Position& pos,
-                          EngineProcess& player,
-                          sc::Score& score,
-                          enumLogLabel ret_msg_label);
+    _NODISCARD Move32b getPlayerMove(search::utils::SearchLimits limits, 
+                                     Position& pos,
+                                     ForkedProcess& player,
+                                     sc::Score& score,
+                                     lg::logLabel thread_label);
 
-    PlayerPerspectiveResult resultToPerspectiveResult(Game::Result result, bool zero_player_white);
+    _NODISCARD PlayerPerspectiveResult 
+    resultToPerspectiveResult(Game::Result result, bool zero_player_white);
 
-    static constexpr int _LowScore = 90;
-    static constexpr int _AdjucateHalfMoveLimit = 70;
+    static constexpr int _LowScore = 60;
+    static constexpr int _AdjucateHalfMoveLimit = 36;
 };
-
-bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result);
-bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result);
-bool isDraw(SelfGame::PlayerPerspectiveResult result);
 
 } // namespace utils

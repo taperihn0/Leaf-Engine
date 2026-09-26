@@ -46,9 +46,6 @@ _INLINE size_t getIStreamBytesLeft(std::istream& input) {
     return end_bytes - curr_bytes;
 }
 
-template <typename Return, typename... Args>
-Return doNothing(Args&&...) { return Return(); };
-
 static int PlatformThreadLimit = []() -> int {
     return std::thread::hardware_concurrency();
 }();

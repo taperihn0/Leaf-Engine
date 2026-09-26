@@ -255,6 +255,12 @@ _NORETURN _INTERNAL void unreachable() {
 #endif
 }
 
+#if defined(DEBUG)
+static constexpr bool DebugBuild = true;
+#else
+static constexpr bool DebugBuild = false;
+#endif
+
 static constexpr int MaxNodeMoves = 128;
 static constexpr int MaxDepth     = 96;
 static constexpr int MaxSelDepth  = 128;

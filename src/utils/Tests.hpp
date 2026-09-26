@@ -64,8 +64,8 @@ bool _testcaseAssertion(Func f,
                          std::string_view cmpnamestr, 
                          std::string_view fcallstr, 
                          int testline, 
-                         Args&&... args) {
-
+                         Args&&... args) 
+{
     T fres = f(std::forward<Args>(args)...);
     bool succes = cmp(fres, expected);
     if (!succes) std::cout << _COLOR_RED;

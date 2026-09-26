@@ -20,44 +20,70 @@
 #include "Log.hpp"
 #include "backend/Time.hpp"
 #include "StaticEval.hpp"
-#include "Process.hpp"
 
 namespace utils {
 
-template <bool EnableLog>
-SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0, 
-                                                       EngineProcess& engine1, 
-                                                       GameSpecPacket& packet)
-{
-    if (!engine0.isAlive() or !engine1.isAlive()) {
-        *packet.result = Game::GAME_INVALID;
-        return GAME_INVALID;
+PairOfForks::PairOfForks()
+    : _ordered_forks(&_forks.first, &_forks.second)
+{}
+
+std::pair<ForkedProcess&, ForkedProcess&> PairOfForks::raw() {
+    return std::make_pair(std::ref(*_ordered_forks.first), std::ref(*_ordered_forks.second));
+}
+
+_NODISCARD ForkedProcess& PairOfForks::getFork(bool idx) {
+    return idx ? *_ordered_forks.second : *_ordered_forks.first;
+}
+
+bool PairOfForks::shuffleOrder() {
+    const bool shuffle = rnd::random<int>(0, 1);
+
+    if (shuffle) {
+        std::swap(_ordered_forks.first, _ordered_forks.second);
     }
 
-    std::array<EngineProcess*, 2> player;
-    
-    // true zero_player_white means (is0, os0) engine is white player
-    const bool zero_player_white = rnd::random<int>(0, 1);
+    return shuffle;
+}
+
+PairOfForks::iterator PairOfForks::begin() {
+    return &_forks.first;
+}
+
+PairOfForks::iterator PairOfForks::end() {
+    return &_forks.second + 1;
+}
+
+SelfGame& SelfGame::get() {
+    static SelfGame SelfG;
+    return SelfG;
+}
+
+template <bool EnableLog>
+SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors, 
+                                                       GameSpecPacket& packet,
+                                                       Game* game)
+{
+    for (const auto& engine : competitors) {
+        if (!engine.isAlive()) {
+            packet.result = Game::GAME_INVALID;
+            return GAME_INVALID;
+        }
+    }
 
     // mixing sides to move 
-    if (zero_player_white) {
-        player[WHITE] = &engine0;
-        player[BLACK] = &engine1;
-    } 
-    else {
-        player[WHITE] = &engine1;
-        player[BLACK] = &engine0;
+    const bool zero_player_white = !competitors.shuffleOrder();
+
+    for (auto& engine : competitors) {
+        engine.output().message("ucinewgame");
     }
 
-    log(*player[WHITE]->proc_stdin, "ucinewgame");
-    log(*player[BLACK]->proc_stdin, "ucinewgame");
+    std::string line;
 
-    for (enumColor side : { WHITE, BLACK }) {
-        log(*player[side]->proc_stdin, "isready");
+    for (auto& engine : competitors) {
+        engine.output().message("isready");
 
-        std::string line;
-        if (!readline(*player[side]->proc_stdout, line) or line != "readyok") {
-            *packet.result = Game::GAME_INVALID;
+        if (!readline(engine.input(), line) or line != "readyok") {
+            packet.result = Game::GAME_INVALID;
             return GAME_INVALID;
         }
     }
@@ -71,121 +97,106 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(EngineProcess& engine0,
     const Position& opening = packet.openings->getRandomPosition(moves_done);
     const std::string start_fen = opening.createFEN();
 
-    Game game(opening, time_constraint, limits.wtime, limits.btime);
-    Game::Result game_result;
+    const bool internal_game_storage = game == nullptr;
 
-    uint draw_half_moves = 0;
-
-    const enumLogLabel thread_label = threadLabel(packet.thread_id);
-    enumLogLabel debug_labels[2] = { LOG_ENGINE_0, LOG_ENGINE_1 };
-    enumLogLabel info_labels[2] = { LOG_ENGINE_0, LOG_ENGINE_1 };
+    std::allocator<Game> al;
+    using altraits = std::allocator_traits<decltype(al)>;
     
-    if constexpr (EnableLog) {
-        debug_labels[0] = zero_player_white ? LOG_DEBUG | LOG_ENGINE_0 | thread_label 
-                                            : LOG_DEBUG | LOG_ENGINE_1 | thread_label;
-        debug_labels[1] = zero_player_white ? LOG_DEBUG | LOG_ENGINE_1 | thread_label 
-                                            : LOG_DEBUG | LOG_ENGINE_0 | thread_label;
+    if (internal_game_storage) {
+        game = altraits::allocate(al, 1);
+    }
+    
+    altraits::construct(al, game, opening, time_constraint, limits.wtime, limits.btime);
 
-        info_labels[0]  = zero_player_white ? LOG_INFO | LOG_ENGINE_0 | thread_label 
-                                            : LOG_INFO | LOG_ENGINE_1 | thread_label;
-        info_labels[1]  = zero_player_white ? LOG_INFO | LOG_ENGINE_1 | thread_label 
-                                            : LOG_INFO | LOG_ENGINE_0 | thread_label;
+    if (packet.data_buffer != nullptr) {
+        lg::info("Continuing self-play match without data storage buffer");
     }
 
-    if (packet.train_data_spec != nullptr) {
-        ASSERT_NO_LOG(packet.train_data_spec->positions_buf != nullptr and
-                    packet.train_data_spec->white_scores_buf != nullptr and
-                    packet.train_data_spec->moves_buf != nullptr);
+    Game::Result game_result;
+    uint draw_half_moves = 0;
+    const lg::logLabel thread_label = lg::threadLabel(packet.thread_id);
 
-        if (!packet.train_data_spec->positions_buf->empty())
-            packet.train_data_spec->positions_buf->clear();
-
-        if (!packet.train_data_spec->white_scores_buf->empty())
-            packet.train_data_spec->white_scores_buf->clear();
-
-        if (!packet.train_data_spec->moves_buf->empty())
-            packet.train_data_spec->moves_buf->clear();
-    }
-
-    while (!game.isWin(game_result) and !game.isDraw(game_result)) {
-        Position& pos = game.getPosition();
+    while (!game->isGameEnd(game_result)) {
+        Position& pos = game->getPosition();
         const bool side2move = pos.getTurn();
-        EngineProcess* curr_player = player[side2move];
-        FullInfoRecord& record = game.getHistoryRecord();
 
-        sentPosition<EnableLog>(start_fen, record, 
-                                *curr_player,
-                                info_labels[side2move]);
+        ForkedProcess& player2move = competitors.getFork(side2move);
+        FullInfoRecord& record = game->getHistoryRecord();
+
+        if (!player2move.isAlive()) {
+            game_result = Game::GAME_INVALID;
+            break;
+        }
+
+        sentPosition<EnableLog>(start_fen, record, player2move, thread_label);
         
         sc::Score score = sc::Undef;
 
         timer.go();
-        Move32b move = getPlayerMove<EnableLog>(limits, pos, 
-                                                *curr_player,
-                                                score,
-                                                debug_labels[side2move]);
+        const Move32b move = getPlayerMove<EnableLog>(limits, pos, player2move, score, thread_label);
 
-        if (move.isNullMove() or
-            !engine0.isAlive() or
-            !engine1.isAlive()) {
+        if (move.isNullMove() or !player2move.isAlive()) {
             game_result = Game::GAME_INVALID;
-            break;   
+            break;
         }
 
         const clk::milliseconds think_time = timer.getDurationMs();
 
-        if (packet.train_data_spec != nullptr) {
-            packet.train_data_spec->positions_buf->push_back(pos);
-
-            const sc::Score white_score = pos.getTurn() == WHITE ? score : -score;
-            packet.train_data_spec->white_scores_buf->push_back(white_score);
-            
-            packet.train_data_spec->moves_buf->push_back(move);
+        if (packet.data_buffer != nullptr) {
+            if (internal_game_storage) 
+                throw std::runtime_error(R"(Data buffer is enabled, but game is not given"
+" - can't point to position from game)");
+            packet.data_buffer->push_back(PositionInfo{ &pos, side2move == WHITE ? score : -score, move});
         }
 
         if (time_constraint and side2move == WHITE) {
             limits.wtime -= think_time - limits.winc;
             limits.wtime += Game::MoveOverhead;
-
-            game.applyMove(move, think_time - limits.winc - Game::MoveOverhead);
+            game->applyMove(move, think_time - limits.winc - Game::MoveOverhead);
         }
         else if (time_constraint) {
             limits.btime -= think_time - limits.binc;
             limits.btime += Game::MoveOverhead;
-
-            game.applyMove(move, think_time - limits.binc - Game::MoveOverhead);
+            game->applyMove(move, think_time - limits.binc - Game::MoveOverhead);
         }
         else if (!time_constraint) {
-            game.applyMove(move);
+            game->applyMove(move);
         }
 
         moves_done++;
 
-        if (score.isValid() and std::abs(static_cast<int>(score)) < _LowScore) 
+        if (score.isValid() and std::abs(static_cast<int>(score)) < _LowScore) {
             draw_half_moves++;
-        else
+        }
+        else {
             draw_half_moves = 0;
+        }
 
         // Adjucate game as draw
         if (draw_half_moves > _AdjucateHalfMoveLimit) {
             game_result = Game::DRAW_BY_ADJUCATION;
             break;
         }
-        else if (game.getMoveCount() >= MaxGameMoves) {
+        else if (game->getMoveCount() >= MaxGameMoves) {
             game_result = Game::GAME_INVALID;
             break;
         }
     }
 
-    *packet.result = game_result;
-    return resultToPerspectiveResult(game_resu, zero_player_white);
+    packet.result = game_result;
+
+    if (internal_game_storage) {
+        altraits::deallocate(al, game, 1);
+    }
+
+    return resultToPerspectiveResult(game_result, zero_player_white);
 }
 
 template <bool EnableLog>
 void SelfGame::sentPosition(const std::string& start_fen, 
                             const FullInfoRecord& record,
-                            EngineProcess& player,
-                            enumLogLabel ret_msg_label) 
+                            ForkedProcess& player,
+                            lg::logLabel thread_label) 
 {
     /* Is, os are relative to the engines.
     *  We're writing to os, reading from is.
@@ -193,7 +204,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
 
     const int curr_halfmove_clock = static_cast<int>(record.getMoveCount());
 
-    std::stringstream cmd;
+    std::ostringstream cmd;
     cmd << "position fen " << start_fen;
 
     if (curr_halfmove_clock > 0)
@@ -207,25 +218,24 @@ void SelfGame::sentPosition(const std::string& start_fen,
         cmd << " " << move;
     }
 
-    const std::string msg = cmd.str();
-    log(*player.proc_stdin, msg);
+    player.output().message(cmd.str());
 
     if constexpr (EnableLog)
-        Log::sLog(ret_msg_label, msg);
+        player.output().info(thread_label, cmd.str());
 }
 
 template <bool EnableLog>
 Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
                                 Position& pos,
-                                EngineProcess& player, 
+                                ForkedProcess& player, 
                                 sc::Score& score,
-                                enumLogLabel ret_msg_label) 
+                                lg::logLabel thread_label) 
 {
     /* Is, os are relative to the engines.
     *  We're writing to os, reading from is.
     */
 
-    std::stringstream cmd;
+    std::ostringstream cmd;
 
     cmd << "go"
         << " nodes " << limits.nodes
@@ -236,17 +246,17 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
         << " winc "  << limits.winc 
         << " binc "  << limits.binc;
     
-    log(*player.proc_stdin, cmd.str());
+    player.output().message(cmd.str());
 
     if constexpr (EnableLog)
-        Log::sLog(ret_msg_label, cmd.str());
+        player.output().debug(cmd.str());
 
     std::string best_move_str;
 
-    for (std::string line; readline(*player.proc_stdout, line); ) {
+    for (std::string line; readline(player.input(), line); ) {
 
         if constexpr (EnableLog)
-            Log::sLog(ret_msg_label, line);
+            player.output().debug(line);
 
         if (line.empty()) 
             continue;
@@ -279,21 +289,24 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
     }
 
     if (best_move_str.empty()) {
-        Log::sLog(LOG_INFO, "Null best move");
+        lg::warning("No best move on output from player");
         return NullMove;
     }
 
     Move32b best_move = Move32b::fromStr<Move32b::Notation::REGULAR>(pos, best_move_str);
 
     if (!best_move.isLegal(pos)) {
-        Log::sLog(LOG_INFO, "Invalid best move");
+        lg::warning("Recorded invalid best move");
         return NullMove;
     }
 
     return best_move;
 }
 
-_FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResult(Game::Result result, bool zero_player_white) {
+_FORCEINLINE SelfGame::PlayerPerspectiveResult 
+SelfGame::resultToPerspectiveResult(Game::Result result, 
+                                    bool zero_player_white) 
+{
     if (result == Game::GAME_INVALID)
         return GAME_INVALID;
 
@@ -336,30 +349,28 @@ _FORCEINLINE SelfGame::PlayerPerspectiveResult SelfGame::resultToPerspectiveResu
     return GAME_INVALID;
 }
 
-bool isZeroPlayerWin(SelfGame::PlayerPerspectiveResult result) {
-    return result == SelfGame::PLAYER_ZERO_WIN_BY_MATE ||
-           result == SelfGame::PLAYER_ZERO_WIN_BY_ADJUCATION ||
-           result == SelfGame::PLAYER_ZERO_WIN_BY_TIMEOUT;
+bool SelfGame::isZeroPlayerWin(PlayerPerspectiveResult result) {
+    return result == PLAYER_ZERO_WIN_BY_MATE or
+           result == PLAYER_ZERO_WIN_BY_ADJUCATION or
+           result == PLAYER_ZERO_WIN_BY_TIMEOUT;
 }
 
-bool isOnePlayerWin(SelfGame::PlayerPerspectiveResult result) {
-    return result == SelfGame::PLAYER_ONE_WIN_BY_MATE ||
-           result == SelfGame::PLAYER_ONE_WIN_BY_ADJUCATION ||
-           result == SelfGame::PLAYER_ONE_WIN_BY_TIMEOUT;
+bool SelfGame::isOnePlayerWin(PlayerPerspectiveResult result) {
+    return result == PLAYER_ONE_WIN_BY_MATE or
+           result == PLAYER_ONE_WIN_BY_ADJUCATION or
+           result == PLAYER_ONE_WIN_BY_TIMEOUT;
 }
 
-bool isDraw(SelfGame::PlayerPerspectiveResult result) {
-    return result == SelfGame::DRAW_BY_HALF_MOVES_LIMIT ||
-           result == SelfGame::DRAW_BY_STALMATE ||
-           result == SelfGame::DRAW_BY_REPETITIONS ||
-           result == SelfGame::DRAW_BY_ADJUCATION;
+bool SelfGame::isDraw(PlayerPerspectiveResult result) {
+    return result == DRAW_BY_HALF_MOVES_LIMIT or
+           result == DRAW_BY_STALMATE or
+           result == DRAW_BY_REPETITIONS or
+           result == DRAW_BY_ADJUCATION;
 }
 
-template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<false>(EngineProcess&, 
-                                                                       EngineProcess&, 
-                                                                       GameSpecPacket&);
-template SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch<true>(EngineProcess&, 
-                                                                      EngineProcess&, 
-                                                                      GameSpecPacket&);
+template SelfGame::PlayerPerspectiveResult 
+SelfGame::mixedMatch<false>(PairOfForks&, GameSpecPacket&, Game*);
+template SelfGame::PlayerPerspectiveResult 
+SelfGame::mixedMatch<true>(PairOfForks&, GameSpecPacket&, Game*);
 
 } // namespace utils

@@ -89,7 +89,10 @@ public:
         DRAW_BY_ADJUCATION
     };
 
-    Game(const Position& from, bool time_constraint, clk::milliseconds time_white, clk::milliseconds time_black);
+    Game(const Position& from, 
+         bool time_constraint, 
+         clk::milliseconds time_white, 
+         clk::milliseconds time_black);
 
     void applyMove(Move32b move);
     void applyMove(Move32b move, clk::milliseconds think_time);
@@ -102,6 +105,8 @@ public:
     // Returns true whether there is a draw on the board.
     // 'full' parameter contains detailed info.
     _NODISCARD bool isDraw(Result& full) const;
+
+    _NODISCARD bool isGameEnd(Result& full) const;
 
     _NODISCARD Position& getPosition();
 

@@ -33,52 +33,38 @@
 namespace utils {
 
 bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
-                                                 enumLogLabel thread_label) 
+                                                 lg::logLabel thread_label) 
 {
     ASSERT(thr_data.output_white_win.is_open(), "Output not opened.");
     ASSERT(thr_data.output_black_win.is_open(), "Output not opened.");
     ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
 
-    std::tuple<EngineProcess, EngineProcess> engine;
+    PairOfForks competitors;
 
-    EngineProcess::initProc(std::get<0>(engine));
-    EngineProcess::initProc(std::get<1>(engine));
-
-    if (!std::get<0>(engine).isAlive() or !std::get<1>(engine).isAlive()) {
-        Log::sLog(LOG_INFO | thread_label, "Process didn't initialize");
-        return false;
+    for (const auto& engine : competitors) {
+        if (!engine.isAlive()) {
+            lg::info(thread_label, "Process didn't initialize");
+            return false;
+        }
     }
-
-    std::tuple<Log, Log> log(*std::get<0>(engine).proc_stdin, *std::get<1>(engine).proc_stdin);
 
     {
-        std::get<0>(engine).syncUntilReady(thread_label);
-        std::get<1>(engine).syncUntilReady(thread_label);
-
         static const size_t mb_tt_size = 8;
 
-        std::ostringstream tt_log;
-        tt_log << "setoption name Hash value " << mb_tt_size;
+        for (auto& engine : competitors) {
+            engine.syncUntilReady(thread_label);
 
-        std::get<0>(log).log(tt_log.str());
-        Log::sLog(LOG_INFO | LOG_ENGINE_0 | thread_label, tt_log.str());
-
-        std::get<1>(log).log(tt_log.str());
-        Log::sLog(LOG_INFO | LOG_ENGINE_1 | thread_label, tt_log.str());
+            engine.output().message("setoption name Hash value ", mb_tt_size);
+            lg::info(thread_label, "setoption name Hash value ", mb_tt_size);
+            
+            // TODO: SyzygyPath manual setup
+        }
     }
 
-    std::get<0>(engine).syncUntilReady(thread_label);
-    std::get<1>(engine).syncUntilReady(thread_label);
-
-    std::vector<Position> positions;
-    positions.reserve(MaxGameMoves);
-    
-    std::vector<sc::Score> white_scores;
-    white_scores.reserve(MaxGameMoves);
-    
-    std::vector<Move32b> moves;
-    moves.reserve(MaxGameMoves);
+    for (auto& engine : competitors) {
+        engine.syncUntilReady(thread_label);
+    }
 
     thr_data.games_ended = 0;
     thr_data.total_positions = 0;
@@ -91,20 +77,15 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     const ll nodes_min = nodes_per_search - nodes_randomization_range;
     const ll nodes_max = nodes_per_search + nodes_randomization_range;
 
-    auto train_data_spec = std::make_shared<SelfGame::TrainDataSpec>();
-    train_data_spec->positions_buf = &positions;
-    train_data_spec->white_scores_buf = &white_scores;
-    train_data_spec->moves_buf = &moves;
-
-    auto game_result = std::make_shared<Game::Result>(Game::GAME_INVALID);
-
     SelfGame::GameSpecPacket game_packet = {
         thr_data.limits,
         thr_data.id,
-        game_result,
+        Game::GAME_INVALID,
         &GlobOpeningGenerator,
-        train_data_spec
+        std::make_shared<std::vector<SelfGame::PositionInfo>>()
     };
+
+    game_packet.data_buffer->reserve(MaxGameMoves);
 
     const float stddev = _NodesRandomFactor / 2.f * nodes_per_search;
     std::normal_distribution normal_distr(static_cast<float>(nodes_per_search), stddev);
@@ -120,13 +101,13 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 << thr_data.white_win_count << ' '
                 << thr_data.black_win_count << ' '
                 << thr_data.draw_count;
-            Log::sLog(LOG_INFO | thread_label, ss.str());
+            lg::info(thread_label, ss.str());
         }
 
         {
             std::ostringstream ss;
             ss << "Starting game " << i << "...";
-            Log::sLog(LOG_INFO | thread_label, ss.str());
+            lg::info(thread_label, ss.str());
         }
 
         // add noise to search node number (if nodes threshold is used)
@@ -134,40 +115,42 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
             game_packet.limits.nodes = std::clamp(std::llroundf(normal_distr(mt)), nodes_min, nodes_max);
         }
 
-        *game_result = Game::GAME_INVALID;
-
-        if (!std::get<0>(engine).isAlive() or !std::get<1>(engine).isAlive()) {
+        if (!competitors.raw().first.isAlive() or
+            !competitors.raw().second.isAlive()) 
+        {
             {
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
-
-                std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
-                Log(err_output).message(LOG_INFO | thread_label, "Engine disconnected");
+                lg::Log(thr_data.commons->err_fp, std::ios::app)
+                    .info(thread_label, "Engine disconnected");
             }
 
-            std::get<0>(engine).waitForProcess();
-            std::get<1>(engine).waitForProcess();
+            competitors.raw().first.waitForProcess();
+            competitors.raw().second.waitForProcess();
 
             return false;
         }
 
-        std::get<0>(engine).syncUntilReady(thread_label);
-        std::get<1>(engine).syncUntilReady(thread_label);
+        for (auto& engine : competitors) {
+            engine.syncUntilReady(thread_label);
+        }
 
-        positions.clear();
-        white_scores.clear();
-        moves.clear();
+        game_packet.result = Game::GAME_INVALID;
+        game_packet.data_buffer->clear();
 
-        SelfGame().mixedMatch<_EnableSelfPlayLog>(std::get<0>(engine), std::get<1>(engine), game_packet);
+        std::allocator<Game> al;
+        using altraits = std::allocator_traits<decltype(al)>;
+        
+        Game* game = altraits::allocate(al, 1);
 
-        const size_t total_positions_cnt = positions.size();
-        ASSERT_NO_LOG(total_positions_cnt == white_scores.size() and 
-                     total_positions_cnt == moves.size());
+        SelfGame::get().mixedMatch<_EnableSelfPlayLog>(competitors, game_packet, game);
 
-        if (*game_result == Game::GAME_INVALID) {
+        const size_t total_positions_cnt = game_packet.data_buffer->size();
+
+        if (game_packet.result == Game::GAME_INVALID) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
 
-            std::ofstream err_output(thr_data.commons->err_fp, std::ios::app);
-            Log(err_output).message(LOG_INFO | thread_label, "Error: Invalid game");
+            lg::Log errlog(thr_data.commons->err_fp, std::ios::app);
+            errlog.message(thread_label, "Error: Invalid game");
             
             std::ostringstream ss;
             ss  << " nodes " << game_packet.limits.nodes
@@ -178,54 +161,48 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                 << " winc "  << game_packet.limits.winc 
                 << " binc "  << game_packet.limits.binc;
 
-            Log(err_output).message(LOG_INFO | thread_label, "Game specs: " + ss.str());
+            errlog.message(thread_label, "Game specs: ", ss.str());
 
-            for (size_t i = 0; i < total_positions_cnt; i++) {
-                positions[i].print(err_output);
-                err_output << "Following move: ";
-                moves[i].print(err_output);
-                err_output << "\nWhite-POV Search sc::Score: " 
-                                             << static_cast<int16_t>(white_scores.at(i))
-                                             << '\n';
+            for (const auto& [pos, white_score, move] : *game_packet.data_buffer) {
+                errlog.message(pos, "Following move: ", move);
+                errlog.message("White-POV Search Score: ", white_score.value());
             }
 
-            err_output << std::endl;
-            Log::sLog(LOG_INFO | thread_label, "Invalid game occured");
+            errlog.flush();
+            lg::warning(thread_label, "Invalid game occured");
             return false;
         }
 
         uint filtered_positions_cnt = 0;
 
-        const TrainingDataEntry::Result8b result8b = isWhiteWin(*game_result) ? TrainingDataEntry::WHITE_WIN :
-                                                     isBlackWin(*game_result) ? TrainingDataEntry::BLACK_WIN :
-                                                                                TrainingDataEntry::DRAW;
+        const TrainingDataEntry::Result8b result8b = 
+            isWhiteWin(game_packet.result) ? TrainingDataEntry::WHITE_WIN :
+            isBlackWin(game_packet.result) ? TrainingDataEntry::BLACK_WIN :
+                                             TrainingDataEntry::DRAW;
 
-        for (size_t i = 0; i < positions.size(); i++) {
-            Position& pos = positions[i];
-            const sc::Score white_score = white_scores[i];
+        for (const auto& [pos, white_score, move] : *game_packet.data_buffer) {
+            assert(move.isLegal(*pos));
 
-            assert(moves[i].isLegal(pos));
-
-            if (!filterTrainPosition(pos, white_score, moves[i], total_positions_cnt))
+            if (!filterTrainPosition(*pos, white_score, move, total_positions_cnt))
                 continue;
 
             filtered_positions_cnt++;
 
-            const TrainingDataEntry entry(PackedPosition::packed(pos), white_score, result8b);
+            const TrainingDataEntry entry(PackedPosition::packed(*pos), white_score, result8b);
 
-            if (isWhiteWin(*game_result) and 
+            if (isWhiteWin(game_packet.result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
-                Log::sLog(LOG_INFO | thread_label, "Failed to write entry");
+                lg::info(thread_label, "Failed to write entry");
             }
             
-            else if (isBlackWin(*game_result) and
+            else if (isBlackWin(game_packet.result) and
                      !TrainingDataEntry::write(thr_data.output_black_win, entry)) {
-                Log::sLog(LOG_INFO | thread_label, "Failed to write entry");
+                lg::info(thread_label, "Failed to write entry");
             }
             
-            else if (isDraw(*game_result) and 
+            else if (isDraw(game_packet.result) and 
                      !TrainingDataEntry::write(thr_data.output_draw, entry)) {
-                Log::sLog(LOG_INFO | thread_label, "Failed to write entry");
+                lg::info(thread_label, "Failed to write entry");
             }
         }
 
@@ -234,51 +211,50 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         {
             std::ostringstream ss;
-            ss << toStr(*game_result) << " - collected " << filtered_positions_cnt << " positions";
-
-            Log::sLog(LOG_INFO | thread_label, ss.str());
+            ss << toStr(game_packet.result) << " - collected " << filtered_positions_cnt << " positions";
+            lg::info(thread_label, ss.str());
         }
 
-        if (isWhiteWin(*game_result)) {
+        if (isWhiteWin(game_packet.result)) {
             thr_data.white_win_count++;
             thr_data.commons->total_white_win_count.fetch_add(1);
         }
 
-        else if (isBlackWin(*game_result)) {
+        else if (isBlackWin(game_packet.result)) {
             thr_data.black_win_count++;
             thr_data.commons->total_black_win_count.fetch_add(1);
         }
 
-        else if (isDraw(*game_result)) {
+        else if (isDraw(game_packet.result)) {
             thr_data.draw_count++;
             thr_data.commons->total_draw_count.fetch_add(1);
         }
 
-        else if (*game_result == Game::GAME_INVALID)
+        else if (game_packet.result == Game::GAME_INVALID)
             break;
 
         thr_data.games_ended++;
         thr_data.commons->games_ended.fetch_add(1);
 
-        Log::sLog(LOG_INFO | thread_label, 
-                 "Total of ", thr_data.games_ended, " games played on thread");
-        Log::sLog(LOG_INFO | thread_label, 
-                 "Total of ", thr_data.total_positions, " positions collected on thread");
-        Log::sLog(LOG_INFO, 
-                 "Total of ", thr_data.commons->games_ended, " games played on all threads");
-        Log::sLog(LOG_INFO, 
-                 "Total of ", thr_data.commons->total_positions, " positions collected on all threads");
+        lg::info(thread_label, "Total of ", thr_data.games_ended, " games played on thread");
+        lg::info(thread_label, "Total of ", thr_data.total_positions, " positions collected on thread");
+        lg::info("Total of ", thr_data.commons->games_ended, " games played on all threads");
+        lg::info("Total of ", thr_data.commons->total_positions, " positions collected on all threads");
 
 #if defined(INSPECT_SELFPLAY_MATCHES)
         if (thr_data.commons->total_thread_cnt == 1) {            
-            positions.back().print();
-            Log::sLog(LOG_INFO | thread_label, toStr(*game_result) + ": ");
+            lg::message(thread_label, 
+                        game_packet.data_buffer.positions.back(), 
+                        toStr(game_packet.result),
+                        ": ");
+
+            std::ostringstream ss;
 
             for (size_t i = 0; i < std::min<size_t>(120, white_scores.size()); i++)
-                std::cout << static_cast<int16_t>(white_scores.at(i)) << ' ';
+                ss << static_cast<int16_t>(white_scores.at(i)) << ' ';
 
-            std::cout << std::endl;
-            Log::sLog(LOG_INFO | thread_label, "Enter to continue tournament...");
+            lg::message(thread_label, ss);
+            lg::message(thread_label, "Enter to continue tournament...");
             std::cin.get();
         }
         else {
@@ -293,29 +269,28 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         ss << thr_data.games_ended << " games played - total of " 
            << thr_data.total_positions 
            << " positions collected.";
-        Log::sLog(LOG_INFO | thread_label, ss.str());
+        lg::info(thread_label, ss.str());
     }
 
-    if (std::get<0>(engine).isAlive())
-        std::get<0>(log).log("quit");
-    
-    if (std::get<1>(engine).isAlive())
-        std::get<1>(log).log("quit");
+    for (auto& engine : competitors) {
+        if (engine.isAlive()) {
+            engine.output().message("quit");
+        }
 
-    std::get<0>(engine).waitForProcess();
-    std::get<1>(engine).waitForProcess();
+        engine.waitForProcess();
+    }
 
     return true;
 }
 
 void TournamentCollector::perThread(TournamentCollector::PerThreadData& thr_data) {
-    const enumLogLabel thread_label = threadLabel(thr_data.id);
+    const lg::logLabel thread_label = lg::threadLabel(thr_data.id);
 
     while (!threadTournamentWorker(thr_data, thread_label)) {
-        Log::sLog(LOG_INFO | thread_label, "Restarting tournament and engines on thread");
+        lg::info(thread_label, "Restarting tournament and engines on thread");
     }
 
-    Log::sLog(LOG_INFO | thread_label, "Terminating thread");
+    lg::info(thread_label, "Terminating thread");
 }
 
 void TournamentCollector::startTournament(const TournamentPacket& packet) {
@@ -349,8 +324,8 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         std::error_code err;
 
         if (std::filesystem::create_directories(packet.selfplay_filename, err), err) {
-            Log::sLog(LOG_INFO, "Failed to create directory: ", packet.selfplay_filename.string(),
-                               ", reason: ", err.message());
+            lg::info("Failed to create directory: ", packet.selfplay_filename.string(),
+                      ", reason: ", err.message());
             return;
         }
 
@@ -361,7 +336,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
             per_thread_data.output_white_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_white_win) {
-                Log::sLog(LOG_INFO, "Failed to open ", fp.string());
+                lg::info("Failed to open ", fp.string());
                 return;
             }
         }
@@ -373,7 +348,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
             per_thread_data.output_black_win.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_black_win) {
-                Log::sLog(LOG_INFO, "Failed to open ", fp.string());
+                lg::info("Failed to open ", fp.string());
                 return;
             }
         }
@@ -385,7 +360,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
             per_thread_data.output_draw.open(fp, std::ios::binary | std::ios::app);
 
             if (!per_thread_data.output_draw) {
-                Log::sLog(LOG_INFO, "Failed to open ", fp.string());
+                lg::info("Failed to open ", fp.string());
                 return;
             }
         }
@@ -400,7 +375,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     std::ostringstream ss;
     ss << "Starting " << packet.thread_count << " threads";
 
-    Log::sLog(LOG_INFO, ss.str());
+    lg::info(ss.str());
 
     for (size_t i = 0; i < packet.thread_count; i++) {
         threads.emplace_back([this](PerThreadData& thread_data) {
@@ -413,7 +388,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         thread.join();
     }
 
-    Log::sLog(LOG_INFO, "Tournament finished.");
+    lg::info("Tournament finished.");
     
     ss.str("");
     ss << "White wins, Black wins, Draws: "
@@ -421,12 +396,9 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         << thread_common->total_black_win_count << ' '
         << thread_common->total_draw_count;
 
-    Log::sLog(LOG_INFO, ss.str());
-
-    Log::sLog(LOG_INFO, 
-             "Total of ", thread_common->games_ended, " games played on all threads");
-    Log::sLog(LOG_INFO, 
-             "Total of ", thread_common->total_positions, " positions collected on all threads");
+    lg::info(ss.str());
+    lg::info("Total of ", thread_common->games_ended, " games played on all threads");
+    lg::info("Total of ", thread_common->total_positions, " positions collected on all threads");
 }
 
 bool TournamentCollector::explicitFilterPolicy(const Position& pos, 

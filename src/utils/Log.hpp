@@ -21,16 +21,16 @@
 #include "UtilsCommon.hpp"
 
 #include <memory>
+#include <sstream>
+#include <string>
 
-namespace utils {
+namespace lg {
 
-enum enumLogLabel : uint32_t {
+enum class logLabel : uint32_t {
     LOG_NO_LABEL  = 0,
     LOG_DEBUG     = 1,
     LOG_INFO      = 1 << 1,
     LOG_WARNING   = 1 << 2,
-    LOG_ENGINE_0  = 1 << 3,
-    LOG_ENGINE_1  = 1 << 4,
     LOG_THREAD_1  = 1 << 5,
     LOG_THREAD_2  = 1 << 6,
     LOG_THREAD_3  = 1 << 7,
@@ -49,20 +49,19 @@ enum enumLogLabel : uint32_t {
     LOG_THREAD_16 = 1 << 20,
 };
 
-_FORCEINLINE constexpr enumLogLabel operator|(enumLogLabel s0, enumLogLabel s1) {
-    return static_cast<enumLogLabel>(static_cast<uint32_t>(s0) | static_cast<uint32_t>(s1));
+_FORCEINLINE constexpr logLabel operator|(logLabel s0, logLabel s1) {
+    return static_cast<logLabel>(static_cast<uint32_t>(s0) | static_cast<uint32_t>(s1));
 }
 
-_FORCEINLINE enumLogLabel threadLabel(uint id) {
-    ASSERT_NO_LOG(1 <= id and id <= static_cast<uint>(PlatformThreadLimit));
-    return static_cast<enumLogLabel>(LOG_THREAD_1 << (id - 1));
+_FORCEINLINE logLabel threadLabel(uint id) {
+    ASSERT_NO_LOG(1 <= id and id <= static_cast<uint>(::utils::PlatformThreadLimit));
+    return static_cast<logLabel>(static_cast<uint32_t>(logLabel::LOG_THREAD_1) << (id - 1));
 }
 
 class Log {
 public:
     Log();
     explicit Log(const std::filesystem::path& filepath, 
-                 bool also_stdout = false, 
                  std::ios::openmode mode = std::ios::out | std::ios::app);
     explicit Log(std::ostream& os);
     ~Log();
@@ -72,41 +71,153 @@ public:
     Log(Log&&) noexcept = default;
     Log& operator=(Log&&) noexcept = default;
 
+    _NODISCARD std::ostream& output();
     void flush();
 
-    void message(enumLogLabel label, const std::string& msg);
+    void message(logLabel label, const std::string& msg);
+    void warning(const std::string& msg);
+    void warning(logLabel label, const std::string& msg);
+    void info(const std::string& msg);
+    void info(logLabel label, const std::string& msg);
+    void debug(const std::string& msg);
+    void debug(logLabel label, const std::string& msg);
     
     template <typename... Args>
-    void message(enumLogLabel label, Args&&... args);
-
+    void message(logLabel label, Args&&... args);
     template <typename... Args>
     void message(Args&&... args);
 
-    void warning(const std::string& msg);
-    void warning(enumLogLabel label, const std::string& msg);
-    void info(const std::string& msg);
-    void info(enumLogLabel label, const std::string& msg);
-    void debug(const std::string& msg);
-    void debug(enumLogLabel label, const std::string& msg);
+    template <typename... Args>
+    void warning(logLabel label, Args&&... args);
+    template <typename... Args>
+    void warning(Args&&... args);
+
+    template <typename... Args>
+    void info(logLabel label, Args&&... args);
+    template <typename... Args>
+    void info(Args&&... args);
+
+    template <typename... Args>
+    void debug(logLabel label, Args&&... args);
+    template <typename... Args>
+    void debug(Args&&... args);
 
     static Log& get();
 private:
-    static std::string parse(enumLogLabel label);
+    static std::string parse(logLabel label);
 
     std::ostream* _os;
     std::unique_ptr<std::ofstream> _file_stream = nullptr;
 };
 
 template <typename... Args>
-void Log::message(enumLogLabel label, Args&&... args) { 
-    std::istringstream ss;
+void Log::message(logLabel label, Args&&... args) { 
+    std::ostringstream ss;
     (ss << ... << std::forward<Args>(args));
     message(label, ss.str());
 }
 
 template <typename... Args>
 void Log::message(Args&&... args) {
-    message(LOG_NO_LABEL, std::forward<Args>(args)...);
+    message(logLabel::LOG_NO_LABEL, std::forward<Args>(args)...);
 }
 
-} // namespace utils
+template <typename... Args>
+void Log::warning(logLabel label, Args&&... args) {
+    message(logLabel::LOG_WARNING | label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Log::warning(Args&&... args) {
+    message(logLabel::LOG_WARNING, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Log::info(logLabel label, Args&&... args) {
+    message(logLabel::LOG_INFO | label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Log::info(Args&&... args) {
+    message(logLabel::LOG_INFO, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Log::debug(logLabel label, Args&&... args) {
+    message(logLabel::LOG_DEBUG | label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Log::debug(Args&&... args) {
+    message(logLabel::LOG_DEBUG, std::forward<Args>(args)...);
+}
+
+_INLINE void message(logLabel label, const std::string& msg) {
+    Log::get().message(label, msg);
+}
+
+template <typename... Args>
+_INLINE void message(logLabel label, Args&&... args) {
+    Log::get().message(label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+_INLINE void message(Args&&... args) {
+    Log::get().message(std::forward<Args>(args)...);
+}
+
+_INLINE void warning(const std::string& msg) {
+    Log::get().warning(msg);
+}
+
+_INLINE void warning(logLabel label, const std::string& msg) {
+    Log::get().warning(label, msg);
+}
+
+template <typename... Args>
+_INLINE void warning(logLabel label, Args&&... args) {
+    Log::get().warning(label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+_INLINE void warning(Args&&... args) {
+    Log::get().warning(std::forward<Args>(args)...);
+}
+
+_INLINE void info(const std::string& msg) {
+    Log::get().info(msg);
+}
+
+_INLINE void info(logLabel label, const std::string& msg) {
+    Log::get().info(label, msg);
+}
+
+template <typename... Args>
+_INLINE void info(logLabel label, Args&&... args) {
+    Log::get().info(label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+_INLINE void info(Args&&... args) {
+    Log::get().info(std::forward<Args>(args)...);
+}
+
+_INLINE void debug(const std::string& msg) {
+    Log::get().debug(msg);
+}
+
+_INLINE void debug(logLabel label, const std::string& msg) {
+    Log::get().debug(label, msg);
+}
+
+template <typename... Args>
+_INLINE void debug(logLabel label, Args&&... args) {
+    Log::get().debug(label, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+_INLINE void debug(Args&&... args) {
+    Log::get().debug(std::forward<Args>(args)...);
+}
+
+} // namespace lgs

@@ -113,6 +113,11 @@ protected:
     uint8_t                        _piece_cnt;
 };
 
+_INLINE std::ostream& operator<<(std::ostream& os, const PackedPosition& pos) {
+    pos.print(os);
+    return os;
+}
+
 // ExtPackedPosition implements custom position compression.
 // It extends by halfmove and fullmove count.
 class ExtPackedPosition : public PackedPosition {
