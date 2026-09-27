@@ -812,9 +812,9 @@ sc::Score Search::nmSearch(Position& pos,
                     const int verify_depth = getNullVerifyDepth(nm_depth);
 
                     score = nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, node,
-                                                             beta - 1, beta,
-                                                             verify_depth,
-                                                             ply);
+                                                                  beta - 1, beta,
+                                                                  verify_depth,
+                                                                  ply);
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
                     results.null_zungzwang_detected += score < beta;
@@ -938,26 +938,24 @@ sc::Score Search::nmSearch(Position& pos,
 
         /* Singular Move Extension -
         *  when we got some relatively strong move from TT,
-        *  we try to search it with reduced depth.
+        *  we re-search current position exluding that particular strong move.
         *  When we observe score below beta, we can assume that 
-        *  reducing that move might be dangerous (horizon effect).
-        *  If so, we try to include another extension.
+        *  given move is truly singular.
         */
         if constexpr (!Root) {
             if (depth >= SingularDepth and
                 !node->check and
                 node->move == tt_move and
-                !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == tt::TTBound::LOWERBOUND and
-                tt_entry.score < sc::Win and
-                tt_entry.score > -sc::Win) 
+                abs(tt_entry.score) < sc::Win)
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-                const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
-                                                                  static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16);
+                const sc::Score singular_beta = std::max<int16_t>(static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16,
+                                                                  -sc::MateBound.value() / 2,);
 
-                child_node->is_cut = !node->is_cut;
+                child_node->is_cut = false;
+                child_node->excluded_move = move;
 
                 const sc::Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
                                                                      -singular_beta, -singular_beta + 1,
@@ -966,7 +964,7 @@ sc::Score Search::nmSearch(Position& pos,
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and score > -sc::Win and score < sc::Win) {
+                else if (score >= beta and abs(score) < sc::Win) {
                     pos.unmake(node->move, node->state);
                     const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                         / (singular_depth + 1);
@@ -1385,7 +1383,7 @@ _FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
                                                  int ply) const 
 {
     static const auto get_win_tb_score = [](const Position& pos, int ply) -> sc::Score  _LAMBDA_FORCEINLINE {
-        const int32_t pc_cnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
+        const int32_t pc_cnt_diff = abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
         const int32_t result = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pc_cnt_diff);
         return static_cast<sc::Score>(result);
     };
@@ -1574,7 +1572,7 @@ template <>
 _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveScore s) {
     const int32_t centered_score = s.value() - 
                                    QuietDepthShiftMult * mvo::SMoveScore::HalfMaxQuietValue / 256;
-    const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
+    const float rt = std::sqrt(static_cast<float>(abs(centered_score)));
     const int32_t val = QuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }

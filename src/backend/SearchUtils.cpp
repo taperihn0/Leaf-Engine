@@ -182,8 +182,8 @@ void NodeInfo::clear() {
     mem::fill(pv_line.begin(), pv_line.end(), PvInfo());
 
     pv_line_len = 0;
-
     continuation_subtable_ptr = nullptr;
+    excluded_move = NullMove;
 }
 
 SearchStack::SearchStack()
