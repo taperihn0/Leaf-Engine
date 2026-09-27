@@ -19,6 +19,9 @@ TODO:
 * Better search explosion handling
 * Experiment with correctedEvalScore
 * More fixed endgames
+* make capture history working
+* fix write/probe bugs
+* discard evaluation when in check
 UTILS:
 * nneval without argument
 * configs for common tools
