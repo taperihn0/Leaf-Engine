@@ -868,11 +868,15 @@ sc::Score Search::nmSearch(Position& pos,
         if constexpr (Root and OrderPolicy == mvo::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
                 node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
+                assert(node->move != node->excluded_move);
                 results.score_cp = sc::Undef;
                 node->best_move = node->move;
                 return sc::Undef;
             }
         }
+
+        if (node->move == node->excluded_move)
+            continue;
 
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
@@ -952,15 +956,18 @@ sc::Score Search::nmSearch(Position& pos,
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const sc::Score singular_beta = std::max<int16_t>(static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16,
-                                                                  -sc::MateBound.value() / 2,);
+                                                                  -sc::MateBound.value() / 2);
 
                 child_node->is_cut = false;
-                child_node->excluded_move = move;
+                child_node->excluded_move = node->move;
 
                 const sc::Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
                                                                      -singular_beta, -singular_beta + 1,
                                                                      singular_depth,
                                                                      ply + 1);
+
+                child_node->excluded_move = NullMove;
+
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
@@ -1143,7 +1150,9 @@ sc::Score Search::nmSearch(Position& pos,
                                        : getDrawScore(node);
     }
 
-    if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
+    if (node->excluded_move.isNullMove() and (
+        !node->best_score.isMateScore() or tt_entry.isEmpty())
+       ) {
         const Move16b bestmove16b = packedMove(node->best_move);
 
         _tt.write(hash, 

@@ -260,7 +260,7 @@ static constexpr int MaxDepth     = 96;
 static constexpr int MaxSelDepth  = 128;
 static constexpr int MaxGameMoves = 1024;
 
-template <typename T, typename = std::enable_if_t<is_numeric<T>>>
+template <typename T>
 _FORCEINLINE constexpr T abs(T x) {
     return x < 0 ? -x : x;
 }
