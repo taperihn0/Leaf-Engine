@@ -887,7 +887,8 @@ sc::Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                alpha < sc::MateBound)
+                alpha < sc::MateBound and
+                node->can_move)
             {
                 /* Static Exchange Evaluation Pruning -
                 *  prune bad moves accoring to SEE score.
@@ -928,15 +929,6 @@ sc::Score Search::nmSearch(Position& pos,
             }
         }
 
-        if (!pos.make(node->move, accum_cache)) {
-            pos.unmake(node->move, node->state);
-            continue;
-        }
-
-        node->can_move = true;
-
-        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
-
         int32_t move_extension = 0;
         int32_t move_reduction = 0;
 
@@ -958,21 +950,27 @@ sc::Score Search::nmSearch(Position& pos,
                 const sc::Score singular_beta = std::max<int16_t>(static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16,
                                                                   -sc::MateBound.value() / 2);
 
+                utils::AccumulatorCluster* const curr_cluster = &node->cluster;
+                utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
+                utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
+
+                next_cluster->prev_cluster = prev_cluster;
+
                 child_node->is_cut = false;
                 child_node->excluded_move = node->move;
 
-                const sc::Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
-                                                                     -singular_beta, -singular_beta + 1,
-                                                                     singular_depth,
-                                                                     ply + 1);
+                const sc::Score score = nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+                                                                    singular_beta - 1, singular_beta,
+                                                                    singular_depth,
+                                                                    ply);
 
                 child_node->excluded_move = NullMove;
+                next_cluster->prev_cluster = curr_cluster;
 
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
                 else if (score >= beta and abs(score) < sc::Win) {
-                    pos.unmake(node->move, node->state);
                     const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                         / (singular_depth + 1);
                     return reduced_score;
@@ -982,6 +980,15 @@ sc::Score Search::nmSearch(Position& pos,
                 }
             }
         }
+
+        if (!pos.make(node->move, accum_cache)) {
+            pos.unmake(node->move, node->state);
+            continue;
+        }
+
+        node->can_move = true;
+
+        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
         
         if (depth <= ExtensionDepth) {
             if (gives_check)
@@ -1694,20 +1701,14 @@ bool Search::isRepetitionCycle(const Position& pos,
     for (int p = ply - 1; 
          p >= 0 and p >= ply - pos.getHalfmoveClock(); 
          p -= 2) 
-    {
+    {    
         prev_node--;
 
         if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             return false;
 
-        prev_node--;
-        
-        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
-            return false;
-
-        assert(prev_node->side2move == node->side2move);
-
-        if (curr_hashkey == prev_node->state.hash_key)
+        else if (prev_node->side2move == node->side2move and
+                 curr_hashkey == prev_node->state.hash_key)
             return true;
     }
 

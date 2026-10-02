@@ -125,6 +125,19 @@ bool MoveOrder::nextMoveWithPolicy(search::utils::NodeInfo* node,
     return internalNextMove<Policy, Root>(node, pos, next_move, move_score, ply);
 }
 
+template <bool Root>
+_NODISCARD bool nextMoveWithPolicy(search::utils::NodeInfo* node, 
+                                   Position& pos, 
+                                   Move32b& next_move,
+                                   SMoveScore& move_score,
+                                   int ply,
+                                   enumOrderPolicy policy)
+{
+    return policy == ONCE_GEN_LEGAL ? 
+            internalNextMove<ONCE_GEN_LEGAL, Root>(node, pos, next_move, move_score, ply) :
+            internalNextMove<STAGED, Root>(node, pos, next_move, move_score, ply);
+}
+
 template <enumOrderPolicy Policy, bool Root>
 _NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node, 
                                             Position& pos, 

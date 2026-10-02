@@ -149,6 +149,14 @@ public:
                                        SMoveScore& move_score,
                                        int ply);
 
+    template <bool Root>
+    _NODISCARD bool nextMoveWithPolicy(search::utils::NodeInfo* node, 
+                                       Position& pos, 
+                                       Move32b& next_move,
+                                       SMoveScore& move_score,
+                                       int ply,
+                                       enumOrderPolicy policy);
+
     void clear();
     void setHashMove(Move32b m);
     void setKillerMove(Move32b m, uint64_t parent_hash);
