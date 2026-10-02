@@ -171,20 +171,22 @@ public:
 
     void skipQuiets();
 
-    template <enumOrderPolicy Policy, typename = std::enable_if_t<Policy == ONCE_GEN_LEGAL>>
-    _NODISCARD uint getMovesLeft();
-
-    template <enumOrderPolicy Policy, typename = std::enable_if_t<Policy == ONCE_GEN_LEGAL>>
-    _NODISCARD uint getTotalMoves();
-
+    _NODISCARD uint getStagedMovesLeft();
+    _NODISCARD uint getTotalStagedMoves();
     _NODISCARD enumStage getStage() const;
 private:
     template <enumOrderPolicy Policy, bool Root>
-    _NODISCARD bool internalNextMove(search::utils::NodeInfo* node, 
-                                     Position& pos, 
-                                     Move32b& next_move,
-                                     SMoveScore& move_score,
-                                     int ply);
+    _NODISCARD bool getNextMoveStaged(search::utils::NodeInfo* node, 
+                                      Position& pos, 
+                                      Move32b& next_move,
+                                      SMoveScore& move_score,
+                                      int ply);
+    template <bool Root>
+    _NODISCARD bool getNextMoveOnePass(search::utils::NodeInfo* node, 
+                                       Position& pos, 
+                                       Move32b& next_move,
+                                       SMoveScore& move_score,
+                                       int ply);
 
     void updateContinuationPointers(search::utils::NodeInfo* node, int ply);
 
@@ -274,13 +276,12 @@ _FORCEINLINE void MoveOrder::skipQuiets() {
     _idx = _move_list.count();
 }
 
-template <enumOrderPolicy Policy, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
-_INLINE uint MoveOrder::getMovesLeft() {
+_INLINE uint MoveOrder::getStagedMovesLeft() {
+    assert(_move_list.count() >= _idx);
     return _move_list.count() - _idx;
 }
 
-template <enumOrderPolicy Type, typename /* = std::enable_if_t<Type == ONCE_GEN_LEGAL> */>
-_INLINE uint MoveOrder::getTotalMoves() {
+_INLINE uint MoveOrder::getTotalStagedMoves() {
     return static_cast<uint>(_move_list.count());
 }
 

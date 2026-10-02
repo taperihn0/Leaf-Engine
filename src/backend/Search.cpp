@@ -479,8 +479,7 @@ sc::Score Search::nmSearch(Position& pos,
     if constexpr (Root) assert(!ply);
     else                assert(ply > 0);
 
-    static constexpr mvo::enumOrderPolicy OrderPolicy = Root ? mvo::ONCE_GEN_LEGAL : mvo::STAGED;
-    static constexpr bool                 IsPv        = NmNodeType & PV_NODE;
+    static constexpr bool IsPv = NmNodeType & PV_NODE;
 
     assert(IsPv or alpha == beta - 1);
 
@@ -858,6 +857,8 @@ sc::Score Search::nmSearch(Position& pos,
     _AUTO_PARAM_ATTRIBS const int32_t SingularExtension = 1.f * FixedPointMult * SingularExtensionRate / SingularExtensionDiv;
     _AUTO_PARAM_ATTRIBS const int32_t SingularBetaReduction = 1.f * FixedPointMult * SingularBetaExtensionRate / SingularBetaExtensionDiv;
 
+    static constexpr mvo::enumOrderPolicy OrderPolicy = Root ? mvo::ONCE_GEN_LEGAL : mvo::STAGED;
+
     for (node->move_index = 0; 
          node->move_picker.nextMoveWithPolicy<OrderPolicy, Root>(node, pos, node->move, node->move_score, ply);
          node->move_index++) 
@@ -867,7 +868,8 @@ sc::Score Search::nmSearch(Position& pos,
         */
         if constexpr (Root and OrderPolicy == mvo::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
-                node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
+                node->move_picker.getTotalStagedMoves() == 1) 
+            {
                 assert(node->move != node->excluded_move);
                 results.score_cp = sc::Undef;
                 node->best_move = node->move;
@@ -942,6 +944,7 @@ sc::Score Search::nmSearch(Position& pos,
             if (depth >= SingularDepth and
                 !node->check and
                 node->move == tt_move and
+                node->excluded_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == tt::TTBound::LOWERBOUND and
                 abs(tt_entry.score) < sc::Win)
@@ -1152,9 +1155,14 @@ sc::Score Search::nmSearch(Position& pos,
     
     // detect checkmate or stealmate
     if (!node->can_move) {
-        node->bound = tt::TTBound::EXACT;
-        node->best_score = node->check ? -sc::Score::getMateScore(ply)
-                                       : getDrawScore(node);
+        if (node->excluded_move.isNullMove()) {
+            node->bound = tt::TTBound::EXACT;
+            node->best_score = node->check ? -sc::Score::getMateScore(ply)
+                                           : getDrawScore(node);
+        }
+        else {
+            node->best_score = alpha;
+        }
     }
 
     if (node->excluded_move.isNullMove() and (
@@ -1190,8 +1198,7 @@ sc::Score Search::qSearch(Position& pos,
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    static constexpr mvo::enumOrderPolicy QuiescentOrderPolicy = mvo::QUIESCENT;
-    static constexpr bool                 IsPv = QNodeType & PV_NODE; 
+    static constexpr bool IsPv = QNodeType & PV_NODE; 
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1317,7 +1324,7 @@ sc::Score Search::qSearch(Position& pos,
     mvo::SMoveScore move_score = sc::Undef;
 
     for (node->move_index = 0;
-         node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score, ply);
+         node->move_picker.nextMoveWithPolicy<mvo::QUIESCENT, Root>(node, pos, node->move, move_score, ply);
          node->move_index++) 
     {
         
