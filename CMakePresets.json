@@ -125,7 +125,7 @@
             "name": "final-mingw-w64",
             "displayName": "Final-MinGW-w64",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Release",
+            "binaryDir": "${sourceDir}/build/ReleaseMinGW",
             "cacheVariables": {
                 "CMAKE_SYSTEM_NAME": "Windows",
                 "CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
@@ -145,7 +145,7 @@
             "name": "finalutils-mingw-w64",
             "displayName": "FinalUtils-MinGW-w64",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/Release",
+            "binaryDir": "${sourceDir}/build/Utils/ReleaseMinGW",
             "cacheVariables": {
                 "CMAKE_SYSTEM_NAME": "Windows",
                 "CMAKE_C_COMPILER": "x86_64-w64-mingw32-gcc",
