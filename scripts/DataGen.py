@@ -112,10 +112,11 @@ def main():
             f.truncate(0)
 
         log_msg(f"Launching Session {session_num}...")
-        
-        input_cmds = f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
+
         if (syzygy_path != "<empty>"):
-            input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
+            input_cmds = f"setoption name SyzygyPath value {syzygy_path}\n"
+
+        input_cmds += f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
 
         try:
             process = subprocess.Popen(

@@ -6,6 +6,6 @@
   "engine_name": "Leaf",
   "opening_book": "assets/books/UHO_Lichess_4852_v1.epd",
   "opening_book_format": "epd",
-  "syzygy_path": "/home/Szymek/Source/Leaf/assets/tb/Syzygy",
+  "syzygy_path": "assets/tb/Syzygy",
   "tt_mb_size": 64
 }

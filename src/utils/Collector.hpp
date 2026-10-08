@@ -99,7 +99,7 @@ private:
     void perThread(PerThreadData& thread);
 
     static constexpr float _NodesRandomFactor = 0.18f;
-    static constexpr bool  _EnableSelfPlayLog = !DebugBuild;
+    static constexpr bool  _EnableSelfPlayLog = DebugBuild;
 };
 
 } // namespace utils
