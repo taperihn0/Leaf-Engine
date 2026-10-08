@@ -64,7 +64,7 @@ void TranspositionTable::clear() {
 void TranspositionTable::write(uint64_t node_key64, 
                                uint8_t node_depth, 
                                _MAYBE_UNUSED uint8_t node_ply, 
-                               TTBound node_bound, 
+                               Bound node_bound, 
                                sc::Score node_score, 
                                Move16b node_move, 
                                sc::Score node_eval) 
@@ -99,7 +99,7 @@ void TranspositionTable::write(uint64_t node_key64,
 
     if (entry_keyhi == keyhi and
         bucket->entries[ind].depth > (node_depth * 3) >> 1 and
-        node_bound != TTBound::EXACT) 
+        node_bound != Bound::EXACT) 
         return;
 
     if (bucket->entries[ind].isEmpty())
@@ -151,16 +151,16 @@ bool TranspositionTable::probe(TTEntry& out_entry,
     }
 
     switch (entry->bound) {
-    case TTBound::EXACT: {
+    case Bound::EXACT: {
         out_entry = *entry;
         return true;
     }
-    case TTBound::UPPERBOUND: {
+    case Bound::UPPER: {
         out_entry = *entry;
         out_entry.score = alpha;
         return alpha >= entry->score;
     }
-    case TTBound::LOWERBOUND: {
+    case Bound::LOWER: {
         out_entry = *entry;
         out_entry.score = beta;
         return beta <= entry->score;

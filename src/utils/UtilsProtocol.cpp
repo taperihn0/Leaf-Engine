@@ -417,11 +417,7 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
 }
 
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
-#if defined(DEBUG)
-    static constexpr int DepthTestLimit = 4;
-#else
-    static constexpr int DepthTestLimit = 6;
-#endif
+    static constexpr int DepthTestLimit = 4 + DebugBuild * 2;
 
     std::string token;
     strm >> std::skipws >> token;

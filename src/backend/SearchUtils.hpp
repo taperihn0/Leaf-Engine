@@ -174,7 +174,7 @@ public:
     bool                      check;
     uint8_t                   moves_searched;
     uint8_t                   move_index;
-    tt::TTBound               bound;
+    tt::Bound               bound;
     AccumulatorCluster        cluster;
     std::array<PvInfo, MaxSelDepth> 
                               pv_line;

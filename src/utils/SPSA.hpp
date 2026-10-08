@@ -19,8 +19,9 @@
 #include "UtilsCommon.hpp"
 #include "frontend/Options.hpp"
 #include "Opening.hpp"
-#include "UtilsCommon.hpp"
+#include "Log.hpp"
 #include "Process.hpp"
+#include "SelfGame.hpp"
 
 #include <vector>
 #include <fstream>
@@ -59,25 +60,22 @@ private:
               std::vector<SPSA_PackedParameter>& theta_plus,
               std::vector<SPSA_PackedParameter>& theta_minus,
               uint n, search::utils::SearchLimits limits,
-              EngineProcess& engine0,
-              EngineProcess& engine1,
+              PairOfForks& competitors,
               std::ofstream& log_file,
               uint id);
 
-    void writeCheckpoint(std::ofstream& file, 
+    void writeCheckpoint(lg::Log& log, 
                          std::vector<SPSA_Parameter>& theta,
                          uint k);
 
     void applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
-                      EngineProcess& engine,
-                      enumLogLabel ret_msg_label);
+                      ForkedProcess& engine,
+                      lg::logLabel log_thr_label);
 
-    int match(search::utils::SearchLimits limits,
-              EngineProcess& engine0,
-              EngineProcess& engine1,
-              std::shared_ptr<Game::Result> result,
-              uint id,
-              enumLogLabel thread_label);
+    int matchWrapper(PairOfForks& competitors,
+                     SelfGame::GameSpecPacket& game_packet,
+                     Game* game,
+                     lg::logLabel log_thr_label);
 
     static constexpr bool _EnableSelfPlayLog = true;
     OpeningSuite _openings;

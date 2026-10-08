@@ -116,7 +116,7 @@
 #define _P_STATIC    static
 #endif
 
-#define _PARAM_ATTRIBS    inline _P_CONSTEXPR
+#define _PARAM_ATTRIBS inline _P_CONSTEXPR
 
 /* When _ENABLE_TUNING is defined, it
 *  expands to nothing.
@@ -147,7 +147,8 @@ static constexpr size_t CachelineSize = 64;
 template <typename T>
 _INTERNAL void _declUnused(T&&) {}
 
-static constexpr std::string_view EngineName = "Leaf Lite";
+static constexpr std::string_view EngineName = "Leaf";
+static constexpr std::string_view EngineVersion = LEAF_VERSION;
 static constexpr std::string_view EngineAuthor = "Szymon Belz";
 
 // move format, so far only pure notation supported
@@ -254,6 +255,12 @@ _NORETURN _INTERNAL void unreachable() {
     __builtin_unreachable();
 #endif
 }
+
+#if defined(DEBUG)
+static constexpr bool DebugBuild = true;
+#else
+static constexpr bool DebugBuild = false;
+#endif
 
 static constexpr int MaxNodeMoves = 128;
 static constexpr int MaxDepth     = 96;

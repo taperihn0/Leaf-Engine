@@ -108,10 +108,15 @@ public:
 protected:
     static constexpr int _PackedPosBufferSize = sizeof(BitBoard) + MaxNibbles;
 
-    BitBoard                    _occupancy_mask;
+    BitBoard                       _occupancy_mask;
     std::array<Nibble, MaxNibbles> _pieces;
-    uint8_t                     _piece_cnt;
+    uint8_t                        _piece_cnt;
 };
+
+_INLINE std::ostream& operator<<(std::ostream& os, const PackedPosition& pos) {
+    pos.print(os);
+    return os;
+}
 
 // ExtPackedPosition implements custom position compression.
 // It extends by halfmove and fullmove count.

@@ -1,30 +1,74 @@
 import sys
 import os
+import json
 import time
 import subprocess
+from pathlib import Path
 from datetime import datetime
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "DataConfig.json"
+
+def _load_config(path: Path) -> dict:
+    defaults = {
+        "executable": "./bin/Utils/Release/LeafUtils",
+        "total_sessions": 10,
+        "games_per_session": 4000,
+        "thread_count": 2,
+        "nodes": 8000,
+        "syzygy_path": "Leaf-Engine/src/assets/tb/Syzygy",
+    }
+    cfg = dict(defaults)
+    if path.is_file():
+        with open(path, encoding="utf-8") as f:
+            parsed = json.load(f)
+        cfg.update({k: v for k, v in parsed.items() if k in defaults})
+    return cfg
 
 def log_msg(msg: str):
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{time_str}] {msg}")
 
 def main():
-    if len(sys.argv) != 6 and len(sys.argv) != 7:
+    cfg = _load_config(DEFAULT_CONFIG_PATH)
+
+    if len(sys.argv) == 1:
+        executable = os.path.normpath(cfg["executable"])
+        try:
+            total_sessions = int(cfg["total_sessions"])
+            games_per_session = int(cfg["games_per_session"])
+            thread_count = int(cfg["thread_count"])
+            nodes = int(cfg["nodes"])
+        except ValueError:
+            log_msg("ERROR: Config numeric values must be integers.")
+            sys.exit(1)
+        syzygy_path = str(cfg["syzygy_path"])
+    elif len(sys.argv) == 6:
+        executable = os.path.normpath(sys.argv[1])
+        try:
+            total_sessions = int(sys.argv[2])
+            games_per_session = int(sys.argv[3])
+            thread_count = int(sys.argv[4])
+            nodes = int(sys.argv[5])
+        except ValueError:
+            log_msg("ERROR: Numeric arguments must be integers.")
+            sys.exit(1)
+        syzygy_path = "<empty>"
+    elif len(sys.argv) == 7:
+        executable = os.path.normpath(sys.argv[1])
+        try:
+            total_sessions = int(sys.argv[2])
+            games_per_session = int(sys.argv[3])
+            thread_count = int(sys.argv[4])
+            nodes = int(sys.argv[5])
+        except ValueError:
+            log_msg("ERROR: Numeric arguments must be integers.")
+            sys.exit(1)
+        syzygy_path = str(sys.argv[6])
+    else:
         print(f"Usage: {sys.argv[0]} <executable_path> <total_sessions> <games_per_session> <thread_count> <nodes> <syzygy_path(optional)>")
         print(f"Example: {sys.argv[0]} ./bin/Utils/Release/LeafUtils 10 4000 2 8000 Leaf-Engine/src/assets/tb/Syzygy")
         sys.exit(1)
-
-    executable = os.path.normpath(sys.argv[1])
-    try:
-        total_sessions = int(sys.argv[2])
-        games_per_session = int(sys.argv[3])
-        thread_count = int(sys.argv[4])
-        nodes = int(sys.argv[5])
-    except ValueError:
-        log_msg("ERROR: Numeric arguments must be integers.")
-        sys.exit(1)
-
-    syzygy_path = str(sys.argv[6]) if len(sys.argv) == 7 else "<empty>"
 
     if not os.path.isfile(executable):
         log_msg(f"ERROR: Executable '{executable}' not found.")
@@ -68,10 +112,11 @@ def main():
             f.truncate(0)
 
         log_msg(f"Launching Session {session_num}...")
-        
-        input_cmds = f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
+
         if (syzygy_path != "<empty>"):
-            input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
+            input_cmds = f"setoption name SyzygyPath value {syzygy_path}\n"
+
+        input_cmds += f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
 
         try:
             process = subprocess.Popen(

@@ -30,19 +30,18 @@ static constexpr size_t  BucketTargetSize = 32;
 static constexpr size_t  EntryKeySize     = 18;
 static constexpr uint8_t EntryMaxDepth    = 64;
 
-enum class TTBound : uint8_t {
-    NONE       = 0,
-    EXACT      = 1,
-    UPPERBOUND = 2,
-    LOWERBOUND = 3,
-    MAX_BOUND  = 3
+enum class Bound : uint8_t {
+    NONE  = 0,
+    EXACT = 1,
+    UPPER = 2,
+    LOWER = 3,
 };
 
 struct TTEntry {
     TTEntry() = default;
 
     _NODISCARD _FORCEINLINE bool isEmpty() const noexcept { 
-        return depth == 0 and bound == TTBound::NONE; 
+        return depth == 0 and bound == Bound::NONE; 
     }
 
     _FORCEINLINE void writeHash(uint32_t keyhi) noexcept {
@@ -57,7 +56,7 @@ struct TTEntry {
     uint16_t  key16;
     uint8_t   key18 : 2;
     uint8_t   generation : 6;
-    TTBound   bound : 2;
+    Bound   bound : 2;
     uint8_t   depth : 6;
     sc::Score score;
     Move16b   move;
@@ -94,7 +93,7 @@ public:
     void write(uint64_t node_key, 
                uint8_t node_depth, 
                _MAYBE_UNUSED uint8_t node_ply, 
-               TTBound node_bound, 
+               Bound node_bound, 
                sc::Score node_score, 
                Move16b node_move, 
                sc::Score node_eval);
@@ -131,7 +130,7 @@ _NODISCARD _FORCEINLINE static TTEntry getClearEntry() noexcept {
     entry.key16 = 0;
     entry.key18 = 0;
     entry.generation = 0;
-    entry.bound = TTBound::NONE;
+    entry.bound = Bound::NONE;
     entry.depth = 0;
     entry.score = sc::Undef;
     entry.move = NullMove;

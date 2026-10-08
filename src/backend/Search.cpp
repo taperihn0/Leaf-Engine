@@ -595,7 +595,7 @@ sc::Score Search::nmSearch(Position& pos,
 
                     _tt.write(hash,
                               tt::EntryMaxDepth, ply,
-                              tt::TTBound::EXACT,
+                              tt::Bound::EXACT,
                               tb_score, tt_entry.move, tt_entry.eval);
 
                     return tb_score;
@@ -849,7 +849,7 @@ sc::Score Search::nmSearch(Position& pos,
     node->best_move      = NullMove;
     node->best_score     = -sc::Infinity;
     node->moves_searched = 0;
-    node->bound          = tt::TTBound::UPPERBOUND;
+    node->bound          = tt::Bound::UPPER;
     node->move_score     = sc::Undef;
 
     _AUTO_PARAM_ATTRIBS const int32_t MaxMoveExtension = 1.f * FixedPointMult * MaxMoveExtensionRate / MaxMoveExtensionDiv;
@@ -949,7 +949,7 @@ sc::Score Search::nmSearch(Position& pos,
                 node->move == tt_move and
                 !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
-                tt_entry.bound == tt::TTBound::LOWERBOUND and
+                tt_entry.bound == tt::Bound::LOWER and
                 tt_entry.score < sc::Win and
                 tt_entry.score > -sc::Win) 
             {
@@ -1083,7 +1083,7 @@ sc::Score Search::nmSearch(Position& pos,
 
             if (node->score > alpha) {
                 if (node->score >= beta) {
-                    node->bound = tt::TTBound::LOWERBOUND;
+                    node->bound = tt::Bound::LOWER;
 
                     if (node->move.isQuiet() and !node->move.isQueenPromotion())  {
                         node->move_picker.updateQuietsHistory(node->best_move, node->side2move, depth, ply, node);
@@ -1101,7 +1101,7 @@ sc::Score Search::nmSearch(Position& pos,
                     break;
                 }
 
-                node->bound = tt::TTBound::EXACT;
+                node->bound = tt::Bound::EXACT;
                 alpha = node->score;
                 
                 /* Collect Pv from the child */
@@ -1140,7 +1140,7 @@ sc::Score Search::nmSearch(Position& pos,
     
     // detect checkmate or stealmate
     if (!node->can_move) {
-        node->bound = tt::TTBound::EXACT;
+        node->bound = tt::Bound::EXACT;
         node->best_score = node->check ? -sc::Score::getMateScore(ply)
                                        : getDrawScore(node);
     }
@@ -1212,7 +1212,7 @@ sc::Score Search::qSearch(Position& pos,
 
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
     const bool exact_hit = (!IsPv and tt_hit) or
-                           ( IsPv and tt_hit and tt_entry.bound == tt::TTBound::EXACT);
+                           ( IsPv and tt_hit and tt_entry.bound == tt::Bound::EXACT);
 
     if (exact_hit) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1275,7 +1275,7 @@ sc::Score Search::qSearch(Position& pos,
 #if defined(_TT_PROBE_QSEARCH)
     const Move16b ttm16b = tt_entry.move;
 
-    if ((!IsPv or tt_entry.bound != tt::TTBound::LOWERBOUND) and 
+    if ((!IsPv or tt_entry.bound != tt::Bound::LOWER) and 
         (ttm16b.isPackedCapture(pos) or ttm16b.isQueenPromotion()))
     {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
@@ -1619,7 +1619,7 @@ void Search::refreshPVinTT(const Position& pos,
         if (!tt_hit or pv_move != tt_entry.move) {
             _tt.write(key,
                       static_cast<uint8_t>(depth), static_cast<uint8_t>(i),
-                      tt::TTBound::EXACT, 
+                      tt::Bound::EXACT, 
                       score, pv_move, sc::Undef);
         }
         
@@ -1648,7 +1648,7 @@ void Search::refreshPVinTT(const Position& pos,
         if (!tt_hit or root_best_move != tt_entry.move) {
             _tt.write(key,
                       depth, 0,
-                      tt::TTBound::EXACT,
+                      tt::Bound::EXACT,
                       score, root_best_move, sc::Undef);
         }
     }

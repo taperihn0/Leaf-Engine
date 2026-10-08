@@ -19,6 +19,7 @@
 #pragma once
 
 #include "UtilsCommon.hpp"
+#include "Log.hpp"
 
 #include <memory>
 
@@ -33,28 +34,32 @@
 
 namespace utils {
 
-class EngineProcess {
+class ForkedProcess {
 public:
-    EngineProcess() = default;
-    ~EngineProcess();
+    ForkedProcess();
+    ~ForkedProcess();
 
-    static void initProc(EngineProcess& proc);
-
-    void syncUntilReady(enumLogLabel thread_label);
+    void syncUntilReady(lg::logLabel log_thr_label);
     void waitForProcess();
-    bool isAlive() const;
+    
+    _NODISCARD bool isAlive() const;
 
-    pid_t pid = 0;
-    std::unique_ptr<std::ostream> proc_stdin = nullptr;
-    std::unique_ptr<std::istream> proc_stdout = nullptr;
+    _NODISCARD lg::Log& output();
+    _NODISCARD std::istream& input();
 private:
+    void init();
+
 #if defined(_WIN32)
-    HANDLE hproc = nullptr;
-    HANDLE hthread = nullptr;
+    HANDLE _hproc = nullptr;
+    HANDLE _hthread = nullptr;
 #endif
     using filebuf = __gnu_cxx::stdio_filebuf<char>;
-    std::unique_ptr<filebuf> in_buf;
-    std::unique_ptr<filebuf> out_buf;
+    pid_t                         _pid = 0;
+    std::unique_ptr<std::ostream> _output_stream = nullptr;
+    std::unique_ptr<std::istream> _input_stream = nullptr;
+    std::unique_ptr<filebuf>      _in_buf = nullptr;
+    std::unique_ptr<filebuf>      _out_buf = nullptr;
+    std::unique_ptr<lg::Log>      _log = nullptr;
 };
 
 } // namespace utils

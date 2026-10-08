@@ -17,17 +17,23 @@
  */
 
 #include "Process.hpp"
+#include "Log.hpp"
 #include "backend/PackedNetwork.hpp"
 #include "backend/Tablebase.hpp"
 
 namespace utils {
 
-#if defined(__GNUC__) and !defined(_WIN32)
-EngineProcess::~EngineProcess() {
-    if (isAlive()) kill(pid, SIGTERM);
+ForkedProcess::ForkedProcess() {
+    init();
 }
 
-void EngineProcess::initProc(EngineProcess& proc) {
+#if defined(__GNUC__) and !defined(_WIN32)
+
+ForkedProcess::~ForkedProcess() {
+    if (isAlive()) kill(_pid, SIGTERM);
+}
+
+void ForkedProcess::init() {
     int out_pipe[2];
     int in_pipe[2];
 
@@ -35,9 +41,9 @@ void EngineProcess::initProc(EngineProcess& proc) {
         FAILED("Failed to create pipes");
     }
 
-    const pid_t pid = fork();
+    const pid_t p = fork();
 
-    if (pid == 0) {
+    if (p == 0) {
         dup2(in_pipe[0], STDIN_FILENO);
         dup2(out_pipe[1], STDOUT_FILENO);
         
@@ -68,31 +74,32 @@ void EngineProcess::initProc(EngineProcess& proc) {
                   "--self-play",
                   export_nn_arg.c_str(), 
                   syzygy_tb_arg.c_str(),
-                  static_cast<char*>(nullptr)) < 0)
+                  nullptr) < 0)
             return;
     }
     else {
         close(in_pipe[0]);
         close(out_pipe[1]);
 
-        proc.pid = pid;
-        proc.in_buf = std::make_unique<EngineProcess::filebuf>(in_pipe[1], std::ios::out);
-        proc.proc_stdin = std::make_unique<std::ostream>(proc.in_buf.get());
-        proc.out_buf = std::make_unique<EngineProcess::filebuf>(out_pipe[0], std::ios::in);
-        proc.proc_stdout = std::make_unique<std::istream>(proc.out_buf.get());
+        _pid = p;
+        _in_buf = std::make_unique<ForkedProcess::filebuf>(in_pipe[1], std::ios::out);
+        _output_stream = std::make_unique<std::ostream>(_in_buf.get());
+        _out_buf = std::make_unique<ForkedProcess::filebuf>(out_pipe[0], std::ios::in);
+        _input_stream = std::make_unique<std::istream>(_out_buf.get());
+        _log = std::make_unique<lg::Log>(*_output_stream);
     }
 }
 
-void EngineProcess::waitForProcess() {
-    if (pid > 0)
-        waitpid(pid, nullptr, 0);
+void ForkedProcess::waitForProcess() {
+    if (_pid > 0)
+        waitpid(_pid, nullptr, 0);
 }
 
-bool EngineProcess::isAlive() const {
-    if (!pid)
+bool ForkedProcess::isAlive() const {
+    if (!_pid)
         return false;
 
-    if (kill(pid, 0) < 0)
+    if (kill(_pid, 0) < 0)
         return false;
 
     return true;
@@ -101,14 +108,14 @@ bool EngineProcess::isAlive() const {
 #else
 
 EngineProcess::~EngineProcess() {
-    if (hthread) CloseHandle(hthread);
-    if (hproc) {
-        TerminateProcess(hproc, 0);
-        CloseHandle(hproc);
+    if (_hthread) CloseHandle(_hthread);
+    if (_hproc) {
+        TerminateProcess(_hproc, 0);
+        CloseHandle(_hproc);
     }
 }
 
-void EngineProcess::initProc(EngineProcess& proc) {
+void EngineProcess::init() {
     HANDLE h_stdin_rd = nullptr;
     HANDLE h_stdin_wr = nullptr;
     HANDLE h_stdout_rd = nullptr;
@@ -173,47 +180,57 @@ void EngineProcess::initProc(EngineProcess& proc) {
     const int fd_in = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdin_wr), _O_WRONLY);
     const int fd_out = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdout_rd), _O_RDONLY);
 
-    proc.hproc = pi.hProcess;
-    proc.hthread = pi.hThread;
+    _hproc = pi._hprocess;
+    _hthread = pi._hthread;
 
 #if defined(_MSC_VER)
     FILE* fin = _fdopen(fd_in, "w");
     FILE* fout = _fdopen(fd_out, "r");
 
-    proc.proc_stdin = std::make_unique<std::ofstream>(fin);
-    proc.proc_stdout = std::make_unique<std::ifstream>(fout);
+    input_stream = std::make_unique<std::ofstream>(fin);
+    output_stream = std::make_unique<std::ifstream>(fout);
 #elif defined(__GNUC__)
-    proc.in_buf = std::make_unique<EngineProcess::filebuf>(fd_in, std::ios::out);
-    proc.proc_stdin = std::make_unique<std::ostream>(proc.in_buf.get());    
-    proc.out_buf = std::make_unique<EngineProcess::filebuf>(fd_out, std::ios::in);
-    proc.proc_stdout = std::make_unique<std::istream>(proc.out_buf.get());
+    _in_buf = std::make_unique<EngineProcess::filebuf>(fd_in, std::ios::out);
+    input_stream = std::make_unique<std::ostream>(_in_buf.get());    
+    _out_buf = std::make_unique<EngineProcess::filebuf>(fd_out, std::ios::in);
+    output_stream = std::make_unique<std::istream>(_out_buf.get());
+    _log = std::make_unique<log::Log>(output_stream);
 #else
 #error "Unsupported compiler for Windows"
 #endif
 }
 
 void EngineProcess::waitForProcess() {
-    WaitForSingleObject(hproc, INFINITE);
+    WaitForSingleObject(_hproc, INFINITE);
 }
 
 bool EngineProcess::isAlive() const {
-    if (!hproc) 
+    if (!_hproc) 
         return false;
 
     DWORD status;
-    if (GetExitCodeProcess(hproc, &status))
+    if (GetExitCodeProcess(_hproc, &status))
         return status == STILL_ACTIVE;
 
     return false;
 }
+
 #endif
 
-void EngineProcess::syncUntilReady(enumLogLabel thread_label) {
-    log(*proc_stdin, "isready");
+void ForkedProcess::syncUntilReady(lg::logLabel log_thr_label) {
+    _log->message("isready");
 
-    for (std::string line; readline(*proc_stdout, line) and line != "readyok"; ) {
-        labelLog(std::cout, LOG_DEBUG | LOG_ENGINE_0 | thread_label, line);
+    for (std::string line; readline(*_input_stream, line) and line != "readyok"; ) {
+        _log->debug(log_thr_label, line);
     }
+}
+
+lg::Log& ForkedProcess::output() {
+    return *_log;
+}
+
+std::istream& ForkedProcess::input() {
+    return *_input_stream;
 }
 
 } // namespace utils

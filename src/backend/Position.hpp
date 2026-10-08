@@ -372,7 +372,7 @@ public:
         // It is not really required to store previous hash key,
         // since it can be recomputed. But keep it here for simplicity and efficiency.
         uint64_t                   hash_key;
-        std::array<int16_t, 2>        non_pawn_material;
+        std::array<int16_t, 2>     non_pawn_material;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
@@ -392,11 +392,11 @@ private:
     std::array<BitBoard, 2>        _occupied = {};
     std::array<CastlingRights, 2>  _castling_rights = {};
     std::array<Square, 2>          _king_sq = { Square::None, Square::None };
-    Turn                        _s2m = WHITE;
-    Square                      _ep_square = Square::None;
-    ZHash                       _zhash = ZHash::Undef;
-    uint8_t                     _halfmove_count = 0;
-    uint16_t                    _fullmove_count = 0;
+    Turn                           _s2m = WHITE;
+    Square                         _ep_square = Square::None;
+    ZHash                          _zhash = ZHash::Undef;
+    uint8_t                        _halfmove_count = 0;
+    uint16_t                       _fullmove_count = 0;
     std::array<int16_t, 2>         _non_pawn_material = {};
 };
 
@@ -700,6 +700,11 @@ _INLINE std::string toStr(Position::enumStatusFlag err_flag) {
     }
 
     return "";
+}
+
+_INLINE std::ostream& operator<<(std::ostream& os, const Position& pos) {
+    pos.print(os);
+    return os;
 }
 
 template <bool ExactScore>

@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(Leaf LANGUAGES CXX)
+file(READ "${CMAKE_SOURCE_DIR}/version.txt" LEAF_VERSION)
+project(Leaf VERSION ${LEAF_VERSION} LANGUAGES CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Debug
@@ -92,6 +93,8 @@ target_include_directories(Leaf PUBLIC
 	"${CMAKE_SOURCE_DIR}/src/utils"
 	"${CMAKE_SOURCE_DIR}/src/vendor"
 )
+
+target_compile_definitions(Leaf PUBLIC LEAF_VERSION="${LEAF_VERSION}")
 
 if (WIN32)
 	target_compile_definitions(Leaf PUBLIC LEAF_PLATFORM_WINDOWS)

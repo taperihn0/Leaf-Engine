@@ -25,24 +25,7 @@
 #include "Tuning.hpp"
 #include "utils/Sets.hpp"
 #include "Tablebase.hpp"
-
-#if defined(_MSC_VER)
-#include <io.h>
-#include <fcntl.h>
-#endif
 #include <sstream>
-
-_INLINE bool isValidNumber(const std::string& str) {
-    return str.find_first_not_of("1234567890", 0) == std::string::npos;
-}
-
-_INLINE bool isSigned(const std::string& str) {
-    return !str.empty() and str[0] == '-';
-}
-
-_INLINE bool isValidUnsigned(const std::string& str) {
-    return !isSigned(str) and isValidNumber(str);
-}
 
 opt::Options UniversalChessInterface::_options;
 
@@ -51,66 +34,48 @@ search::utils::SearchLimits UniversalChessInterface::loadSearchLimits(std::istri
     limits.depth = MaxDepth;
     limits.nodes = limits.qnodes = 0;
 
-#define TERMINATE_READ_IF_EMPTY(str, res) \
-    do { if ((str).empty()) return (res); } while(false);
+    static constexpr auto Parse = [](auto& dst, const std::string& token, std::string_view name) {
+        try {
+            dst = static_cast<ll>(std::min<ll>(dst, std::stoll(token)));
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid number of " << name << ": " << e.what() << std::endl;
+        }
+    };
 
     while (strm.rdbuf()->in_avail() > 0) {
-
         if (token == "depth") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.depth = std::min(limits.depth, std::stoi(token));
+            Parse(limits.depth, token, "depth");
         }
         else if (token == "wtime") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.wtime = std::stoi(token);
+            Parse(limits.wtime, token, "wtime");
         }
         else if (token == "btime") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.btime = std::stoi(token);
+            Parse(limits.btime, token, "wtime");  
         }
         else if (token == "winc") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.winc = std::stoi(token);
+            Parse(limits.winc, token, "winc");
         }
         else if (token == "binc") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.binc = std::stoi(token);
+            Parse(limits.binc, token, "binc");
         }
         else if (token == "nodes") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-            
-            if (isValidUnsigned(token))
-                limits.nodes = std::stoi(token);
+            Parse(limits.nodes, token, "nodes");
         }
-        // Custom option
+        // Custom `qnodes` option
         else if (token == "qnodes") {
             strm >> std::skipws >> token;
-            TERMINATE_READ_IF_EMPTY(token, limits);
-
-            if (isValidUnsigned(token))
-                limits.qnodes = std::stoi(token);
+            Parse(limits.qnodes, token, "qnodes");
         }
 
         strm >> std::skipws >> token;
     }
-
-#undef TERMINATE_READ_IF_EMPTY
 
     return limits;
 }
@@ -141,7 +106,7 @@ void UniversalChessInterface::loop(int argc, const char* argv[]) {
     if (argc > 1 and std::string(argv[1]) == "--self-play")
         parseSelfPlay();
 
-    std::cout << "Polish Chess Engine, " << EngineName << " by " << EngineAuthor << '\n';
+    std::cout << EngineName << ' ' << EngineVersion << " Chess Engine by " << EngineAuthor << '\n';
 
     std::string command;
     int arg_it = 1;
@@ -187,9 +152,9 @@ std::vector<opt::OptionTunableParam>& UniversalChessInterface::getTunableOptions
 }
 
 void UniversalChessInterface::parseUCI() {
-    std::cout << "id name " << EngineName << '\n'
-              << "id author " << EngineAuthor << '\n'
-              << "uciok" << '\n';
+    std::cout << "id name " << EngineName << ' ' << EngineVersion << std::endl
+              << "id author " << EngineAuthor << std::endl
+              << "uciok" << std::endl;
 }
 
 void UniversalChessInterface::parseNewGame() {
@@ -260,11 +225,16 @@ void UniversalChessInterface::parseGo(std::istringstream& strm) {
     if (token == "perft") {
         strm >> std::skipws >> token;
 
-        if (isValidNumber(token.substr(1)) and !isSigned(token)) {
-            const unsigned depth = std::stoi(token);
-            _pos.goPerft(depth);
+        int depth = 0;
+
+        try {
+            depth = std::stoi(token);
+        }
+        catch (const std::exception& e) {
+            std::cout << "Invalid perft depth: " << e.what() << std::endl;
         }
 
+        _pos.goPerft(depth);
         return;
     }
     
@@ -298,11 +268,12 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
         pos.setStartingPos();
 	else if (fen == "kiwipete")
         pos.setByFEN(std::string(KiwipeteFEN));
+    else if (fen == "current")
+        pos = _pos;
     else
         pos.setByFEN(fen);
 
     const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
-
     std::cout << static_cast<int>(score) << std::endl;
 }
 

@@ -70,11 +70,11 @@ inline TunableParametersMap GlobParamMapping;
 
 template <typename T>
 TunableParameterValue<T>::TunableParameterValue(T v,
-                                              const std::string& param, 
-                                              void* addr, 
-                                              float mi, 
-                                              float ma, 
-                                              float step_rate)
+                                                const std::string& param, 
+                                                void* addr, 
+                                                float mi, 
+                                                float ma, 
+                                                float step_rate)
     : _v(v) {
     GlobParamMapping.addTunableParameter(param, addr, mi, ma, step_rate);  
 }
