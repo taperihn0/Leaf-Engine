@@ -128,11 +128,11 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
     theta_plus.reserve(param_count);
     theta_minus.reserve(param_count);
 
-    const lg::logLabel thread_label = lg::threadLabel(id);
+    const lg::logLabel log_thr_label = lg::threadLabel(id);
 
     {
         for (auto& engine : competitors) {
-            engine.syncUntilReady(thread_label);
+            engine.syncUntilReady(log_thr_label);
         }
 
         std::string line;
@@ -144,7 +144,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
             for (int i = 0; 
                 i < param_count and readline(engine.input(), line);
                 i++) {
-                lg::debug(thread_label, line);
+                lg::debug(log_thr_label, line);
             }
         }
 #endif // DEBUG
@@ -155,7 +155,7 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
 
         for (auto& engine : competitors) {
             engine.output().message("setoption name Hash value ", mb_tt_size);
-            lg::info(thread_label, "setoption name Hash value ", mb_tt_size);
+            lg::info(log_thr_label, "setoption name Hash value ", mb_tt_size);
         }
     }
 
@@ -188,7 +188,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
     uint draw_cnt = 0;
 
     ASSERT_NO_LOG(id < static_cast<uint>(PlatformThreadLimit));
-    const lg::logLabel curr_thread_label = lg::threadLabel(id);
+    const lg::logLabel curr_log_thr_label = lg::threadLabel(id);
 
     lg::Log log(log_file);
 
@@ -197,7 +197,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
 
         if (k >= IterCount) break;
 
-        lg::info(curr_thread_label, "Iteration k = ", curr_iter.load());
+        lg::info(curr_log_thr_label, "Iteration k = ", curr_iter.load());
 
         std::vector<SPSA_Parameter> local_params(param_count);
 
@@ -234,8 +234,8 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
                             return packed;
                        });
 
-        applyOptions(theta_plus, competitors.getFork(0), curr_thread_label);
-        applyOptions(theta_minus, competitors.getFork(1), curr_thread_label);
+        applyOptions(theta_plus, competitors.getFork(0), curr_log_thr_label);
+        applyOptions(theta_minus, competitors.getFork(1), curr_log_thr_label);
 
         SelfGame::GameSpecPacket game_packet = {
             limits,
@@ -253,7 +253,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
         const int res = matchWrapper(competitors,
                                      game_packet,
                                      game,
-                                     curr_thread_label);
+                                     curr_log_thr_label);
 
         if (res == 1) {
             theta_plus_win_cnt++;
@@ -277,7 +277,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
             }
         }
 
-        lg::info(curr_thread_label, "Game info: ", game_packet.result, ", numeric: ", res);
+        lg::info(curr_log_thr_label, "Game info: ", game_packet.result, ", numeric: ", res);
         
         std::ostringstream info;
         info << "Theta Plus Wins | Theta Minus Wins | Draws: " 
@@ -285,7 +285,7 @@ void SPSA_Tuning::tune(std::vector<SPSA_Parameter>& params,
              << theta_minus_win_cnt << " | "
              << draw_cnt;
 
-        lg::info(curr_thread_label, info.str());
+        lg::info(curr_log_thr_label, info.str());
 
         theta_plus.clear();
         theta_minus.clear();
@@ -308,7 +308,7 @@ void SPSA_Tuning::writeCheckpoint(lg::Log& log,
 
 void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
                                ForkedProcess& engine,
-                               lg::logLabel thread_label) 
+                               lg::logLabel log_thr_label) 
 {
     // Setup option value using "setoption name OPTION value VALUE"
 
@@ -317,17 +317,17 @@ void SPSA_Tuning::applyOptions(const std::vector<SPSA_PackedParameter>& tunable_
         cmd << "setoption name " << *param.name << " value " << param.value;
 
         engine.output().message(cmd.str());
-        lg::info(thread_label, cmd.str());
+        lg::info(log_thr_label, cmd.str());
     }
 }
 
 _INLINE int SPSA_Tuning::matchWrapper(PairOfForks& competitors,
                                       SelfGame::GameSpecPacket& game_packet,
                                       Game* game,
-                                      lg::logLabel thread_label)
+                                      lg::logLabel log_thr_label)
 {
     for (auto& engine : competitors) {
-        engine.syncUntilReady(thread_label);
+        engine.syncUntilReady(log_thr_label);
     }
 
     const auto game_result = SelfGame::get()

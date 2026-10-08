@@ -24,7 +24,7 @@
 namespace utils {
 
 PairOfForks::PairOfForks()
-    : _ordered_forks(&_forks.first, &_forks.second)
+    : _ordered_forks(&_forks.first, &_forks.second) 
 {}
 
 std::pair<ForkedProcess&, ForkedProcess&> PairOfForks::raw() {
@@ -108,13 +108,13 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors,
     
     altraits::construct(al, game, opening, time_constraint, limits.wtime, limits.btime);
 
-    if (packet.data_buffer != nullptr) {
+    if (packet.data_buffer == nullptr) {
         lg::info("Continuing self-play match without data storage buffer");
     }
 
     Game::Result game_result;
     uint draw_half_moves = 0;
-    const lg::logLabel thread_label = lg::threadLabel(packet.thread_id);
+    const lg::logLabel log_thr_label = lg::threadLabel(packet.thread_id);
 
     while (!game->isGameEnd(game_result)) {
         Position& pos = game->getPosition();
@@ -128,12 +128,12 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors,
             break;
         }
 
-        sentPosition<EnableLog>(start_fen, record, player2move, thread_label);
+        sentPosition<EnableLog>(start_fen, record, player2move, log_thr_label);
         
         sc::Score score = sc::Undef;
 
         timer.go();
-        const Move32b move = getPlayerMove<EnableLog>(limits, pos, player2move, score, thread_label);
+        const Move32b move = getPlayerMove<EnableLog>(limits, pos, player2move, score, log_thr_label);
 
         if (move.isNullMove() or !player2move.isAlive()) {
             game_result = Game::GAME_INVALID;
@@ -146,7 +146,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors,
             if (internal_game_storage) 
                 throw std::runtime_error(R"(Data buffer is enabled, but game is not given"
 " - can't point to position from game)");
-            packet.data_buffer->push_back(PositionInfo{ &pos, side2move == WHITE ? score : -score, move});
+            packet.data_buffer->push_back(PositionInfo{ &pos, side2move == WHITE ? score : -score, move });
         }
 
         if (time_constraint and side2move == WHITE) {
@@ -196,7 +196,7 @@ template <bool EnableLog>
 void SelfGame::sentPosition(const std::string& start_fen, 
                             const FullInfoRecord& record,
                             ForkedProcess& player,
-                            lg::logLabel thread_label) 
+                            lg::logLabel log_thr_label) 
 {
     /* Is, os are relative to the engines.
     *  We're writing to os, reading from is.
@@ -221,7 +221,7 @@ void SelfGame::sentPosition(const std::string& start_fen,
     player.output().message(cmd.str());
 
     if constexpr (EnableLog)
-        player.output().info(thread_label, cmd.str());
+        lg::info(log_thr_label, cmd.str());
 }
 
 template <bool EnableLog>
@@ -229,7 +229,7 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
                                 Position& pos,
                                 ForkedProcess& player, 
                                 sc::Score& score,
-                                lg::logLabel thread_label) 
+                                lg::logLabel log_thr_label) 
 {
     /* Is, os are relative to the engines.
     *  We're writing to os, reading from is.
@@ -249,14 +249,14 @@ Move32b SelfGame::getPlayerMove(search::utils::SearchLimits limits,
     player.output().message(cmd.str());
 
     if constexpr (EnableLog)
-        player.output().debug(cmd.str());
+        lg::debug(cmd.str());
 
     std::string best_move_str;
 
     for (std::string line; readline(player.input(), line); ) {
 
         if constexpr (EnableLog)
-            player.output().debug(line);
+            lg::debug(line);
 
         if (line.empty()) 
             continue;

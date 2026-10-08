@@ -36,10 +36,10 @@ namespace utils {
 
 class ForkedProcess {
 public:
-    ForkedProcess() = default;
+    ForkedProcess();
     ~ForkedProcess();
 
-    void syncUntilReady(lg::logLabel thread_label);
+    void syncUntilReady(lg::logLabel log_thr_label);
     void waitForProcess();
     
     _NODISCARD bool isAlive() const;

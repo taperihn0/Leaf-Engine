@@ -104,6 +104,7 @@ public:
 
     static Log& get();
 private:
+    void directWrite(logLabel label, std::string_view sv);
     static std::string parse(logLabel label);
 
     std::ostream* _os;
@@ -111,10 +112,10 @@ private:
 };
 
 template <typename... Args>
-void Log::message(logLabel label, Args&&... args) { 
+void Log::message(logLabel label, Args&&... args) {
     std::ostringstream ss;
     (ss << ... << std::forward<Args>(args));
-    message(label, ss.str());
+    directWrite(label, ss.str());
 }
 
 template <typename... Args>

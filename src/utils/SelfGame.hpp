@@ -97,14 +97,14 @@ private:
     void sentPosition(const std::string& start_fen, 
                       const FullInfoRecord& record,
                       ForkedProcess& player,
-                      lg::logLabel thread_label);
+                      lg::logLabel log_thr_label);
     
     template <bool EnableLog>
     _NODISCARD Move32b getPlayerMove(search::utils::SearchLimits limits, 
                                      Position& pos,
                                      ForkedProcess& player,
                                      sc::Score& score,
-                                     lg::logLabel thread_label);
+                                     lg::logLabel log_thr_label);
 
     _NODISCARD PlayerPerspectiveResult 
     resultToPerspectiveResult(Game::Result result, bool zero_player_white);

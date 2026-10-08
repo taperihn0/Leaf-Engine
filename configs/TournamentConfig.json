@@ -1,0 +1,11 @@
+{
+  "games_count": 8000,
+  "thread_count": 5,
+  "time_control": "6+0.06",
+  "cmake_preset": "final",
+  "engine_name": "Leaf",
+  "opening_book": "assets/books/UHO_Lichess_4852_v1.epd",
+  "opening_book_format": "epd",
+  "syzygy_path": "/home/Szymek/Source/Leaf/assets/tb/Syzygy",
+  "tt_mb_size": 64
+}

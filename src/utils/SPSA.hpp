@@ -70,12 +70,12 @@ private:
 
     void applyOptions(const std::vector<SPSA_PackedParameter>& tunable_options,
                       ForkedProcess& engine,
-                      lg::logLabel thread_label);
+                      lg::logLabel log_thr_label);
 
     int matchWrapper(PairOfForks& competitors,
                      SelfGame::GameSpecPacket& game_packet,
                      Game* game,
-                     lg::logLabel thread_label);
+                     lg::logLabel log_thr_label);
 
     static constexpr bool _EnableSelfPlayLog = true;
     OpeningSuite _openings;

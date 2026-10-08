@@ -23,6 +23,10 @@
 
 namespace utils {
 
+ForkedProcess::ForkedProcess() {
+    init();
+}
+
 #if defined(__GNUC__) and !defined(_WIN32)
 
 ForkedProcess::~ForkedProcess() {
@@ -213,11 +217,11 @@ bool EngineProcess::isAlive() const {
 
 #endif
 
-void ForkedProcess::syncUntilReady(lg::logLabel thread_label) {
+void ForkedProcess::syncUntilReady(lg::logLabel log_thr_label) {
     _log->message("isready");
 
     for (std::string line; readline(*_input_stream, line) and line != "readyok"; ) {
-        _log->debug(thread_label, line);
+        _log->debug(log_thr_label, line);
     }
 }
 

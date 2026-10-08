@@ -75,6 +75,10 @@ void Log::flush() {
     }
 }
 
+void Log::directWrite(logLabel label, std::string_view sv) {
+    output() << sv << std::endl;
+}
+
 std::string Log::parse(logLabel label) {
     if (label == logLabel::LOG_NO_LABEL) {
         return "";

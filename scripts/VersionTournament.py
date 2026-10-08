@@ -3,19 +3,46 @@ import sys
 import shutil
 import subprocess
 import argparse
+import json
 from pathlib import Path
 from datetime import datetime
 
-# --- Tournament configurations ---
-GAMES_COUNT = 8000
-THREAD_COUNT = 5
-TIME_CONTROL = "6+0.06"
-CMAKE_PRESET = "final"
-OPENING_BOOK = "assets/books/UHO_Lichess_4852_v1.epd"
-OPENING_BOOK_FORMAT = "epd"
-ENGINE_NAME = "Leaf"
-SYZYGY_PATH = "/home/Szymek/Source/Leaf/assets/tb/Syzygy"
-TT_MB_SIZE = 64
+# --- Load tournament config ---
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "TournamentConfig.json"
+
+_config_defaults = {
+    "games_count": 8000,
+    "thread_count": 5,
+    "time_control": "6+0.06",
+    "cmake_preset": "final",
+    "engine_name": "Leaf",
+    "opening_book": "assets/books/UHO_Lichess_4852_v1.epd",
+    "opening_book_format": "epd",
+    "syzygy_path": "/home/Szymek/Source/Leaf/assets/tb/Syzygy",
+    "tt_mb_size": 64,
+}
+
+def _load_config(path: Path) -> dict:
+    cfg = dict(_config_defaults)
+    if path.is_file():
+        with open(path, encoding="utf-8") as f:
+            parsed = json.load(f)
+        cfg.update({k: v for k, v in parsed.items() if k in _config_defaults})
+    return cfg
+
+_cfg = _load_config(DEFAULT_CONFIG_PATH)
+
+GAMES_COUNT = int(_cfg["games_count"])
+THREAD_COUNT = int(_cfg["thread_count"])
+TIME_CONTROL = str(_cfg["time_control"])
+CMAKE_PRESET = str(_cfg["cmake_preset"])
+ENGINE_NAME = str(_cfg["engine_name"])
+OPENING_BOOK = str(_cfg["opening_book"])
+OPENING_BOOK_FORMAT = str(_cfg["opening_book_format"])
+SYZYGY_PATH = str(_cfg["syzygy_path"])
+TT_MB_SIZE = int(_cfg["tt_mb_size"])
+
 HALFED_GAMES_COUNT = GAMES_COUNT // 2
 WORKSPACES_BASE_DIR_PATH = Path("workspaces/temporary/")
 PGN_OUTPUT_DIR = Path("workspaces/pgns/")

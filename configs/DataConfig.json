@@ -1,0 +1,8 @@
+{
+  "executable": "./bin/Utils/Release/LeafUtils",
+  "total_sessions": 10,
+  "games_per_session": 4000,
+  "thread_count": 2,
+  "nodes": 8000,
+  "syzygy_path": "Leaf-Engine/src/assets/tb/Syzygy"
+}
