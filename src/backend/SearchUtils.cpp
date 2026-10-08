@@ -171,7 +171,7 @@ void NodeInfo::clear() {
     check            = false;
     moves_searched   = 0;
     move_index       = 0;
-    bound            = tt::TTBound::NONE;
+    bound            = tt::Bound::NONE;
     is_cut           = false;
     mate_thread      = false;
 
