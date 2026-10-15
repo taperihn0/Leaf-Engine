@@ -162,8 +162,7 @@ def run_tournament(bin_0_dir: Path, bin_1_dir: Path,
         f"order=random",
         # "plies=8",
         #f"policy=encounter",
-        "-repeat",
-        "-debug"
+        "-repeat"
     ]
 
     process = subprocess.Popen(cmd, 

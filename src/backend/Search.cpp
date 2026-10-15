@@ -653,7 +653,7 @@ sc::Score Search::nmSearch(Position& pos,
         (depth >= 6 and tt_move.isNullMove()
        )) 
     {
-        //--depth;
+        --depth;
     }
         
     if constexpr (!Root and !IsPv) {
