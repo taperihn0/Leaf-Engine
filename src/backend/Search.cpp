@@ -647,35 +647,16 @@ sc::Score Search::nmSearch(Position& pos,
     Move32b tt_move = unpackedMove(pos, tt_entry.move);
     tt_move = tt_move.isPseudoLegal(pos) ? tt_move : NullMove;
 
-    /* Internal Iterative Deepening -
-    *  done only in PV Nodes. When no hash move is found for said node, 
-    *  we allow to do some shallow research in order to obtain one.
-    *  That strategy can only pay off when the move ordering is actually 
-    *  very important.
+    /* Internal Iterative Reductions
     */
-    if constexpr (!Root and IsPv) {
-        if (depth >= IidDepth and 
-            tt_move.isNullMove() and
-            node->is_cut) 
-        {
-            child_node->is_cut = !node->is_cut;
-
-            _UNUSED const sc::Score iid_score =
-                nmSearch<NmNodeType, false>(pos, limits, results, game, node,
-                                            alpha, beta,
-                                            4 * depth / IidDepthDiv,
-                                            ply);
-
-            tt::TTEntry iid_entry = tt::getClearEntry();
-
-            _UNUSED const bool iid_tt_hit = _tt.probe(iid_entry, hash, alpha, beta, depth);
-            
-            tt_move = unpackedMove(pos, iid_entry.move);
-            tt_move = tt_move.isPseudoLegal(pos) ? tt_move 
-                                                 : NullMove;
-        }
+    if ((IsPv or node->is_cut) and 
+        (depth >= 6 and tt_move.isNullMove()
+       )) 
+    {
+        --depth;
     }
-    else if constexpr (!Root and !IsPv) {
+        
+    if constexpr (!Root and !IsPv) {
 
         /* Razoring -
         *  if we're at lower depth and the eval is really low
