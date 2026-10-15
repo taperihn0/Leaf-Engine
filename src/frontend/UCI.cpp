@@ -34,9 +34,9 @@ search::utils::SearchLimits UniversalChessInterface::loadSearchLimits(std::istri
     limits.depth = MaxDepth;
     limits.nodes = limits.qnodes = 0;
 
-    static constexpr auto Parse = [](auto& dst, const std::string& token, std::string_view name) {
+    static constexpr auto Parse = [](auto& dst, const std::string& token, std::string_view name, ll min = maxof<ll>()) {
         try {
-            dst = static_cast<ll>(std::min<ll>(dst, std::stoll(token)));
+            dst = static_cast<ll>(std::min(min, std::stoll(token)));
         }
         catch (const std::exception& e) {
             std::cout << "Invalid number of " << name << ": " << e.what() << std::endl;
@@ -46,7 +46,7 @@ search::utils::SearchLimits UniversalChessInterface::loadSearchLimits(std::istri
     while (strm.rdbuf()->in_avail() > 0) {
         if (token == "depth") {
             strm >> std::skipws >> token;
-            Parse(limits.depth, token, "depth");
+            Parse(limits.depth, token, "depth", MaxDepth);
         }
         else if (token == "wtime") {
             strm >> std::skipws >> token;

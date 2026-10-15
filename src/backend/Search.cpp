@@ -604,7 +604,7 @@ sc::Score Search::nmSearch(Position& pos,
         }
     }
 
-    if (!depth) {
+    if (depth <= 0) {
         return qSearch<QUIESCE_NODE | NmNodeType>(pos, limits, results, node,
                                                   alpha, beta,
                                                   depth,
@@ -653,7 +653,7 @@ sc::Score Search::nmSearch(Position& pos,
         (depth >= 6 and tt_move.isNullMove()
        )) 
     {
-        --depth;
+        //--depth;
     }
         
     if constexpr (!Root and !IsPv) {
