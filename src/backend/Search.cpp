@@ -647,10 +647,12 @@ sc::Score Search::nmSearch(Position& pos,
     Move32b tt_move = unpackedMove(pos, tt_entry.move);
     tt_move = tt_move.isPseudoLegal(pos) ? tt_move : NullMove;
 
-    /* Internal Iterative Reductions
+    /* Internal Iterative Reductions -
+    *  when no hash move is found for a node, then it is 
+    *  not particulary interesting, so reduce it.
     */
     if ((IsPv or node->is_cut) and 
-        (depth >= 6 and tt_move.isNullMove()
+        (depth >= IirDepth and tt_move.isNullMove()
        )) 
     {
         --depth;

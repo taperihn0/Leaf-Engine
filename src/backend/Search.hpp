@@ -29,8 +29,7 @@ namespace search {
 *   Tunable parameters in Search.
 */
 
-_DEFINE_TUNABLE_PARAMETER(IidDepth, int32_t, 3.18375f, 2.f, 5.f, 0.9f);
-_DEFINE_TUNABLE_PARAMETER(IidDepthDiv, int32_t, 12.4526f, 8.f, 16.f, 0.9f);
+_DEFINE_TUNABLE_PARAMETER(IirDepth, int32_t, 6.18375f, 2.f, 8.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(RfpDepth, int32_t, 5.56051f, 2.f, 6.f, 0.9f);
 _DEFINE_TUNABLE_PARAMETER(RazorDepth, int32_t, 2.04193f, 1.f, 4.f, 0.9f);
 _DEFINE_TUNABLE_PARAMETER(FutilityDepth, int32_t, 2.97471f, 2.f, 5.f, 0.9f);
