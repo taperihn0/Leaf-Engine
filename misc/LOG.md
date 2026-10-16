@@ -1,3 +1,12 @@
+### [commit:df46bdc] IIR
+```
+Score of leaf-iir-impl vs leaf-v1.0.2: 2322 - 2175 - 3503  [0.509] 8000
+...      leaf-iir-impl playing White: 1278 - 974 - 1748  [0.538] 4000
+...      leaf-iir-impl playing Black: 1044 - 1201 - 1755  [0.480] 4000
+...      White vs Black: 2479 - 2018 - 3503  [0.529] 8000
+Elo difference: 6.4 +/- 5.7, LOS: 98.6 %, DrawRatio: 43.8 %
+```
+
 ### [commit:e5c8507] Bugs fixes and refactor
 ```
 Score of leaf-cont-capt-hist-2ply vs leaf-base: 401 - 286 - 594  [0.545] 1281

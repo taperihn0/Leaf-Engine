@@ -476,11 +476,11 @@ sc::Score Search::nmSearch(Position& pos,
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    if constexpr (Root) assert(!ply);
-    else                assert(ply > 0);
-
     static constexpr mvo::enumOrderPolicy OrderPolicy = Root ? mvo::ONCE_GEN_LEGAL : mvo::STAGED;
     static constexpr bool                 IsPv        = NmNodeType & PV_NODE;
+
+    if constexpr (Root) assert(!ply);
+    else                assert(ply > 0);
 
     assert(IsPv or alpha == beta - 1);
 
@@ -675,7 +675,7 @@ sc::Score Search::nmSearch(Position& pos,
             (tt_move.isNullMove() or tt_move.isQuiet()))
         {            
             const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
-            int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
+            const int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
             if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
                 const sc::Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
@@ -744,9 +744,8 @@ sc::Score Search::nmSearch(Position& pos,
         if (!node->check and 
             depth >= NullDepth and
             pos.getNonPawnMaterial() > 0 and
-            beta < sc::Win and
-            beta > -sc::Win) {
-
+            abs<sc::Score>(beta) < sc::Win) 
+        {
             const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
             const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
 
@@ -783,15 +782,12 @@ sc::Score Search::nmSearch(Position& pos,
                     node->mate_thread = true;
                 }
 
-                const sc::Score nm_score = score;
-
                 /* Unless Null Move Pruning is not handled properly in the endgame, 
                 *  verification search is just needed to prevent Zugzwang.
                 */
 
-                if (score >= beta and
-                    nm_depth >= NullVerifyDepth)
-                {
+                /*
+                if (score >= beta and nm_depth >= NullVerifyDepth) {
                     const int verify_depth = getNullVerifyDepth(nm_depth);
 
                     score = nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, node,
@@ -802,7 +798,7 @@ sc::Score Search::nmSearch(Position& pos,
 #if defined(LEAF_COLLECT_SEARCH_STATS)
                     results.null_zungzwang_detected += score < beta;
 #endif // LEAF_COLLECT_SEARCH_STATS
-                }
+                }*/
 
                 if (score >= beta) {                    
                     return score;
@@ -1486,9 +1482,10 @@ _FORCEINLINE int16_t Search::getRfpQuietHistPenalty(utils::NodeInfo* parent_node
 _FORCEINLINE int Search::getNullSearchDepth(sc::Score eval, sc::Score beta, int depth) {
     const float diff_reduction = std::min(1.31f, static_cast<float>(eval - beta) / NullDiffScale);
     const float diff_scale = 1.5f + 1.f / (diff_reduction - 2.f);
+    const int nmp_depth = std::max<int>(std::lroundf(NullDepthMult * diff_scale * depth / 256), 1);
     // Do not return same depth, we could stuck in a loop
-    assert(NullDepthMult * depth / 256 < depth);
-    return std::max<int>(std::lroundf(NullDepthMult * diff_scale * depth / 256), 1);
+    assert(nmp_depth < depth);
+    return nmp_depth;
 }
 
 _FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
