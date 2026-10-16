@@ -81,7 +81,6 @@ _DEFINE_TUNABLE_PARAMETER(CaptureExtensionReduction, int32_t, 72.7094f, 20.f, 14
 _DEFINE_TUNABLE_PARAMETER(CaptureImprovingReductionRate, int32_t, 27.1306f, 8.f, 55.f, 0.5f);
 _DEFINE_TUNABLE_PARAMETER(EvalHalfMovesEvalLimit, int32_t, 14.4607f, 6.f, 25.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(EvalEgHalfMovesEvalLimit, int32_t, 20.4607f, 6.f, 30.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(NullVerifyDepth, int32_t, 8.9219f, 5.f, 16.f, 1.3f);
 _DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionRate, int32_t, 10.5909f, 8.f, 16.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(MoveCheckExtensionDiv, int32_t, 9.53864f, 8.f, 16.f, 1.4f);
 _DEFINE_TUNABLE_PARAMETER(ImprovingExtensionMateRate, int32_t, 20.3026f, 12.f, 28.f, 1.f);
@@ -89,7 +88,6 @@ _DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionRate, int32_t, 10.4043f, 10.f, 
 _DEFINE_TUNABLE_PARAMETER(MateThreadFracExtensionDiv, int32_t, 16.7514f, 12.f, 26.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 14.2369f, 10.f, 30.f, 1.7f);
 _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionDiv, int32_t, 10.0644f, 10.f, 18.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(NullVerifyDepthMult, int32_t, 15.8f, 6.f, 25.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(ExtensionDepth, int32_t, 15.9831f, 4.f, 32.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepth, int32_t, 3.4227f, 2.f, 8.f, 1.9f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 2.21081f, 1.f, 4.f, 1.2f);
@@ -236,7 +234,6 @@ private:
     int16_t getRfpQuietHistPenalty(utils::NodeInfo* parent_node);
 
     int getNullSearchDepth(sc::Score eval, sc::Score beta, int depth);
-    int getNullVerifyDepth(int nm_depth);
 
     template <bool IsPv>
     _NODISCARD int32_t getMoveReduction(const utils::NodeInfo* node, 

@@ -334,7 +334,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         // Adjust contempt factor based on a corrected evaluation
         const sc::Score corr_eval = correctedEvalScore(eval, prev_best_score);
 
-        _contempt = unstable ? 0 : static_cast<sc::Score::value_type>(corr_eval / ContemptDiv);
+        _contempt = unstable ? 0 : (corr_eval / ContemptDiv).value();
 
         // Inject previous PV line to hash table
         refreshPVinTT(pos, root->pv_line, root->pv_line_len, search_results);
@@ -347,8 +347,7 @@ Move32b Search::goIterativeDeepening(Position& pos,
         sc::Score beta = +sc::Mate;
 
         if (!prev_best_score.isMateScore() and !isTablebaseScore(prev_best_score)) {
-            const sc::Score::value_type prev_best_score_abs = abs<sc::Score::value_type>(
-                                                           static_cast<sc::Score::value_type>(prev_best_score));
+            const sc::Score::value_type prev_best_score_abs = abs<sc::Score::value_type>(prev_best_score.value());
             aspiration_win += prev_best_score_abs * prev_best_score_abs / AspirationWindowScoreDiv;
 
             if (d >= AspirationSearchDepth)    {
@@ -781,24 +780,6 @@ sc::Score Search::nmSearch(Position& pos,
                 if (score <= -sc::MateBound) {
                     node->mate_thread = true;
                 }
-
-                /* Unless Null Move Pruning is not handled properly in the endgame, 
-                *  verification search is just needed to prevent Zugzwang.
-                */
-
-                /*
-                if (score >= beta and nm_depth >= NullVerifyDepth) {
-                    const int verify_depth = getNullVerifyDepth(nm_depth);
-
-                    score = nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, node,
-                                                             beta - 1, beta,
-                                                             verify_depth,
-                                                             ply);
-
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-                    results.null_zungzwang_detected += score < beta;
-#endif // LEAF_COLLECT_SEARCH_STATS
-                }*/
 
                 if (score >= beta) {                    
                     return score;
@@ -1394,8 +1375,7 @@ _FORCEINLINE bool Search::isTablebaseScore(sc::Score score) const {
     static constexpr int16_t TablebaseLowestWinScore = TablebaseWinScore 
                                                           - MaxSelDepth 
                                                           - 15 * TablebasePieceDiffMult;
-    return score.isValid() and abs<sc::Score::value_type>(
-        static_cast<sc::Score::value_type>(score)) >= TablebaseLowestWinScore;
+    return score.isValid() and abs<sc::Score>(score) >= TablebaseLowestWinScore;
 }
 
 _FORCEINLINE sc::Score Search::applyContempt(sc::Score score, const utils::NodeInfo* node) const {
@@ -1486,10 +1466,6 @@ _FORCEINLINE int Search::getNullSearchDepth(sc::Score eval, sc::Score beta, int 
     // Do not return same depth, we could stuck in a loop
     assert(nmp_depth < depth);
     return nmp_depth;
-}
-
-_FORCEINLINE int Search::getNullVerifyDepth(int nm_depth) {
-    return std::max<int>(std::lroundf(static_cast<float>(NullVerifyDepthMult) * nm_depth / 64), 1);
 }
 
 template <bool IsPv>

@@ -1,3 +1,13 @@
+### [commit:0861264] Remove NMP verification search
+```
+Score of leaf-no-nmp-verification vs leaf-master: 520 - 461 - 678  [0.518] 1659
+...      leaf-no-nmp-verification playing White: 290 - 201 - 339  [0.554] 830
+...      leaf-no-nmp-verification playing Black: 230 - 260 - 339  [0.482] 829
+...      White vs Black: 550 - 431 - 678  [0.536] 1659
+Elo difference: 12.4 +/- 12.8, LOS: 97.0 %, DrawRatio: 40.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:df46bdc] IIR
 ```
 Score of leaf-iir-impl vs leaf-v1.0.2: 2322 - 2175 - 3503  [0.509] 8000
