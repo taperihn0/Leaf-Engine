@@ -1359,13 +1359,16 @@ sc::Score Search::probCut(Position& pos,
                           const Move32b tt_move,
                           int depth, int ply)
 {
+    sc::Score prob_beta = beta + 155;
+
     if (node->check or
         depth < 6 or
-        abs<sc::Score>(beta) >= sc::Win) {
+        abs<sc::Score>(beta) >= sc::Win or
+        (!tt_entry.isEmpty() and tt_entry.depth >= depth - 3 and tt_entry.score < prob_beta)) 
+    {
         return sc::Undef;
     }
 
-    sc::Score prob_beta = beta + 155;
     const int see_threshold = node->eval.isValid() ? (prob_beta - node->eval).value() : maxof<int>();
 
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;

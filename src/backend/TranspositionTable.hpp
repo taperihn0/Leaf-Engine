@@ -56,7 +56,7 @@ struct TTEntry {
     uint16_t  key16;
     uint8_t   key18 : 2;
     uint8_t   generation : 6;
-    Bound   bound : 2;
+    Bound     bound : 2;
     uint8_t   depth : 6;
     sc::Score score;
     Move16b   move;
