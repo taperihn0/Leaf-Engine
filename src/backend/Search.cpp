@@ -959,10 +959,10 @@ sc::Score Search::nmSearch(Position& pos,
 
                 next_cluster->prev_cluster = prev_cluster;
 
-                child_node->is_cut = false;
+                child_node->is_cut = node->is_cut;
                 child_node->excluded_move = node->move;
 
-                const sc::Score score = nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
+                const sc::Score score = nmSearch<NON_PV_NODE, false>(pos, limits, results, game, child_node,
                                                                     singular_beta - 1, singular_beta,
                                                                     singular_depth,
                                                                     ply);
