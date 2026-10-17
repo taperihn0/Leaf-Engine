@@ -214,7 +214,17 @@ private:
                       utils::NodeInfo* node, 
                       sc::Score alpha, sc::Score beta, 
                       int depth, int ply);
-    
+
+    sc::Score probCut(Position& pos,
+                      const SearchLimitsWrapper& limits, 
+                      SearchResultsWrapper& results, 
+                      const FullInfoRecord& game, 
+                      utils::NodeInfo* node,
+                      sc::Score beta,
+                      const tt::TTEntry& tt_entry,
+                      const Move32b tt_move,
+                      int depth, int ply);
+
     sc::Score getDrawScore(const utils::NodeInfo* node) const;
     sc::Score getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl, 
                                 const Position& pos, 

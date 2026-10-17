@@ -650,11 +650,11 @@ sc::Score Search::nmSearch(Position& pos,
     *  when no hash move is found for a node, then it is 
     *  not particulary interesting, so reduce it.
     */
-    if ((IsPv or node->is_cut) and 
-        (depth >= IirDepth and tt_move.isNullMove()
-       )) 
-    {
-        --depth;
+    if constexpr (!Root) {
+        if ((IsPv or node->is_cut) and 
+            (depth >= IirDepth and tt_move.isNullMove()
+        )) 
+            --depth;
     }
         
     if constexpr (!Root and !IsPv) {
@@ -781,12 +781,26 @@ sc::Score Search::nmSearch(Position& pos,
                     node->mate_thread = true;
                 }
 
-                if (score >= beta) {                    
+                if (score >= beta) {
                     return score;
                 }
             }
         }
-    }
+
+        /* Probcut
+        */
+
+        const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
+                                                beta, 
+                                                tt_entry, 
+                                                tt_move,
+                                                depth, 
+                                                ply);
+        
+        if (probcut_score.isValid()) {
+            return probcut_score;
+        }
+    }    
 
     uint64_t parent_hash_of_killer = ZHash::Undef;
     const uint64_t parent_hash = Root ? ZHash::Undef : parent_node->state.hash_key;
@@ -1200,7 +1214,7 @@ sc::Score Search::qSearch(Position& pos,
                                      results);
 #endif // _TT_PROBE_QSEARCH
 
-    node->check = pos.isInCheck(!node->side2move);
+    node->check = pos.isInCheck(!node->side2move); // @TODO: !!! 
 
     /* Delta Pruning -
     *  when no move has any chance to raise alpha
@@ -1332,7 +1346,81 @@ sc::Score Search::qSearch(Position& pos,
     }
 
     return node->best_score != -sc::Infinity ? node->best_score 
-                                                : alpha;
+                                             : alpha;
+}
+
+sc::Score Search::probCut(Position& pos,
+                          const SearchLimitsWrapper& limits, 
+                          SearchResultsWrapper& results, 
+                          const FullInfoRecord& game, 
+                          utils::NodeInfo* node,
+                          sc::Score beta,
+                          const tt::TTEntry& tt_entry,
+                          const Move32b tt_move,
+                          int depth, int ply)
+{
+    if (node->check or
+        depth < 6 or
+        abs<sc::Score>(beta) >= sc::Win) {
+        return sc::Undef;
+    }
+
+    sc::Score prob_beta = beta + 155;
+    const int see_threshold = node->eval.isValid() ? (prob_beta - node->eval).value() : maxof<int>();
+
+    nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+    utils::NodeInfo* const child_node = node + 1;
+
+    node->move_picker.clear();
+    node->move_picker.setHashMove(tt_move);
+    node->state = pos.getReversibleState();
+
+    for (node->move_index = 0; 
+         node->move_picker.nextMoveWithPolicy<mvo::STAGED, false>(node, pos, node->move, node->move_score, ply);
+         node->move_index++) 
+    {
+        const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
+        _tt.prefetchBucket(next_hash);
+
+        if (node->move.isUnderPromotion() or
+            (see_threshold != maxof<int>() and 
+             pos.badStaticExchangeEval(node->move, see_threshold))
+           )
+            continue;
+
+        if (!pos.make(node->move, accum_cache)) {
+            pos.unmake(node->move, node->state);
+            continue;
+        }
+
+        child_node->check = pos.isInCheck(!node->side2move);
+        child_node->is_cut = !node->is_cut;
+
+        sc::Score score = -qSearch<NON_PV_NODE, false>(pos, limits, results, child_node, 
+                                                       -prob_beta, -prob_beta + 1, 
+                                                       0, 
+                                                       ply + 1);
+
+        if (score >= prob_beta) {
+            const int prob_research_depth = depth - 4;
+            score = -nmSearch<NON_PV_NODE, false>(pos, limits, results, game, child_node, 
+                                                  -prob_beta, -prob_beta + 1, 
+                                                  prob_research_depth, 
+                                                  ply + 1);
+        }
+
+        pos.unmake(node->move, node->state);
+
+        if (score >= prob_beta) {
+            _tt.write(node->state.hash_key,
+                      depth - 3, ply, 
+                      tt::Bound::LOWER, 
+                      score, packedMove(node->move), node->eval);
+            return score;
+        }
+    }
+
+    return sc::Undef;
 }
 
 _FORCEINLINE sc::Score Search::getDrawScore(const utils::NodeInfo* node) const {
@@ -1438,6 +1526,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     return result;
 }
 
+// TODO: why?
 _FORCEINLINE sc::Score Search::correctedEvalScore(sc::Score eval, sc::Score score) {
     assert(eval.isValid());
 
