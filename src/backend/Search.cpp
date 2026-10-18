@@ -631,20 +631,22 @@ sc::Score Search::nmSearch(Position& pos,
     }
 
     node->move = NullMove;
-    node->eval = tt_entry.eval;
     node->state = pos.getReversibleState();
     node->improving = 0;
     node->mate_thread = false;
+    
+    Move32b tt_move = unpackedMove(pos, tt_entry.move);
+    const bool pseudo_legal_tt_move = tt_move.isPseudoLegal(pos);
 
-    if (!node->eval.isValid()) {
+    tt_move = pseudo_legal_tt_move ? tt_move : NullMove;
+    node->eval = pseudo_legal_tt_move and tt_entry.eval.isValid() ? tt_entry.eval : sc::Undef;
+
+    if (!node->check) {
         node->eval = evaluate<NmNodeType>(pos, 
                                           node,
                                           node->side2move, 
                                           results);
     }
-
-    Move32b tt_move = unpackedMove(pos, tt_entry.move);
-    tt_move = tt_move.isPseudoLegal(pos) ? tt_move : NullMove;
 
     /* Internal Iterative Reductions -
     *  when no hash move is found for a node, then it is 
@@ -928,8 +930,7 @@ sc::Score Search::nmSearch(Position& pos,
                 !tt_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
                 tt_entry.bound == tt::Bound::LOWER and
-                tt_entry.score < sc::Win and
-                tt_entry.score > -sc::Win) 
+                abs<sc::Score>(tt_entry.score) < sc::Win) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
                 const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
@@ -1206,7 +1207,6 @@ sc::Score Search::qSearch(Position& pos,
     results.seldepth = std::max(results.seldepth, ply + 1);
 
     node->check = pos.isInCheck(node->side2move);
-    node->eval = sc::Undef;
 
 #if defined(_TT_PROBE_QSEARCH)
     node->eval = !tt_entry.eval.isValid() ? evaluate<QNodeType>(pos, 
@@ -1262,8 +1262,7 @@ sc::Score Search::qSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
 
         const Move32b ttm32b = unpackedMove(pos, tt_entry.move);
-        tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b 
-                                            : NullMove;
+        tt_move = ttm32b.isPseudoLegal(pos) ? ttm32b : NullMove;
         node->move_picker.setHashMove(tt_move);
     }
 #endif // _TT_PROBE_QSEARCH
