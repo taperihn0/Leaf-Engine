@@ -526,7 +526,7 @@ sc::Score Search::nmSearch(Position& pos,
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
 
     if constexpr (!Root and !IsPv) {
-        if (tt_hit) {
+        if (tt_hit and node->excluded_move.isNullMove()) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.tt_cut_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
@@ -662,8 +662,31 @@ sc::Score Search::nmSearch(Position& pos,
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
     if constexpr (!Root and !IsPv) {
-        if (!node->check and 
-            node->excluded_move.isNullMove()) {
+
+        /* Dynamic Improving implementation -
+        *  we're clamping improvement rate to range [-FixedPointMult, +FixedPointMult]
+        */
+        if (!node->check) {
+            const utils::NodeInfo* prev_eval_node = nullptr;
+
+            if (const utils::NodeInfo* s2m_node = node - 2; 
+                node - preroot > 2 and 
+                s2m_node->eval.isValid())
+                prev_eval_node = s2m_node;
+
+            else if (const utils::NodeInfo* s2m_node = node - 4; 
+                    node - preroot > 4 and 
+                    s2m_node->eval.isValid())
+                prev_eval_node = node - 4;
+        
+            if (prev_eval_node) {
+                const int64_t diff = static_cast<int64_t>(node->eval - prev_eval_node->eval);
+                node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
+                                                      -FixedPointMult, FixedPointMult);
+            }
+        }
+
+        if (!node->check and node->excluded_move.isNullMove()) {
 
             /* Razoring -
             *  if we're at lower depth and the eval is really low
@@ -671,8 +694,7 @@ sc::Score Search::nmSearch(Position& pos,
             *  To ensure our intuition, we dive into quiescence search to verify the position.
             *  If we fail low, we've got a cutoff.
             */
-            if (!node->check and
-                depth <= RazorDepth and
+            if (depth <= RazorDepth and
                 beta < RazorBetaLimit and
                 !grandparent_node->mate_thread and 
                 tt_entry.score < sc::Win and
@@ -694,35 +716,11 @@ sc::Score Search::nmSearch(Position& pos,
                 }
             }
 
-            /* Dynamic Improving implementation -
-            *  we're clamping improvement rate to range [-FixedPointMult, +FixedPointMult]
-            */
-            if (!node->check) {
-                const utils::NodeInfo* prev_eval_node = nullptr;
-
-                if (const utils::NodeInfo* s2m_node = node - 2; 
-                    node - preroot > 2 and 
-                    s2m_node->eval.isValid())
-                    prev_eval_node = s2m_node;
-
-                else if (const utils::NodeInfo* s2m_node = node - 4; 
-                        node - preroot > 4 and 
-                        s2m_node->eval.isValid())
-                    prev_eval_node = node - 4;
-            
-                if (prev_eval_node) {
-                    const int64_t diff = static_cast<int64_t>(node->eval - prev_eval_node->eval);
-                    node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
-                                                          -FixedPointMult, FixedPointMult);
-                }
-            }
-
             /* Reverse Futility Pruning (Static Null Move Pruning) -
             *  basically, when we're doing very well, we can prune.
             *  Idea similar to Standing Pat cutoff in Q-Search.
             */
-            if (!node->check and
-                depth <= RfpDepth and
+            if (depth <= RfpDepth and
                 !grandparent_node->mate_thread and
                 (tt_move.isNullMove() or tt_move.isQuiet()))
             {            
@@ -795,7 +793,6 @@ sc::Score Search::nmSearch(Position& pos,
                 *  with more shallow depth. If we're higher in beta with some threshold then
                 *  it is likely we will have beta cutoff. 
                 */
-
                 const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
                                                         beta, 
                                                         tt_entry, 
@@ -927,7 +924,7 @@ sc::Score Search::nmSearch(Position& pos,
                 node->move == tt_move and
                 node->excluded_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
-                (tt_entry.bound == tt::Bound::LOWER and
+                (tt_entry.bound == tt::Bound::LOWER or
                  tt_entry.bound == tt::Bound::EXACT) and
                 abs<sc::Score>(tt_entry.score) < sc::Win) 
             {
