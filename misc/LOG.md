@@ -1,3 +1,13 @@
+### [commit:f4dd671] Disable eval score when in check & bugfix - proper check flag in qSearch
+```
+Score of leaf-eval-usage-fix vs leaf-master: 483 - 455 - 683  [0.509] 1621
+...      leaf-eval-usage-fix playing White: 274 - 207 - 330  [0.541] 811
+...      leaf-eval-usage-fix playing Black: 209 - 248 - 353  [0.476] 810
+...      White vs Black: 522 - 416 - 683  [0.533] 1621
+Elo difference: 6.0 +/- 12.9, LOS: 82.0 %, DrawRatio: 42.1 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:4c3dfd6] Probcut
 ```
 Score of leaf-procut-1 vs leaf-master: 1332 - 1231 - 1941  [0.511] 4504
