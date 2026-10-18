@@ -1202,8 +1202,11 @@ sc::Score Search::qSearch(Position& pos,
 #endif // _TT_PROBE_QSEARCH
 
     results.nodes_cnt++;
-    results.seldepth = std::max(results.seldepth, ply + 1);
     results.qnodes_cnt++;
+    results.seldepth = std::max(results.seldepth, ply + 1);
+
+    node->check = pos.isInCheck(node->side2move);
+    node->eval = sc::Undef;
 
 #if defined(_TT_PROBE_QSEARCH)
     node->eval = !tt_entry.eval.isValid() ? evaluate<QNodeType>(pos, 
@@ -1218,15 +1221,13 @@ sc::Score Search::qSearch(Position& pos,
                                      results);
 #endif // _TT_PROBE_QSEARCH
 
-    node->check = pos.isInCheck(!node->side2move); // @TODO: !!! 
-
     /* Delta Pruning -
     *  when no move has any chance to raise alpha
     *  then prune all of the branches.
     */
-    if (node->eval + QMaterialDelta < alpha and 
-        pos.getNonPawnMaterial() > 0 and
-        !node->check) 
+    if (!node->check and
+        node->eval + QMaterialDelta < alpha and 
+        pos.getNonPawnMaterial() > 0) 
     {
         const sc::Score delta_value = (static_cast<int32_t>(alpha)      * (128 - QDeltaPruningEvalWeight) + 
                                        static_cast<int32_t>(node->eval) * QDeltaPruningEvalWeight) / 128;

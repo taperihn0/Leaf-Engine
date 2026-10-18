@@ -1,3 +1,13 @@
+### [commit:4c3dfd6] Probcut
+```
+Score of leaf-procut-1 vs leaf-master: 1332 - 1231 - 1941  [0.511] 4504
+...      leaf-procut-1 playing White: 712 - 552 - 988  [0.536] 2252
+...      leaf-procut-1 playing Black: 620 - 679 - 953  [0.487] 2252
+...      White vs Black: 1391 - 1172 - 1941  [0.524] 4504
+Elo difference: 7.8 +/- 7.6, LOS: 97.7 %, DrawRatio: 43.1 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:0861264] Remove NMP verification search
 ```
 Score of leaf-no-nmp-verification vs leaf-master: 520 - 461 - 678  [0.518] 1659
