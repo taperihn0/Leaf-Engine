@@ -657,6 +657,8 @@ sc::Score Search::nmSearch(Position& pos,
             --depth;
     }
         
+    nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+
     if constexpr (!Root and !IsPv) {
 
         /* Razoring -
@@ -731,76 +733,74 @@ sc::Score Search::nmSearch(Position& pos,
                 return rfp_value;
             }
         }
-    }
 
-    nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
+        /* Null Move Pruning -
+        *  if we're doing so well even after not making a move, we must be winning here.
+        *  So we can do beta cutoff.
+        */
+        if constexpr (AllowNullMove) {
+            if (!node->check and 
+                depth >= NullDepth and
+                pos.getNonPawnMaterial() > 0 and
+                abs<sc::Score>(beta) < sc::Win) 
+            {
+                const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
+                const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
 
-    /* Null Move Pruning -
-    *  if we're doing so well even after not making a move, we must be winning here.
-    *  So we can do beta cutoff.
-    */
-    if constexpr (!Root and !IsPv and AllowNullMove) {
-        if (!node->check and 
-            depth >= NullDepth and
-            pos.getNonPawnMaterial() > 0 and
-            abs<sc::Score>(beta) < sc::Win) 
-        {
-            const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
-            const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
+                if (node->eval - nmp_margin >= beta) {    
+                    assert(parent_node->move != NullMove);
+                    
+    #if defined(LEAF_COLLECT_SEARCH_STATS)
+                    results.null_moves_cnt++;
+    #endif // LEAF_COLLECT_SEARCH_STATS
 
-            if (node->eval - nmp_margin >= beta) {    
-                assert(parent_node->move != NullMove);
-                
-#if defined(LEAF_COLLECT_SEARCH_STATS)
-                results.null_moves_cnt++;
-#endif // LEAF_COLLECT_SEARCH_STATS
+                    pos.makeNull(node->state, accum_cache);
 
-                pos.makeNull(node->state, accum_cache);
+                    utils::AccumulatorCluster* const curr_cluster = &node->cluster;
+                    utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
+                    utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
 
-                utils::AccumulatorCluster* const curr_cluster = &node->cluster;
-                utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
-                utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
+                    assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
 
-                assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
+                    node->move = NullMove;
+                    next_cluster->prev_cluster = prev_cluster;
+                    
+                    const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
 
-                node->move = NullMove;
-                next_cluster->prev_cluster = prev_cluster;
-                
-                const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
+                    child_node->is_cut = !node->is_cut;
 
-                child_node->is_cut = !node->is_cut;
+                    sc::Score score = -nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, child_node,
+                                                                            -beta, -beta + 1, 
+                                                                            nm_depth, 
+                                                                            ply + 1);
+                    pos.unmakeNull(node->state);
+                    next_cluster->prev_cluster = curr_cluster;
 
-                sc::Score score = -nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, child_node,
-                                                                         -beta, -beta + 1, 
-                                                                         nm_depth, 
-                                                                         ply + 1);
-                pos.unmakeNull(node->state);
-                next_cluster->prev_cluster = curr_cluster;
+                    if (score <= -sc::MateBound) {
+                        node->mate_thread = true;
+                    }
 
-                if (score <= -sc::MateBound) {
-                    node->mate_thread = true;
-                }
-
-                if (score >= beta) {
-                    return score;
+                    if (score >= beta) {
+                        return score;
+                    }
                 }
             }
-        }
 
-        /* Probcut
-        */
+            /* Probcut
+            */
 
-        const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
-                                                beta, 
-                                                tt_entry, 
-                                                tt_move,
-                                                depth, 
-                                                ply);
-        
-        if (probcut_score.isValid()) {
-            return probcut_score;
+            const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
+                                                    beta, 
+                                                    tt_entry, 
+                                                    tt_move,
+                                                    depth, 
+                                                    ply);
+            
+            if (probcut_score.isValid()) {
+                return probcut_score;
+            }
         }
-    }    
+    }
 
     uint64_t parent_hash_of_killer = ZHash::Undef;
     const uint64_t parent_hash = Root ? ZHash::Undef : parent_node->state.hash_key;
@@ -1405,7 +1405,7 @@ sc::Score Search::probCut(Position& pos,
                                                        ply + 1);
 
         if (score >= prob_beta) {
-            const int prob_research_depth = depth - 4;
+            const int prob_research_depth = depth - 5;
             score = -nmSearch<NON_PV_NODE, false>(pos, limits, results, game, child_node, 
                                                   -prob_beta, -prob_beta + 1, 
                                                   prob_research_depth, 
@@ -1416,7 +1416,7 @@ sc::Score Search::probCut(Position& pos,
 
         if (score >= prob_beta) {
             _tt.write(node->state.hash_key,
-                      depth - 3, ply, 
+                      depth - 4, ply, 
                       tt::Bound::LOWER, 
                       score, packedMove(node->move), node->eval);
             return score;
