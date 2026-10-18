@@ -119,6 +119,10 @@ _DEFINE_TUNABLE_PARAMETER(QBetaCutoffEvalWeight, int32_t, 124.406f, 0.f, 128.f, 
 _DEFINE_TUNABLE_PARAMETER(QuietMoveScoreReductionRate, int32_t, 2420.91f, 2300.f, 2500.f, 0.2f);
 _DEFINE_TUNABLE_PARAMETER(CaptureMoveScoreReductionRate, int32_t, 11.4842f, 7.f, 15.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(QuietDepthShiftMult, int32_t, 257.727f, 200.f, 300.f, 0.2f);
+_DEFINE_TUNABLE_PARAMETER(ProbBetaMargin, int32_t, 155.f, 120.f, 190.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER(ProbDepthThreshold, int32_t, 6.f, 4.f, 8.f, 1.5f);
+_DEFINE_TUNABLE_PARAMETER(ProbHashDepthDiffThreshold, int32_t, 3.f, 1.f, 4.f, 1.7f);
+_DEFINE_TUNABLE_PARAMETER(ProbDepthReduction, int32_t, 5.f, 3.f, 7.f, 1.5f);
 
 /* Static parameters -
 *  These are not tuned.

@@ -738,6 +738,7 @@ sc::Score Search::nmSearch(Position& pos,
         *  if we're doing so well even after not making a move, we must be winning here.
         *  So we can do beta cutoff.
         */
+
         if constexpr (AllowNullMove) {
             if (!node->check and 
                 depth >= NullDepth and
@@ -786,7 +787,10 @@ sc::Score Search::nmSearch(Position& pos,
                 }
             }
 
-            /* Probcut
+            /* Probcut -
+            *  we can estimate further score down in tree by searching current position
+            *  with more shallow depth. If we're higher in beta with some threshold then
+            *  it is likely we will have beta cutoff. 
             */
 
             const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
@@ -1359,12 +1363,15 @@ sc::Score Search::probCut(Position& pos,
                           const Move32b tt_move,
                           int depth, int ply)
 {
-    sc::Score prob_beta = beta + 155;
+    const sc::Score prob_beta = beta + ProbBetaMargin;
 
     if (node->check or
-        depth < 6 or
+        depth < ProbDepthThreshold or
         abs<sc::Score>(beta) >= sc::Win or
-        (!tt_entry.isEmpty() and tt_entry.depth >= depth - 3 and tt_entry.score < prob_beta)) 
+        (!tt_entry.isEmpty() and 
+         tt_entry.depth >= depth - ProbHashDepthDiffThreshold and 
+         tt_entry.score < prob_beta
+        )) 
     {
         return sc::Undef;
     }
@@ -1405,7 +1412,7 @@ sc::Score Search::probCut(Position& pos,
                                                        ply + 1);
 
         if (score >= prob_beta) {
-            const int prob_research_depth = depth - 5;
+            const int prob_research_depth = depth - ProbDepthReduction;
             score = -nmSearch<NON_PV_NODE, false>(pos, limits, results, game, child_node, 
                                                   -prob_beta, -prob_beta + 1, 
                                                   prob_research_depth, 
@@ -1416,7 +1423,7 @@ sc::Score Search::probCut(Position& pos,
 
         if (score >= prob_beta) {
             _tt.write(node->state.hash_key,
-                      depth - 4, ply, 
+                      depth - ProbDepthReduction + 1, ply, 
                       tt::Bound::LOWER, 
                       score, packedMove(node->move), node->eval);
             return score;
