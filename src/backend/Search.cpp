@@ -526,7 +526,7 @@ sc::Score Search::nmSearch(Position& pos,
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
 
     if constexpr (!Root and !IsPv) {
-        if (tt_hit and node->excluded_move.isNullMove()) {
+        if (tt_hit) {
 #if defined(LEAF_COLLECT_SEARCH_STATS)
             results.tt_cut_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
@@ -741,8 +741,7 @@ sc::Score Search::nmSearch(Position& pos,
             *  So we can do beta cutoff.
             */
             if constexpr (AllowNullMove) {
-                if (!node->check and 
-                    depth >= NullDepth and
+                if (depth >= NullDepth and
                     pos.getNonPawnMaterial() > 0 and
                     abs<sc::Score>(beta) < sc::Win) 
                 {
@@ -787,22 +786,24 @@ sc::Score Search::nmSearch(Position& pos,
                         }
                     }
                 }
+            }
+        }
 
-                /* Probcut -
-                *  we can estimate further score down in tree by searching current position
-                *  with more shallow depth. If we're higher in beta with some threshold then
-                *  it is likely we will have beta cutoff. 
-                */
-                const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
-                                                        beta, 
-                                                        tt_entry, 
-                                                        tt_move,
-                                                        depth, 
-                                                        ply);
-                
-                if (probcut_score.isValid()) {
-                    return probcut_score;
-                }
+        /* Probcut -
+        *  we can estimate further score down in tree by searching current position
+        *  with more shallow depth. If we're higher in beta with some threshold then
+        *  it is likely we will have beta cutoff. 
+        */
+        if constexpr (AllowNullMove) {
+            const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
+                                                    beta, 
+                                                    tt_entry, 
+                                                    tt_move,
+                                                    depth, 
+                                                    ply);
+            
+            if (probcut_score.isValid()) {
+                return probcut_score;
             }
         }
     }
@@ -1413,7 +1414,8 @@ sc::Score Search::probCut(Position& pos,
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
 
-        if (node->move.isUnderPromotion() or
+        if (node->move == node->excluded_move or
+            node->move.isUnderPromotion() or
             (see_threshold != maxof<int>() and 
              pos.badStaticExchangeEval(node->move, see_threshold))
            )
