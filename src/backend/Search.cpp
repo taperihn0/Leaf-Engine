@@ -662,148 +662,150 @@ sc::Score Search::nmSearch(Position& pos,
     nn::AccumulatorCache* const accum_cache = &node->cluster.accum_cache;
 
     if constexpr (!Root and !IsPv) {
+        if (!node->check and 
+            node->excluded_move.isNullMove()) {
 
-        /* Razoring -
-        *  if we're at lower depth and the eval is really low
-        *  it means there is high probability no move can increase the beta bar.
-        *  To ensure our intuition, we dive into quiescence search to verify the position.
-        *  If we fail low, we've got a cutoff.
-        */
-        if (!node->check and
-            depth <= RazorDepth and
-            beta < RazorBetaLimit and
-            !grandparent_node->mate_thread and 
-            tt_entry.score < sc::Win and
-            tt_entry.score > -sc::Win and
-            (tt_move.isNullMove() or tt_move.isQuiet()))
-        {            
-            const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
-            const int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
-
-            if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
-                const sc::Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
-                                                                             beta - 1, beta,
-                                                                             depth - 1,
-                                                                             ply);
-                
-                if (qscore < beta) {
-                    return qscore;
-                }
-            }
-        }
-
-        /* Dynamic Improving implementation -
-        *  we're clamping improvement rate to range [-FixedPointMult, +FixedPointMult]
-        */
-        if (!node->check) {
-            const utils::NodeInfo* prev_eval_node = nullptr;
-
-            if (const utils::NodeInfo* s2m_node = node - 2; 
-                node - preroot > 2 and 
-                s2m_node->eval.isValid())
-                prev_eval_node = s2m_node;
-
-            else if (const utils::NodeInfo* s2m_node = node - 4; 
-                    node - preroot > 4 and 
-                    s2m_node->eval.isValid())
-                prev_eval_node = node - 4;
-        
-            if (prev_eval_node) {
-                const int64_t diff = static_cast<int64_t>(node->eval - prev_eval_node->eval);
-                node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
-                                                      -FixedPointMult, FixedPointMult);
-            }
-        }
-
-        /* Reverse Futility Pruning (Static Null Move Pruning) -
-        *  basically, when we're doing very well, we can prune.
-        *  Idea similar to Standing Pat cutoff in Q-Search.
-        */
-        if (!node->check and
-            depth <= RfpDepth and
-            !grandparent_node->mate_thread and
-            (tt_move.isNullMove() or tt_move.isQuiet()))
-        {            
-            const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
-
-            const int32_t rfp_improving_scale = RfpImprovingSinkMult * -node->improving / 256 + FixedPointMult;
-            const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / FixedPointMult);
-
-            if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
-                const sc::Score rfp_value = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
-                                             static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
-                return rfp_value;
-            }
-        }
-
-        /* Null Move Pruning -
-        *  if we're doing so well even after not making a move, we must be winning here.
-        *  So we can do beta cutoff.
-        */
-
-        if constexpr (AllowNullMove) {
-            if (!node->check and 
-                depth >= NullDepth and
-                pos.getNonPawnMaterial() > 0 and
-                abs<sc::Score>(beta) < sc::Win) 
-            {
-                const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
-                const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
-
-                if (node->eval - nmp_margin >= beta) {    
-                    assert(parent_node->move != NullMove);
-                    
-    #if defined(LEAF_COLLECT_SEARCH_STATS)
-                    results.null_moves_cnt++;
-    #endif // LEAF_COLLECT_SEARCH_STATS
-
-                    pos.makeNull(node->state, accum_cache);
-
-                    utils::AccumulatorCluster* const curr_cluster = &node->cluster;
-                    utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
-                    utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
-
-                    assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
-
-                    node->move = NullMove;
-                    next_cluster->prev_cluster = prev_cluster;
-                    
-                    const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
-
-                    child_node->is_cut = !node->is_cut;
-
-                    sc::Score score = -nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, child_node,
-                                                                            -beta, -beta + 1, 
-                                                                            nm_depth, 
-                                                                            ply + 1);
-                    pos.unmakeNull(node->state);
-                    next_cluster->prev_cluster = curr_cluster;
-
-                    if (score <= -sc::MateBound) {
-                        node->mate_thread = true;
-                    }
-
-                    if (score >= beta) {
-                        return score;
-                    }
-                }
-            }
-
-            /* Probcut -
-            *  we can estimate further score down in tree by searching current position
-            *  with more shallow depth. If we're higher in beta with some threshold then
-            *  it is likely we will have beta cutoff. 
+            /* Razoring -
+            *  if we're at lower depth and the eval is really low
+            *  it means there is high probability no move can increase the beta bar.
+            *  To ensure our intuition, we dive into quiescence search to verify the position.
+            *  If we fail low, we've got a cutoff.
             */
+            if (!node->check and
+                depth <= RazorDepth and
+                beta < RazorBetaLimit and
+                !grandparent_node->mate_thread and 
+                tt_entry.score < sc::Win and
+                tt_entry.score > -sc::Win and
+                (tt_move.isNullMove() or tt_move.isQuiet()))
+            {            
+                const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
+                const int32_t corr_eval = static_cast<int32_t>(correctedEvalScore(node->eval, tt_entry.score));
 
-            const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
-                                                    beta, 
-                                                    tt_entry, 
-                                                    tt_move,
-                                                    depth, 
-                                                    ply);
+                if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
+                    const sc::Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
+                                                                                beta - 1, beta,
+                                                                                depth - 1,
+                                                                                ply);
+                    
+                    if (qscore < beta) {
+                        return qscore;
+                    }
+                }
+            }
+
+            /* Dynamic Improving implementation -
+            *  we're clamping improvement rate to range [-FixedPointMult, +FixedPointMult]
+            */
+            if (!node->check) {
+                const utils::NodeInfo* prev_eval_node = nullptr;
+
+                if (const utils::NodeInfo* s2m_node = node - 2; 
+                    node - preroot > 2 and 
+                    s2m_node->eval.isValid())
+                    prev_eval_node = s2m_node;
+
+                else if (const utils::NodeInfo* s2m_node = node - 4; 
+                        node - preroot > 4 and 
+                        s2m_node->eval.isValid())
+                    prev_eval_node = node - 4;
             
-            if (probcut_score.isValid()) {
-                return probcut_score;
+                if (prev_eval_node) {
+                    const int64_t diff = static_cast<int64_t>(node->eval - prev_eval_node->eval);
+                    node->improving = std::clamp<int32_t>(prev_eval_node->improving + diff * FixedPointMult / ImprovingRate, 
+                                                          -FixedPointMult, FixedPointMult);
+                }
+            }
+
+            /* Reverse Futility Pruning (Static Null Move Pruning) -
+            *  basically, when we're doing very well, we can prune.
+            *  Idea similar to Standing Pat cutoff in Q-Search.
+            */
+            if (!node->check and
+                depth <= RfpDepth and
+                !grandparent_node->mate_thread and
+                (tt_move.isNullMove() or tt_move.isQuiet()))
+            {            
+                const int16_t quiet_penalty = getRfpQuietHistPenalty(parent_node);
+
+                const int32_t rfp_improving_scale = RfpImprovingSinkMult * -node->improving / 256 + FixedPointMult;
+                const int16_t rfp_margin = quiet_penalty + static_cast<int16_t>(rfp_improving_scale * RfpMultDelta * depth / FixedPointMult);
+
+                if (node->eval - std::max<int16_t>(rfp_margin, RfpMarginThreshold) >= beta) {
+                    const sc::Score rfp_value = (static_cast<int32_t>(node->eval) * (128 - RfpReturnValueWeight) + 
+                                                static_cast<int32_t>(beta)       * RfpReturnValueWeight) / 128;
+                    return rfp_value;
+                }
+            }
+
+            /* Null Move Pruning -
+            *  if we're doing so well even after not making a move, we must be winning here.
+            *  So we can do beta cutoff.
+            */
+            if constexpr (AllowNullMove) {
+                if (!node->check and 
+                    depth >= NullDepth and
+                    pos.getNonPawnMaterial() > 0 and
+                    abs<sc::Score>(beta) < sc::Win) 
+                {
+                    const int32_t nmp_improving_scale = NullImprovingSinkMult * -node->improving / 256 + FixedPointMult;
+                    const int16_t nmp_margin = static_cast<int16_t>(nmp_improving_scale * NullMargin * depth / FixedPointMult);
+
+                    if (node->eval - nmp_margin >= beta) {    
+                        assert(parent_node->move != NullMove);
+                        
+        #if defined(LEAF_COLLECT_SEARCH_STATS)
+                        results.null_moves_cnt++;
+        #endif // LEAF_COLLECT_SEARCH_STATS
+
+                        pos.makeNull(node->state, accum_cache);
+
+                        utils::AccumulatorCluster* const curr_cluster = &node->cluster;
+                        utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
+                        utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
+
+                        assert(curr_cluster->prev_cluster->next_cluster == curr_cluster);
+
+                        node->move = NullMove;
+                        next_cluster->prev_cluster = prev_cluster;
+                        
+                        const int nm_depth = getNullSearchDepth(node->eval, beta, depth);
+
+                        child_node->is_cut = !node->is_cut;
+
+                        sc::Score score = -nmSearch<NON_PV_NODE, !AllowNullMove>(pos, limits, results, game, child_node,
+                                                                                -beta, -beta + 1, 
+                                                                                nm_depth, 
+                                                                                ply + 1);
+                        pos.unmakeNull(node->state);
+                        next_cluster->prev_cluster = curr_cluster;
+
+                        if (score <= -sc::MateBound) {
+                            node->mate_thread = true;
+                        }
+
+                        if (score >= beta) {
+                            return score;
+                        }
+                    }
+                }
+
+                /* Probcut -
+                *  we can estimate further score down in tree by searching current position
+                *  with more shallow depth. If we're higher in beta with some threshold then
+                *  it is likely we will have beta cutoff. 
+                */
+
+                const sc::Score probcut_score = probCut(pos, limits, results, game, node, 
+                                                        beta, 
+                                                        tt_entry, 
+                                                        tt_move,
+                                                        depth, 
+                                                        ply);
+                
+                if (probcut_score.isValid()) {
+                    return probcut_score;
+                }
             }
         }
     }
@@ -847,12 +849,17 @@ sc::Score Search::nmSearch(Position& pos,
         */
         if constexpr (Root and OrderPolicy == mvo::ONCE_GEN_LEGAL) {
             if (!limits.analysis_mode and 
-                node->move_picker.getTotalMoves<OrderPolicy>() == 1) {
+                node->move_picker.getTotalStagedMoves() == 1) 
+            {
+                assert(node->move != node->excluded_move);
                 results.score_cp = sc::Undef;
                 node->best_move = node->move;
                 return sc::Undef;
             }
         }
+
+        if (node->move == node->excluded_move)
+            continue;
 
         const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
         _tt.prefetchBucket(next_hash);
@@ -863,7 +870,8 @@ sc::Score Search::nmSearch(Position& pos,
         if constexpr (!Root and !IsPv) {
             if (!node->check and 
                 !node->mate_thread and
-                alpha < sc::MateBound)
+                alpha < sc::MateBound and
+                node->can_move)
             {
                 /* Static Exchange Evaluation Pruning -
                 *  prune bad moves accoring to SEE score.
@@ -904,49 +912,50 @@ sc::Score Search::nmSearch(Position& pos,
             }
         }
 
-        if (!pos.make(node->move, accum_cache)) {
-            pos.unmake(node->move, node->state);
-            continue;
-        }
-
-        node->can_move = true;
-
-        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
-
         int32_t move_extension = 0;
         int32_t move_reduction = 0;
 
         /* Singular Move Extension -
         *  when we got some relatively strong move from TT,
-        *  we try to search it with reduced depth.
+        *  we re-search current position exluding that particular strong move.
         *  When we observe score below beta, we can assume that 
-        *  reducing that move might be dangerous (horizon effect).
-        *  If so, we try to include another extension.
+        *  given move is truly singular.
         */
         if constexpr (!Root) {
             if (depth >= SingularDepth and
                 !node->check and
                 node->move == tt_move and
-                !tt_move.isNullMove() and
+                node->excluded_move.isNullMove() and
                 tt_entry.depth >= depth - SingularDepthMargin and
-                tt_entry.bound == tt::Bound::LOWER and
+                (tt_entry.bound == tt::Bound::LOWER and
+                 tt_entry.bound == tt::Bound::EXACT) and
                 abs<sc::Score>(tt_entry.score) < sc::Win) 
             {
                 const int singular_depth = std::max<int>((SingularDepthMult * depth - SingularDepthBase) / 256, 1);
-                const sc::Score singular_beta = std::max<int16_t>(-sc::MateBound.value() / 2, 
-                                                                  static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16);
+                const sc::Score singular_beta = std::max<int16_t>(static_cast<int>(tt_entry.score) - SingularBetaDepthMult * depth / 16,
+                                                                  -sc::MateBound.value() / 2);
 
-                child_node->is_cut = !node->is_cut;
+                utils::AccumulatorCluster* const curr_cluster = &node->cluster;
+                utils::AccumulatorCluster* const next_cluster = curr_cluster->next_cluster;
+                utils::AccumulatorCluster* const prev_cluster = curr_cluster->prev_cluster;
 
-                const sc::Score score = -nmSearch<NON_PV_NODE, true>(pos, limits, results, game, child_node,
-                                                                     -singular_beta, -singular_beta + 1,
-                                                                     singular_depth,
-                                                                     ply + 1);
+                next_cluster->prev_cluster = prev_cluster;
+
+                child_node->is_cut = node->is_cut;
+                child_node->excluded_move = node->move;
+
+                const sc::Score score = nmSearch<NON_PV_NODE, false>(pos, limits, results, game, child_node,
+                                                                    singular_beta - 1, singular_beta,
+                                                                    singular_depth,
+                                                                    ply);
+
+                child_node->excluded_move = NullMove;
+                next_cluster->prev_cluster = curr_cluster;
+
                 if (score < singular_beta) {
                     move_extension += SingularExtension;
                 }
-                else if (score >= beta and score > -sc::Win and score < sc::Win) {
-                    pos.unmake(node->move, node->state);
+                else if (score >= beta and abs(score) < sc::Win) {
                     const sc::Score reduced_score = (static_cast<int>(score) * singular_depth + static_cast<int>(beta)) 
                                                         / (singular_depth + 1);
                     return reduced_score;
@@ -956,6 +965,15 @@ sc::Score Search::nmSearch(Position& pos,
                 }
             }
         }
+
+        if (!pos.make(node->move, accum_cache)) {
+            pos.unmake(node->move, node->state);
+            continue;
+        }
+
+        node->can_move = true;
+
+        const bool gives_check = child_node->check = pos.isInCheck(!node->side2move);
         
         if (depth <= ExtensionDepth) {
             if (gives_check)
@@ -1119,12 +1137,19 @@ sc::Score Search::nmSearch(Position& pos,
     
     // detect checkmate or stealmate
     if (!node->can_move) {
-        node->bound = tt::Bound::EXACT;
-        node->best_score = node->check ? -sc::Score::getMateScore(ply)
-                                       : getDrawScore(node);
+        if (node->excluded_move.isNullMove()) {
+            node->bound = tt::Bound::EXACT;
+            node->best_score = node->check ? -sc::Score::getMateScore(ply)
+                                           : getDrawScore(node);
+        }
+        else {
+            node->best_score = alpha;
+        }
     }
 
-    if (!node->best_score.isMateScore() or tt_entry.isEmpty()) {
+    if (node->excluded_move.isNullMove() and (
+        !node->best_score.isMateScore() or tt_entry.isEmpty())
+       ) {
         const Move16b bestmove16b = packedMove(node->best_move);
 
         _tt.write(hash, 
@@ -1155,8 +1180,7 @@ sc::Score Search::qSearch(Position& pos,
     assert(0 <= ply and ply <= MaxSelDepth);
     assert(alpha < beta);
 
-    static constexpr mvo::enumOrderPolicy QuiescentOrderPolicy = mvo::QUIESCENT;
-    static constexpr bool                 IsPv = QNodeType & PV_NODE; 
+    static constexpr bool IsPv = QNodeType & PV_NODE; 
 
     assert(IsPv or alpha == beta - 1);
 
@@ -1281,7 +1305,7 @@ sc::Score Search::qSearch(Position& pos,
     mvo::SMoveScore move_score = sc::Undef;
 
     for (node->move_index = 0;
-         node->move_picker.nextMoveWithPolicy<QuiescentOrderPolicy, Root>(node, pos, node->move, move_score, ply);
+         node->move_picker.nextMoveWithPolicy<mvo::QUIESCENT, Root>(node, pos, node->move, move_score, ply);
          node->move_index++) 
     {
         
@@ -1443,7 +1467,7 @@ _FORCEINLINE sc::Score Search::getTablebaseScore(SyzygyTablebase::TbWdlInfo wdl,
                                                  int ply) const 
 {
     static const auto get_win_tb_score = [](const Position& pos, int ply) -> sc::Score  _LAMBDA_FORCEINLINE {
-        const int32_t pc_cnt_diff = std::abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
+        const int32_t pc_cnt_diff = abs(pos.getOwnPieces().popCount() - pos.getOppositePieces().popCount());
         const int32_t result = TablebaseWinScore - ply - TablebasePieceDiffMult * (15 - pc_cnt_diff);
         return static_cast<sc::Score>(result);
     };
@@ -1629,7 +1653,7 @@ template <>
 _NODISCARD _FORCEINLINE int32_t Search::getScoreMoveReduction<QUIET>(mvo::SMoveScore s) {
     const int32_t centered_score = s.value() - 
                                    QuietDepthShiftMult * mvo::SMoveScore::HalfMaxQuietValue / 256;
-    const float rt = std::sqrt(static_cast<float>(std::abs(centered_score)));
+    const float rt = std::sqrt(static_cast<float>(abs(centered_score)));
     const int32_t val = QuietMoveScoreReductionRate * rt / 128;
     return centered_score < 0 ? val : -val;
 }
@@ -1742,20 +1766,14 @@ bool Search::isRepetitionCycle(const Position& pos,
     for (int p = ply - 1; 
          p >= 0 and p >= ply - pos.getHalfmoveClock(); 
          p -= 2) 
-    {
+    {    
         prev_node--;
 
         if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             return false;
 
-        prev_node--;
-        
-        if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
-            return false;
-
-        assert(prev_node->side2move == node->side2move);
-
-        if (curr_hashkey == prev_node->state.hash_key)
+        else if (prev_node->side2move == node->side2move and
+                 curr_hashkey == prev_node->state.hash_key)
             return true;
     }
 

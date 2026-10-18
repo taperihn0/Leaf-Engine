@@ -122,17 +122,44 @@ bool MoveOrder::nextMoveWithPolicy(search::utils::NodeInfo* node,
                                    SMoveScore& move_score,
                                    int ply) 
 {
-    return internalNextMove<Policy, Root>(node, pos, next_move, move_score, ply);
+    if constexpr (Policy == STAGED or Policy == QUIESCENT)
+        return getNextMoveStaged<Policy, Root>(node, pos, next_move, move_score, ply);
+    else
+        return getNextMoveOnePass<Root>(node, pos, next_move, move_score, ply);
+}
+
+template <bool Root>
+_NODISCARD bool MoveOrder::nextMoveWithPolicy(search::utils::NodeInfo* node, 
+                                              Position& pos, 
+                                              Move32b& next_move,
+                                              SMoveScore& move_score,
+                                              int ply,
+                                              enumOrderPolicy policy)
+{
+    // runtime branching
+    switch (policy) {
+    case ONCE_GEN_LEGAL:
+        return getNextMoveOnePass<Root>(node, pos, next_move, move_score, ply);
+    case STAGED:
+        return getNextMoveStaged<STAGED, Root>(node, pos, next_move, move_score, ply);
+    case QUIESCENT:
+        return getNextMoveStaged<QUIESCENT, Root>(node, pos, next_move, move_score, ply);
+    default:
+        FAILED("Invalid move order policy");
+        break;
+    }
+
+    unreachable();
 }
 
 template <enumOrderPolicy Policy, bool Root>
-_NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node, 
-                                            Position& pos, 
-                                            Move32b& next_move,
-                                            SMoveScore& move_score,
-                                            int ply)
+_NODISCARD bool MoveOrder::getNextMoveStaged(search::utils::NodeInfo* node, 
+                                             Position& pos, 
+                                             Move32b& next_move,
+                                             SMoveScore& move_score,
+                                             int ply)
 {
-    static_assert(!Root);
+    assert(!Root); // Can't guarante it works
     assert(_history_cluster != nullptr);
 
     next_move = NullMove;
@@ -140,7 +167,6 @@ _NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node,
 
     switch (_stage) {
     case enumPrivateStage::FIRST_STAGE:
-
         if constexpr (Policy != QUIESCENT)
             updateContinuationPointers(node, ply);
 
@@ -215,13 +241,12 @@ _NODISCARD bool MoveOrder::internalNextMove(search::utils::NodeInfo* node,
     return false;
 }
 
-template <>
-_NODISCARD bool MoveOrder::internalNextMove<ONCE_GEN_LEGAL, true>(
-                                            search::utils::NodeInfo* node, 
-                                            Position& pos, 
-                                            Move32b& next_move,
-                                            SMoveScore& move_score,
-                                            int ply)
+template <bool Root>
+_NODISCARD bool MoveOrder::getNextMoveOnePass(search::utils::NodeInfo* node, 
+                                              Position& pos, 
+                                              Move32b& next_move,
+                                              SMoveScore& move_score,
+                                              int ply)
 {
     assert(_history_cluster != nullptr);
 
@@ -499,5 +524,7 @@ _NODISCARD enumStage MoveOrder::getStage() const {
 template bool MoveOrder::nextMoveWithPolicy<STAGED, false>(search::utils::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
 template bool MoveOrder::nextMoveWithPolicy<QUIESCENT, false>(search::utils::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
 template bool MoveOrder::nextMoveWithPolicy<ONCE_GEN_LEGAL, true>(search::utils::NodeInfo*, Position&, Move32b&, SMoveScore&, int);
+template bool MoveOrder::nextMoveWithPolicy<false>(search::utils::NodeInfo*, Position&, Move32b&, SMoveScore&, int, enumOrderPolicy);
+template bool MoveOrder::nextMoveWithPolicy<true>(search::utils::NodeInfo*, Position&, Move32b&, SMoveScore&, int, enumOrderPolicy);
 
 } // namespace mvo

@@ -184,6 +184,7 @@ public:
     mvo::SMoveScore           move_score;
     mvo::hist::ContinuationSubtable*
                               continuation_subtable_ptr;
+    Move32b                   excluded_move;
 };
 
 class SearchStack {
