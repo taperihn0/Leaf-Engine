@@ -1771,8 +1771,7 @@ bool Search::isRepetitionCycle(const Position& pos,
         if (prev_node->move.isNullMove() or prev_node->move.isIrreversible())
             return false;
 
-        else if (prev_node->side2move == node->side2move and
-                 curr_hashkey == prev_node->state.hash_key)
+        else if (p < ply - 1 and curr_hashkey == prev_node->state.hash_key)
             return true;
     }
 

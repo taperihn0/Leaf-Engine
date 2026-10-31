@@ -94,7 +94,7 @@ _DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 2.21081f, 1.f, 4.f, 1.2f
 _DEFINE_TUNABLE_PARAMETER(SingularExtensionRate, int32_t, 1.20531f, 0.8f, 12.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(SingularBetaDepthMult, int32_t, 54.2774f, 1.f, 96.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMult, int32_t, 129.993f, 90.f, 180.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 279.757f, 200.f, 620.f, 0.6f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepthBase, int32_t, 535.757f, 400.f, 620.f, 0.6f);
 _DEFINE_TUNABLE_PARAMETER(SingularBetaExtensionRate, int32_t, 10.5274f, 1.f, 15.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(TablebaseProbeDepth, int32_t, 8.29697f, 2.f, 16.f, 2.f);
 _DEFINE_TUNABLE_PARAMETER(TablebasePieceCountLimit, int32_t, 5.63622f, 2.f, 10.f, 1.7f);
