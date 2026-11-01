@@ -90,7 +90,7 @@ _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionRate, int32_t, 14.2369f, 10.f, 30.f, 1
 _DEFINE_TUNABLE_PARAMETER(MaxMoveExtensionDiv, int32_t, 10.0644f, 10.f, 18.f, 1.f);
 _DEFINE_TUNABLE_PARAMETER(ExtensionDepth, int32_t, 15.9831f, 4.f, 32.f, 1.1f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepth, int32_t, 5.4227f, 2.f, 8.f, 1.9f);
-_DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 2.21081f, 1.f, 4.f, 1.2f);
+_DEFINE_TUNABLE_PARAMETER(SingularDepthMargin, int32_t, 1.21081f, 0.f, 4.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(SingularExtensionRate, int32_t, 1.20531f, 0.8f, 12.f, 1.8f);
 _DEFINE_TUNABLE_PARAMETER(SingularBetaDepthMult, int32_t, 54.2774f, 1.f, 96.f, 1.2f);
 _DEFINE_TUNABLE_PARAMETER(SingularDepthMult, int32_t, 129.993f, 90.f, 180.f, 1.3f);

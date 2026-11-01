@@ -92,16 +92,10 @@ void TranspositionTable::write(uint64_t node_key64,
         return;
     }
 
-    if (!ovr_same_key or !node_move.isNullMove()) {
-        ovr_entry->move = node_move;
-    }
-
-    if (!ovr_same_key or node_eval.isValid()) {
-        ovr_entry->eval = node_eval;
-    }
-
     assert(node_bound != Bound::NONE);
 
+    ovr_entry->move = node_move;
+    ovr_entry->eval = node_eval;
     ovr_entry->bound = node_bound;
     ovr_entry->depth = node_depth;
     ovr_entry->generation = _generation;
