@@ -520,7 +520,7 @@ sc::Score Search::nmSearch(Position& pos,
     results.tt_probe_cnt++;
 #endif // LEAF_COLLECT_SEARCH_STATS
 
-    tt::TTEntry tt_entry = tt::getClearEntry();
+    tt::TTEntryValues tt_entry = tt::TTEntryValues::getClearEntryValues();
 
     const uint64_t hash = pos.getZobristKey();
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, depth);
@@ -1201,7 +1201,7 @@ sc::Score Search::qSearch(Position& pos,
     }
 
 #if defined(_TT_PROBE_QSEARCH)
-    tt::TTEntry tt_entry = tt::getClearEntry();
+    tt::TTEntryValues tt_entry = tt::TTEntryValues::getClearEntryValues();
 
 #if defined(LEAF_COLLECT_SEARCH_STATS)
     results.tt_probe_cnt++;
@@ -1381,7 +1381,7 @@ sc::Score Search::probCut(Position& pos,
                           const FullInfoRecord& game, 
                           utils::NodeInfo* node,
                           sc::Score beta,
-                          const tt::TTEntry& tt_entry,
+                          const tt::TTEntryValues& tt_entry,
                           const Move32b tt_move,
                           int depth, int ply)
 {
@@ -1687,7 +1687,7 @@ void Search::refreshPVinTT(const Position& pos,
         assert(depth > 0);
         assert(!pv_move.isNullMove());
 
-        tt::TTEntry tt_entry = tt::getClearEntry();
+        tt::TTEntryValues tt_entry = tt::TTEntryValues::getClearEntryValues();
 
         const bool tt_hit = _tt.probe(tt_entry, 
                                       key,
@@ -1716,7 +1716,7 @@ void Search::refreshPVinTT(const Position& pos,
     const sc::Score score = results.score_cp;
 
     if (!pv_len) {
-        tt::TTEntry tt_entry = tt::getClearEntry();
+        tt::TTEntryValues tt_entry = tt::TTEntryValues::getClearEntryValues();
 
         const bool tt_hit = _tt.probe(tt_entry,
                                       key,
@@ -1734,7 +1734,7 @@ void Search::refreshPVinTT(const Position& pos,
 #if defined(DEBUG)
 
     // Check if PV-move for root node is actually there
-    tt::TTEntry tt_entry = tt::getClearEntry();
+    tt::TTEntryValues tt_entry = tt::TTEntryValues::getClearEntryValues();
 
     _tt.probe(tt_entry,
               key,

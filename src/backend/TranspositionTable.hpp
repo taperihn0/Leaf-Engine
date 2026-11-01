@@ -35,33 +35,67 @@ enum class Bound : uint8_t {
     EXACT = 1,
     UPPER = 2,
     LOWER = 3,
+    MAX   = 3
 };
 
-struct TTEntry {
-    TTEntry() = default;
+#pragma pack(push, 1)
+
+struct TTEntryPlacementSpecific {
+    using key_value_type = uint32_t;
+
+    TTEntryPlacementSpecific() = default;
+
+    _FORCEINLINE void writeHashKey(key_value_type keyhi) noexcept {
+        low_key = lowKeyPart(keyhi);
+        high_key = highKeyPart(keyhi) >> 16;
+    }
+
+    _NODISCARD static _FORCEINLINE key_value_type lowKeyPart(key_value_type key) noexcept {
+        return key & 0x0FFFF;
+    }
+
+    _NODISCARD static _FORCEINLINE key_value_type highKeyPart(key_value_type key) noexcept {
+        return key & 0x30000;
+    }
+
+    _NODISCARD _FORCEINLINE key_value_type getHash() const noexcept {
+        return (static_cast<key_value_type>(high_key) << 16) | low_key;
+    }
+
+    uint16_t low_key;
+    uint8_t  high_key : 2;
+    uint8_t  generation : 6;
+};
+
+struct TTEntryValues {
+    TTEntryValues() = default;
+    
+    _NODISCARD _FORCEINLINE static TTEntryValues getClearEntryValues() noexcept {
+        return TTEntryValues { 
+            Bound::NONE, 
+            0, 
+            sc::Undef, 
+            NullMove, 
+            sc::Undef 
+        };
+    }
 
     _NODISCARD _FORCEINLINE bool isEmpty() const noexcept { 
-        return depth == 0 and bound == Bound::NONE; 
+        return bound == Bound::NONE; 
     }
 
-    _FORCEINLINE void writeHash(uint32_t keyhi) noexcept {
-        key16 = static_cast<uint16_t>(keyhi);
-        key18 = (keyhi & 0x30000) >> 16;
-    }
-
-    _NODISCARD _FORCEINLINE uint32_t getHash() const noexcept {
-        return (static_cast<uint32_t>(key18) << 16) | key16;
-    }
-
-    uint16_t  key16;
-    uint8_t   key18 : 2;
-    uint8_t   generation : 6;
     Bound     bound : 2;
     uint8_t   depth : 6;
     sc::Score score;
     Move16b   move;
     sc::Score eval;
 };
+
+struct TTEntry final : public TTEntryPlacementSpecific, TTEntryValues {
+    TTEntry() = default;
+};
+
+#pragma pack(pop)
 
 static_assert(sizeof(TTEntry) == EntryTargetSize);
 
@@ -98,7 +132,7 @@ public:
                Move16b node_move, 
                sc::Score node_eval);
 
-    bool probe(TTEntry& out_entry,
+    bool probe(TTEntryValues& out_entry,
                uint64_t key, 
                sc::Score alpha, sc::Score beta, 
                uint8_t node_depth) const;
@@ -115,7 +149,12 @@ public:
     void newGeneration();
     void clearHashfull();
 private:
-    mem::PageAlignedUniquePtr<Bucket> getPageAlignedMemoryHandle(size_t bucket_cnt);
+    _NODISCARD static mem::PageAlignedUniquePtr<Bucket> getPageAlignedMemoryHandle(size_t bucket_cnt);
+
+    _NODISCARD Bucket& getBucket(uint64_t key64);
+    _NODISCARD const Bucket& getBucket(uint64_t key64) const;
+
+    _NODISCARD uint64_t getKey(uint64_t key64) const;
 
     mem::PageAlignedUniquePtr<Bucket> 
             _mem;
@@ -124,18 +163,5 @@ private:
     uint8_t _generation;
     ull     _hits;
 };
-
-_NODISCARD _FORCEINLINE static TTEntry getClearEntry() noexcept {
-    TTEntry entry;
-    entry.key16 = 0;
-    entry.key18 = 0;
-    entry.generation = 0;
-    entry.bound = Bound::NONE;
-    entry.depth = 0;
-    entry.score = sc::Undef;
-    entry.move = NullMove;
-    entry.eval = sc::Undef;
-    return entry;
-}
 
 } // namespace tt

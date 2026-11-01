@@ -225,7 +225,7 @@ private:
                       const FullInfoRecord& game, 
                       utils::NodeInfo* node,
                       sc::Score beta,
-                      const tt::TTEntry& tt_entry,
+                      const tt::TTEntryValues& tt_entry,
                       const Move32b tt_move,
                       int depth, int ply);
 

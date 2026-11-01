@@ -21,17 +21,6 @@
 
 namespace tt {
 
-/*TTEntry::TTEntry()
-    : key16(0)
-    , key18(0)
-    , generation(0)
-    , bound(TTBound::NONE)
-    , depth(0)
-    , score(sc::Undef)
-    , move(NullMove)
-    , eval(sc::Undef)
-{}*/
-
 TranspositionTable::TranspositionTable(size_t mb_size)
     : _mem(getPageAlignedMemoryHandle(mb_size / sizeof(Bucket)))
 {
@@ -71,99 +60,89 @@ void TranspositionTable::write(uint64_t node_key64,
 {
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
-    Bucket* bucket = _mem.get() + (node_key64 & (_buckets_cnt - 1));
-    const uint32_t keyhi = static_cast<uint32_t>((node_key64 >> _buckets_pow_2) & 0x3FFFF);
+    Bucket& bucket = getBucket(node_key64);
 
+    const uint64_t upper_key64 = getKey(node_key64);
+    const TTEntry::key_value_type key = TTEntry::highKeyPart(upper_key64) | TTEntry::lowKeyPart(upper_key64);
+
+    TTEntry* ovr_entry = nullptr;
     int16_t min_relevance = maxof<int16_t>();
-    size_t ind = 0;
 
-    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
-        if (bucket->entries[i].getHash() == keyhi or bucket->entries[i].isEmpty()) {
-            ind = i;
+    for (auto& candidate : bucket.entries) {
+        const int16_t age = static_cast<int16_t>(_generation) - candidate.generation;
+        const int16_t relevance = static_cast<int16_t>(candidate.depth) - age * 3;
+
+        if (candidate.isEmpty() or (
+            candidate.getHash() == key and
+            relevance < node_depth
+           )) {
+            ovr_entry = &candidate;
             break;
         }
-
-        const int16_t age = static_cast<int16_t>(this->_generation) - bucket->entries[i].generation;
-        const int16_t relevance = static_cast<int16_t>(bucket->entries[i].depth) - age;
-
-        if (relevance < min_relevance) {
+        else if (relevance < min_relevance) {
+            ovr_entry = &candidate;
             min_relevance = relevance;
-            ind = i;
         }
     }
 
-    const uint32_t entry_keyhi = bucket->entries[ind].getHash();
+    _hits += ovr_entry->isEmpty();
 
-    if (entry_keyhi != keyhi or node_eval.isValid())
-        bucket->entries[ind].eval = node_eval;
+    const bool ovr_same_key = ovr_entry->getHash() == key;
 
-    if (entry_keyhi == keyhi and
-        bucket->entries[ind].depth > (node_depth * 3) >> 1 and
-        node_bound != Bound::EXACT) 
-        return;
+    if (!ovr_same_key or !node_move.isNullMove()) {
+        ovr_entry->move = node_move;
+    }
 
-    if (bucket->entries[ind].isEmpty())
-        _hits++;
+    if (!ovr_same_key or node_eval.isValid()) {
+        ovr_entry->eval = node_eval;
+    }
 
-    if (entry_keyhi != keyhi or !node_move.isNullMove())
-        bucket->entries[ind].move = node_move;
+    assert(node_bound != Bound::NONE);
 
-    bucket->entries[ind].writeHash(keyhi);
-    assert(bucket->entries[ind].getHash() == keyhi);
-
-    bucket->entries[ind].score = node_score;
-    bucket->entries[ind].depth = node_depth;
-    bucket->entries[ind].bound = node_bound;
-    bucket->entries[ind].generation = this->_generation;
+    ovr_entry->bound = node_bound;
+    ovr_entry->depth = node_depth;
+    ovr_entry->generation = _generation;
+    ovr_entry->score = node_score;
+    ovr_entry->writeHashKey(key);
 }
 
-bool TranspositionTable::probe(TTEntry& out_entry, 
+bool TranspositionTable::probe(TTEntryValues& out_entry, 
                                uint64_t key64, 
                                sc::Score alpha, sc::Score beta,
                                uint8_t node_depth) const 
 {
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
-    const Bucket* bucket = _mem.get() + (key64 & (_buckets_cnt - 1));
-    const uint32_t keyhi = static_cast<uint32_t>((key64 >> _buckets_pow_2) & 0x3FFFF);
+    const Bucket& bucket = getBucket(key64);
 
-    size_t ind = Bucket::InternalEntriesCnt;
+    const uint64_t upper_key64 = getKey(key64);
+    const TTEntry::key_value_type key = TTEntry::highKeyPart(upper_key64) | TTEntry::lowKeyPart(upper_key64);
 
-    for (size_t i = 0; i < Bucket::InternalEntriesCnt; i++) {
-        if (bucket->entries[i].getHash() == keyhi) {
-            ind = i;
-            break;
+    const TTEntry* entry = std::find_if(bucket.entries.begin(), bucket.entries.end(),
+        [key](const auto& candidate) {
+            return candidate.getHash() == key;
         }
-    }
+    );
 
-    if (ind == Bucket::InternalEntriesCnt) {
-        out_entry.move = NullMove;
-        out_entry.eval = sc::Undef;
+    if (entry == bucket.entries.end()) {
         return false;
     }
 
-    const TTEntry* entry = &bucket->entries[ind];
+    out_entry = static_cast<TTEntryValues>(*entry);
 
-    if (entry->depth < node_depth) {
-        out_entry.move = entry->move;
-        out_entry.eval = entry->eval;
+    if (out_entry.depth < node_depth) {
         return false;
     }
 
-    switch (entry->bound) {
+    switch (out_entry.bound) {
     case Bound::EXACT: {
-        out_entry = *entry;
         return true;
     }
     case Bound::UPPER: {
-        out_entry = *entry;
-        out_entry.score = alpha;
-        return alpha >= entry->score;
+        return alpha >= out_entry.score;
     }
     case Bound::LOWER: {
-        out_entry = *entry;
-        out_entry.score = beta;
-        return beta <= entry->score;
+        return beta <= out_entry.score;
     }
     default: break; 
     }
@@ -173,7 +152,7 @@ bool TranspositionTable::probe(TTEntry& out_entry,
 
 void TranspositionTable::prefetchBucket(uint64_t key64) const {
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
-    mem::prefetch(reinterpret_cast<const void*>(_mem.get() + (key64 & (_buckets_cnt - 1))));
+    mem::prefetch(reinterpret_cast<const void*>(&getBucket(key64)));
 }
 
 #if defined(DEBUG)
@@ -198,7 +177,7 @@ void TranspositionTable::clearHashfull() {
     _hits = 0;
 }
 
-mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
+_NODISCARD mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle(size_t bucket_cnt) {
     auto m = mem::makePageAlignedUnique<Bucket>(bucket_cnt);
 
 #if defined(__GNUC__) and !defined(_WIN32)
@@ -208,6 +187,18 @@ mem::PageAlignedUniquePtr<Bucket> TranspositionTable::getPageAlignedMemoryHandle
 #endif
 
     return m;
+}
+
+_NODISCARD _FORCEINLINE Bucket& TranspositionTable::getBucket(uint64_t key64) {
+    return *(_mem.get() + (key64 & (_buckets_cnt - 1)));
+}
+
+_NODISCARD _FORCEINLINE const Bucket& TranspositionTable::getBucket(uint64_t key64) const {
+    return const_cast<TranspositionTable*>(this)->getBucket(key64);
+}
+
+_NODISCARD _FORCEINLINE uint64_t TranspositionTable::getKey(uint64_t key64) const {
+    return key64 >> _buckets_pow_2;
 }
 
 } // namespace tt
