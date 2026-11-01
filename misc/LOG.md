@@ -1,3 +1,13 @@
+### [commit:8b1b1d0] Exclude singular move in singular research (untuned)
+```
+Score of leaf-singular-extension-18.10 vs leaf-v1.0.3: 919 - 908 - 1428  [0.502] 3255
+...      leaf-singular-extension-18.10 playing White: 533 - 374 - 722  [0.549] 1629
+...      leaf-singular-extension-18.10 playing Black: 386 - 534 - 706  [0.454] 1626
+...      White vs Black: 1067 - 760 - 1428  [0.547] 3255
+Elo difference: 1.2 +/- 8.9, LOS: 60.2 %, DrawRatio: 43.9 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:f4dd671] Disable eval score when in check & bugfix - proper check flag in qSearch
 ```
 Score of leaf-eval-usage-fix vs leaf-master: 483 - 455 - 683  [0.509] 1621
