@@ -22,6 +22,12 @@ TODO:
 * make capture history working
 * fix write/probe bugs
 * discard evaluation when in check
+* experiment with see implementation
+* fix suspect tunable values for move extension/reduction
+* experiment with tt probe/read implementation (especially fail-soft score)
+* capture history
+* more aggresive reductions/extension in singular move framework
+* cleanup that file after changes
 UTILS:
 * nneval without argument
 * configs for common tools
