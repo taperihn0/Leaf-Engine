@@ -697,8 +697,7 @@ sc::Score Search::nmSearch(Position& pos,
             if (depth <= RazorDepth and
                 beta < RazorBetaLimit and
                 !grandparent_node->mate_thread and 
-                tt_entry.score < sc::Win and
-                tt_entry.score > -sc::Win and
+                abs<sc::Score>(tt_entry.score) < sc::Win and
                 (tt_move.isNullMove() or tt_move.isQuiet()))
             {            
                 const int32_t razor_margin = RazorBaseDelta + RazorMultDelta * depth + !node->is_cut * RazorCutDelta;
@@ -706,9 +705,9 @@ sc::Score Search::nmSearch(Position& pos,
 
                 if (corr_eval + razor_margin < static_cast<int32_t>(beta)) {
                     const sc::Score qscore = qSearch<QUIESCE_NODE | NON_PV_NODE>(pos, limits, results, node,
-                                                                                beta - 1, beta,
-                                                                                depth - 1,
-                                                                                ply);
+                                                                                 beta - 1, beta,
+                                                                                 depth - 1,
+                                                                                 ply);
                     
                     if (qscore < beta) {
                         return qscore;
@@ -789,7 +788,7 @@ sc::Score Search::nmSearch(Position& pos,
             }
         }
 
-        /* Probcut -
+        /* ProbCut -
         *  we can estimate further score down in tree by searching current position
         *  with more shallow depth. If we're higher in beta with some threshold then
         *  it is likely we will have beta cutoff. 
@@ -924,7 +923,7 @@ sc::Score Search::nmSearch(Position& pos,
                 !node->check and
                 node->move == tt_move and
                 node->excluded_move.isNullMove() and
-                tt_entry.depth >= depth and //- SingularDepthMargin and
+                tt_entry.depth >= depth and - SingularDepthMargin and
                 (tt_entry.bound == tt::Bound::LOWER or
                  tt_entry.bound == tt::Bound::EXACT) and
                 abs<sc::Score>(tt_entry.score) < sc::Win) 
