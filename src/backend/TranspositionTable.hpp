@@ -28,7 +28,8 @@ namespace tt {
 static constexpr size_t  EntryTargetSize  = 10;
 static constexpr size_t  BucketTargetSize = 32;
 static constexpr size_t  EntryKeySize     = 18;
-static constexpr uint8_t EntryMaxDepth    = 64;
+static constexpr uint8_t EntryMaxDepth    = 63;   /* depth is a 6-bit field, 64 would wrap to 0 */
+static constexpr uint8_t GenerationMask   = 0x3F; /* 6-bit generation wheel */
 
 enum class Bound : uint8_t {
     NONE  = 0,

@@ -924,7 +924,7 @@ sc::Score Search::nmSearch(Position& pos,
                 !node->check and
                 node->move == tt_move and
                 node->excluded_move.isNullMove() and
-                tt_entry.depth >= depth - SingularDepthMargin and
+                tt_entry.depth >= depth and //- SingularDepthMargin and
                 (tt_entry.bound == tt::Bound::LOWER or
                  tt_entry.bound == tt::Bound::EXACT) and
                 abs<sc::Score>(tt_entry.score) < sc::Win) 
@@ -1209,7 +1209,12 @@ sc::Score Search::qSearch(Position& pos,
 #endif // LEAF_COLLECT_SEARCH_STATS
 
     const uint64_t hash = pos.getZobristKey();
-    const uint8_t probe_depth = std::max<uint8_t>(0, depth);
+
+    /* `depth` is int and negative in every recursively called qSearch;
+    *  casting it to uint8_t before compare used to wrap -1 into 255,
+    *  silently killing all TT probes below the entry point.
+    */
+    const uint8_t probe_depth = static_cast<uint8_t>(std::max(0, depth));
 
     const bool tt_hit = _tt.probe(tt_entry, hash, alpha, beta, probe_depth);
     const bool exact_hit = (!IsPv and tt_hit) or

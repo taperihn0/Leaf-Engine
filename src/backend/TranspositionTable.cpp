@@ -60,6 +60,12 @@ void TranspositionTable::write(uint64_t node_key64,
 {
     assert(getExp2(_buckets_cnt) == _buckets_pow_2);
 
+    /* Depth is stored in a 6-bit field, so anything above
+    *  EntryMaxDepth would wrap around modulo 64.
+    *  Clamp instead of truncating, guard and store must agree.
+    */
+    node_depth = std::min<uint8_t>(node_depth, EntryMaxDepth);
+
     Bucket& bucket = getBucket(node_key64);
 
     const uint64_t upper_key64 = getKey(node_key64);
@@ -69,7 +75,10 @@ void TranspositionTable::write(uint64_t node_key64,
     int16_t min_relevance = maxof<int16_t>();
 
     for (auto& candidate : bucket.entries) {
-        const int16_t age = static_cast<int16_t>(_generation) - candidate.generation;
+        /* Age is a 6-bit wheel: masked difference stays positive
+        *  and correct even across a generation wrap.
+        */
+        const int16_t age = static_cast<int16_t>((_generation - candidate.generation) & GenerationMask);
         const int16_t relevance = static_cast<int16_t>(candidate.depth) - age * 3;
 
         if (candidate.isEmpty() or candidate.getHash() == key) {
@@ -86,9 +95,21 @@ void TranspositionTable::write(uint64_t node_key64,
 
     const bool ovr_same_key = ovr_entry->getHash() == key;
 
-    if (ovr_same_key and 
+    /* Replacement guard -
+    *  decision must be based on the victim's own depth/age,
+    *  not on `min_relevance` left over from earlier scanned entries
+    *  (it is stale whenever the loop breaks on a same-key/empty hit
+    *  and stays `maxof` when the hit is at slot 0).
+    *  Skip the write only when the existing entry is clearly worth
+    *  more than the incoming one (v1.0.3: `victim.depth > 1.5 * node_depth`),
+    *  i.e. keep a strictly better same-key result.
+    */
+    const int16_t ovr_age       = static_cast<int16_t>((_generation - ovr_entry->generation) & GenerationMask);
+    const int16_t ovr_relevance = static_cast<int16_t>(ovr_entry->depth) - ovr_age * 3;
+
+    if (ovr_same_key and
         node_bound != Bound::EXACT and
-        min_relevance < (node_depth * 3) / 2) {
+        ovr_relevance > (node_depth * 3) / 2) {
         return;
     }
 
@@ -167,7 +188,7 @@ uint16_t TranspositionTable::getHashfull() const {
 }
 
 void TranspositionTable::newGeneration() {
-    _generation++;
+    _generation = (_generation + 1) & GenerationMask;
 }
 
 void TranspositionTable::clearHashfull() {
