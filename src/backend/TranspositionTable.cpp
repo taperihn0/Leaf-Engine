@@ -72,10 +72,7 @@ void TranspositionTable::write(uint64_t node_key64,
         const int16_t age = static_cast<int16_t>(_generation) - candidate.generation;
         const int16_t relevance = static_cast<int16_t>(candidate.depth) - age * 3;
 
-        if (candidate.isEmpty() or (
-            candidate.getHash() == key and
-            relevance < node_depth
-           )) {
+        if (candidate.isEmpty() or candidate.getHash() == key) {
             ovr_entry = &candidate;
             break;
         }
@@ -88,6 +85,12 @@ void TranspositionTable::write(uint64_t node_key64,
     _hits += ovr_entry->isEmpty();
 
     const bool ovr_same_key = ovr_entry->getHash() == key;
+
+    if (ovr_same_key and 
+        node_bound != Bound::EXACT and
+        min_relevance < (node_depth * 3) / 2) {
+        return;
+    }
 
     if (!ovr_same_key or !node_move.isNullMove()) {
         ovr_entry->move = node_move;
