@@ -4,8 +4,6 @@ TODO:
 * Simplify paths passing in commands in utils
 * Experiment with lmr formula and parameters
 * Checkmate standpat
-* Use mate_thread in search
-* Implement ProbCut
 * Improve poor move ordering
 * Reevaluate dataset
 * Cleanup Utils
@@ -24,7 +22,6 @@ TODO:
 * discard evaluation when in check
 * experiment with see implementation
 * fix suspect tunable values for move extension/reduction
-* experiment with tt probe/read implementation (especially fail-soft score)
 * capture history
 * more aggresive reductions/extension in singular move framework
 * cleanup that file after changes

@@ -1,3 +1,13 @@
+### [commit:73cdfbe] Rewritten probe/write from Transposition table
+```
+Score of leaf-tt-rewrite-1.11 vs leaf-v1.0.3: 1660 - 1641 - 2516  [0.502] 5817
+...      leaf-tt-rewrite-1.11 playing White: 915 - 755 - 1239  [0.528] 2909
+...      leaf-tt-rewrite-1.11 playing Black: 745 - 886 - 1277  [0.476] 2908
+...      White vs Black: 1801 - 1500 - 2516  [0.526] 5817
+Elo difference: 1.1 +/- 6.7, LOS: 63.0 %, DrawRatio: 43.3 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+```
+
 ### [commit:8b1b1d0] Exclude singular move in singular research (untuned)
 ```
 Score of leaf-singular-extension-18.10 vs leaf-v1.0.3: 919 - 908 - 1428  [0.502] 3255
