@@ -70,15 +70,26 @@ struct TTEntryPlacementSpecific {
 
 struct TTEntryValues {
     TTEntryValues() = default;
-    
+    TTEntryValues(Bound bound, 
+                  uint8_t depth, 
+                  sc::Score score, 
+                  Move16b move, 
+                  sc::Score eval) noexcept 
+        : bound(bound)
+        , depth(depth)
+        , score(score)
+        , move(move)
+        , eval(eval)
+    {}
+
     _NODISCARD _FORCEINLINE static TTEntryValues getClearEntryValues() noexcept {
-        return TTEntryValues { 
+        return TTEntryValues(
             Bound::NONE, 
             0, 
             sc::Undef, 
             NullMove, 
             sc::Undef 
-        };
+        );
     }
 
     _NODISCARD _FORCEINLINE bool isEmpty() const noexcept { 

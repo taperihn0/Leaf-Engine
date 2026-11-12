@@ -385,9 +385,9 @@ uint8_t ExtPackedPosition::maskFromPiece(Piece piece, Square sq, const Position&
         Square::enumFile rook_file = sq.getFile();
 
         if (rook_file == Square::FILE_H and pos.getCastlingByColor(color).isShortPossible())
-            mask = ROOK_WITH_CASTLING(color);
+            mask = ROOK_WITH_CASTLING(std::to_underlying(color));
         else if (rook_file == Square::FILE_A and pos.getCastlingByColor(color).isLongPossible())
-            mask = ROOK_WITH_CASTLING(color);
+            mask = ROOK_WITH_CASTLING(std::to_underlying(color));
         else mask = piece.value() + 6 * color;
 
         return mask;

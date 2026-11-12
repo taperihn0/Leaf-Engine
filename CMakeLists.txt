@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(READ "${CMAKE_SOURCE_DIR}/version.txt" LEAF_VERSION)
@@ -127,6 +127,8 @@ if (ARCHITECTURE_ARM)
 else ()
 	target_compile_definitions(Leaf PUBLIC LEAF_ARCHITECTURE_X86)
 endif ()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)

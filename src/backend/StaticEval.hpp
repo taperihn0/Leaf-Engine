@@ -30,11 +30,11 @@ class Position;
 
 namespace hce {
 
-_DEFINE_TUNABLE_PARAMETER(PawnValue, int32_t, 96.1884f, 80.f, 120.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(KnightValue, int32_t, 304.315f, 260.f, 340.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(BishopValue, int32_t, 305.347f, 270.f, 340.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(RookValue, int32_t, 489.203f, 450.f, 550.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(QueenValue, int32_t, 916.466f, 820.f, 980.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(PawnValue, 96.1884f, 80.f, 120.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(KnightValue, 304.315f, 260.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(BishopValue, 305.347f, 270.f, 340.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(RookValue, 489.203f, 450.f, 550.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(QueenValue, 916.466f, 820.f, 980.f, 1.1f);
 
 _INTERNAL constexpr int16_t getPieceValue(Piece::enumType pc) {
     switch (pc) {
@@ -43,7 +43,7 @@ _INTERNAL constexpr int16_t getPieceValue(Piece::enumType pc) {
     case Piece::BISHOP: return BishopValue;
     case Piece::ROOK:   return RookValue;
     case Piece::QUEEN:  return QueenValue;
-    default: unreachable();
+    default: std::unreachable();
     }
 }
 

@@ -24,15 +24,10 @@
 
 #include <sstream>
 
-CastlingRights::CastlingRights(bool kinit, bool qinit) 
-    : _kingside(kinit)
-    , _queenside(qinit) 
-{}
-
 void CastlingRights::printByColor(enumColor col_type) const {
     std::string msg;
-    if (_kingside) msg += col_type == BLACK ? 'k' : 'K';
-    if (_queenside) msg += col_type == BLACK ? 'q' : 'Q';
+    if (isShortPossible()) msg += col_type == BLACK ? 'k' : 'K';
+    if (isLongPossible()) msg += col_type == BLACK ? 'q' : 'Q';
     std::cout << msg;
 }
 
@@ -286,8 +281,8 @@ int Position::getNonPawnMaterial() const {
 }
 
 bool Position::make(Move32b& move) {
-    nn::AccumulatorCache tmp_accum_cache;
-    return make(move, &tmp_accum_cache);
+    nn::AccumulatorCache tmp;
+    return make(move, &tmp);
 }
 
 bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
@@ -526,8 +521,9 @@ void Position::makeNull(ReversibleState& state, nn::AccumulatorCache* accum_cach
 
     state.ep_sq = _ep_square;
 
-    if (!_ep_square.isNone())
+    if (!_ep_square.isNone()) {
         _zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
+    }
 
     _ep_square = Square::None;
 
@@ -552,10 +548,12 @@ uint64_t Position::likelyZobristKeyAfterMove(Move32b& move) const {
                           dst = move.getTarget();
     const Piece::enumType piece_t = move.getPiece();
 
-    uint64_t new_zhash = static_cast<uint64_t>(_zhash) ^ ZHashMasks->black_key;
-
-    new_zhash ^= ZHashMasks->piece_keys[_s2m][piece_t][org];
-    new_zhash ^= ZHashMasks->piece_keys[_s2m][piece_t][dst];
+    uint64_t new_zhash = (
+        _zhash.value() ^ 
+        ZHashMasks->black_key ^
+        ZHashMasks->piece_keys[_s2m][piece_t][org] ^ 
+        ZHashMasks->piece_keys[_s2m][piece_t][dst]
+    );
 
     if (move.isCapture() and !move.isEnPassant()) {
         const Piece::enumType captured = pieceOn(dst, !_s2m);

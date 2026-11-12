@@ -62,10 +62,10 @@ public:
 
 } // namespace clk
 
-constexpr clk::milliseconds operator"" _ms(ull t) noexcept {
+constexpr clk::milliseconds operator""_ms(ull t) noexcept {
     return static_cast<clk::milliseconds>(t);
 }
 
-constexpr clk::seconds operator"" _s(ull t) noexcept {
+constexpr clk::seconds operator""_s(ull t) noexcept {
     return static_cast<clk::seconds>(t);
 }

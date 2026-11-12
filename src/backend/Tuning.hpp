@@ -87,9 +87,15 @@ _PARAM_ATTRIBS type parameter = static_cast<type>(TunableParameterValue<type>(ro
                                                                               ma,                      \
                                                                               step_rate))    
 
+#define _DEFINE_TUNABLE_PARAMETER_I32(parameter, value , mi, ma, step_rate) \
+_DEFINE_TUNABLE_PARAMETER(parameter, int32_t, value, mi, ma, step_rate)
+
 #else 
 
 #define _DEFINE_TUNABLE_PARAMETER(parameter, type, value , mi, ma, step_rate) \
-_PARAM_ATTRIBS type parameter = static_cast<type>(roundi<float>(value));
+_PARAM_ATTRIBS type parameter = static_cast<type>(roundi<float>(value))
+
+#define _DEFINE_TUNABLE_PARAMETER_I32(parameter, value , mi, ma, step_rate) \
+_DEFINE_TUNABLE_PARAMETER(parameter, int32_t, value, mi, ma, step_rate)
 
 #endif // _ENABLE_TUNING

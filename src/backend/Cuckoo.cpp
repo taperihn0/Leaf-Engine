@@ -88,6 +88,7 @@ void CuckooTables::init() {
 }
 
 void CuckooTables::validate() {
+#if defined(DEBUG)
     size_t count = 0;
 
     for (size_t i = 0; i < _CuckooTableSize; i++) {
@@ -101,7 +102,6 @@ void CuckooTables::validate() {
             count++;
     }
 
-#ifdef DEBUG
     const float fill_rate = static_cast<float>(count) / _AccurateCount;
     std::cout << "[CUCKOO TABLES STATS]\n total entries: " << count 
               << "\n fill rate: " << fill_rate * 100 << '%' << std::endl;

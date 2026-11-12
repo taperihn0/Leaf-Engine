@@ -34,9 +34,7 @@
 class Position;
 struct NodeInfo;
 
-namespace nn { 
-    struct AccumulatorCache; 
-}
+namespace nn {  struct AccumulatorCache; }
 
 static constexpr std::string_view StartposFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static constexpr std::string_view KiwipeteFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
@@ -44,24 +42,39 @@ static constexpr std::string_view KiwipeteFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2
 // wrapper around castling rights for single player
 class CastlingRights {
 public:
-    CastlingRights() = default;
-    explicit CastlingRights(bool kinit, bool qinit);
+    using value_type = uint8_t;
 
-    bool operator==(const CastlingRights& rights) const;
-    bool operator!=(const CastlingRights& rights) const;
+    CastlingRights() = default;
+
+    explicit CastlingRights(bool kinit, bool qinit) {
+        setKingSide(kinit);
+        setQueenSide(qinit);
+    }
+
+    _INLINE bool operator==(const CastlingRights& rights) const {
+        return value() == rights.value();
+    }
+
+    _INLINE bool operator!=(const CastlingRights& rights) const {
+        return !(*this == rights);
+    }
 
     void printByColor(enumColor col_type) const;
 
     _NODISCARD _INLINE bool isShortPossible() const {
-        return _kingside;
+        return _m & std::to_underlying(enumMask::KINGSIDE);
     }
 
     _NODISCARD _INLINE bool isLongPossible() const {
-        return _queenside;
+        return _m & std::to_underlying(enumMask::QUEENSIDE);
     }
 
     _NODISCARD _INLINE bool isAnyPossible() const {
-        return _kingside or _queenside;
+        return value();
+    }
+
+    _NODISCARD _INLINE value_type value() const {
+        return _m & std::to_underlying(enumMask::ANY);
     }
 
     template <enumColor Side>
@@ -81,19 +94,27 @@ public:
     _NODISCARD bool notThroughPieces_Long(BitBoard occupied, enumColor side) const;
 
     _INLINE void setKingSide(bool flag) {
-        _kingside = flag;
+        static constexpr auto KShf = getExp2(std::to_underlying(enumMask::KINGSIDE));
+        _m |= (static_cast<value_type>(flag) << KShf);
     }
 
     _INLINE void setQueenSide(bool flag) {
-        _queenside = flag;
+        static constexpr auto QShf = getExp2(std::to_underlying(enumMask::QUEENSIDE));
+        _m |= (static_cast<value_type>(flag) << QShf);
     }
 
     _INLINE void clear() {
-        _kingside = false, _queenside = false;
+        _m = 0;
     }
+
 private:
-    bool _kingside, 
-         _queenside;
+    enum class enumMask : value_type {
+        KINGSIDE  = 1,
+        QUEENSIDE = 2,
+        ANY       = KINGSIDE | QUEENSIDE
+    };
+
+    value_type _m;
 };
 
 namespace utils { class ExtPackedPosition; }
@@ -102,11 +123,11 @@ namespace utils { class ExtPackedPosition; }
 *  King score is fixed and not tuned.
 */
 
-_DEFINE_TUNABLE_PARAMETER(SeePawnValue, int32_t, 101.302f, 80.f, 120.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeKnightValue, int32_t, 289.053f, 250.f, 350.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeBishopValue, int32_t, 298.37f, 250.f, 350.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeRookValue, int32_t, 529.411f, 450.f, 550.f, 1.1f);
-_DEFINE_TUNABLE_PARAMETER(SeeQueenValue, int32_t, 873.446f, 830.f, 970.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(SeePawnValue, 101.302f, 80.f, 120.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(SeeKnightValue, 289.053f, 250.f, 350.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(SeeBishopValue, 298.37f, 250.f, 350.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(SeeRookValue, 529.411f, 450.f, 550.f, 1.1f);
+_DEFINE_TUNABLE_PARAMETER_I32(SeeQueenValue, 873.446f, 830.f, 970.f, 1.1f);
 
 inline constexpr int32_t SeeKingValue = 12000;
 
@@ -366,13 +387,11 @@ public:
     /* Copy-make position states.
     */
     struct ReversibleState {
+        std::array<int16_t, 2>     non_pawn_material;
         Square                     ep_sq;
         uint8_t                    halfmove_count;
         std::array<CastlingRights, 2> castling_rights;
-        // It is not really required to store previous hash key,
-        // since it can be recomputed. But keep it here for simplicity and efficiency.
         uint64_t                   hash_key;
-        std::array<int16_t, 2>     non_pawn_material;
     };
 private:
     // same as getAttackedMask, but with custom accumulated occupancy mask
@@ -390,24 +409,15 @@ private:
 
     MultiArray<BitBoard, 2, 6>     _piece_bb = {};
     std::array<BitBoard, 2>        _occupied = {};
-    std::array<CastlingRights, 2>  _castling_rights = {};
     std::array<Square, 2>          _king_sq = { Square::None, Square::None };
+    std::array<int16_t, 2>         _non_pawn_material = {};
+    std::array<CastlingRights, 2>  _castling_rights = {};
     Turn                           _s2m = WHITE;
     Square                         _ep_square = Square::None;
     ZHash                          _zhash = ZHash::Undef;
     uint8_t                        _halfmove_count = 0;
     uint16_t                       _fullmove_count = 0;
-    std::array<int16_t, 2>         _non_pawn_material = {};
 };
-
-_INLINE bool CastlingRights::operator==(const CastlingRights& rights) const {
-    return _queenside == rights._queenside and 
-           _kingside == rights._kingside;
-}
-
-_INLINE bool CastlingRights::operator!=(const CastlingRights& rights) const {
-    return !(*this == rights);
-}
 
 template <enumColor Side>
 _INLINE bool CastlingRights::notThroughCheck_Short(const Position& pos) const {
@@ -491,11 +501,13 @@ _INLINE BitBoard Position::getBySideOnFly(enumColor col_type) const {
 }
 
 _INLINE Position::ReversibleState Position::getReversibleState() const {
-    return Position::ReversibleState{ _ep_square, 
-                                      _halfmove_count,
-                                      _castling_rights, 
-                                      _zhash,
-                                      _non_pawn_material };
+    return Position::ReversibleState{ 
+        .non_pawn_material = _non_pawn_material,
+        .ep_sq = _ep_square, 
+        .halfmove_count = _halfmove_count,
+        .castling_rights = _castling_rights, 
+        .hash_key = _zhash,
+    };
 }
 
 _INLINE void Position::clearPieces() {

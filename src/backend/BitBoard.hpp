@@ -150,14 +150,19 @@ public:
         _board &= ~(1_ui64 << sq);
     }
 
-    _INLINE void setBit(int shift) {
-        assert(shift < 64);
-        _board |= (1_ui64 << shift);
+    _INLINE void flipBit(Square sq) {
+        assert(sq.isValid() and !sq.isNone());
+        _board ^= (1_ui64 << sq);
     }
 
-    _INLINE bool getBit(int shift) const {
-        assert(shift < 64);
-        return _board & (1_ui64 << shift);
+    _INLINE void setBit(Square sq) {
+        assert(sq.isValid() and !sq.isNone());
+        _board |= (1_ui64 << sq);
+    }
+
+    _INLINE bool getBit(Square sq) const {
+        assert(sq.isValid() and !sq.isNone());
+        return _board & (1_ui64 << sq);
     }
 
     _NODISCARD _INLINE BitBoard swapBytes() const;
@@ -170,9 +175,15 @@ public:
         return getBit(sq);
     }
 
-    _INLINE void moveBit(Square origin, Square target) {
+    _INLINE void safeMoveBit(Square origin, Square target) {
         assert(getBit(origin));
         popBit(origin);
+        setBit(target);
+    }
+
+    _INLINE void moveBit(Square origin, Square target) {
+        assert(getBit(origin));
+        flipBit(origin);
         setBit(target);
     }
 

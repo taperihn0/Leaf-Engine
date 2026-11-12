@@ -46,35 +46,41 @@ inline const ZobristMasks* ZHashMasks = &ZobristMasks::get();
 
 class ZHash {
 public:    
+    using value_type = uint64_t;
+
     constexpr ZHash() = default;
     
-    _INLINE constexpr ZHash(uint64_t key) 
-        : _key(key) {}
+    _INLINE constexpr ZHash(value_type key) 
+        : _v(key) {}
 
-    _INLINE constexpr operator uint64_t() const {
-        return _key;
+    _INLINE constexpr operator value_type() const {
+        return _v;
     }
 
     _INLINE constexpr ZHash& operator=(const ZHash& zh) {
-        _key = zh._key;
+        _v = zh._v;
         return *this;
     }
 
     _INLINE constexpr ZHash operator^=(const ZHash& zh) {
-        return _key ^= zh._key;
+        return _v ^= zh._v;
     }
 
     _INLINE constexpr ZHash operator^(const ZHash& zh) const {
-        return _key ^ zh._key;
+        return _v ^ zh._v;
     }
 
     static ZHash generateOnFly(const Position& pos);
+
+    _NODISCARD constexpr value_type value() const {
+        return _v;
+    }
 
 #if defined(DEBUG)
     bool printXOR_Diff(uint64_t key_2);
 #endif
 
-    static constexpr uint64_t Undef = 0;
+    static constexpr value_type Undef = 0;
 private:
-    uint64_t _key = Undef;
+    value_type _v = Undef;
 };

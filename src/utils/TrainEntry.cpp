@@ -55,7 +55,9 @@ bool BulletChessBoard::operator==(const BulletChessBoard& bf) const {
 
 TrainingDataEntry::TrainingDataEntry(const PackedPosition& packed, sc::Score white_score, Result8b result)
     : _packed_pos(packed)
-    , _game_details{ white_score, result, packed.getKingSquare(), packed.getOppKingSquare() }
+    , _game_details(
+        white_score, result, packed.getKingSquare(), packed.getOppKingSquare(), false
+    )
 {}
 
 TrainingDataEntry::TrainingDataEntry(const ExtPackedPosition& packed, sc::Score white_score, Result8b result)

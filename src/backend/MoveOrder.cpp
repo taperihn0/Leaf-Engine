@@ -29,7 +29,7 @@ _NODISCARD _FORCEINLINE constexpr int16_t getCapturedScore(Piece::enumType pc) {
     case Piece::BISHOP: return MvOrBishopCapturedScore;
     case Piece::ROOK:   return MvOrRookCapturedScore;
     case Piece::QUEEN:  return MvOrQueenCapturedScore;
-    default: unreachable();
+    default: std::unreachable();
     }
 }
 
@@ -39,7 +39,7 @@ _NODISCARD _FORCEINLINE constexpr int16_t getPromotionScore(Piece::enumType prom
     case Piece::BISHOP: return MvOrToBishopPromoScore;
     case Piece::ROOK:   return MvOrToRookPromoScore;
     case Piece::QUEEN:  return MvOrToQueenPromoScore;
-    default: unreachable();
+    default: std::unreachable();
     }
 }
 
@@ -149,7 +149,7 @@ _NODISCARD bool MoveOrder::nextMoveWithPolicy(search::utils::NodeInfo* node,
         break;
     }
 
-    unreachable();
+    std::unreachable();
 }
 
 template <enumOrderPolicy Policy, bool Root>
@@ -233,11 +233,11 @@ _NODISCARD bool MoveOrder::getNextMoveStaged(search::utils::NodeInfo* node,
         scoreQuiets(_idx, pos.getTurn(), node, ply);
         return getNextMoveInfo(next_move, move_score);
     default:
-        unreachable();
+        std::unreachable();
         break;
     }
 
-    unreachable();
+    std::unreachable();
     return false;
 }
 
@@ -289,11 +289,11 @@ _NODISCARD bool MoveOrder::getNextMoveOnePass(search::utils::NodeInfo* node,
         scoreQuiets(_idx, pos.getTurn(), node, ply);
         return getNextMoveInfo(next_move, move_score);
     default:
-        unreachable();
+        std::unreachable();
         break;
     }
 
-    unreachable();
+    std::unreachable();
     return false;
 }
 

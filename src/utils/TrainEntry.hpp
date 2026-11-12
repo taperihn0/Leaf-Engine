@@ -84,6 +84,17 @@ private:
 #pragma pack(push, 1)
     struct PackedPosInfo {
         PackedPosInfo() = default;
+        PackedPosInfo(sc::Score white_score,
+                      Result8b result,
+                      Square king_sq,
+                      Square opp_king_sq,
+                      bool relative) 
+            : white_score(white_score)
+            , result(result)
+            , king_sq(king_sq)
+            , opp_king_sq(opp_king_sq)
+            , relative(relative)
+        {}
 
         bool operator==(const PackedPosInfo& info) const;
         _INLINE bool operator!=(const PackedPosInfo& info) const { return !(*this == info); }

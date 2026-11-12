@@ -34,6 +34,7 @@
 #include <ctime>
 #include <filesystem>
 #include <optional>
+#include <utility>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -197,19 +198,19 @@ constexpr bool is_numeric = (is_real<T> or is_integral<T>);
 // keep this macro for compatibility with some blocks of code
 #define _IS_SAME_TYPE(t1, t2) (_isSameType<t1, t2>())
 
-inline constexpr uint8_t operator"" _ui8(ull a) noexcept {
+inline constexpr uint8_t operator""_ui8(ull a) noexcept {
     return static_cast<uint8_t>(a);
 }
 
-inline constexpr uint16_t operator"" _ui16(ull a) noexcept {
+inline constexpr uint16_t operator""_ui16(ull a) noexcept {
     return static_cast<uint16_t>(a);
 }
 
-inline constexpr uint32_t operator"" _ui32(ull a) noexcept {
+inline constexpr uint32_t operator""_ui32(ull a) noexcept {
     return static_cast<uint32_t>(a);
 }
 
-inline constexpr uint64_t operator"" _ui64(ull a) noexcept {
+inline constexpr uint64_t operator""_ui64(ull a) noexcept {
     return static_cast<uint64_t>(a);
 }
 
@@ -249,12 +250,6 @@ _INTERNAL bool logWarnMessage(std::string_view file, std::string_view text, int 
 }
 
 } // namespace xxassertutil
-
-_NORETURN _INTERNAL void unreachable() {
-#if defined(__GNUC__)
-    __builtin_unreachable();
-#endif
-}
 
 #if defined(DEBUG)
 static constexpr bool DebugBuild = true;

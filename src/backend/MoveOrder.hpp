@@ -69,25 +69,25 @@ private:
 *  Tunable parameters in move ordering.
 */
 
-_DEFINE_TUNABLE_PARAMETER(MvOrKnightCapturedScore, int32_t, 277.59f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrBishopCapturedScore, int32_t, 321.216f, 260.f, 350.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrToKnightPromoScore, int32_t, 85.5026f, 50.f, 200.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrToBishopPromoScore, int32_t, 94.8676f, 50.f, 300.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrToRookPromoScore, int32_t, 267.031f, 150.f, 500.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrToQueenPromoScore, int32_t, 941.178f, 700.f, 1020.f, 1.3f);
-_DEFINE_TUNABLE_PARAMETER(MvOrPawnCapturedScore, int32_t, 100.f, 80.f, 120.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(MvOrRookCapturedScore, int32_t, 500.f, 450.f, 550.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQueenCapturedScore, int32_t, 900.f, 820.f, 980.f, 0.8f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietBonusHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrQuietPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrContBonusHistoryScore1Coeff, int32_t, 16.f, 0.f, 300.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore2Coeff, int32_t, 1024.f, 724.f, 1324.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrContPenaltyHistoryScore1Coeff, int32_t, 1.f, 0.f, 300.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrdContinuation1Scale, int32_t, 1024.f, 824.f, 1224.f, 1.f);
-_DEFINE_TUNABLE_PARAMETER(MvOrdContinuation2Scale, int32_t, 800.f, 600.f, 1000.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrKnightCapturedScore, 277.59f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrBishopCapturedScore, 321.216f, 260.f, 350.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrToKnightPromoScore, 85.5026f, 50.f, 200.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrToBishopPromoScore, 94.8676f, 50.f, 300.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrToRookPromoScore, 267.031f, 150.f, 500.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrToQueenPromoScore, 941.178f, 700.f, 1020.f, 1.3f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrPawnCapturedScore, 100.f, 80.f, 120.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrRookCapturedScore, 500.f, 450.f, 550.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrQueenCapturedScore, 900.f, 820.f, 980.f, 0.8f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrQuietBonusHistoryScore2Coeff, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrQuietBonusHistoryScore1Coeff, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrQuietPenaltyHistoryScore2Coeff, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrQuietPenaltyHistoryScore1Coeff, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrContBonusHistoryScore2Coeff, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrContBonusHistoryScore1Coeff, 16.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrContPenaltyHistoryScore2Coeff, 1024.f, 724.f, 1324.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrContPenaltyHistoryScore1Coeff, 1.f, 0.f, 300.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrdContinuation1Scale, 1024.f, 824.f, 1224.f, 1.f);
+_DEFINE_TUNABLE_PARAMETER_I32(MvOrdContinuation2Scale, 800.f, 600.f, 1000.f, 1.f);
 
 class HistoryTablesCluster {
 public:
