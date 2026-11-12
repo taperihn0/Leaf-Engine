@@ -298,10 +298,12 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
     // we've got double buffer for white- and black-perspective,
     // and for each perspectives maximum features (both removed and added) is 2.
 
+    assert(accum_cache != nullptr);
+
     accum_cache->clearBuffers();
 
-    size_t& added_feature_cnt = accum_cache->added_features_cnt;
-    size_t& removed_feature_cnt = accum_cache->removed_features_cnt;
+    auto& added_feature_cnt = accum_cache->added_features_cnt;
+    auto& removed_feature_cnt = accum_cache->removed_features_cnt;
 
     assert(added_feature_cnt == 0 and removed_feature_cnt == 0);
 
@@ -311,8 +313,8 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
             const Square cap_sq = dst - dir;
 
-            _piece_bb[!_s2m][Piece::PAWN].popBit(cap_sq);
-            _occupied[!_s2m].popBit(cap_sq);
+            _piece_bb[!_s2m][Piece::PAWN].flipBit(cap_sq);
+            _occupied[!_s2m].flipBit(cap_sq);
             _zhash ^= ZHashMasks->piece_keys[!_s2m][Piece::PAWN][cap_sq];
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(cap_sq, Piece::PAWN, !_s2m);
@@ -323,15 +325,15 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
 
             assert(captured != Piece::NONE and captured != Piece::KING);
 
-            _piece_bb[!_s2m][captured].popBit(dst);
-            _occupied[!_s2m].popBit(dst);
+            _piece_bb[!_s2m][captured].flipBit(dst);
+            _occupied[!_s2m].flipBit(dst);
             _zhash ^= ZHashMasks->piece_keys[!_s2m][captured][dst];
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst, captured, !_s2m);
             _non_pawn_material[!_s2m] -= captured != Piece::PAWN ? hce::getPieceValue(captured): 0;
 
-            const Square right_corner_opp = _s2m == BLACK ? Square::SQ_H1 : Square::SQ_H8,
-                         left_corner_opp = _s2m == BLACK ? Square::SQ_A1 : Square::SQ_A8;
+            const auto right_corner_opp = _s2m == BLACK ? Square::SQ_H1 : Square::SQ_H8;
+            const auto left_corner_opp = _s2m == BLACK ? Square::SQ_A1 : Square::SQ_A8;
 
             if (_castling_rights[!_s2m].isShortPossible() and dst == right_corner_opp) {
                 _zhash ^= ZHashMasks->short_castle_keys[!_s2m];
@@ -348,12 +350,14 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         const Piece::enumType promo_piece_t = move.getPromoPiece();
         assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
 
-        _piece_bb[_s2m][piece_t].popBit(org);
+        _piece_bb[_s2m][piece_t].flipBit(org);
         _piece_bb[_s2m][promo_piece_t].setBit(dst);
         _occupied[_s2m].moveBit(org, dst);
 
-        _zhash ^= ZHashMasks->piece_keys[_s2m][piece_t][org];
-        _zhash ^= ZHashMasks->piece_keys[_s2m][promo_piece_t][dst];
+        _zhash ^= (
+            ZHashMasks->piece_keys[_s2m][piece_t][org] ^
+            ZHashMasks->piece_keys[_s2m][promo_piece_t][dst]
+        );
 
         accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _s2m);
         accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, promo_piece_t, _s2m);
@@ -364,8 +368,10 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         _piece_bb[_s2m][piece_t].moveBit(org, dst);
         _occupied[_s2m].moveBit(org, dst);
 
-        _zhash ^= ZHashMasks->piece_keys[_s2m][piece_t][org];
-        _zhash ^= ZHashMasks->piece_keys[_s2m][piece_t][dst];
+        _zhash ^= (
+            ZHashMasks->piece_keys[_s2m][piece_t][org] ^
+            ZHashMasks->piece_keys[_s2m][piece_t][dst]
+        );
 
         accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(org, piece_t, _s2m);
         accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst, piece_t, _s2m);
@@ -376,8 +382,10 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
             _piece_bb[_s2m][Piece::ROOK].moveBit(dst + 1, dst - 1);
             _occupied[_s2m].moveBit(dst + 1, dst - 1);
 
-            _zhash ^= ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst + 1];
-            _zhash ^= ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst - 1];
+            _zhash ^= (
+                ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst + 1] ^
+                ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst - 1]
+            );
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst + 1, Piece::ROOK, _s2m);
             accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst - 1, Piece::ROOK, _s2m);
@@ -386,8 +394,10 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
             _piece_bb[_s2m][Piece::ROOK].moveBit(dst - 2, dst + 1);
             _occupied[_s2m].moveBit(dst - 2, dst + 1);
 
-            _zhash ^= ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst - 2];
-            _zhash ^= ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst + 1];
+            _zhash ^= (
+                ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst - 2] ^
+                ZHashMasks->piece_keys[_s2m][Piece::ROOK][dst + 1]
+            );
 
             accum_cache->removed_features[removed_feature_cnt++] = nn::FeatureData(dst - 2, Piece::ROOK, _s2m);
             accum_cache->added_features[added_feature_cnt++] = nn::FeatureData(dst + 1, Piece::ROOK, _s2m);
@@ -396,16 +406,14 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         _king_sq[_s2m] = dst;
     }
 
-    accum_cache->markDirty();
-
     const bool legal = !isInCheck(_s2m);
     move.setLegalMoved(legal);
 
     // Just leave castling flags untouched since the move is pseudo-legal.
     // It will be ignored anyway in the search.
     if (legal) {
-        const Square right_corner = _s2m == WHITE ? Square::SQ_H1 : Square::SQ_H8,
-                     left_corner = _s2m == WHITE ? Square::SQ_A1 : Square::SQ_A8;
+        const auto right_corner = _s2m == WHITE ? Square::SQ_H1 : Square::SQ_H8;
+        const auto left_corner = _s2m == WHITE ? Square::SQ_A1 : Square::SQ_A8;
 
         if (_castling_rights[_s2m].isShortPossible() and 
             (piece_t == Piece::KING or getRooksBySide(_s2m).isEmptySq(right_corner))) {
@@ -420,8 +428,9 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         }
 
         // reset old en passant square state
-        if (!_ep_square.isNone())
+        if (!_ep_square.isNone()) {
             _zhash ^= ZHashMasks->ep_file_keys[_ep_square.getFile()];
+        }
 
         _ep_square = Square::None;
 
@@ -431,8 +440,9 @@ bool Position::make(Move32b& move, nn::AccumulatorCache* accum_cache) {
         }
 
         _zhash ^= ZHashMasks->black_key;
-
         _halfmove_count = capture or pawn_push or double_pawn_push ? 0 : _halfmove_count + 1;
+
+        accum_cache->markDirty();
     }
     
     _fullmove_count += static_cast<int>(_s2m);
@@ -456,7 +466,7 @@ void Position::unmake(Move32b move, const ReversibleState& prev_state) {
 
         assert(piece_t == Piece::PAWN and promo_piece_t != Piece::PAWN and promo_piece_t != Piece::KING);
         _piece_bb[_s2m][piece_t].setBit(org);
-        _piece_bb[_s2m][promo_piece_t].popBit(dst);
+        _piece_bb[_s2m][promo_piece_t].flipBit(dst);
         _occupied[_s2m].moveBit(dst, org);
     }
     else { // if not a promotion - just move a piece to origin square
@@ -483,8 +493,8 @@ void Position::unmake(Move32b move, const ReversibleState& prev_state) {
 
     // undo castling (move rook to its origin square in corner)
     if (piece_t == Piece::KING) {
-        const bool short_castle = move.isShortCastle(),
-                   long_castle = move.isLongCastle();
+        const auto short_castle = move.isShortCastle();
+        const auto long_castle = move.isLongCastle();
 
         if (short_castle) {
             _piece_bb[_s2m][Piece::ROOK].moveBit(dst - 1, dst + 1);
@@ -537,7 +547,6 @@ void Position::unmakeNull(const ReversibleState& prev_state) {
     _fullmove_count -= static_cast<uint16_t>(_s2m);
 
     _zhash = prev_state.hash_key;
-
     _ep_square = prev_state.ep_sq;
 }
 

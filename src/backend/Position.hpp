@@ -93,14 +93,14 @@ public:
     _NODISCARD bool notThroughPieces_Long(BitBoard occupied) const;
     _NODISCARD bool notThroughPieces_Long(BitBoard occupied, enumColor side) const;
 
-    _INLINE void setKingSide(bool flag) {
-        static constexpr auto KShf = getExp2(std::to_underlying(enumMask::KINGSIDE));
-        _m |= (static_cast<value_type>(flag) << KShf);
+    _INLINE void setKingSide(bool flag) { 
+        static constexpr value_type KMsk = std::to_underlying(enumMask::KINGSIDE);
+        _m = (_m & ~KMsk) | (flag ? KMsk : 0);
     }
 
     _INLINE void setQueenSide(bool flag) {
-        static constexpr auto QShf = getExp2(std::to_underlying(enumMask::QUEENSIDE));
-        _m |= (static_cast<value_type>(flag) << QShf);
+        static constexpr value_type QMsk = std::to_underlying(enumMask::QUEENSIDE);
+        _m = (_m & ~QMsk) | (flag ? QMsk : 0);
     }
 
     _INLINE void clear() {
@@ -114,7 +114,7 @@ private:
         ANY       = KINGSIDE | QUEENSIDE
     };
 
-    value_type _m;
+    value_type _m = 0;
 };
 
 namespace utils { class ExtPackedPosition; }
