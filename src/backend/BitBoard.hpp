@@ -177,14 +177,12 @@ public:
 
     _INLINE void safeMoveBit(Square origin, Square target) {
         assert(getBit(origin));
-        popBit(origin);
-        setBit(target);
+        _board = (_board & ~(1_ui64 << origin)) | (1_ui64 << target);
     }
 
     _INLINE void moveBit(Square origin, Square target) {
         assert(getBit(origin));
-        flipBit(origin);
-        setBit(target);
+        _board = (_board ^ (1_ui64 << origin)) | (1_ui64 << target);
     }
 
     _NODISCARD _INLINE BitBoard oneBit() const {

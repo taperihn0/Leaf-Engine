@@ -246,12 +246,6 @@ bool Accumulator::verify(const Accumulator& accum, const Position& pos) {
 }
 #endif
 
-void AccumulatorCache::clearBuffers() {
-    added_features_cnt = 0;
-    removed_features_cnt = 0;
-    dirty = false;
-}
-
 template uint16_t Accumulator::featureIndex<WHITE>(Square sq, Piece::enumType piece_type, enumColor side);
 template uint16_t Accumulator::featureIndex<BLACK>(Square sq, Piece::enumType piece_type, enumColor side);
 

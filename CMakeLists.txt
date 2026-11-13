@@ -128,6 +128,8 @@ else ()
 	target_compile_definitions(Leaf PUBLIC LEAF_ARCHITECTURE_X86)
 endif ()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	if (NOT MSVC)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og -O0")

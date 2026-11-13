@@ -1,6 +1,6 @@
 {
   "games_count": 8000,
-  "thread_count": 2,
+  "thread_count": 7,
   "time_control": "4+0.04",
   "cmake_preset": "final",
   "engine_name": "Leaf",

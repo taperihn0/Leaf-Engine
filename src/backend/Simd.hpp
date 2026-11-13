@@ -300,3 +300,46 @@ static _FORCEINLINE int32_t sumRegisterElements_i16(_max_platf_register_i_t a) {
 }
 
 #endif
+
+namespace simd {
+
+template <typename T, typename std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+struct PlatformPackedDetails {
+    static constexpr auto Count = MaxRegisterSizeBits / sizeof(T);
+    using type = _max_platf_register_i_t;    
+};
+
+template <typename T>
+struct PlatformPackedIntrinsics 
+{};
+
+template <typename T, typename std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+class Packed {
+public:
+    using packed_details = PlatformPackedDetails<T>;
+
+    Register() = default;
+    explicit Register(const T* mem) {
+        _max_register_aligned_load_i(mem);
+    }
+    
+    static Register zeroed();
+
+    void fill(T v);
+
+    void aligned_load(T* mem);
+    void aligned_store(const T* mem) const;
+
+    T accumulate() const;
+
+    const Register& operator+(const Register& r) const;
+    const Register& operator-(const Register& r) const;
+    const Register& operator*(const Register& r) const;
+
+    _INLINE static size_t count() { return packed_details::Count; }
+
+private:
+    packed_details::type _m;
+};
+
+} // namespace simd

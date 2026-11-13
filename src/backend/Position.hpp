@@ -547,11 +547,18 @@ _INLINE BitBoard Position::get(Piece::enumType piece, enumColor color) const {
 }
 
 _FORCEINLINE bool Position::isAttackedSquare(Square sq, enumColor side) const {
+    if (knightAttacks(sq) & getKnightsBySide(!side))
+        return true;
+
+    if (pawnAttacks(sq, side) & getPawnsBySide(!side))
+        return true;
+
     const BitBoard occ = getOccupied();
-    return (knightAttacks(sq) & getKnightsBySide(!side)) or
-           (pawnAttacks(sq, side) & getPawnsBySide(!side)) or
-           (SlidersAttacks::rookAttacks(sq, occ) & getRooksQueensBySide(!side)) or
-           (SlidersAttacks::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side));
+
+    if (SlidersAttacks::rookAttacks(sq, occ) & getRooksQueensBySide(!side))
+        return true;
+
+    return SlidersAttacks::bishopAttacks(sq, occ) & getBishopsQueensBySide(!side);
 }
 
 _INLINE bool Position::isAttackedSquare_KingIncluded(Square sq, enumColor side) const {

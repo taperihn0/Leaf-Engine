@@ -858,9 +858,6 @@ sc::Score Search::nmSearch(Position& pos,
         if (node->move == node->excluded_move)
             continue;
 
-        const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
-        _tt.prefetchBucket(next_hash);
-
         /* Futility Pruning -
         *  at shallow depths, skip moves that aren't like to rise alpha.
         */
@@ -908,6 +905,9 @@ sc::Score Search::nmSearch(Position& pos,
                 }
             }
         }
+
+        const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
+        _tt.prefetchBucket(next_hash);
 
         int32_t move_extension = 0;
         int32_t move_reduction = 0;
@@ -1311,11 +1311,6 @@ sc::Score Search::qSearch(Position& pos,
          node->move_index++) 
     {
         
-#if defined(_TT_PREFETCH_QSEARCH)    
-        const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
-        _tt.prefetchBucket(next_hash);
-#endif // _TT_PREFETCH_QSEARCH
-
         /* Static Exchange Evaluation Pruning -
         *  ignore losing captures, as they aren't likely to rise alpha anyway.
         */
@@ -1326,6 +1321,11 @@ sc::Score Search::qSearch(Position& pos,
                 pos.badStaticExchangeEval(node->move, QSeePruningThreshold))
                 continue;
         }
+
+#if defined(_TT_PREFETCH_QSEARCH)
+        const uint64_t next_hash = pos.likelyZobristKeyAfterMove(node->move);
+        _tt.prefetchBucket(next_hash);
+#endif // _TT_PREFETCH_QSEARCH
 
         if (!pos.make(node->move, accum_cache)) {
             pos.unmake(node->move, node->state);
@@ -1525,7 +1525,12 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
         results.nmeval_cnt++;
 #endif
 
-    if (pos.getPiecesCount() <= 6) {
+    /* Resolve the piece count once - getPiecesCount() is a popcount and was
+    *  recomputed both here and for the halfmove scaling below.
+    */
+    const int pieces_count = pos.getPiecesCount();
+
+    if (pieces_count <= 6) {
         const sc::Score eval = hce::StaticEval::evaluatePawnlessEndgame(pos);
 
         if (eval != sc::Undef)
@@ -1556,9 +1561,17 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     assert(abs<int16_t>(scaled_eval) < sc::Win.value());
  
     const uint8_t halfmoves_left = 100 - pos.getHalfmoveClock();
-    const uint8_t halfmoves_left_limit = pos.getPiecesCount() < 6 ? EvalEgHalfMovesEvalLimit : EvalHalfMovesEvalLimit;
+    const bool    eg_limit = pieces_count < 6;
+    const uint8_t halfmoves_left_limit = eg_limit ? EvalEgHalfMovesEvalLimit : EvalHalfMovesEvalLimit;
     const int32_t clock_mult = std::min<int32_t>(halfmoves_left, halfmoves_left_limit);
-    const sc::Score::value_type result = static_cast<sc::Score::value_type>(static_cast<int32_t>(scaled_eval) * clock_mult / halfmoves_left_limit);
+
+    /* Dividing by a known constant instead of a runtime limit lets the
+    *  compiler turn the score scaling into a multiply instead of a division.
+    */
+    const int32_t unscaled_result = static_cast<int32_t>(scaled_eval) * clock_mult;
+    const sc::Score::value_type result = static_cast<sc::Score::value_type>(
+        eg_limit ? unscaled_result / EvalEgHalfMovesEvalLimit
+                 : unscaled_result / EvalHalfMovesEvalLimit);
 
     return result;
 }

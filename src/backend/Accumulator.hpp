@@ -113,9 +113,15 @@ struct AccumulatorCache {
     
     _NODISCARD _INLINE bool isDirty() const { return dirty;  }
     _NODISCARD _INLINE bool isClean() const { return !dirty; }
+    
     _INLINE void markClean() { dirty = false; }
     _INLINE void markDirty() { dirty = true;  }
-    void clearBuffers();
+
+    _INLINE void clearBuffers() {
+        added_features_cnt = 0;
+        removed_features_cnt = 0;
+        dirty = false;
+    }
 
     Accumulator             accum;
     std::array<FeatureData, 2> added_features;
