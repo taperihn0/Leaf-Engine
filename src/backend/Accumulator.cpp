@@ -97,28 +97,31 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 
 #if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
 
-    static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
+    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
+    using Reg = Intr::packed_type;
+
+    static constexpr int RegisterWidth = Intr::Count;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side].data();
-    const _max_platf_register_i_t* const _RESTRICT biases_base = (_max_platf_register_i_t*)biases;
-    const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
+    Reg* const _RESTRICT values_base = reinterpret_cast<Reg*>(_values[side].data());
+    const Reg* const _RESTRICT biases_base = reinterpret_cast<const Reg*>(biases);
+    const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(biases_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(biases_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
-        _max_register_aligned_store_i(values_base + i, _max_register_aligned_load_i(biases_base + i));
+        Intr::store(values_base + i, Intr::load(biases_base + i));
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
         const size_t base_offset = side_active_features[i] * ChunkCount;
 
         for (size_t j = 0; j < ChunkCount; j++) {
-            _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
+            Intr::store(values_base + j, Intr::add(values_base[j], weights_base[base_offset + j]));
         }
     }
     
@@ -173,28 +176,31 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 
 #if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
 
-    static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
+    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
+    using Reg = Intr::packed_type;
+
+    static constexpr int RegisterWidth = Intr::Count;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    _max_platf_register_i_t* const _RESTRICT values_base = (_max_platf_register_i_t*)_values[side].data();
-    const _max_platf_register_i_t* const _RESTRICT prev_values_base = (_max_platf_register_i_t*)prev_acc->_values[side].data();
-    const _max_platf_register_i_t* const _RESTRICT weights_base = (_max_platf_register_i_t*)weights;
+    Reg* const _RESTRICT values_base = reinterpret_cast<Reg*>(_values[side].data());
+    const Reg* const _RESTRICT prev_values_base = reinterpret_cast<const Reg*>(prev_acc->_values[side].data());
+    const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(prev_values_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(prev_values_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
-        _max_register_aligned_store_i(values_base + i, _max_register_aligned_load_i(prev_values_base + i));
+        Intr::store(values_base + i, Intr::load(prev_values_base + i));
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
         const size_t base_offset = removed_features[i] * ChunkCount;
         
         for (size_t j = 0; j < ChunkCount; j++) {
-            _max_register_aligned_store_i(values_base + j, _max_register_sub_i16(values_base[j], weights_base[base_offset + j]));
+            Intr::store(values_base + j, Intr::sub(values_base[j], weights_base[base_offset + j]));
         }
     }
 
@@ -202,7 +208,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
         const size_t base_offset = added_features[i] * ChunkCount;
 
         for (size_t j = 0; j < ChunkCount; j++) {
-            _max_register_aligned_store_i(values_base + j, _max_register_add_i16(values_base[j], weights_base[base_offset + j]));
+            Intr::store(values_base + j, Intr::add(values_base[j], weights_base[base_offset + j]));
         }
     }
 

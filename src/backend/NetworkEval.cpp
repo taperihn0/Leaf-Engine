@@ -68,22 +68,25 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 
 #if defined(_NN_USE_SCRELU_SIMD)
 
-    static constexpr int RegisterWidth = MaxRegisterSizeBits / 16;
+    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
+    using Reg = Intr::packed_type;
+
+    static constexpr int RegisterWidth = Intr::Count;
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    _max_platf_register_i_t sum_vec = _max_register_zero_i;
-    const _max_platf_register_i_t qa_vec = _max_register_fill_i16(NetworkWeightQuant);
-    const _max_platf_register_i_t zero_vec = _max_register_zero_i;
+    Reg sum_vec = Intr::zero();
+    const Reg qa_vec = Intr::fill(NetworkWeightQuant);
+    const Reg zero_vec = Intr::zero();
 
-    const _max_platf_register_i_t* const _RESTRICT s2m_base = (_max_platf_register_i_t*)s2m_accumulator;
-    const _max_platf_register_i_t* const _RESTRICT ns2m_base = (_max_platf_register_i_t*)ns2m_accumulator;
-    const _max_platf_register_i_t* const weights_base = (_max_platf_register_i_t*)weights;
+    const Reg* const _RESTRICT s2m_base = reinterpret_cast<const Reg*>(s2m_accumulator);
+    const Reg* const _RESTRICT ns2m_base = reinterpret_cast<const Reg*>(ns2m_accumulator);
+    const Reg* const weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(s2m_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(ns2m_base) % AlignmentBound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % AlignmentBound == 0);
+    assert(reinterpret_cast<size_t>(s2m_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(ns2m_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
 
     // Assert that we won't overflow in int16 range.
 #if defined(_NN_VERIFY_SCRELU_OVERFLOW)
@@ -106,17 +109,17 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 #endif
 
     for (size_t i = 0; i < ChunkCount; i++) {
-        const _max_platf_register_i_t  s2m_clamp = _max_register_min_i16(_max_register_max_i16(s2m_base[i], zero_vec), qa_vec);
-        const _max_platf_register_i_t ns2m_clamp = _max_register_min_i16(_max_register_max_i16(ns2m_base[i], zero_vec), qa_vec);
+        const Reg  s2m_clamp = Intr::min(Intr::max(s2m_base[i], zero_vec), qa_vec);
+        const Reg ns2m_clamp = Intr::min(Intr::max(ns2m_base[i], zero_vec), qa_vec);
 
-        const _max_platf_register_i_t rs2m  = _max_register_madd_i16(_max_register_mul_i16(weights_base[i], s2m_clamp ), s2m_clamp);
-        const _max_platf_register_i_t rns2m = _max_register_madd_i16(_max_register_mul_i16(weights_base[i + ChunkCount], ns2m_clamp), ns2m_clamp);
+        const Reg rs2m  = Intr::madd(Intr::mul(weights_base[i], s2m_clamp ), s2m_clamp);
+        const Reg rns2m = Intr::madd(Intr::mul(weights_base[i + ChunkCount], ns2m_clamp), ns2m_clamp);
 
-        sum_vec = _max_register_add_i32(sum_vec, rs2m);
-        sum_vec = _max_register_add_i32(sum_vec, rns2m);
+        sum_vec = simd::PlatformPackedIntrinsics<int32_t>::add(sum_vec, rs2m);
+        sum_vec = simd::PlatformPackedIntrinsics<int32_t>::add(sum_vec, rns2m);
     }
 
-    output = sumRegisterElements_i16(sum_vec);
+    output = Intr::accumulate(sum_vec);
 
 #else
 

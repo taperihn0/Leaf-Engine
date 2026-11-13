@@ -58,288 +58,491 @@
     or defined(LEAF_SIMD_SSE3)   \
     or defined(LEAF_SIMD_SSE2) 
 #define _NN_USE_SSE2
-#elif defined(LEAF_SIMD_SSE)
+#else 
 #define _NN_NO_SIMD
 #endif
 
-#endif // !LEAF_FORCE_PURE
-
-#ifdef _NN_USE_AVX512
-
-// adjust mode for summing accumulator with SCReLU activation function
+#ifndef _NN_NO_SIMD
 #define _NN_USE_SCRELU_SIMD
 
 #ifdef DEBUG
 #define _NN_VERIFY_SCRELU_OVERFLOW
 #endif
 
-static constexpr int MaxRegisterSizeBits = 512;
-static constexpr int AlignmentBound = 64;
-
-using _max_platf_register_t = __m512;
-using _max_platf_register_i_t = __m512i;
-
-// Loading and storing AVX512 registers
-#define _max_register_aligned_load_i(mem_addr)     _mm512_load_si512((mem_addr))
-#define _max_register_aligned_store_i(mem_addr, a) _mm512_store_si512((mem_addr), (a))
-// Adding AVX512 registers
-#define _max_register_add_i8(a, b)                 _mm512_add_epi8((a), (b))
-#define _max_register_add_i16(a, b)                _mm512_add_epi16((a), (b))
-#define _max_register_add_i32(a, b)                _mm512_add_epi32((a), (b))
-#define _max_register_add_i64(a, b)                _mm512_add_epi64((a), (b))
-// Subtracting AVX512 registers
-#define _max_register_sub_i8(a, b)                 _mm512_sub_epi8((a), (b))
-#define _max_register_sub_i16(a, b)                _mm512_sub_epi16((a), (b))
-#define _max_register_sub_i32(a, b)                _mm512_sub_epi32((a), (b))
-#define _max_register_sub_i64(a, b)                _mm512_sub_epi64((a), (b))
-// Filling AVX512 registers
-#define _max_register_zero_i                       _mm512_setzero_si512()
-#define _max_register_fill_i8(x)                   _mm512_set1_epi8((x))
-#define _max_register_fill_i16(x)                  _mm512_set1_epi16((x))
-#define _max_register_fill_i32(x)                  _mm512_set1_epi32((x))
-#define _max_register_fill_i64(x)                  _mm512_set1_epi64x((x))
-// Min and max AVX512 registers
-#define _max_register_max_i8(a, b)                 _mm512_max_epi8((a), (b))
-#define _max_register_max_i16(a, b)                _mm512_max_epi16((a), (b))
-#define _max_register_max_i32(a, b)                _mm512_max_epi32((a), (b))
-#define _max_register_max_i64(a, b)                _mm512_max_epi64((a), (b))
-#define _max_register_min_i8(a, b)                 _mm512_min_epi8((a), (b))
-#define _max_register_min_i16(a, b)                _mm512_min_epi16((a), (b))
-#define _max_register_min_i32(a, b)                _mm512_min_epi32((a), (b))
-#define _max_register_min_i64(a, b)                _mm512_min_epi64((a), (b))
-#define _max_register_mul_i16(a, b)                _mm512_mullo_epi16((a), (b))
-// Multiplicating AVX512 registers
-#define _max_register_mul_i32(a, b)                _mm512_mullo_epi32((a), (b))
-#define _max_register_mul_i64(a, b)                _mm512_mullo_epi64((a), (b))
-#define _max_register_madd_i16(a, b)               _mm512_madd_epi16((a), (b))
-
-// Accumulate elements in AVX512 register
-static _FORCEINLINE int32_t sumRegisterElements_i16(_max_platf_register_i_t a) {
-    return _mm512_reduce_add_epi32(a);
-}
-
-#elif defined(_NN_USE_AVX2)
-
-// adjust mode for summing accumulator with SCReLU activation function
-#define _NN_USE_SCRELU_SIMD
-
-#ifdef DEBUG
-#define _NN_VERIFY_SCRELU_OVERFLOW
 #endif
-
-static constexpr int MaxRegisterSizeBits = 256;
-static constexpr int AlignmentBound = 32;
-
-using _max_platf_register_t = __m256;
-using _max_platf_register_i_t = __m256i;
-
-// Loading and storing AVX2 registers
-#define _max_register_aligned_load_i(mem_addr)     _mm256_load_si256((mem_addr))
-#define _max_register_aligned_store_i(mem_addr, a) _mm256_store_si256((mem_addr), (a))
-// Adding AVX2 registers
-#define _max_register_add_i8(a, b)                 _mm256_add_epi8((a), (b))
-#define _max_register_add_i16(a, b)                _mm256_add_epi16((a), (b))
-#define _max_register_add_i32(a, b)                _mm256_add_epi32((a), (b))
-#define _max_register_add_i64(a, b)                _mm256_add_epi64((a), (b))
-// Subtracting AVX2 registers
-#define _max_register_sub_i8(a, b)                 _mm256_sub_epi8((a), (b))
-#define _max_register_sub_i16(a, b)                _mm256_sub_epi16((a), (b))
-#define _max_register_sub_i32(a, b)                _mm256_sub_epi32((a), (b))
-#define _max_register_sub_i64(a, b)                _mm256_sub_epi64((a), (b))
-// Filling AVX2 registers
-#define _max_register_zero_i                       _mm256_setzero_si256()
-#define _max_register_fill_i8(x)                   _mm256_set1_epi8((x))
-#define _max_register_fill_i16(x)                  _mm256_set1_epi16((x))
-#define _max_register_fill_i32(x)                  _mm256_set1_epi32((x))
-#define _max_register_fill_i64(x)                  _mm256_set1_epi64x((x))
-// Max and min AVX2 registers
-#define _max_register_max_i8(a, b)                 _mm256_max_epi8((a), (b))
-#define _max_register_max_i16(a, b)                _mm256_max_epi16((a), (b))
-#define _max_register_max_i32(a, b)                _mm256_max_epi32((a), (b))
-#define _max_register_max_i64(a, b)                _mm256_max_epi64((a), (b))
-#define _max_register_min_i8(a, b)                 _mm256_min_epi8((a), (b))
-#define _max_register_min_i16(a, b)                _mm256_min_epi16((a), (b))
-#define _max_register_min_i32(a, b)                _mm256_min_epi32((a), (b))
-#define _max_register_min_i64(a, b)                _mm256_min_epi64((a), (b))
-// Multiplicating AVX2 registers
-#define _max_register_mul_i16(a, b)                _mm256_mullo_epi16((a), (b))
-#define _max_register_mul_i32(a, b)                _mm256_mullo_epi32((a), (b))
-#define _max_register_madd_i16(a, b)               _mm256_madd_epi16((a), (b))
-
-// Accumulate elements in AVX2 register
-static _FORCEINLINE int32_t sumRegisterElements_i16(_max_platf_register_i_t a) {
-    const __m128i lo = _mm256_castsi256_si128(a);
-    const __m128i hi = _mm256_extracti128_si256(a, 1);
-
-    __m128i s = _mm_add_epi32(lo, hi);
-    s = _mm_hadd_epi32(s, s);
-    s = _mm_hadd_epi32(s, s);
-
-    return _mm_cvtsi128_si32(s);
-}
-
-#elif defined(_NN_USE_SSE2)
-
-// adjust mode for summing accumulator with SCReLU activation function
-#define _NN_USE_SCRELU_SIMD
-
-#ifdef DEBUG
-#define _NN_VERIFY_SCRELU_OVERFLOW
-#endif
-
-static constexpr int MaxRegisterSizeBits = 128;
-static constexpr int AlignmentBound = 16;
-
-using _max_platf_register_t = __m128;
-using _max_platf_register_i_t = __m128i;
-
-// Loading and storing SSE2 registers
-#define _max_register_aligned_load_i(mem_addr)     _mm_load_si128((mem_addr))
-#define _max_register_aligned_store_i(mem_addr, a) _mm_store_si128((mem_addr), (a))
-// Adding SSE2 registers
-#define _max_register_add_i8(a, b)                 _mm_add_epi8((a), (b))
-#define _max_register_add_i16(a, b)                _mm_add_epi16((a), (b))
-#define _max_register_add_i32(a, b)                _mm_add_epi32((a), (b))
-#define _max_register_add_i64(a, b)                _mm_add_epi64((a), (b))
-// Subtracting SSE2 registers
-#define _max_register_sub_i8(a, b)                 _mm_sub_epi8((a), (b))
-#define _max_register_sub_i16(a, b)                _mm_sub_epi16((a), (b))
-#define _max_register_sub_i32(a, b)                _mm_sub_epi32((a), (b))
-#define _max_register_sub_i64(a, b)                _mm_sub_epi64((a), (b))
-// Filling SSE2 registers
-#define _max_register_zero_i                       _mm_setzero_si128()
-#define _max_register_fill_i8(x)                   _mm_set1_epi8((x))
-#define _max_register_fill_i16(x)                  _mm_set1_epi16((x))
-#define _max_register_fill_i32(x)                  _mm_set1_epi32((x))
-#define _max_register_fill_i64(x)                  _mm_set1_epi64x((x))
-// Max and min on SSE2 registers
-#define _max_register_max_i8(a, b)                 _mm_max_epi8((a), (b))
-#define _max_register_max_i16(a, b)                _mm_max_epi16((a), (b))
-#define _max_register_max_i32(a, b)                _mm_max_epi32((a), (b))
-#define _max_register_max_i64(a, b)                _mm_max_epi64((a), (b))
-#define _max_register_min_i8(a, b)                 _mm_min_epi8((a), (b))
-#define _max_register_min_i16(a, b)                _mm_min_epi16((a), (b))
-#define _max_register_min_i32(a, b)                _mm_min_epi32((a), (b))
-#define _max_register_min_i64(a, b)                _mm_min_epi64((a), (b))
-// Multiplicating SSE2 registers
-#define _max_register_mul_i16(a, b)                _mm_mullo_epi16((a), (b))
-#define _max_register_mul_i32(a, b)                _mm_mullo_epi32((a), (b))
-#define _max_register_madd_i16(a, b)               _mm_madd_epi16((a), (b))
-
-// Accumulate elements in SSE2 register
-static _FORCEINLINE int32_t sumRegisterElements_i16(_max_platf_register_i_t a) {
-    __m128i s = _mm_hadd_epi32(a, a);
-    s = _mm_hadd_epi32(s, s);
-    return _mm_cvtsi128_si32(s);
-}
-
-#elif defined(_NN_USE_NEON)
-
-// adjust mode for summing accumulator with SCReLU activation function
-#define _NN_USE_SCRELU_SIMD
-
-#ifdef DEBUG
-#define _NN_VERIFY_SCRELU_OVERFLOW
-#endif
-
-static constexpr int MaxRegisterSizeBits = 128;
-static constexpr int AlignmentBound = 16;
-
-using _max_platf_register_t = float32x4_t;
-using _max_platf_register_i_t = int32x4_t; 
-
-// Loading and storing NEON registers
-#define _max_register_aligned_load_i(mem_addr)     vld1q_s32(reinterpret_cast<const int32_t*>(mem_addr))
-#define _max_register_aligned_store_i(mem_addr, a) vst1q_s32(reinterpret_cast<int32_t*>(mem_addr), (a))
-// Adding NEON registers
-#define _max_register_add_i8(a, b)                 vaddq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b))
-#define _max_register_add_i16(a, b)                vaddq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b))
-#define _max_register_add_i32(a, b)                vaddq_s32((a), (b))
-#define _max_register_add_i64(a, b)                vaddq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b))
-// Subtracting NEON registers
-#define _max_register_sub_i8(a, b)                 vsubq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b))
-#define _max_register_sub_i16(a, b)                vsubq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b))
-#define _max_register_sub_i32(a, b)                vsubq_s32((a), (b))
-#define _max_register_sub_i64(a, b)                vsubq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b))
-// Filling NEON registers
-#define _max_register_zero_i                       vdupq_n_s32(0)
-#define _max_register_fill_i8(x)                   vreinterpretq_s32_s8(vdupq_n_s8(x))
-#define _max_register_fill_i16(x)                  vreinterpretq_s32_s16(vdupq_n_s16(x))
-#define _max_register_fill_i32(x)                  vdupq_n_s32(x)
-#define _max_register_fill_i64(x)                  vreinterpretq_s32_s64(vdupq_n_s64(x))
-// Min and max on NEON registers
-#define _max_register_max_i8(a, b)                 vreinterpretq_s32_s8(vmaxq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)))
-#define _max_register_max_i16(a, b)                vreinterpretq_s32_s16(vmaxq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)))
-#define _max_register_max_i32(a, b)                vmaxq_s32((a), (b))
-#define _max_register_max_i64(a, b)                vreinterpretq_s32_s64(vbslq_s64(vcgtq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)), vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)))
-#define _max_register_min_i8(a, b)                 vreinterpretq_s32_s8(vminq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)))
-#define _max_register_min_i16(a, b)                vreinterpretq_s32_s16(vminq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)))
-#define _max_register_min_i32(a, b)                vminq_s32((a), (b))
-#define _max_register_min_i64(a, b)                vreinterpretq_s64_s32(vminq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)))
-// Multiplicating NEON registers
-#define _max_register_mul_i16(a, b)                vreinterpretq_s32_s16(vmulq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)))
-#define _max_register_mul_i32(a, b)                vmulq_s32((a), (b))
-
-// TODO: Use generic hardware instruction
-static _FORCEINLINE int32x4_t _max_register_madd_i16_neon(int32x4_t a, int32x4_t b) {
-    int16x8_t a_16 = vreinterpretq_s16_s32(a);
-    int16x8_t b_16 = vreinterpretq_s16_s32(b);
-    
-    int32x4_t mul_lo = vmull_s16(vget_low_s16(a_16), vget_low_s16(b_16));
-    int32x4_t mul_hi = vmull_high_s16(a_16, b_16);
-    
-    int32x4_t p1 = vpaddq_s32(mul_lo, mul_hi);
-    return p1;
-}
-
-#define _max_register_madd_i16(a, b)               _max_register_madd_i16_neon((a), (b))
-
-// Accumulate elements in NEON register
-static _FORCEINLINE int32_t sumRegisterElements_i16(_max_platf_register_i_t a) {
-    return vaddvq_s32(a);
-}
-
 #endif
 
 namespace simd {
 
-template <typename T, typename std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+#ifdef _NN_USE_AVX512
+using float_packed_type = __m512;
+using integer_packed_type = __m512i;
+#elif defined(_NN_USE_AVX2)
+using float_packed_type = __m256;
+using integer_packed_type = __m256i;
+#elif defined(_NN_USE_SSE2)
+using float_packed_type = __m128;
+using integer_packed_type = __m128i;
+#elif defined(_NN_USE_NEON)
+using float_packed_type = float32x4_t;
+using integer_packed_type = int32x4_t;
+#endif
+
+#ifndef _NN_NO_SIMD
+
+template <typename T, typename = void>
+struct PlatformPackedIntrinsics {};
+
+static constexpr size_t getSimdRegisterSizeBits() {
+#if defined(_NN_USE_AVX512)
+    return 512;
+#elif defined(_NN_USE_AVX2)
+    return 256;
+#elif defined(_NN_USE_SSE2)
+    return 128;
+#elif defined(_NN_USE_NEON)
+    return 128;
+#else
+    return 0;
+#endif
+}
+
+static constexpr size_t getSimdRegisterAlignment() {
+#if defined(_NN_USE_AVX512)
+    return 64;
+#elif defined(_NN_USE_AVX2)
+    return 32;
+#elif defined(_NN_USE_SSE2)
+    return 16;
+#elif defined(_NN_USE_NEON)
+    return 16;
+#else
+    return 0;
+#endif
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
 struct PlatformPackedDetails {
-    static constexpr auto Count = MaxRegisterSizeBits / sizeof(T);
-    using type = _max_platf_register_i_t;    
+    static constexpr int Count = getSimdRegisterSizeBits() / (sizeof(T) * 8);
+    using packed_type = integer_packed_type;
+    using value_type = T;
 };
 
 template <typename T>
-struct PlatformPackedIntrinsics 
-{};
+struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>> {
+    using packed_type = PlatformPackedDetails<T>::packed_type;
 
-template <typename T, typename std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
+    static _FORCEINLINE packed_type zero() {
+#if defined(_NN_USE_AVX512)
+        return _mm512_setzero_si512();
+#elif defined(_NN_USE_AVX2)
+        return _mm256_setzero_si256();
+#elif defined(_NN_USE_SSE2)
+        return _mm_setzero_si128();
+#elif defined(_NN_USE_NEON)
+        return vdupq_n_s32(0);
+#else
+        static_assert(false);
+#endif
+    }
+
+    static _FORCEINLINE packed_type fill(T value) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int8_t>) {
+            return _mm512_set1_epi8(value);
+        } else if constexpr (std::is_same_v<T, int16_t>) {
+            return _mm512_set1_epi16(value);
+        } else if constexpr (std::is_same_v<T, int32_t>) {
+            return _mm512_set1_epi32(value);
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return _mm512_set1_epi64x(value);
+        }
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int8_t>) {
+            return _mm256_set1_epi8(value);
+        } else if constexpr (std::is_same_v<T, int16_t>) {
+            return _mm256_set1_epi16(value);
+        } else if constexpr (std::is_same_v<T, int32_t>) {
+            return _mm256_set1_epi32(value);
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return _mm256_set1_epi64x(value);
+        }
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int8_t>) {
+            return _mm_set1_epi8(value);
+        } else if constexpr (std::is_same_v<T, int16_t>) {
+            return _mm_set1_epi16(value);
+        } else if constexpr (std::is_same_v<T, int32_t>) {
+            return _mm_set1_epi32(value);
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return _mm_set1_epi64x(value);
+        }
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int8_t>) {
+            return vreinterpretq_s32_s8(vdupq_n_s8(value));
+        } else if constexpr (std::is_same_v<T, int16_t>) {
+            return vreinterpretq_s32_s16(vdupq_n_s16(value));
+        } else if constexpr (std::is_same_v<T, int32_t>) {
+            return vdupq_n_s32(static_cast<int32_t>(value));
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return vreinterpretq_s32_s64(vdupq_n_s64(value));
+        }
+#else
+        static_assert(false);
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type load(const packed_type* mem) {
+#if defined(_NN_USE_AVX512)
+        return _mm512_load_si512(mem);
+#elif defined(_NN_USE_AVX2)
+        return _mm256_load_si256(mem);
+#elif defined(_NN_USE_SSE2)
+        return _mm_load_si128(mem);
+#elif defined(_NN_USE_NEON)
+        return vld1q_s32(reinterpret_cast<const int32_t*>(mem));
+#endif
+    }
+
+    static _FORCEINLINE packed_type load(const void* mem) {
+        return load(reinterpret_cast<const packed_type*>(mem));
+    }
+
+    static _FORCEINLINE packed_type load(const T* mem) {
+        return load(reinterpret_cast<const packed_type*>(mem));
+    }
+
+    static _FORCEINLINE void store(packed_type* mem, packed_type a) {
+#if defined(_NN_USE_AVX512)
+        _mm512_store_si512(mem, a);
+#elif defined(_NN_USE_AVX2)
+        _mm256_store_si256(mem, a);
+#elif defined(_NN_USE_SSE2)
+        _mm_store_si128(mem, a);
+#elif defined(_NN_USE_NEON)
+        vst1q_s32(reinterpret_cast<int32_t*>(mem), a);
+#endif
+    }
+
+    static _FORCEINLINE void store(void* mem, packed_type a) {
+        store(reinterpret_cast<packed_type*>(mem), a);
+    }
+
+    static _FORCEINLINE void store(T* mem, packed_type a) {
+        store(reinterpret_cast<packed_type*>(mem), a);
+    }
+
+    static _FORCEINLINE packed_type add(packed_type a, packed_type b) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm512_add_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm512_add_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm512_add_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm512_add_epi64(a, b);
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm256_add_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm256_add_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm256_add_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm256_add_epi64(a, b);
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm_add_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm_add_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm_add_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm_add_epi64(a, b);
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return vreinterpretq_s32_s8(vaddq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)));
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return vreinterpretq_s32_s16(vaddq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return vaddq_s32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return vreinterpretq_s32_s64(vaddq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type sub(packed_type a, packed_type b) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm512_sub_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm512_sub_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm512_sub_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm512_sub_epi64(a, b);
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm256_sub_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm256_sub_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm256_sub_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm256_sub_epi64(a, b);
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm_sub_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm_sub_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm_sub_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm_sub_epi64(a, b);
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return vreinterpretq_s32_s8(vsubq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)));
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return vreinterpretq_s32_s16(vsubq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return vsubq_s32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return vreinterpretq_s32_s64(vsubq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type max(packed_type a, packed_type b) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm512_max_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm512_max_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm512_max_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm512_max_epi64(a, b);
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm256_max_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm256_max_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm256_max_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm256_max_epi64(a, b);
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm_max_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm_max_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm_max_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm_max_epi64(a, b);
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return vreinterpretq_s32_s8(vmaxq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)));
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return vreinterpretq_s32_s16(vmaxq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return vmaxq_s32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return vreinterpretq_s32_s64(vbslq_s64(vcgtq_s64(vreinterpretq_s64_s32(a),
+                                                          vreinterpretq_s64_s32(b)),
+                                            vreinterpretq_s64_s32(a),
+                                            vreinterpretq_s64_s32(b)));
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type min(packed_type a, packed_type b) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm512_min_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm512_min_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm512_min_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm512_min_epi64(a, b);
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm256_min_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm256_min_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm256_min_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm256_min_epi64(a, b);
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return _mm_min_epi8(a, b);
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return _mm_min_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm_min_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm_min_epi64(a, b);
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int8_t>)
+            return vreinterpretq_s32_s8(vminq_s8(vreinterpretq_s8_s32(a), vreinterpretq_s8_s32(b)));
+        else if constexpr (std::is_same_v<T, int16_t>)
+            return vreinterpretq_s32_s16(vminq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return vminq_s32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return vreinterpretq_s32_s64(vminq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type mul(packed_type a, packed_type b) {
+#if defined(_NN_USE_AVX512)
+        if constexpr (std::is_same_v<T, int16_t>)
+            return _mm512_mullo_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm512_mullo_epi32(a, b);
+        else if constexpr (std::is_same_v<T, int64_t>)
+            return _mm512_mullo_epi64(a, b);
+#elif defined(_NN_USE_AVX2)
+        if constexpr (std::is_same_v<T, int16_t>)
+            return _mm256_mullo_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm256_mullo_epi32(a, b);
+#elif defined(_NN_USE_SSE2)
+        if constexpr (std::is_same_v<T, int16_t>)
+            return _mm_mullo_epi16(a, b);
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return _mm_mullo_epi32(a, b);
+#elif defined(_NN_USE_NEON)
+        if constexpr (std::is_same_v<T, int16_t>)
+            return vreinterpretq_s32_s16(vmulq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
+        else if constexpr (std::is_same_v<T, int32_t>)
+            return vmulq_s32(a, b);
+#endif
+        return packed_type{};
+    }
+
+    static _FORCEINLINE packed_type madd(packed_type a, packed_type b) {
+        static_assert(std::is_same_v<T, int16_t>, "Multiply-add is only supported for 16-bit packed values");
+#if defined(_NN_USE_AVX512)
+        return _mm512_madd_epi16(a, b);
+#elif defined(_NN_USE_AVX2)
+        return _mm256_madd_epi16(a, b);
+#elif defined(_NN_USE_SSE2)
+        return _mm_madd_epi16(a, b);
+#elif defined(_NN_USE_NEON)
+        {
+            int16x8_t a_16 = vreinterpretq_s16_s32(a);
+            int16x8_t b_16 = vreinterpretq_s16_s32(b);
+            int32x4_t mul_lo = vmull_s16(vget_low_s16(a_16), vget_low_s16(b_16));
+            int32x4_t mul_hi = vmull_high_s16(a_16, b_16);
+            return vpaddq_s32(mul_lo, mul_hi);
+        }
+#endif
+    }
+
+    static _FORCEINLINE int32_t accumulate(packed_type a) {
+#if defined(_NN_USE_AVX512)
+        return _mm512_reduce_add_epi32(a);
+#elif defined(_NN_USE_AVX2)
+        const __m128i lo = _mm256_castsi256_si128(a);
+        const __m128i hi = _mm256_extracti128_si256(a, 1);
+        __m128i s = _mm_add_epi32(lo, hi);
+        s = _mm_hadd_epi32(s, s);
+        s = _mm_hadd_epi32(s, s);
+        return _mm_cvtsi128_si32(s);
+#elif defined(_NN_USE_SSE2)
+        __m128i s = _mm_hadd_epi32(a, a);
+        s = _mm_hadd_epi32(s, s);
+        return _mm_cvtsi128_si32(s);
+#elif defined(_NN_USE_NEON)
+        return vaddvq_s32(a);
+#endif
+    }
+
+    static _FORCEINLINE packed_type aligned_load(const packed_type* mem) { return load(mem); }
+    static _FORCEINLINE packed_type aligned_load(const void* mem) { return load(mem); }
+    static _FORCEINLINE packed_type aligned_load(const T* mem) { return load(mem); }
+
+    static _FORCEINLINE void aligned_store(packed_type* mem, packed_type a) { store(mem, a); }
+    static _FORCEINLINE void aligned_store(void* mem, packed_type a) { store(mem, a); }
+    static _FORCEINLINE void aligned_store(T* mem, packed_type a) { store(mem, a); }
+};
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
 class Packed {
 public:
-    using packed_details = PlatformPackedDetails<T>;
+    using Intr = PlatformPackedIntrinsics<T>;
+    using Register = Intr::Register;
 
-    Register() = default;
-    explicit Register(const T* mem) {
-        _max_register_aligned_load_i(mem);
+    Packed() = default;
+
+    explicit Packed(const T* mem) {
+        _m = Intr::load(mem);
     }
-    
-    static Register zeroed();
 
-    void fill(T v);
+    static Packed zeroed() {
+        Packed p;
+        p._m = Intr::zero();
+        return p;
+    }
 
-    void aligned_load(T* mem);
-    void aligned_store(const T* mem) const;
+    void fill(T v) {
+        _m = Intr::fill(v);
+    }
 
-    T accumulate() const;
+    void aligned_load(const T* mem) {
+        _m = Intr::load(mem);
+    }
 
-    const Register& operator+(const Register& r) const;
-    const Register& operator-(const Register& r) const;
-    const Register& operator*(const Register& r) const;
+    void aligned_store(T* mem) const {
+        Intr::store(mem, _m);
+    }
 
-    _INLINE static size_t count() { return packed_details::Count; }
+    int32_t accumulate() const {
+        return Intr::accumulate(_m);
+    }
+
+    Packed operator+(const Packed& r) const {
+        Packed res;
+        res._m = Intr::add(_m, r._m);
+        return res;
+    }
+
+    Packed operator-(const Packed& r) const {
+        Packed res;
+        res._m = Intr::sub(_m, r._m);
+        return res;
+    }
+
+    Packed operator*(const Packed& r) const {
+        Packed res;
+        res._m = Intr::mul(_m, r._m);
+        return res;
+    }
+
+    _INLINE static size_t count() { return Intr::count; }
 
 private:
-    packed_details::type _m;
+    Register _m{};
 };
+
+#else
+
+template <typename T, typename = void>
+struct PlatformPackedDetails {
+    static constexpr int Count = 0;
+    using type = void;
+};
+
+template <typename T, typename = void>
+struct PlatformPackedIntrinsics {};
+
+#endif
 
 } // namespace simd
