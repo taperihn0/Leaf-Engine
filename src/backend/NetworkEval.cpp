@@ -59,8 +59,6 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
                                            const int16_t* _RESTRICT ns2m_accumulator,
                                            const PackedNeuralNetwork& network) 
 {
-    static constexpr int DivFactor = NetworkWeightQuant * NetworkBiasQuant;
-
     const int16_t* weights = network.getLayerWeights(1);
     int32_t output_bias = *network.getLayerBiases(1);
 
@@ -71,7 +69,7 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     using Intr = simd::PlatformPackedIntrinsics<int16_t>;
     using Reg = Intr::packed_type;
 
-    static constexpr int RegisterWidth = Intr::Count;
+    static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
@@ -84,9 +82,9 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     const Reg* const _RESTRICT ns2m_base = reinterpret_cast<const Reg*>(ns2m_accumulator);
     const Reg* const weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(s2m_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(ns2m_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(s2m_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(ns2m_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
     // Assert that we won't overflow in int16 range.
 #if defined(_NN_VERIFY_SCRELU_OVERFLOW)
@@ -132,7 +130,9 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
 
 #endif
     
+    static constexpr auto DivFactor = NetworkWeightQuant * NetworkBiasQuant;
     output = (output / NetworkWeightQuant + output_bias) * NetworkOutputScale / DivFactor;
+
     return output;
 }
 

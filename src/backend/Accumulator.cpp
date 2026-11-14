@@ -100,7 +100,7 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     using Intr = simd::PlatformPackedIntrinsics<int16_t>;
     using Reg = Intr::packed_type;
 
-    static constexpr int RegisterWidth = Intr::Count;
+    static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
@@ -109,9 +109,9 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     const Reg* const _RESTRICT biases_base = reinterpret_cast<const Reg*>(biases);
     const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(values_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(biases_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(biases_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
         Intr::store(values_base + i, Intr::load(biases_base + i));
@@ -179,7 +179,7 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     using Intr = simd::PlatformPackedIntrinsics<int16_t>;
     using Reg = Intr::packed_type;
 
-    static constexpr int RegisterWidth = Intr::Count;
+    static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
@@ -188,9 +188,9 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
     const Reg* const _RESTRICT prev_values_base = reinterpret_cast<const Reg*>(prev_acc->_values[side].data());
     const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
 
-    assert(reinterpret_cast<size_t>(values_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(prev_values_base) % Intr::alignment_bound == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % Intr::alignment_bound == 0);
+    assert(reinterpret_cast<size_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(prev_values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
     for (size_t i = 0; i < ChunkCount; i++) {
         Intr::store(values_base + i, Intr::load(prev_values_base + i));

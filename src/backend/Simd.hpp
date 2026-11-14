@@ -72,6 +72,10 @@
 #endif
 #endif
 
+#ifdef LEAF_FORCE_PURE
+#define _NN_NO_SIMD
+#endif
+
 namespace simd {
 
 #ifdef _NN_USE_AVX512
@@ -124,15 +128,15 @@ static constexpr size_t getSimdRegisterAlignment() {
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
 struct PlatformPackedDetails {
     static constexpr int Count = getSimdRegisterSizeBits() / (sizeof(T) * 8);
-    using packed_type = integer_packed_type;
+    using platf_packed_type = integer_packed_type;
     using value_type = T;
 };
 
 template <typename T>
 struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>> {
-    using packed_type = PlatformPackedDetails<T>::packed_type;
+    using platf_packed_type = PlatformPackedDetails<T>::platf_packed_type;
 
-    static _FORCEINLINE packed_type zero() {
+    static _FORCEINLINE platf_packed_type zero() {
 #if defined(_NN_USE_AVX512)
         return _mm512_setzero_si512();
 #elif defined(_NN_USE_AVX2)
@@ -146,54 +150,50 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
 #endif
     }
 
-    static _FORCEINLINE packed_type fill(T value) {
+    static _FORCEINLINE platf_packed_type fill(T value) {
 #if defined(_NN_USE_AVX512)
-        if constexpr (std::is_same_v<T, int8_t>) {
+        if constexpr (std::is_same_v<T, int8_t>)
             return _mm512_set1_epi8(value);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        else if constexpr (std::is_same_v<T, int16_t>)
             return _mm512_set1_epi16(value);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        else if constexpr (std::is_same_v<T, int32_t>)
             return _mm512_set1_epi32(value);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        else if constexpr (std::is_same_v<T, int64_t>)
             return _mm512_set1_epi64x(value);
-        }
 #elif defined(_NN_USE_AVX2)
-        if constexpr (std::is_same_v<T, int8_t>) {
+        if constexpr (std::is_same_v<T, int8_t>)
             return _mm256_set1_epi8(value);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        else if constexpr (std::is_same_v<T, int16_t>)
             return _mm256_set1_epi16(value);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        else if constexpr (std::is_same_v<T, int32_t>)
             return _mm256_set1_epi32(value);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        else if constexpr (std::is_same_v<T, int64_t>)
             return _mm256_set1_epi64x(value);
-        }
 #elif defined(_NN_USE_SSE2)
-        if constexpr (std::is_same_v<T, int8_t>) {
+        if constexpr (std::is_same_v<T, int8_t>)
             return _mm_set1_epi8(value);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        else if constexpr (std::is_same_v<T, int16_t>)
             return _mm_set1_epi16(value);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        else if constexpr (std::is_same_v<T, int32_t>)
             return _mm_set1_epi32(value);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        else if constexpr (std::is_same_v<T, int64_t>)
             return _mm_set1_epi64x(value);
-        }
 #elif defined(_NN_USE_NEON)
-        if constexpr (std::is_same_v<T, int8_t>) {
+        if constexpr (std::is_same_v<T, int8_t>)
             return vreinterpretq_s32_s8(vdupq_n_s8(value));
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        else if constexpr (std::is_same_v<T, int16_t>)
             return vreinterpretq_s32_s16(vdupq_n_s16(value));
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        else if constexpr (std::is_same_v<T, int32_t>)
             return vdupq_n_s32(static_cast<int32_t>(value));
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        else if constexpr (std::is_same_v<T, int64_t>)
             return vreinterpretq_s32_s64(vdupq_n_s64(value));
-        }
 #else
         static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type load(const packed_type* mem) {
+    static _FORCEINLINE platf_packed_type load(const platf_packed_type* mem) {
 #if defined(_NN_USE_AVX512)
         return _mm512_load_si512(mem);
 #elif defined(_NN_USE_AVX2)
@@ -202,18 +202,16 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         return _mm_load_si128(mem);
 #elif defined(_NN_USE_NEON)
         return vld1q_s32(reinterpret_cast<const int32_t*>(mem));
+#else
+        static_assert(false);
 #endif
     }
 
-    static _FORCEINLINE packed_type load(const void* mem) {
-        return load(reinterpret_cast<const packed_type*>(mem));
+    static _FORCEINLINE platf_packed_type load(const T* mem) {
+        return load(reinterpret_cast<const platf_packed_type*>(mem));
     }
 
-    static _FORCEINLINE packed_type load(const T* mem) {
-        return load(reinterpret_cast<const packed_type*>(mem));
-    }
-
-    static _FORCEINLINE void store(packed_type* mem, packed_type a) {
+    static _FORCEINLINE void store(platf_packed_type* mem, platf_packed_type a) {
 #if defined(_NN_USE_AVX512)
         _mm512_store_si512(mem, a);
 #elif defined(_NN_USE_AVX2)
@@ -222,18 +220,16 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         _mm_store_si128(mem, a);
 #elif defined(_NN_USE_NEON)
         vst1q_s32(reinterpret_cast<int32_t*>(mem), a);
+#else
+        static_assert(false);
 #endif
     }
 
-    static _FORCEINLINE void store(void* mem, packed_type a) {
-        store(reinterpret_cast<packed_type*>(mem), a);
+    static _FORCEINLINE void store(T* mem, platf_packed_type a) {
+        store(reinterpret_cast<platf_packed_type*>(mem), a);
     }
 
-    static _FORCEINLINE void store(T* mem, packed_type a) {
-        store(reinterpret_cast<packed_type*>(mem), a);
-    }
-
-    static _FORCEINLINE packed_type add(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type add(platf_packed_type a, platf_packed_type b) {
 #if defined(_NN_USE_AVX512)
         if constexpr (std::is_same_v<T, int8_t>)
             return _mm512_add_epi8(a, b);
@@ -270,11 +266,13 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
             return vaddq_s32(a, b);
         else if constexpr (std::is_same_v<T, int64_t>)
             return vreinterpretq_s32_s64(vaddq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#else
+        static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type sub(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type sub(platf_packed_type a, platf_packed_type b) {
 #if defined(_NN_USE_AVX512)
         if constexpr (std::is_same_v<T, int8_t>)
             return _mm512_sub_epi8(a, b);
@@ -311,11 +309,13 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
             return vsubq_s32(a, b);
         else if constexpr (std::is_same_v<T, int64_t>)
             return vreinterpretq_s32_s64(vsubq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#else
+        static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type max(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type max(platf_packed_type a, platf_packed_type b) {
 #if defined(_NN_USE_AVX512)
         if constexpr (std::is_same_v<T, int8_t>)
             return _mm512_max_epi8(a, b);
@@ -351,15 +351,20 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         else if constexpr (std::is_same_v<T, int32_t>)
             return vmaxq_s32(a, b);
         else if constexpr (std::is_same_v<T, int64_t>)
-            return vreinterpretq_s32_s64(vbslq_s64(vcgtq_s64(vreinterpretq_s64_s32(a),
-                                                          vreinterpretq_s64_s32(b)),
-                                            vreinterpretq_s64_s32(a),
-                                            vreinterpretq_s64_s32(b)));
+            return vreinterpretq_s32_s64(
+                vbslq_s64(
+                        vcgtq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)),
+                        vreinterpretq_s64_s32(a),
+                        vreinterpretq_s64_s32(b)
+                    )
+            );
+#else
+        static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type min(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type min(platf_packed_type a, platf_packed_type b) {
 #if defined(_NN_USE_AVX512)
         if constexpr (std::is_same_v<T, int8_t>)
             return _mm512_min_epi8(a, b);
@@ -396,11 +401,13 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
             return vminq_s32(a, b);
         else if constexpr (std::is_same_v<T, int64_t>)
             return vreinterpretq_s32_s64(vminq_s64(vreinterpretq_s64_s32(a), vreinterpretq_s64_s32(b)));
+#else
+        static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type mul(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type mul(platf_packed_type a, platf_packed_type b) {
 #if defined(_NN_USE_AVX512)
         if constexpr (std::is_same_v<T, int16_t>)
             return _mm512_mullo_epi16(a, b);
@@ -423,11 +430,13 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
             return vreinterpretq_s32_s16(vmulq_s16(vreinterpretq_s16_s32(a), vreinterpretq_s16_s32(b)));
         else if constexpr (std::is_same_v<T, int32_t>)
             return vmulq_s32(a, b);
+#else
+        static_assert(false);
 #endif
-        return packed_type{};
+        return platf_packed_type{};
     }
 
-    static _FORCEINLINE packed_type madd(packed_type a, packed_type b) {
+    static _FORCEINLINE platf_packed_type madd(platf_packed_type a, platf_packed_type b) {
         static_assert(std::is_same_v<T, int16_t>, "Multiply-add is only supported for 16-bit packed values");
 #if defined(_NN_USE_AVX512)
         return _mm512_madd_epi16(a, b);
@@ -443,10 +452,12 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
             int32x4_t mul_hi = vmull_high_s16(a_16, b_16);
             return vpaddq_s32(mul_lo, mul_hi);
         }
+#else
+        static_assert(false);
 #endif
     }
 
-    static _FORCEINLINE int32_t accumulate(packed_type a) {
+    static _FORCEINLINE int32_t accumulate(platf_packed_type a) {
 #if defined(_NN_USE_AVX512)
         return _mm512_reduce_add_epi32(a);
 #elif defined(_NN_USE_AVX2)
@@ -462,34 +473,32 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         return _mm_cvtsi128_si32(s);
 #elif defined(_NN_USE_NEON)
         return vaddvq_s32(a);
+#else
+        static_assert(false);
 #endif
     }
 
-    static _FORCEINLINE packed_type aligned_load(const packed_type* mem) { return load(mem); }
-    static _FORCEINLINE packed_type aligned_load(const void* mem) { return load(mem); }
-    static _FORCEINLINE packed_type aligned_load(const T* mem) { return load(mem); }
+    static _FORCEINLINE platf_packed_type aligned_load(const platf_packed_type* mem) { return load(mem); }
+    static _FORCEINLINE platf_packed_type aligned_load(const void* mem) { return load(mem); }
+    static _FORCEINLINE platf_packed_type aligned_load(const T* mem) { return load(mem); }
 
-    static _FORCEINLINE void aligned_store(packed_type* mem, packed_type a) { store(mem, a); }
-    static _FORCEINLINE void aligned_store(void* mem, packed_type a) { store(mem, a); }
-    static _FORCEINLINE void aligned_store(T* mem, packed_type a) { store(mem, a); }
+    static _FORCEINLINE void aligned_store(platf_packed_type* mem, platf_packed_type a) { store(mem, a); }
+    static _FORCEINLINE void aligned_store(void* mem, platf_packed_type a) { store(mem, a); }
+    static _FORCEINLINE void aligned_store(T* mem, platf_packed_type a) { store(mem, a); }
 };
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
 class Packed {
 public:
     using Intr = PlatformPackedIntrinsics<T>;
-    using Register = Intr::Register;
 
     Packed() = default;
-
-    explicit Packed(const T* mem) {
-        _m = Intr::load(mem);
+    explicit Packed(const T* aligned_mem) {
+        _m = Intr::aligned_load(mem);
     }
 
-    static Packed zeroed() {
-        Packed p;
-        p._m = Intr::zero();
-        return p;
+    static Packed zero() {
+        return Intr::zero();
     }
 
     void fill(T v) {
@@ -497,39 +506,42 @@ public:
     }
 
     void aligned_load(const T* mem) {
-        _m = Intr::load(mem);
+        _m = Intr::aligned_load(mem);
     }
 
     void aligned_store(T* mem) const {
-        Intr::store(mem, _m);
+        Intr::aligned_store(mem, _m);
     }
 
-    int32_t accumulate() const {
+    _INLINE int32_t accumulate() const {
         return Intr::accumulate(_m);
     }
 
-    Packed operator+(const Packed& r) const {
+    _INLINE Packed operator+(const Packed& r) const {
         Packed res;
         res._m = Intr::add(_m, r._m);
         return res;
     }
 
-    Packed operator-(const Packed& r) const {
+    _INLINE Packed operator-(const Packed& r) const {
         Packed res;
         res._m = Intr::sub(_m, r._m);
         return res;
     }
 
-    Packed operator*(const Packed& r) const {
+    _INLINE Packed operator*(const Packed& r) const {
         Packed res;
         res._m = Intr::mul(_m, r._m);
         return res;
     }
 
-    _INLINE static size_t count() { return Intr::count; }
+    _INLINE static constexpr size_t count() { 
+        return PlatformPackedDetails<T>::Count; 
+    }
 
 private:
-    Register _m{};
+    using packed_register_type = PlatformPackedDetails<T>::packed_type;
+    packed_register_type _m;
 };
 
 #else

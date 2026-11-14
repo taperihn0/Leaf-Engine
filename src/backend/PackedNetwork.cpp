@@ -110,7 +110,7 @@ bool PackedNeuralNetwork::isValid() const {
 
         if (!i) continue;
 
-        if (!_layer_weights[i - 1] or !_layer_biases[i - 1])
+        if (_layer_weights[i - 1].empty() or _layer_biases[i - 1].empty())
             return false;
     }
 
@@ -256,21 +256,21 @@ bool PackedNeuralNetwork::loadDefaultNet() {
     return status;
 }
 
-uint PackedNeuralNetwork::getAccumulatorSize() const {
+uint32_t PackedNeuralNetwork::getAccumulatorSize() const {
     return getLayerSize(0);
 }
 
-uint PackedNeuralNetwork::getLayerSize(size_t layer_num) const {
+uint32_t PackedNeuralNetwork::getLayerSize(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _header.layer_size[layer_num];
 }
 
-const int16_t* PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
+const std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_weights[layer_num];
 }
 
-const int16_t* PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
+const std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_biases[layer_num];
 }
@@ -355,7 +355,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
     for (uint layer_num = 0; layer_num + 1 < _header.layer_count; layer_num++) {
         size_t weight_cnt = getLayerWeightsCount(layer_num);
 
-        _layer_weights[layer_num] = it;
+        _layer_weights[layer_num] = std::span(it, weight_cnt);
         it += weight_cnt;
         byte_offset += weight_cnt * sizeof(int16_t);
 
@@ -363,7 +363,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
 
         size_t biases_cnt = _header.layer_size[layer_num + 1];
 
-        _layer_biases[layer_num] = it;
+        _layer_biases[layer_num] = std::span(it, biases_cnt);
         it += biases_cnt;
         byte_offset += biases_cnt * sizeof(int16_t);
 
@@ -391,8 +391,8 @@ void PackedNeuralNetwork::fromRVal(PackedNeuralNetwork&& network) noexcept {
     for (size_t i = 0; i < MaxLayerCount; i++) {
         _layer_weights[i] = network._layer_weights[i];
         _layer_biases[i] = network._layer_biases[i];
-        network._layer_weights[i] = nullptr;
-        network._layer_biases[i] = nullptr;
+        network._layer_weights[i] = std::span<const value_type>();
+        network._layer_biases[i] = std::span<const value_type>();
     }
 }
 

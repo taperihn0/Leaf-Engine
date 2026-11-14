@@ -22,6 +22,8 @@
 #include "utils/Paths.hpp"
 #include "Memory.hpp"
 
+#include <span>
+
 namespace nn {
 
 static std::filesystem::path DefaultNetworkFile = DEFAULT_NEURAL_NET_FILE_NAME;
@@ -40,6 +42,8 @@ static constexpr bool    NetworkDualHiddenLayer = true;
 
 class PackedNeuralNetwork {
 public:
+    using value_type = int16_t;
+
     PackedNeuralNetwork();
     ~PackedNeuralNetwork();
 
@@ -52,9 +56,9 @@ public:
 #pragma pack(push, 1)
     // Add activaction function info
     struct Header {
-        uint32_t               layer_size[MaxLayerCount];
-        uint16_t               layer_count;
-        bool                   dual_hl;
+        std::array<uint32_t, MaxLayerCount> layer_size;
+        uint16_t                  layer_count;
+        bool                      dual_hl;
         std::array<std::byte, 13> _padding;
     };
 #pragma pack(pop)
@@ -67,11 +71,11 @@ public:
     bool loadDefaultNet();
     bool loadFromFile(std::filesystem::path path);
 
-    uint getAccumulatorSize() const;
-    uint getLayerSize(size_t layer_num) const;
+    uint32_t getAccumulatorSize() const;
+    uint32_t getLayerSize(size_t layer_num) const;
 
-    const int16_t* getLayerWeights(size_t layer_num) const;
-    const int16_t* getLayerBiases(size_t layer_num) const;
+    const std::span<const value_type> getLayerWeights(size_t layer_num) const;
+    const std::span<const value_type> getLayerBiases(size_t layer_num) const;
 
     size_t getLayerWeightsCount(size_t layer_num) const;
     size_t getLayerBiasesCount(size_t layer_num) const;
@@ -107,8 +111,8 @@ private:
     std::optional<void*>                   _file_mem_buf;
     Header                                 _header;
     std::optional<std::string>             _bin_path;
-    std::array<const int16_t*, MaxLayerCount> _layer_weights;
-    std::array<const int16_t*, MaxLayerCount> _layer_biases;
+    std::array<std::span<const value_type>, MaxLayerCount> _layer_weights;
+    std::array<std::span<const value_type>, MaxLayerCount> _layer_biases;
 };
 
 extern PackedNeuralNetwork GlobPackedNetwork;
