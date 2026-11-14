@@ -501,8 +501,16 @@ public:
         return Intr::zero();
     }
 
-    void fill(T v) {
-        _m = Intr::fill(v);
+    static Packed fill(T v) {
+        return Intr::fill(v);
+    }
+
+    static Packed min(Packed a, Packed b) {
+        return Intr::min(a._m, b._m);
+    }
+
+    static Packed max(Packed a, Packed b) {
+        return Intr::max(a._m, b._m);
     }
 
     void aligned_load(const T* mem) {
@@ -518,21 +526,23 @@ public:
     }
 
     _INLINE Packed operator+(const Packed& r) const {
-        Packed res;
-        res._m = Intr::add(_m, r._m);
-        return res;
+        return Intr::add(_m, r._m);
     }
 
     _INLINE Packed operator-(const Packed& r) const {
-        Packed res;
-        res._m = Intr::sub(_m, r._m);
-        return res;
+        return Intr::sub(_m, r._m);
     }
 
     _INLINE Packed operator*(const Packed& r) const {
-        Packed res;
-        res._m = Intr::mul(_m, r._m);
-        return res;
+        return Intr::mul(_m, r._m);
+    }
+
+    _INLINE Packed operator+=(const Packed& r) const {
+        return (_m = Intr::add(_m, r._m));
+    }
+
+    _INLINE Packed madd(const Packed& r) const {
+        return Intr::madd(_m, r._m);
     }
 
     _INLINE static constexpr size_t count() { 

@@ -241,8 +241,9 @@ void Accumulator::clear(enumColor side) {
     mem::memSet(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
 }
 
-const std::array<int16_t, NetworkAccumulatorSizePerSide>& Accumulator::getValues(enumColor side) const {
-    return _values[side];
+std::span<const Accumulator::value_type, NetworkAccumulatorSizePerSide> 
+Accumulator::getValues(enumColor side) const {
+    return std::span<const value_type, NetworkAccumulatorSizePerSide>(_values[side].data());
 }
 
 #if defined(_VERIFY_NN)

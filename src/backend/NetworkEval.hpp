@@ -36,8 +36,8 @@ public:
                                          const Accumulator& acc, 
                                          enumColor side2move);
 private:
-    static int32_t layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumulator, 
-                                               const int16_t* _RESTRICT ns2m_accumulator,
+    static int32_t layerActivationSingleOutput(const std::span<int16_t> s2m_accumulator, 
+                                               const std::span<int16_t> ns2m_accumulator,
                                                const PackedNeuralNetwork& network);
 };
 

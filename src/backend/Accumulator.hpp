@@ -27,7 +27,9 @@ static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 
 class alignas(CachelineSize) Accumulator {
 public:
-    _INLINE Accumulator() = default;
+    using value_type = PackedNeuralNetwork::value_type;
+
+    Accumulator() = default;
     _INLINE Accumulator(const PackedNeuralNetwork& network, 
                         const Position& pos) 
     { refresh(network, pos); }
@@ -81,14 +83,15 @@ public:
 
     void clear(enumColor side);
 
-    _NODISCARD const std::array<int16_t, NetworkAccumulatorSizePerSide>& getValues(enumColor side) const;
+    _NODISCARD std::span<const value_type, NetworkAccumulatorSizePerSide> 
+    getValues(enumColor side) const;
 
 #if defined(_VERIFY_NN)
     static bool verify(const Accumulator& accum, const Position& pos);
 #endif
 
 private:
-    MultiArray<int16_t, 2, NetworkAccumulatorSizePerSide> _values;
+    MultiArray<value_type, 2, NetworkAccumulatorSizePerSide> _values;
 };
 
 struct FeatureData {

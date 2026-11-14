@@ -265,12 +265,12 @@ uint32_t PackedNeuralNetwork::getLayerSize(size_t layer_num) const {
     return _header.layer_size[layer_num];
 }
 
-const std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
+std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerWeights(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_weights[layer_num];
 }
 
-const std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
+std::span<const PackedNeuralNetwork::value_type> PackedNeuralNetwork::getLayerBiases(size_t layer_num) const {
     ASSERT_NO_LOG(layer_num < _header.layer_count);
     return _layer_biases[layer_num];
 }
@@ -349,7 +349,7 @@ bool PackedNeuralNetwork::rewriteWithHeader(std::string_view in_path,
 }
 
 bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
-    const int16_t* it = reinterpret_cast<const int16_t*>(m) + sizeof(Header) / sizeof(int16_t);
+    const value_type* it = reinterpret_cast<const value_type*>(m) + sizeof(Header) / sizeof(value_type);
     size_t byte_offset = sizeof(Header);
 
     for (uint layer_num = 0; layer_num + 1 < _header.layer_count; layer_num++) {
@@ -357,7 +357,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
 
         _layer_weights[layer_num] = std::span(it, weight_cnt);
         it += weight_cnt;
-        byte_offset += weight_cnt * sizeof(int16_t);
+        byte_offset += weight_cnt * sizeof(value_type);
 
         ASSERT_NO_LOG(byte_offset <= _mem_size);
 
@@ -365,7 +365,7 @@ bool PackedNeuralNetwork::initLayerWeightsBiases(const void* m) {
 
         _layer_biases[layer_num] = std::span(it, biases_cnt);
         it += biases_cnt;
-        byte_offset += biases_cnt * sizeof(int16_t);
+        byte_offset += biases_cnt * sizeof(value_type);
 
         ASSERT_NO_LOG(byte_offset <= _mem_size);
     }

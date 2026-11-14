@@ -49,43 +49,49 @@ sc::Score NEval::evaluate(const PackedNeuralNetwork& network,
 {
     assert(network.isValid());
 
-    const int16_t output = layerActivationSingleOutput(acc.getValues(side2move).data(),
-                                                       acc.getValues(!side2move).data(),
+    const int16_t output = layerActivationSingleOutput(acc.getValues(side2move),
+                                                       acc.getValues(!side2move),
                                                        network);
     return static_cast<sc::Score>(output);
 }
 
-int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumulator, 
-                                           const int16_t* _RESTRICT ns2m_accumulator,
+int32_t NEval::layerActivationSingleOutput(std::span<const int16_t, NetworkAccumulatorSizePerSide> s2m_accumulator, 
+                                           std::span<const int16_t, NetworkAccumulatorSizePerSide> ns2m_accumulator,
                                            const PackedNeuralNetwork& network) 
 {
-    const int16_t* weights = network.getLayerWeights(1);
-    int32_t output_bias = *network.getLayerBiases(1);
+    // TODO: use dedicated value_type instead of int16_t. If not present - define it.
+
+    const auto weights = network.getLayerWeights(1);
+    const auto output_bias = network.getLayerBiases(1)[0];
 
     int32_t output = 0;
 
 #if defined(_NN_USE_SCRELU_SIMD)
-
-    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
-    using Reg = Intr::packed_type;
 
     static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
     static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
 
     static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
 
-    Reg sum_vec = Intr::zero();
-    const Reg qa_vec = Intr::fill(NetworkWeightQuant);
-    const Reg zero_vec = Intr::zero();
+    auto sum_vec = simd::Packed<int16_t>::zero();
+    const auto qa_vec = simd::Packed<int16_t>::fill(NetworkWeightQuant);
+    const auto zero_vec = simd::Packed<int16_t>::zero();
 
-    const Reg* const _RESTRICT s2m_base = reinterpret_cast<const Reg*>(s2m_accumulator);
-    const Reg* const _RESTRICT ns2m_base = reinterpret_cast<const Reg*>(ns2m_accumulator);
-    const Reg* const weights_base = reinterpret_cast<const Reg*>(weights);
+    const auto const _RESTRICT s2m_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<int16_t>*>(s2m_accumulator.data())
+    );
+    const auto const _RESTRICT ns2m_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<int16_t>*>(ns2m_accumulator.data())
+    );
+    const auto const _RESTRICT weights_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<int16_t>*>(weights.data())
+    );
 
     assert(reinterpret_cast<size_t>(s2m_base) % simd::getSimdRegisterAlignment() == 0);
     assert(reinterpret_cast<size_t>(ns2m_base) % simd::getSimdRegisterAlignment() == 0);
     assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
+    // TODO: that should be moved to PackedNetwork::isValid()
     // Assert that we won't overflow in int16 range.
 #if defined(_NN_VERIFY_SCRELU_OVERFLOW)
     static constexpr int Int16Max = maxof<int16_t>();
@@ -106,18 +112,28 @@ int32_t NEval::layerActivationSingleOutput(const int16_t* _RESTRICT s2m_accumula
     }
 #endif
 
+    // TODO: should have written another method abstracting iteration through one-sided accum,
+    // then call it twice here
+
     for (size_t i = 0; i < ChunkCount; i++) {
-        const Reg  s2m_clamp = Intr::min(Intr::max(s2m_base[i], zero_vec), qa_vec);
-        const Reg ns2m_clamp = Intr::min(Intr::max(ns2m_base[i], zero_vec), qa_vec);
+        const auto  s2m_clamp = simd::Packed<int16_t>::min(
+            simd::Packed<int16_t>::max(s2m_base[i], zero_vec), qa_vec
+        );
 
-        const Reg rs2m  = Intr::madd(Intr::mul(weights_base[i], s2m_clamp ), s2m_clamp);
-        const Reg rns2m = Intr::madd(Intr::mul(weights_base[i + ChunkCount], ns2m_clamp), ns2m_clamp);
-
-        sum_vec = simd::PlatformPackedIntrinsics<int32_t>::add(sum_vec, rs2m);
-        sum_vec = simd::PlatformPackedIntrinsics<int32_t>::add(sum_vec, rns2m);
+        const auto rs2m  = (weights_base[i] * s2m_clamp).madd(s2m_clamp);
+        sum_vec += rs2m;
     }
 
-    output = Intr::accumulate(sum_vec);
+    for (size_t i = 0; i < ChunkCount; i++) {
+        const auto ns2m_clamp = simd::Packed<int16_t>::min(
+            simd::Packed<int16_t>::max(ns2m_base[i], zero_vec), qa_vec
+        );
+
+        const auto rns2m = (weights_base[i + ChunkCount] * ns2m_clamp).madd(ns2m_clamp);
+        sum_vec += rns2m;
+    }
+
+    output = sum_vec.accumulate();
 
 #else
 

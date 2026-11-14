@@ -74,8 +74,8 @@ public:
     uint32_t getAccumulatorSize() const;
     uint32_t getLayerSize(size_t layer_num) const;
 
-    const std::span<const value_type> getLayerWeights(size_t layer_num) const;
-    const std::span<const value_type> getLayerBiases(size_t layer_num) const;
+    std::span<const value_type> getLayerWeights(size_t layer_num) const;
+    std::span<const value_type> getLayerBiases(size_t layer_num) const;
 
     size_t getLayerWeightsCount(size_t layer_num) const;
     size_t getLayerBiasesCount(size_t layer_num) const;
@@ -103,10 +103,10 @@ private:
     int _fd = -1;
 #endif
 
-	/* We map embedded network onto our own aligned buffer 
+    /* We map embedded network onto our own aligned buffer 
     *  to guarantee proper alignment for SIMD operations.
     */
-	mem::AlignedUniquePtr<std::byte>	   _align_buf_handler;
+    mem::AlignedUniquePtr<std::byte>	   _align_buf_handler;
     size_t                                 _mem_size;
     std::optional<void*>                   _file_mem_buf;
     Header                                 _header;
