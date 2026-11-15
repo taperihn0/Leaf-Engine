@@ -193,40 +193,34 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         return platf_packed_type{};
     }
 
-    static _FORCEINLINE platf_packed_type load(const platf_packed_type* mem) {
+    static _FORCEINLINE platf_packed_type aligned_load(const void* mem) {
+        const auto m_ = reinterpret_cast<const integer_packed_type*>(mem);
 #if defined(_NN_USE_AVX512)
-        return _mm512_load_si512(mem);
+        return _mm512_load_si512(m_);
 #elif defined(_NN_USE_AVX2)
-        return _mm256_load_si256(mem);
+        return _mm256_load_si256(m_);
 #elif defined(_NN_USE_SSE2)
-        return _mm_load_si128(mem);
+        return _mm_load_si128(m_);
 #elif defined(_NN_USE_NEON)
-        return vld1q_s32(reinterpret_cast<const int32_t*>(mem));
+        return vld1q_s32(m_);
 #else
         static_assert(false);
 #endif
     }
 
-    static _FORCEINLINE platf_packed_type load(const T* mem) {
-        return load(reinterpret_cast<const platf_packed_type*>(mem));
-    }
-
-    static _FORCEINLINE void store(platf_packed_type* mem, platf_packed_type a) {
+    static _FORCEINLINE void aligned_store(void* mem, platf_packed_type a) {
+        auto m_ = reinterpret_cast<integer_packed_type*>(mem);
 #if defined(_NN_USE_AVX512)
-        _mm512_store_si512(mem, a);
+        _mm512_store_si512(m_, a);
 #elif defined(_NN_USE_AVX2)
-        _mm256_store_si256(mem, a);
+        _mm256_store_si256(m_, a);
 #elif defined(_NN_USE_SSE2)
-        _mm_store_si128(mem, a);
+        _mm_store_si128(m_, a);
 #elif defined(_NN_USE_NEON)
         vst1q_s32(reinterpret_cast<int32_t*>(mem), a);
 #else
         static_assert(false);
 #endif
-    }
-
-    static _FORCEINLINE void store(T* mem, platf_packed_type a) {
-        store(reinterpret_cast<platf_packed_type*>(mem), a);
     }
 
     static _FORCEINLINE platf_packed_type add(platf_packed_type a, platf_packed_type b) {
@@ -477,47 +471,43 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
         static_assert(false);
 #endif
     }
-
-    static _FORCEINLINE platf_packed_type aligned_load(const platf_packed_type* mem) { return load(mem); }
-    static _FORCEINLINE platf_packed_type aligned_load(const void* mem) { return load(mem); }
-    static _FORCEINLINE platf_packed_type aligned_load(const T* mem) { return load(mem); }
-
-    static _FORCEINLINE void aligned_store(platf_packed_type* mem, platf_packed_type a) { store(mem, a); }
-    static _FORCEINLINE void aligned_store(void* mem, platf_packed_type a) { store(mem, a); }
-    static _FORCEINLINE void aligned_store(T* mem, platf_packed_type a) { store(mem, a); }
 };
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T> and std::is_signed_v<T>>>
 class Packed {
 public:
     using Intr = PlatformPackedIntrinsics<T>;
+    using Info = PlatformPackedDetails<T>;
+    using packed_register_type = Info::platf_packed_type;
 
     Packed() = default;
-    explicit Packed(const T* aligned_mem) {
-        _m = Intr::aligned_load(mem);
-    }
+    Packed(packed_register_type m) : _m(m) {}
 
-    static Packed zero() {
+    static _INLINE Packed zero() {
         return Intr::zero();
     }
 
-    static Packed fill(T v) {
+    static _INLINE Packed fill(T v) {
         return Intr::fill(v);
     }
 
-    static Packed min(Packed a, Packed b) {
+    static _INLINE Packed min(Packed a, Packed b) {
         return Intr::min(a._m, b._m);
     }
 
-    static Packed max(Packed a, Packed b) {
+    static _INLINE Packed max(Packed a, Packed b) {
         return Intr::max(a._m, b._m);
     }
 
-    void aligned_load(const T* mem) {
-        _m = Intr::aligned_load(mem);
+    static _INLINE Packed aligned_load(const void* mem) {
+        return Intr::aligned_load(mem);
     }
 
-    void aligned_store(T* mem) const {
+    _INLINE Packed aligned_load_this() const {
+        return aligned_load(this);
+    }
+
+    void aligned_store(void* mem) const {
         Intr::aligned_store(mem, _m);
     }
 
@@ -537,8 +527,12 @@ public:
         return Intr::mul(_m, r._m);
     }
 
-    _INLINE Packed operator+=(const Packed& r) const {
+    _INLINE Packed operator+=(const Packed& r) {
         return (_m = Intr::add(_m, r._m));
+    }
+
+    _INLINE Packed operator-=(const Packed& r) {
+        return (_m = Intr::sub(_m, r._m));
     }
 
     _INLINE Packed madd(const Packed& r) const {
@@ -546,11 +540,10 @@ public:
     }
 
     _INLINE static constexpr size_t count() { 
-        return PlatformPackedDetails<T>::Count; 
+        return Info::Count; 
     }
 
 private:
-    using packed_register_type = PlatformPackedDetails<T>::packed_type;
     packed_register_type _m;
 };
 

@@ -25,7 +25,8 @@
 CuckooTables::CuckooTables()
     : _cuckoo_entry_buff(
         mem::makeAlignedUnique<CuckooEntry>(_CuckooTableSize, CachelineSize)) { 
-    mem::memSet(_cuckoo_entry_buff.get(), 0, sizeof(CuckooEntry) * _CuckooTableSize);
+    std::memset(reinterpret_cast<std::byte*>(_cuckoo_entry_buff.get()), 
+                0, _CuckooTableSize * sizeof(CuckooEntry));
 }
 
 void CuckooTables::init() {

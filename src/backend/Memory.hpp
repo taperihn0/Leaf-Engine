@@ -48,23 +48,6 @@ static _FORCEINLINE void prefetch(const void* addr) {
 #endif // _ENABLE_PREFETCH
 }
 
-_INLINE void* memCopy(void* dst, const void* src, size_t cnt) {
-    std::byte* d = reinterpret_cast<std::byte*>(dst);
-    const std::byte* s = reinterpret_cast<const std::byte*>(src);
-    std::copy_n(s, cnt, d);
-    return dst;
-}
-
-_INLINE void memSet(void* dst, uint8_t ch, size_t cnt) {
-    std::byte* d = reinterpret_cast<std::byte*>(dst);
-    fill(d, d + cnt, std::byte(ch));
-}
-
-template <typename T, typename Tv>
-_FORCEINLINE void fill(T* first, T* last, const Tv& value) {
-    std::fill(first, last, value);
-}
-
 _NODISCARD _INLINE void* alignedMalloc(size_t size, size_t alignment) {
 #if defined(_WIN32)
     void* m = _aligned_malloc(size, alignment);

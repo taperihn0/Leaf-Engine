@@ -45,7 +45,7 @@ void TranspositionTable::resize(size_t size_mb) {
 }
 
 void TranspositionTable::clear() {
-    mem::memSet(_mem.get(), 0, _buckets_cnt * sizeof(Bucket));
+    std::memset(reinterpret_cast<std::byte*>(_mem.get()), 0, _buckets_cnt * sizeof(Bucket));
     _generation = 0;
     _hits = 0;
 }

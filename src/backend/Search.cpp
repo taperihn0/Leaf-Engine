@@ -1103,9 +1103,9 @@ sc::Score Search::nmSearch(Position& pos,
                     node->pv_line[0].best_move = packedMove(node->best_move);
                     node->pv_line[0].score = node->best_score;
 
-                    mem::memCopy(node->pv_line.data() + 1, 
-                                 child_node->pv_line.data(), 
-                                 child_node->pv_line_len * sizeof(utils::PvInfo));
+                    std::copy_n(child_node->pv_line.data(), 
+                                child_node->pv_line_len,
+                                node->pv_line.data() + 1);
 
                     node->pv_line_len = child_node->pv_line_len + 1;
                 }
@@ -1553,7 +1553,7 @@ _INLINE sc::Score Search::evaluate(const Position& pos,
     ASSERT(nn::Accumulator::verify(prev_accum, pos), "Accumulator verification failed");
 #endif
 
-    const sc::Score eval = nn::NEval::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
+    const sc::Score eval = nn::NNInference::evaluate(nn::GlobPackedNetwork, prev_accum, side2move);
     const int64_t unscaled_eval = NNEvalScale * 4096 * static_cast<int64_t>(eval);
     int16_t scaled_eval = (unscaled_eval + FixedPointMult / 2) / FixedPointMult;
 

@@ -3,7 +3,7 @@
 namespace search::utils {
     
 void SearchResults::clear() {
-    mem::memSet(this, 0, sizeof(SearchResults));
+    std::memset(this, 0, sizeof(*this));
 }
 
 void SearchResults::printBestMove() {
@@ -179,7 +179,7 @@ void NodeInfo::clear() {
     cluster.next_cluster = nullptr;
     cluster.prev_cluster = nullptr;
 
-    mem::fill(pv_line.begin(), pv_line.end(), PvInfo());
+    std::fill(pv_line.begin(), pv_line.end(), PvInfo());
 
     pv_line_len = 0;
     continuation_subtable_ptr = nullptr;
@@ -264,16 +264,16 @@ void SearchStack::updateDirtyAccumulators(AccumulatorCluster* const clean_accum_
 
         accum_cache.accum.update(nn::GlobPackedNetwork,
                                  &prev_accum_cache.accum,
-                                 added_features_index[WHITE].data(),
+                                 added_features_index[WHITE],
                                  accum_cache.added_features_cnt,
-                                 removed_features_index[WHITE].data(),
+                                 removed_features_index[WHITE],
                                  accum_cache.removed_features_cnt,
                                  WHITE);
         accum_cache.accum.update(nn::GlobPackedNetwork,
                                  &prev_accum_cache.accum,
-                                 added_features_index[BLACK].data(),
+                                 added_features_index[BLACK],
                                  accum_cache.added_features_cnt,
-                                 removed_features_index[BLACK].data(),
+                                 removed_features_index[BLACK],
                                  accum_cache.removed_features_cnt,
                                  BLACK);
         accum_cache.markClean();

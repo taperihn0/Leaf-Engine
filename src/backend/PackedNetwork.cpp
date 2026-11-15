@@ -108,13 +108,14 @@ bool PackedNeuralNetwork::isValid() const {
         if (!_header.layer_size[i])
             return false;
 
-        if (!i) continue;
+        if (!i) 
+            continue;
 
         if (_layer_weights[i - 1].empty() or _layer_biases[i - 1].empty())
             return false;
     }
 
-    return true;
+    return !isValueOverflow();
 }
 
 bool PackedNeuralNetwork::loadFromFile(std::filesystem::path path) {
@@ -221,10 +222,7 @@ _INLINE mem::AlignedUniquePtr<std::byte> PackedNeuralNetwork::createAlignedBuffe
     const size_t align_size = mem::getAlignedUpSize(size, CachelineSize);
 
     auto aligned_ptr = mem::makeAlignedUnique<std::byte>(align_size, CachelineSize);
-
-    mem::memCopy(reinterpret_cast<void*>(aligned_ptr.get()), 
-                 data, 
-                 size);
+    std::copy_n(reinterpret_cast<const std::byte*>(data), size, aligned_ptr.get());
 
 	return aligned_ptr;
 }
@@ -412,6 +410,36 @@ void PackedNeuralNetwork::releaseFileMapping() {
         close(_fd);
     }
 #endif
+}
+
+bool PackedNeuralNetwork::isValueOverflow() const {
+    // Assert that we won't overflow in int16 range.
+#if defined(_NN_VERIFY_SCRELU_OVERFLOW)
+    static constexpr int Int16Max = maxof<value_type>();
+    static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
+
+    for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
+        if (!(weights[i] >= -MaxWeight and weights[i] <= MaxWeight) or
+            !(
+             weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight and 
+             weights[NetworkAccumulatorSizePerSide + i] <= MaxWeight
+            ))
+            return true;
+
+        const int32_t mul0 = static_cast<int32_t>(weights[i]) 
+                             * NetworkWeightQuant;
+
+        if (!(mul0 >= -Int16Max and mul0 <= Int16Max))
+            return true;
+
+        const int32_t mul1 = static_cast<int32_t>(weights[NetworkAccumulatorSizePerSide + i]) 
+                             * NetworkWeightQuant;
+
+        if (!mul1 >= -Int16Max and mul1 <= Int16Max)
+            return true;
+    }
+#endif
+    return false;
 }
 
 } // namespace nn

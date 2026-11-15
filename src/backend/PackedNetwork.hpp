@@ -96,6 +96,8 @@ private:
 
     void releaseFileMapping();
 
+    bool isValueOverflow() const;
+
 #if defined(_WIN32)
     HANDLE _fh = INVALID_HANDLE_VALUE;
     HANDLE _maph = INVALID_HANDLE_VALUE;

@@ -21,6 +21,8 @@
 
 namespace nn {
 
+using value_type = Accumulator::value_type;
+
 template <enumColor Perspective>
 uint16_t Accumulator::featureIndex(Square sq, 
                                    Piece::enumType piece_type, 
@@ -54,14 +56,14 @@ void Accumulator::refresh(const PackedNeuralNetwork& network,
             pos);
 }
 
-void Accumulator::refresh(const int16_t* _RESTRICT biases, 
-                          const int16_t* _RESTRICT weights, 
+void Accumulator::refresh(std::span<const value_type> biases, 
+                          std::span<const value_type> weights, 
                           const Position& pos) 
 {   
-    assert(biases != nullptr);
-    assert(weights != nullptr);
+    assert(!biases.empty());
+    assert(!weights.empty());
 
-    MultiArray<uint16_t, 2, 32> side_active_features;
+    MultiArray<uint16_t, 2, MaxPerspectiveFeatureCount> side_active_features;
 
     size_t active_features_cnt = 0;
 
@@ -81,47 +83,51 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
     }
 
     for (enumColor persp : { WHITE, BLACK }) {
-        refresh(biases, weights, persp, side_active_features[persp].data(), active_features_cnt);
+        refresh(biases,
+                weights, 
+                side_active_features[persp], 
+                active_features_cnt,
+                persp);
     }
 }
 
-void Accumulator::refresh(const int16_t* _RESTRICT biases, 
-                          const int16_t* _RESTRICT weights, 
-                          enumColor side, 
-                          const uint16_t* _RESTRICT side_active_features,
-                          size_t side_active_features_cnt) 
+void Accumulator::refresh(std::span<const value_type> biases, 
+                          std::span<const value_type> weights, 
+                          std::span<const uint16_t, MaxPerspectiveFeatureCount> side_active_features,
+                          size_t side_active_features_cnt,
+                          enumColor side)
 {
-    assert(biases != nullptr);
-    assert(weights != nullptr);
-    assert(side_active_features != nullptr);
+    assert(!biases.empty());
+    assert(!weights.empty());
+    assert(!side_active_features.empty());
 
-#if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
+#ifndef _NN_NO_SIMD // Use SIMD Extensions
 
-    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
-    using Reg = Intr::packed_type;
+    static constexpr int PackedCount = NetworkAccumulatorSizePerSide / simd::Packed<value_type>::count();
+    static_assert(NetworkAccumulatorSizePerSide % PackedCount == 0);
 
-    static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
-    static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
+    auto* const _RESTRICT side_acc = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<simd::Packed<value_type>*>(_persp_accum[side].data())
+    );
+    const auto* const _RESTRICT biases_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<value_type>*>(biases.data())
+    );
+    const auto* const _RESTRICT weights_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<value_type>*>(weights.data())
+    );
 
-    static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
+    assert(reinterpret_cast<ptrdiff_t>(side_acc) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(biases_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
-    Reg* const _RESTRICT values_base = reinterpret_cast<Reg*>(_values[side].data());
-    const Reg* const _RESTRICT biases_base = reinterpret_cast<const Reg*>(biases);
-    const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
-
-    assert(reinterpret_cast<size_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
-    assert(reinterpret_cast<size_t>(biases_base) % simd::getSimdRegisterAlignment() == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
-
-    for (size_t i = 0; i < ChunkCount; i++) {
-        Intr::store(values_base + i, Intr::load(biases_base + i));
-    }
+    std::copy_n(biases_base, PackedCount, side_acc);
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
-        const size_t base_offset = side_active_features[i] * ChunkCount;
+        const size_t base_offset = side_active_features[i] * PackedCount;
 
-        for (size_t j = 0; j < ChunkCount; j++) {
-            Intr::store(values_base + j, Intr::add(values_base[j], weights_base[base_offset + j]));
+        for (size_t j = 0; j < PackedCount; j++) {
+            const auto add = side_acc[j].aligned_load_this() + weights_base[base_offset + j].aligned_load_this();
+            add.aligned_store(side_acc + j);
         }
     }
     
@@ -143,15 +149,15 @@ void Accumulator::refresh(const int16_t* _RESTRICT biases,
 }
 
 void Accumulator::update(const PackedNeuralNetwork& network,
-                         const Accumulator* _RESTRICT prev_acc,
-                         const uint16_t* _RESTRICT added_features,
+                         const Accumulator* _RESTRICT prev_accum,
+                         std::span<const uint16_t> added_features,
                          size_t added_features_cnt,
-                         const uint16_t* _RESTRICT removed_features,
+                         const std::span<const uint16_t> removed_features,
                          size_t removed_features_cnt,
                          enumColor side)
 {
     update(network.getLayerWeights(0),
-           prev_acc, 
+           prev_accum, 
            added_features,
            added_features_cnt,
            removed_features,
@@ -159,63 +165,66 @@ void Accumulator::update(const PackedNeuralNetwork& network,
            side);
 }
 
-
-void Accumulator::update(const int16_t* _RESTRICT weights,
-                         const Accumulator* _RESTRICT prev_acc,
-                         const uint16_t* _RESTRICT added_features,
+void Accumulator::update(const std::span<const value_type> weights,
+                         const Accumulator* _RESTRICT prev_accum,
+                         std::span<const uint16_t> added_features,
                          size_t added_features_cnt,
-                         const uint16_t* _RESTRICT removed_features,
+                         std::span<const uint16_t> removed_features,
                          size_t removed_features_cnt,
                          enumColor side)
 {
-    assert(weights != nullptr);
-    assert(prev_acc != nullptr);
-    assert(added_features != nullptr);
-    assert(removed_features != nullptr);
-    assert(this != prev_acc);
+    assert(!weights.empty());
+    assert(prev_accum != nullptr);
+    assert(!added_features.empty());
+    assert(!removed_features.empty());
+    assert(this != prev_accum);
 
-#if defined(_NN_USE_AVX512) or defined(_NN_USE_AVX2) or defined(_NN_USE_SSE2) // Use SIMD Extensions
+#ifndef _NN_NO_SIMD // Use SIMD Extensions
 
-    using Intr = simd::PlatformPackedIntrinsics<int16_t>;
-    using Reg = Intr::packed_type;
+    static constexpr int PackedCount = NetworkAccumulatorSizePerSide / simd::Packed<value_type>::count();
+    static_assert(NetworkAccumulatorSizePerSide % PackedCount == 0);
 
-    static constexpr int RegisterWidth = simd::getSimdRegisterSizeBits() / (sizeof(int16_t) * 8);
-    static constexpr int ChunkCount = NetworkAccumulatorSizePerSide / RegisterWidth;
+    auto* const _RESTRICT side_acc = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<simd::Packed<value_type>*>(_persp_accum[side].data())
+    );
+    const auto* const _RESTRICT prev_side_acc = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<value_type>*>(prev_accum->_persp_accum[side].data())
+    );
+    const auto* const _RESTRICT weights_base = std::assume_aligned<CachelineSize>(
+        reinterpret_cast<const simd::Packed<value_type>*>(weights.data())
+    );
 
-    static_assert(NetworkAccumulatorSizePerSide % ChunkCount == 0);
+    assert(reinterpret_cast<ptrdiff_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(prev_values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
-    Reg* const _RESTRICT values_base = reinterpret_cast<Reg*>(_values[side].data());
-    const Reg* const _RESTRICT prev_values_base = reinterpret_cast<const Reg*>(prev_acc->_values[side].data());
-    const Reg* const _RESTRICT weights_base = reinterpret_cast<const Reg*>(weights);
+    std::copy_n(prev_side_acc, PackedCount, side_acc);
 
-    assert(reinterpret_cast<size_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
-    assert(reinterpret_cast<size_t>(prev_values_base) % simd::getSimdRegisterAlignment() == 0);
-    assert(reinterpret_cast<size_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
-
-    for (size_t i = 0; i < ChunkCount; i++) {
-        Intr::store(values_base + i, Intr::load(prev_values_base + i));
-    }
+    // TODO: may clamp multiple outer loops into one loop through accumulator, 
+    // since removed_features_cnt is < 3 in practice
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
-        const size_t base_offset = removed_features[i] * ChunkCount;
+        const size_t base_offset = removed_features[i] * PackedCount;
         
-        for (size_t j = 0; j < ChunkCount; j++) {
-            Intr::store(values_base + j, Intr::sub(values_base[j], weights_base[base_offset + j]));
+        for (size_t j = 0; j < PackedCount; j++) {
+            const auto sub = side_acc[j].aligned_load_this() - weights_base[base_offset + j].aligned_load_this();
+            sub.aligned_store(side_acc + j);
         }
     }
 
     for (size_t i = 0; i < added_features_cnt; i++) {
-        const size_t base_offset = added_features[i] * ChunkCount;
+        const size_t base_offset = added_features[i] * PackedCount;
 
-        for (size_t j = 0; j < ChunkCount; j++) {
-            Intr::store(values_base + j, Intr::add(values_base[j], weights_base[base_offset + j]));
+        for (size_t j = 0; j < PackedCount; j++) {
+            const auto add = side_acc[j].aligned_load_this() + weights_base[base_offset + j].aligned_load_this();
+            add.aligned_store(side_acc + j);
         }
     }
 
 #else // Do not use SIMD Extensions
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
-        _values[side][i] = prev_acc->_values[side][i];
+        _values[side][i] = prev_accum->_values[side][i];
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
@@ -238,12 +247,12 @@ void Accumulator::update(const int16_t* _RESTRICT weights,
 }
 
 void Accumulator::clear(enumColor side) {
-    mem::memSet(_values[side].data(), 0, NetworkAccumulatorSizePerSide);
+    _persp_accum[side].fill(0);
 }
 
 std::span<const Accumulator::value_type, NetworkAccumulatorSizePerSide> 
 Accumulator::getValues(enumColor side) const {
-    return std::span<const value_type, NetworkAccumulatorSizePerSide>(_values[side].data());
+    return std::span<const value_type, NetworkAccumulatorSizePerSide>(_persp_accum[side].data(), NetworkAccumulatorSizePerSide);
 }
 
 #if defined(_VERIFY_NN)

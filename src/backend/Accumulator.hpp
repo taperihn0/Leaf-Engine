@@ -28,6 +28,7 @@ static constexpr size_t NetworkAccumulatorSizePerSide = NetworkHiddenLayerSize;
 class alignas(CachelineSize) Accumulator {
 public:
     using value_type = PackedNeuralNetwork::value_type;
+    static constexpr size_t MaxPerspectiveFeatureCount = 32;
 
     Accumulator() = default;
     _INLINE Accumulator(const PackedNeuralNetwork& network, 
@@ -40,7 +41,7 @@ public:
     Accumulator& operator=(const Accumulator&) = delete;
     Accumulator& operator=(Accumulator&&) = delete;
 
-    _INLINE bool operator==(const Accumulator& accum) const { return _values == accum._values; }
+    _INLINE bool operator==(const Accumulator& accum) const { return _persp_accum == accum._persp_accum; }
     _INLINE bool operator!=(const Accumulator& accum) const { return !(*this == accum); }
 
     template <enumColor Perspective>
@@ -55,29 +56,29 @@ public:
     void refresh(const PackedNeuralNetwork& network,
                  const Position& pos);
 
-    void refresh(const int16_t* _RESTRICT biases, 
-                 const int16_t* _RESTRICT weights, 
+    void refresh(std::span<const value_type> biases, 
+                 std::span<const value_type> weights, 
                  const Position& pos);
 
-    void refresh(const int16_t* _RESTRICT biases, 
-                 const int16_t* _RESTRICT weights, 
-                 enumColor side, 
-                 const uint16_t* _RESTRICT side_active_features,
-                 size_t side_active_features_cnt);
+    void refresh(std::span<const value_type> biases, 
+                 std::span<const value_type> weights, 
+                 std::span<const uint16_t, MaxPerspectiveFeatureCount> side_active_features,
+                 size_t side_active_features_cnt,
+                 enumColor side);
 
     void update(const PackedNeuralNetwork& network,
                 const Accumulator* _RESTRICT prev_accum,
-                const uint16_t* _RESTRICT added_features,
+                std::span<const uint16_t> added_features,
                 size_t added_features_cnt,
-                const uint16_t* _RESTRICT removed_features,
+                const std::span<const uint16_t> removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 
-    void update(const int16_t* _RESTRICT weights,
+    void update(const std::span<const value_type> weights,
                 const Accumulator* _RESTRICT prev_accum,
-                const uint16_t* _RESTRICT added_features,
+                std::span<const uint16_t> added_features,
                 size_t added_features_cnt,
-                const uint16_t* _RESTRICT removed_features,
+                std::span<const uint16_t> removed_features,
                 size_t removed_features_cnt,
                 enumColor side);
 
@@ -91,7 +92,7 @@ public:
 #endif
 
 private:
-    MultiArray<value_type, 2, NetworkAccumulatorSizePerSide> _values;
+    MultiArray<value_type, 2, NetworkAccumulatorSizePerSide> _persp_accum;
 };
 
 struct FeatureData {

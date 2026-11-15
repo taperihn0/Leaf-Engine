@@ -26,8 +26,10 @@ struct NodeInfo;
 
 namespace nn {
 
-class NEval {
+class NNInference {
 public:
+    using value_type = PackedNeuralNetwork::value_type;
+
     // evaluates a position without accumulators.
     _NODISCARD static sc::Score evaluate(const PackedNeuralNetwork& network, std::string fen);
     _NODISCARD static sc::Score evaluate(const PackedNeuralNetwork& network, const Position& pos);
@@ -36,9 +38,14 @@ public:
                                          const Accumulator& acc, 
                                          enumColor side2move);
 private:
-    static int32_t layerActivationSingleOutput(const std::span<int16_t> s2m_accumulator, 
-                                               const std::span<int16_t> ns2m_accumulator,
-                                               const PackedNeuralNetwork& network);
+    _NODISCARD static int32_t layerActivationSingleOutput(std::span<const value_type, NetworkAccumulatorSizePerSide> s2m_accumulator, 
+                                                          std::span<const value_type, NetworkAccumulatorSizePerSide> ns2m_accumulator,
+                                                          const PackedNeuralNetwork& network);
+
+    template <size_t PackedCount>
+    static void halfLayerActivation(const simd::Packed<value_type>* const _RESTRICT accum,
+                                    const simd::Packed<value_type>* const _RESTRICT weights,
+                                    simd::Packed<value_type>& store);
 };
 
 } // namespace nn

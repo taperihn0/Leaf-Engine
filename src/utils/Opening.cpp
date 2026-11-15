@@ -83,7 +83,7 @@ void OpeningGenerator::load() {
     auto last = std::unique(_positions.begin(), _positions.end());
 
     last = std::remove_if(_positions.begin(), last, [](GeneratedPosition& genpos) {
-        const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, genpos.pos);
+        const sc::Score score = nn::NNInference::evaluate(nn::GlobPackedNetwork, genpos.pos);
 
         if (std::abs(static_cast<int>(score)) > _OpeningEvalThreshold)
             return true;
