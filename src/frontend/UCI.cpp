@@ -273,7 +273,7 @@ void UniversalChessInterface::parseNNEval(std::istringstream& strm) {
     else
         pos.setByFEN(fen);
 
-    const sc::Score score = nn::NEval::evaluate(nn::GlobPackedNetwork, pos);
+    const sc::Score score = nn::NNInference::evaluate(nn::GlobPackedNetwork, pos);
     std::cout << static_cast<int>(score) << std::endl;
 }
 
@@ -420,7 +420,7 @@ void UniversalChessInterface::parseSetOptions(std::istringstream& strm) {
 }
 
 void UniversalChessInterface::parseBench(std::istringstream& strm) {
-    static constexpr int BenchDepth = 12;
+    static constexpr int BenchDepth = 16;
 
     int depth = BenchDepth;
     strm >> std::skipws >> depth;

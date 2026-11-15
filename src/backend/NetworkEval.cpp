@@ -57,10 +57,12 @@ sc::Score NNInference::evaluate(const PackedNeuralNetwork& network,
     return static_cast<sc::Score>(output);
 }
 
+#if defined(_NN_USE_SCRELU_SIMD)
+
 template <size_t PackedCount>
 void NNInference::halfLayerActivation(const simd::Packed<value_type>* const _RESTRICT accum,
                                       const simd::Packed<value_type>* const _RESTRICT weights,
-                                      simd::Packed<value_type>& store)
+                                      simd::Packed<int32_t>& store)
 {
     static const auto zero_pack = simd::Packed<value_type>::zero();
     static const auto qa_pack = simd::Packed<value_type>::fill(NetworkWeightQuant);
@@ -74,6 +76,8 @@ void NNInference::halfLayerActivation(const simd::Packed<value_type>* const _RES
         store += (simd::Packed<value_type>::aligned_load(weights + i) * v_clamp).madd(v_clamp);
     }
 }
+
+#endif // _NN_USE_SCRELU_SIMD
 
 int32_t NNInference::layerActivationSingleOutput(std::span<const value_type, NetworkAccumulatorSizePerSide> s2m_accumulator, 
                                                  std::span<const value_type, NetworkAccumulatorSizePerSide> ns2m_accumulator,
@@ -103,7 +107,7 @@ int32_t NNInference::layerActivationSingleOutput(std::span<const value_type, Net
     static constexpr size_t PackedCount = NetworkAccumulatorSizePerSide / simd::Packed<value_type>::count();
     static_assert(NetworkAccumulatorSizePerSide % PackedCount == 0);
 
-    auto sum_vec = simd::Packed<value_type>::zero();
+    auto sum_vec = simd::Packed<int32_t>::zero();
 
     halfLayerActivation<PackedCount>(s2m_base, weights_base, sum_vec);
     halfLayerActivation<PackedCount>(ns2m_base, weights_base + PackedCount, sum_vec);

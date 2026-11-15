@@ -17,6 +17,7 @@
  */
 
 #include "PackedNetwork.hpp"
+#include "Accumulator.hpp"
 
 #if defined(__GNUC__)
 #include <sys/stat.h>
@@ -418,24 +419,27 @@ bool PackedNeuralNetwork::isValueOverflow() const {
     static constexpr int Int16Max = maxof<value_type>();
     static constexpr int MaxWeight = Int16Max / NetworkWeightQuant;
 
+    const auto weights = getLayerWeights(1);
+
+    if (weights.size() < 2 * NetworkAccumulatorSizePerSide)
+        return true;
+
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
-        if (!(weights[i] >= -MaxWeight and weights[i] <= MaxWeight) or
-            !(
-             weights[NetworkAccumulatorSizePerSide + i] >= -MaxWeight and 
-             weights[NetworkAccumulatorSizePerSide + i] <= MaxWeight
-            ))
+        const int32_t w0 = weights[i];
+        const int32_t w1 = weights[NetworkAccumulatorSizePerSide + i];
+
+        if (w0 < -MaxWeight or w0 > MaxWeight or
+            w1 < -MaxWeight or w1 > MaxWeight)
             return true;
 
-        const int32_t mul0 = static_cast<int32_t>(weights[i]) 
-                             * NetworkWeightQuant;
+        const int32_t mul0 = w0 * NetworkWeightQuant;
 
-        if (!(mul0 >= -Int16Max and mul0 <= Int16Max))
+        if (mul0 < -Int16Max or mul0 > Int16Max)
             return true;
 
-        const int32_t mul1 = static_cast<int32_t>(weights[NetworkAccumulatorSizePerSide + i]) 
-                             * NetworkWeightQuant;
+        const int32_t mul1 = w1 * NetworkWeightQuant;
 
-        if (!mul1 >= -Int16Max and mul1 <= Int16Max)
+        if (mul1 < -Int16Max or mul1 > Int16Max)
             return true;
     }
 #endif

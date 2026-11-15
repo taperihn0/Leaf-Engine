@@ -202,7 +202,7 @@ struct PlatformPackedIntrinsics<T, std::enable_if_t<std::is_integral_v<T> and st
 #elif defined(_NN_USE_SSE2)
         return _mm_load_si128(m_);
 #elif defined(_NN_USE_NEON)
-        return vld1q_s32(m_);
+        return vld1q_s32(reinterpret_cast<const int32_t*>(mem));
 #else
         static_assert(false);
 #endif
@@ -535,7 +535,10 @@ public:
         return (_m = Intr::sub(_m, r._m));
     }
 
-    _INLINE Packed madd(const Packed& r) const {
+    // Horizontal multiply-add of packed 16-bit values.
+    // Result contains 32-bit partial sums, so it is exposed as a 32-bit pack.
+    _INLINE Packed<int32_t> madd(const Packed& r) const {
+        static_assert(std::is_same_v<T, int16_t>, "Multiply-add is only supported for 16-bit packed values");
         return Intr::madd(_m, r._m);
     }
 

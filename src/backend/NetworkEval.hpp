@@ -42,10 +42,12 @@ private:
                                                           std::span<const value_type, NetworkAccumulatorSizePerSide> ns2m_accumulator,
                                                           const PackedNeuralNetwork& network);
 
+#if defined(_NN_USE_SCRELU_SIMD)
     template <size_t PackedCount>
     static void halfLayerActivation(const simd::Packed<value_type>* const _RESTRICT accum,
                                     const simd::Packed<value_type>* const _RESTRICT weights,
-                                    simd::Packed<value_type>& store);
+                                    simd::Packed<int32_t>& store);
+#endif // _NN_USE_SCRELU_SIMD
 };
 
 } // namespace nn

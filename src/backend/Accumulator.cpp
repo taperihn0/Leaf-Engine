@@ -134,14 +134,14 @@ void Accumulator::refresh(std::span<const value_type> biases,
 #else // Do not use SIMD Extensions
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
-        _values[side][i] = biases[i];
+        _persp_accum[side][i] = biases[i];
     }
 
     for (size_t i = 0; i < side_active_features_cnt; i++) {
         const size_t base_offset = side_active_features[i] * NetworkAccumulatorSizePerSide;
 
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
-            _values[side][j] += weights[base_offset + j];
+            _persp_accum[side][j] += weights[base_offset + j];
         }
     }
 
@@ -194,44 +194,83 @@ void Accumulator::update(const std::span<const value_type> weights,
         reinterpret_cast<const simd::Packed<value_type>*>(weights.data())
     );
 
-    assert(reinterpret_cast<ptrdiff_t>(values_base) % simd::getSimdRegisterAlignment() == 0);
-    assert(reinterpret_cast<ptrdiff_t>(prev_values_base) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(side_acc) % simd::getSimdRegisterAlignment() == 0);
+    assert(reinterpret_cast<ptrdiff_t>(prev_side_acc) % simd::getSimdRegisterAlignment() == 0);
     assert(reinterpret_cast<ptrdiff_t>(weights_base) % simd::getSimdRegisterAlignment() == 0);
 
     std::copy_n(prev_side_acc, PackedCount, side_acc);
 
-    // TODO: may clamp multiple outer loops into one loop through accumulator, 
-    // since removed_features_cnt is < 3 in practice
-
-    for (size_t i = 0; i < removed_features_cnt; i++) {
-        const size_t base_offset = removed_features[i] * PackedCount;
+    switch (removed_features_cnt) {
+    case 0: break;
+    case 1: {
+        const size_t base_offset = removed_features[0] * PackedCount;
         
         for (size_t j = 0; j < PackedCount; j++) {
             const auto sub = side_acc[j].aligned_load_this() - weights_base[base_offset + j].aligned_load_this();
             sub.aligned_store(side_acc + j);
         }
+
+        break;
+    }
+    case 2: {
+        const auto base_offsets = std::make_pair(
+            removed_features[0] * PackedCount,
+            removed_features[1] * PackedCount
+        );
+        
+        for (size_t j = 0; j < PackedCount; j++) {
+            const auto sub = side_acc[j].aligned_load_this() - 
+                weights_base[base_offsets.first + j].aligned_load_this() -
+                weights_base[base_offsets.second + j].aligned_load_this();
+            sub.aligned_store(side_acc + j);
+        }
+
+        break;
+    }
+    default: std::unreachable();
     }
 
-    for (size_t i = 0; i < added_features_cnt; i++) {
-        const size_t base_offset = added_features[i] * PackedCount;
-
+    switch (added_features_cnt) {
+    case 0: break;
+    case 1: {
+        const size_t base_offset = added_features[0] * PackedCount;
+        
         for (size_t j = 0; j < PackedCount; j++) {
             const auto add = side_acc[j].aligned_load_this() + weights_base[base_offset + j].aligned_load_this();
             add.aligned_store(side_acc + j);
         }
+
+        break;
+    }
+    case 2: {
+        const auto base_offsets = std::make_pair(
+            added_features[0] * PackedCount,
+            added_features[1] * PackedCount
+        );
+        
+        for (size_t j = 0; j < PackedCount; j++) {
+            const auto add = side_acc[j].aligned_load_this() + 
+                weights_base[base_offsets.first + j].aligned_load_this() +
+                weights_base[base_offsets.second + j].aligned_load_this();
+            add.aligned_store(side_acc + j);
+        }
+
+        break;
+    }
+    default: std::unreachable();
     }
 
 #else // Do not use SIMD Extensions
 
     for (size_t i = 0; i < NetworkAccumulatorSizePerSide; i++) {
-        _values[side][i] = prev_accum->_values[side][i];
+        _persp_accum[side][i] = prev_accum->_persp_accum[side][i];
     }
 
     for (size_t i = 0; i < removed_features_cnt; i++) {
         const size_t base_offset = removed_features[i] * NetworkAccumulatorSizePerSide;
         
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
-            _values[side][j] -= weights[base_offset + j];
+            _persp_accum[side][j] -= weights[base_offset + j];
         }
     }
 
@@ -239,7 +278,7 @@ void Accumulator::update(const std::span<const value_type> weights,
         const size_t base_offset = added_features[i] * NetworkAccumulatorSizePerSide;
 
         for (size_t j = 0; j < NetworkAccumulatorSizePerSide; j++) {
-            _values[side][j] += weights[base_offset + j];
+            _persp_accum[side][j] += weights[base_offset + j];
         }
     }
 
