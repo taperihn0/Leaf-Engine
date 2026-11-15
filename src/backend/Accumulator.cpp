@@ -165,6 +165,16 @@ void Accumulator::update(const PackedNeuralNetwork& network,
            side);
 }
 
+template <size_t PackedCount, typename Fn>
+void Accumulator::accumulatorPolicyUpdate(simd::Packed<value_type>* const _RESTRICT acc,
+                                          const simd::Packed<value_type>* const _RESTRICT weights_base,
+                                          Fn&& invoke_value) 
+{
+    for (auto i = 0uz; i < PackedCount; i++) {
+        invoke_value(acc[i], weights_base[i]).aligned_store(acc + i);
+    }
+}
+
 void Accumulator::update(const std::span<const value_type> weights,
                          const Accumulator* _RESTRICT prev_accum,
                          std::span<const uint16_t> added_features,
@@ -200,64 +210,22 @@ void Accumulator::update(const std::span<const value_type> weights,
 
     std::copy_n(prev_side_acc, PackedCount, side_acc);
 
-    switch (removed_features_cnt) {
-    case 0: break;
-    case 1: {
-        const size_t base_offset = removed_features[0] * PackedCount;
-        
-        for (size_t j = 0; j < PackedCount; j++) {
-            const auto sub = side_acc[j].aligned_load_this() - weights_base[base_offset + j].aligned_load_this();
-            sub.aligned_store(side_acc + j);
-        }
+    for (size_t i = 0; i < removed_features_cnt; i++) {
+        const size_t base_offset = removed_features[i] * PackedCount;
 
-        break;
-    }
-    case 2: {
-        const auto base_offsets = std::make_pair(
-            removed_features[0] * PackedCount,
-            removed_features[1] * PackedCount
-        );
-        
-        for (size_t j = 0; j < PackedCount; j++) {
-            const auto sub = side_acc[j].aligned_load_this() - 
-                weights_base[base_offsets.first + j].aligned_load_this() -
-                weights_base[base_offsets.second + j].aligned_load_this();
-            sub.aligned_store(side_acc + j);
-        }
-
-        break;
-    }
-    default: std::unreachable();
+        accumulatorPolicyUpdate<PackedCount>(side_acc, weights_base + base_offset, 
+            [](const auto& acc_val, const auto& weight) {
+                return acc_val.aligned_load_this() - weight.aligned_load_this();
+            });
     }
 
-    switch (added_features_cnt) {
-    case 0: break;
-    case 1: {
-        const size_t base_offset = added_features[0] * PackedCount;
-        
-        for (size_t j = 0; j < PackedCount; j++) {
-            const auto add = side_acc[j].aligned_load_this() + weights_base[base_offset + j].aligned_load_this();
-            add.aligned_store(side_acc + j);
-        }
+    for (size_t i = 0; i < added_features_cnt; i++) {
+        const size_t base_offset = added_features[i] * PackedCount;
 
-        break;
-    }
-    case 2: {
-        const auto base_offsets = std::make_pair(
-            added_features[0] * PackedCount,
-            added_features[1] * PackedCount
-        );
-        
-        for (size_t j = 0; j < PackedCount; j++) {
-            const auto add = side_acc[j].aligned_load_this() + 
-                weights_base[base_offsets.first + j].aligned_load_this() +
-                weights_base[base_offsets.second + j].aligned_load_this();
-            add.aligned_store(side_acc + j);
-        }
-
-        break;
-    }
-    default: std::unreachable();
+        accumulatorPolicyUpdate<PackedCount>(side_acc, weights_base + base_offset, 
+            [](const auto& acc_val, const auto& weight) {
+                return acc_val.aligned_load_this() + weight.aligned_load_this();
+            });
     }
 
 #else // Do not use SIMD Extensions
