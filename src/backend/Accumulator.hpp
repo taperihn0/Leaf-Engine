@@ -94,8 +94,8 @@ public:
 private:
     template <size_t PackedCount, typename Fn>
     void accumulatorPolicyUpdate(simd::Packed<value_type>* const _RESTRICT acc,
-                           const simd::Packed<value_type>* const _RESTRICT weights_base,
-                           Fn&& invoke_value);
+                                 const simd::Packed<value_type>* const _RESTRICT weights_base,
+                                 Fn&& invoke_value);
 
     MultiArray<value_type, 2, NetworkAccumulatorSizePerSide> _persp_accum;
 };
