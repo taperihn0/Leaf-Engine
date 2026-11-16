@@ -50,7 +50,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     }
 
     {
-        static const size_t mb_tt_size = 8;
+        const size_t mb_tt_size = thr_data.commons->tt_mb_size;
 
         for (auto& engine : competitors) {
             engine.syncUntilReady(log_thr_label);
@@ -309,6 +309,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->total_black_win_count = 0;
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = packet.thread_count;
+    thread_common->tt_mb_size = packet.tt_mb_size;
     thread_common->err_fp = packet.selfplay_filename / "err";
 
     if (GlobOpeningGenerator.isEmpty())

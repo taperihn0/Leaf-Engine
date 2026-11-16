@@ -4,5 +4,6 @@
   "games_per_session": 8000,
   "thread_count": 6,
   "nodes": 4000,
+  "tt_mb_size": 8,
   "syzygy_path": "assets/tb/Syzygy"
 }
