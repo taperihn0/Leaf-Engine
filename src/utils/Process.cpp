@@ -107,7 +107,7 @@ bool ForkedProcess::isAlive() const {
 
 #else
 
-EngineProcess::~EngineProcess() {
+ForkedProcess::~ForkedProcess() {
     if (_hthread) CloseHandle(_hthread);
     if (_hproc) {
         TerminateProcess(_hproc, 0);
@@ -115,7 +115,7 @@ EngineProcess::~EngineProcess() {
     }
 }
 
-void EngineProcess::init() {
+void ForkedProcess::init() {
     HANDLE h_stdin_rd = nullptr;
     HANDLE h_stdin_wr = nullptr;
     HANDLE h_stdout_rd = nullptr;
@@ -180,31 +180,31 @@ void EngineProcess::init() {
     const int fd_in = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdin_wr), _O_WRONLY);
     const int fd_out = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdout_rd), _O_RDONLY);
 
-    _hproc = pi._hprocess;
-    _hthread = pi._hthread;
+    _hproc = pi.hProcess;
+    _hthread = pi.hThread;
 
 #if defined(_MSC_VER)
     FILE* fin = _fdopen(fd_in, "w");
     FILE* fout = _fdopen(fd_out, "r");
 
-    input_stream = std::make_unique<std::ofstream>(fin);
-    output_stream = std::make_unique<std::ifstream>(fout);
+    _input_stream = std::make_unique<std::ofstream>(fin);
+    _output_stream = std::make_unique<std::ifstream>(fout);
 #elif defined(__GNUC__)
-    _in_buf = std::make_unique<EngineProcess::filebuf>(fd_in, std::ios::out);
-    input_stream = std::make_unique<std::ostream>(_in_buf.get());    
-    _out_buf = std::make_unique<EngineProcess::filebuf>(fd_out, std::ios::in);
-    output_stream = std::make_unique<std::istream>(_out_buf.get());
-    _log = std::make_unique<log::Log>(output_stream);
+    _in_buf = std::make_unique<ForkedProcess::filebuf>(fd_in, std::ios::out);
+    _output_stream = std::make_unique<std::ostream>(_in_buf.get());
+    _out_buf = std::make_unique<ForkedProcess::filebuf>(fd_out, std::ios::in);
+    _input_stream = std::make_unique<std::istream>(_out_buf.get());
+    _log = std::make_unique<lg::Log>(*_output_stream);
 #else
 #error "Unsupported compiler for Windows"
 #endif
 }
 
-void EngineProcess::waitForProcess() {
+void ForkedProcess::waitForProcess() {
     WaitForSingleObject(_hproc, INFINITE);
 }
 
-bool EngineProcess::isAlive() const {
+bool ForkedProcess::isAlive() const {
     if (!_hproc) 
         return false;
 

@@ -21,6 +21,10 @@ set_target_properties(LeafUtils PROPERTIES
 
 set(UTILS_DESTINATION_PATH "${CMAKE_SOURCE_DIR}/bin/Utils/${CMAKE_BUILD_TYPE}")
 
+if (WIN32) 
+	target_sources(LeafUtils PRIVATE "${CMAKE_SOURCE_DIR}/src/backend/win-embed/resource.rc")
+endif()
+
 configure_file(
 	"${CMAKE_SOURCE_DIR}/assets/nets/${DEFAULT_NEURAL_NET_FILE_NAME}"
 	"${UTILS_DESTINATION_PATH}/${DEFAULT_NEURAL_NET_FILE_NAME}"
