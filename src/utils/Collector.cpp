@@ -180,14 +180,14 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                                              TrainingDataEntry::DRAW;
 
         for (auto& [pos, white_score, move] : *game_packet.data_buffer) {
-            assert(move.isLegal(*pos));
+            assert(move.isLegal(pos));
 
-            if (!filterTrainPosition(*pos, white_score, move, total_positions_cnt))
+            if (!filterTrainPosition(pos, white_score, move, total_positions_cnt))
                 continue;
 
             filtered_positions_cnt++;
 
-            const TrainingDataEntry entry(PackedPosition::packed(*pos), white_score, result8b);
+            const TrainingDataEntry entry(PackedPosition::packed(pos), white_score, result8b);
 
             if (isWhiteWin(game_packet.result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
@@ -243,7 +243,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 #if defined(INSPECT_SELFPLAY_MATCHES)
         if (thr_data.commons->total_thread_cnt == 1) {            
             lg::message(log_thr_label, 
-                        *game_packet.data_buffer->back().pos,
+                        game_packet.data_buffer->back().pos,
                         toStr(game_packet.result),
                         ": ");
 

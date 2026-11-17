@@ -146,7 +146,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors,
             if (internal_game_storage) 
                 throw std::runtime_error(R"(Data buffer is enabled, but game is not given"
 " - can't point to position from game)");
-            packet.data_buffer->push_back(PositionInfo{ &pos, side2move == WHITE ? score : -score, move });
+            packet.data_buffer->push_back(PositionInfo{ pos, side2move == WHITE ? score : -score, move });
         }
 
         if (time_constraint and side2move == WHITE) {

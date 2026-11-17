@@ -2,8 +2,8 @@
   "executable": "./bin/Utils/Release/LeafUtils",
   "total_sessions": 15,
   "games_per_session": 8000,
-  "thread_count": 6,
+  "thread_count": 8,
   "nodes": 4000,
-  "tt_mb_size": 8,
+  "tt_mb_size": 4,
   "syzygy_path": "assets/tb/Syzygy"
 }

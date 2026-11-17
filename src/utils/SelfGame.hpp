@@ -49,7 +49,7 @@ private:
 class SelfGame {
 public:
     struct PositionInfo {
-        Position* pos;
+        Position  pos;
         sc::Score white_score;
         Move32b   moves;
     };
