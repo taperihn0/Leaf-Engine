@@ -41,6 +41,11 @@ public:
 
     void syncUntilReady(lg::logLabel log_thr_label);
     void waitForProcess();
+
+    // Sends the UCI options this process currently has configured (the loaded
+    // Syzygy tablebase path) to the engine. No reply is awaited, call
+    // syncUntilReady() afterwards.
+    void sendInheritedOptions(lg::logLabel log_thr_label);
     
     _NODISCARD bool isAlive() const;
 
