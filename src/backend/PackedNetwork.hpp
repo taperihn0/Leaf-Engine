@@ -32,7 +32,7 @@ static std::filesystem::path DevNetworksDir = ::utils::paths::PathsManager.getDi
 
 static constexpr size_t  MaxLayerCount = 4;
 static constexpr size_t  NetworkInputSize = 768;
-static constexpr size_t  NetworkHiddenLayerSize = 128;
+static constexpr size_t  NetworkHiddenLayerSize = 256;
 static constexpr size_t  NetworkOutputSize = 1;
 static constexpr size_t  NetworkLayerCount = 3;
 static constexpr int16_t NetworkWeightQuant = 255;
