@@ -405,7 +405,14 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 bool TournamentCollector::explicitFilterPolicy(const Position& pos, 
                                                sc::Score white_score) 
 {
-    if (white_score.isMateScore())
+    /* 'Undef' means the search never reported a score for this position, so there
+    *  is nothing to learn from it. Kept out of the dataset, because bullet would
+    *  otherwise train it towards sigmoid(+-32500/400) - a certain win.
+    */
+    if (!white_score.isValid())
+        return false;
+
+    else if (white_score.isMateScore())
         return false;
 
     else if (pos.getPiecesCount() <= 6 and 

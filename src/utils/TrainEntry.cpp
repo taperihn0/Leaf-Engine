@@ -107,7 +107,8 @@ BulletChessBoard TrainingDataEntry::toBulletFormat(const TrainingDataEntry& entr
         rel_occ = rel_occ.swapBytes();
     }
 
-    BulletChessBoard bullet_entry;
+    // Value-initialized so that the alignment padding is deterministic.
+    BulletChessBoard bullet_entry{};
 
     // Occupancies
     bullet_entry.occ = rel_occ;

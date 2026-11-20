@@ -47,6 +47,7 @@ private:
     void parseBulletFormat(std::istringstream& strm);
     void parseTestBulletFormat(std::istringstream& strm);
     void parseDataShuffles(std::istringstream& strm);
+    void parseDataCheck(std::istringstream& strm);
 
     TournamentCollector _collector;
     SPSA_Tuning         _tuner;

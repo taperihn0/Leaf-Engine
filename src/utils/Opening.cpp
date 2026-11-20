@@ -57,12 +57,23 @@ void OpeningGenerator::load() {
     const std::vector<std::string>& openingset = getCraftyOpenings();
 #endif
 
-    std::for_each(openingset.begin(), openingset.end(), [&](const std::string& fen) {
+    /* Visited in random order: once '_MaxPoolSize' is reached the remaining
+    *  entries are skipped, and that should not always mean "the last ones".
+    */
+    std::vector<std::string> visit_order(openingset.begin(), openingset.end());
+    std::shuffle(visit_order.begin(), visit_order.end(), rnd::GlobMersenne);
+
+    _positions.reserve(_MaxPoolSize);
+
+    std::for_each(visit_order.begin(), visit_order.end(), [&](const std::string& fen) {
+        if (_positions.size() >= _MaxPoolSize)
+            return;
+
         const Position pos_from_fen(fen);
 
         _positions.push_back(GeneratedPosition{ 0, pos_from_fen });
 
-        for (int i = 0; i < _RandomPerPos; i++) {
+        for (int i = 0; i < _RandomPerPos and _positions.size() < _MaxPoolSize; i++) {
             Position pos = pos_from_fen;
 
             for (int j = 1; j <= _MaxRandomMoves; j++) {

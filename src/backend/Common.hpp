@@ -29,6 +29,8 @@
 #include <limits>
 #include <cstdlib>
 #include <random>
+#include <atomic>
+#include <chrono>
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -314,22 +316,54 @@ _INLINE constexpr T maxof() {
 
 namespace rnd {
 
+/* A single fixed seed makes every selfplay session replay the exact same games:
+*  the opening generator walks the same random sequence and, since searches run
+*  on fixed node limits, each game is bit-identical to the last run. Splitting
+*  the work over sessions and threads then only multiplies the same games
+*  instead of exploring new ones - which is how a 300M position dataset can end
+*  up with less than 0.3% distinct positions in it.
+*  Utilities therefore seed from 'std::random_device' and the clock, and every
+*  thread mixes its own index into the process seed.
+*  Set LEAF_RNG_SEED to reproduce a specific run.
+*/
+_INLINE uint64_t mixSeed(uint64_t x) {
+    x += 0x9E3779B97F4A7C15ull;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ull;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBull;
+    return x ^ (x >> 31);
+}
+
+_INLINE uint64_t makeProcessSeed() {
 #if defined(LEAF_BUILD_UTILS)
-#define LEAF_RANDOMIZE_RND_ENGINE
+    if (const char* env = std::getenv("LEAF_RNG_SEED")) {
+        const uint64_t parsed = std::strtoull(env, nullptr, 10);
+
+        if (parsed != 0)
+            return parsed;
+    }
+
+    std::random_device rd;
+    const uint64_t entropy = (static_cast<uint64_t>(rd()) << 32) ^ static_cast<uint64_t>(rd());
+    const uint64_t clock = static_cast<uint64_t>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+
+    return mixSeed(entropy ^ clock);
+#else
+    return 1;
 #endif
+}
 
-#undef LEAF_RANDOMIZE_RND_ENGINE // !!!
-
-static int GlobFixedSeed = 1;
-static std::mt19937 GlobMersenne(GlobFixedSeed);
+inline const uint64_t GlobFixedSeed = makeProcessSeed();
+inline std::mt19937 GlobMersenne(static_cast<uint32_t>(GlobFixedSeed));
 
 _INLINE std::mt19937_64& getRandomEngine() {
-#if !defined(LEAF_RANDOMIZE_RND_ENGINE)
-    static thread_local uint RandomEngineSeed = GlobFixedSeed;
-    static thread_local std::mt19937_64 engine(static_cast<uint64_t>(RandomEngineSeed));
-#else
-    static thread_local std::mt19937_64 engine([]() { return std::random_device{}(); }());
-#endif
+    static thread_local std::mt19937_64 engine = []() {
+        static std::atomic<uint64_t> thread_cnt = 0;
+        const uint64_t offset = thread_cnt.fetch_add(1, std::memory_order_relaxed);
+
+        return std::mt19937_64(mixSeed(GlobFixedSeed + 0x9E3779B97F4A7C15ull * offset));
+    }();
+
     return engine;
 }
 

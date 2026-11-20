@@ -52,13 +52,22 @@ private:
     OpeningGenerator() = default;
 
     static constexpr int _OpeningEvalThreshold = 300;
+    /* Games are started from a uniformly drawn pool position, so the pool size
+    *  bounds how many distinct games a session can produce. Every FEN is walked
+    *  down '_RandomPerPos' random paths of '_MinRandomMoves'..'_MaxRandomMoves'
+    *  plies, which gives a large pool without touching the opening book.
+    */
 #if !defined(DEBUG)
-    static constexpr int _RandomPerPos   = 35;
+    static constexpr int _RandomPerPos   = 24;
 #else
     static constexpr int _RandomPerPos   = 2;
 #endif
-    static constexpr int _MinRandomMoves = 2;
-    static constexpr int _MaxRandomMoves = 10;
+    static constexpr int _MinRandomMoves = 4;
+    static constexpr int _MaxRandomMoves = 16;
+    /* Hard cap: diversity stops growing while each process' memory keeps growing
+    *  linearly with the pool.
+    */
+    static constexpr size_t _MaxPoolSize = 600'000;
 
     struct GeneratedPosition {
         int moves_done;

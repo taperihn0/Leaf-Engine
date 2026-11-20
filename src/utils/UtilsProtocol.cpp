@@ -22,6 +22,8 @@
 #include "Tuning.hpp"
 #include <variant>
 #include <execution>
+#include <map>
+#include <iomanip>
 
 namespace utils
 {
@@ -345,6 +347,37 @@ void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
     }
 }
 
+namespace {
+/* 'shuffle_data' only permutes records that already are in bullet format.
+*  Raw Leaf selfplay entries share the very same 32-byte layout, so pointing
+*  this command at un-serialized training data silently yields a file that
+*  bullet decodes with different nibble semantics and side-to-move orientation.
+*  Detect that case instead of quietly corrupting the dataset.
+*/
+bool looksLikeBulletFormat(const BulletChessBoard& bf) {
+    static constexpr uint8_t OurKingNibble = 0x5, TheirKingNibble = 0xD;
+
+    const size_t piece_cnt = bf.occ.popCount();
+
+    if (piece_cnt > 32) // nibbles are 4-bit packed, at most 32 pieces fit
+        return false;
+
+    uint8_t our_kings = 0, their_kings = 0;
+
+    for (size_t i = 0; i < piece_cnt; i++) {
+        const uint8_t nibble = (bf.pcs[i / 2] >> (4 * (i % 2))) & 0x0F;
+
+        if ((nibble & 0x07) > 5) // bullet knows only 6 piece types
+            return false;
+
+        our_kings   += nibble == OurKingNibble;
+        their_kings += nibble == TheirKingNibble;
+    }
+
+    return our_kings == 1 and their_kings == 1;
+}
+} // namespace
+
 void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
     std::filesystem::path selfplay_root;
     strm >> std::skipws >> selfplay_root;
@@ -374,6 +407,25 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
 
         const std::filesystem::path rfp = std::filesystem::relative(selfplay_fp, selfplay_root);
         const std::filesystem::path target = (bf_selfplay_root / rfp).replace_extension(".tdf");
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_fp)) {
+            if (!entry.is_regular_file() or entry.path().extension() != ".tdf")
+                continue;
+
+            std::ifstream probe(entry.path(), std::ios_base::binary);
+            BulletChessBoard first_entry;
+
+            if (BulletChessBoard::read(probe, first_entry) and !looksLikeBulletFormat(first_entry)) {
+                static std::mutex m;
+                std::lock_guard lock(m);
+                std::cout << "Input " << entry.path() << " is not bullet-format data, aborting. "
+                          << "Run 'to_bullet_format " << selfplay_root.string() 
+                          << "' first, then shuffle its output." << std::endl;
+                return;
+            }
+
+            break;
+        }
 
         {
             static std::mutex m;
@@ -414,6 +466,157 @@ void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
             }
 		}
     });
+}
+
+namespace {
+
+/* Training records are 32 bytes in both formats:
+*  [0, 24) position, [24, 26) score, 26 result, 27 stm king, 28 opponent king.
+*  Byte 29 is the raw 'relative' flag (padding once serialized) and the last two
+*  bytes are padding in both, so they are excluded - otherwise two copies of the
+*  same sample with different garbage there would be counted as distinct.
+*/
+constexpr size_t HashedRecordBytes = 29;
+
+uint64_t hashTrainingRecord(const std::array<uint8_t, 32>& record) {
+    uint64_t hash = 0xCBF29CE484222325ull;
+
+    for (size_t i = 0; i < HashedRecordBytes; i++) {
+        hash ^= record[i];
+        hash *= 0x00000100000001B3ull;
+    }
+
+    return rnd::mixSeed(hash);
+}
+
+void sortUnique(std::vector<uint64_t>& hashes) {
+    std::sort(hashes.begin(), hashes.end());
+    hashes.erase(std::unique(hashes.begin(), hashes.end()), hashes.end());
+}
+
+std::string abbreviatePath(std::string path, size_t max_len) {
+    if (path.size() <= max_len)
+        return path;
+
+    return "..." + path.substr(path.size() - (max_len - 3));
+}
+
+} // namespace
+
+/* Reports how much of a generated dataset is actually distinct.
+*  Selfplay that replays the same games looks perfectly valid to every format
+*  checker, so this is the check that needs to run before a training run.
+*/
+void UtilsProtocol::parseDataCheck(std::istringstream& strm) {
+    std::filesystem::path root;
+    strm >> std::skipws >> root;
+
+    if (root.empty()) {
+        std::cout << "Usage: data_check <training data root>" << std::endl;
+        return;
+    }
+
+    if (!std::filesystem::exists(root)) {
+        std::cout << "Invalid training data root: " << root << std::endl;
+        return;
+    }
+
+    std::map<std::string, std::vector<std::filesystem::path>> dir_files;
+    size_t file_cnt = 0;
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
+        if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
+            dir_files[entry.path().parent_path().string()].push_back(entry.path());
+            file_cnt++;
+        }
+    }
+
+    if (!file_cnt) {
+        std::cout << "No '.tdf' files found under " << root << std::endl;
+        return;
+    }
+
+    std::cout << "Checking " << file_cnt << " file(s) under " << root << std::endl;
+    std::cout << std::left << std::setw(60) << "directory" << std::right
+              << std::setw(14) << "records"
+              << std::setw(14) << "unique"
+              << std::setw(9)  << "dup%"
+              << std::setw(9)  << "undef" << '\n';
+
+    std::vector<uint64_t> total_hashes;
+    std::array<uint8_t, 32> record;
+
+    size_t total_records = 0, total_undef = 0, total_unique = 0;
+
+    for (auto& [dir, files] : dir_files) {
+        std::vector<uint64_t> dir_hashes;
+        size_t records = 0, undef = 0;
+
+        for (const auto& fp : files) {
+            std::ifstream input(fp, std::ios_base::binary);
+
+            if (!input) {
+                std::cout << "Failed to open " << fp << std::endl;
+                continue;
+            }
+
+            while (input.read(reinterpret_cast<char*>(record.data()), record.size())
+                         .gcount() == static_cast<std::streamsize>(record.size())) {
+                int16_t score;
+                std::memcpy(&score, record.data() + 24, sizeof(score));
+
+                records++;
+                undef += std::abs(static_cast<int>(score)) == sc::Undef.value();
+                dir_hashes.push_back(hashTrainingRecord(record));
+            }
+        }
+
+        sortUnique(dir_hashes);
+
+        const size_t unique = dir_hashes.size();
+        const double dup = records
+                         ? 100.0 - 100.0 * static_cast<double>(unique) / static_cast<double>(records)
+                         : 0.0;
+
+        std::cout << std::left << std::setw(60) << abbreviatePath(dir, 60) << std::right
+                  << std::setw(14) << records
+                  << std::setw(14) << unique
+                  << std::setw(8)  << std::fixed << std::setprecision(2) << dup << '%'
+                  << std::defaultfloat
+                  << std::setw(9)  << undef << std::endl;
+
+        total_records += records;
+        total_undef   += undef;
+        total_unique  += unique;
+
+        total_hashes.insert(total_hashes.end(), dir_hashes.begin(), dir_hashes.end());
+        std::vector<uint64_t>().swap(dir_hashes);
+    }
+
+    sortUnique(total_hashes);
+
+    const size_t unique_total = total_hashes.size();
+    const double dup_total = total_records
+                           ? 100.0 - 100.0 * static_cast<double>(unique_total) / static_cast<double>(total_records)
+                           : 0.0;
+
+    std::cout << std::string(60, '-') << '\n';
+    std::cout << "TOTAL records " << total_records
+              << " | unique across all directories " << unique_total
+              << " | duplicates " << std::fixed << std::setprecision(2) << dup_total << "%"
+              << std::defaultfloat
+              << " | undef " << total_undef << std::endl;
+
+    if (total_records and unique_total * 4 < total_records) {
+        std::cout << "WARNING: only " << unique_total << " of " << total_records
+                  << " records are distinct. A network trained on this will memorise it "
+                     "instead of learning from it - fix the seeding/opening diversity and "
+                     "regenerate before training." << std::endl;
+    }
+
+    std::cout << "Note: 'unique across all directories' is exact, but keeps one 8-byte "
+                 "hash per distinct record, so a fully distinct dataset needs ~8 bytes "
+                 "per record of memory." << std::endl;
 }
 
 void UtilsProtocol::parsePerft(std::istringstream& strm) {
@@ -546,6 +749,8 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
         else if (token == "to_bullet_format")      parseBulletFormat(strm);
         // Shuffle bullet format data
 		else if (token == "shuffle_data")          parseDataShuffles(strm);
+        // Report how much of the generated dataset is actually distinct
+        else if (token == "data_check")            parseDataCheck(strm);
 
         // Setup and start SPSA tuning
         else if (token == "spsa")                  parseSPSA(strm);
