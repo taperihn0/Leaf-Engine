@@ -131,13 +131,59 @@ bool replaceFile(const std::filesystem::path& from, const std::filesystem::path&
     return !err;
 }
 
-/* Swaps the converted temporaries in, moving the raw originals aside first.
-*  A failure at any point restores the session to its previous state, so a
-*  session can never end up half converted (which the next run would then
-*  convert a second time and corrupt).
+SessionInfo readSessionInfo(const std::filesystem::path& session_dir) {
+    SessionInfo info;
+
+    std::ifstream input(session_dir / SessionInfoFileName);
+
+    if (!input)
+        return info;
+
+    for (std::string key; input >> key; ) {
+        if (key == "bullet_format")
+            input >> info.bullet_format;
+        else if (key == "records")
+            input >> info.records;
+        else {
+            std::string ignored;
+            input >> ignored;
+        }
+    }
+
+    return info;
+}
+
+bool writeSessionInfo(const std::filesystem::path& session_dir, const SessionInfo& info) {
+    const std::filesystem::path fp = session_dir / SessionInfoFileName;
+    const std::filesystem::path tmp_fp = tempPathFor(fp);
+
+    {
+        std::ofstream output(tmp_fp, std::ios::trunc);
+
+        if (!output)
+            return false;
+
+        output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
+               << "records " << info.records << '\n';
+        output.flush();
+
+        if (!output)
+            return false;
+    }
+
+    return replaceFile(tmp_fp, fp);
+}
+
+/* Swaps the converted temporaries in, moving the raw originals aside first,
+*  and only marks the session as converted once every file was installed. A
+*  failure at any point restores the session to its previous state, so a
+*  session can neither end up half converted nor converted without a matching
+*  'session.info' - the next run would convert it a second time and corrupt it.
 */
 bool commitConvertedFiles(
-    const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending) 
+    const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending,
+    const std::filesystem::path& session_dir,
+    size_t records) 
 {
     std::error_code err;
 
@@ -183,6 +229,14 @@ bool commitConvertedFiles(
 
     if (installed != pending.size()) {
         /* Every original is still intact in its backup, restore all of them. */
+        moved = pending.size();
+        rollback();
+        return false;
+    }
+
+    if (!writeSessionInfo(session_dir, SessionInfo{true, records})) {
+        lg::warning("Failed to write '", std::string(SessionInfoFileName),
+                    "' for session: ", session_dir.string());
         moved = pending.size();
         rollback();
         return false;
@@ -240,86 +294,21 @@ bool convertFileInPlace(const std::filesystem::path& fp,
     return true;
 }
 
-bool convertSessionInPlace(const std::filesystem::path& session_dir, size_t& record_cnt) {
-    record_cnt = 0;
-
-    std::vector<std::filesystem::path> tdf_files;
-
-    if (!collectTdfFiles(session_dir, tdf_files))
-        return false;
-
-    std::sort(tdf_files.begin(), tdf_files.end());
-
-    std::vector<std::pair<std::filesystem::path, std::filesystem::path>> pending;
-    std::error_code err;
-
-    for (const auto& fp : tdf_files) {
-        std::filesystem::path tmp_fp;
-        size_t file_records = 0;
-
-        if (!convertFileInPlace(fp, tmp_fp, file_records)) {
-            for (const auto& [other_fp, other_tmp] : pending)
-                std::filesystem::remove(other_tmp, err);
-
-            return false;
-        }
-
-        pending.emplace_back(fp, tmp_fp);
-        record_cnt += file_records;
-    }
-
-    return commitConvertedFiles(pending);
-}
-
 } // namespace
 
-SessionInfo readSessionInfo(const std::filesystem::path& session_dir) {
-    SessionInfo info;
-
-    std::ifstream input(session_dir / SessionInfoFileName);
-
-    if (!input)
-        return info;
-
-    for (std::string key; input >> key; ) {
-        if (key == "bullet_format")
-            input >> info.bullet_format;
-        else if (key == "records")
-            input >> info.records;
-        else {
-            std::string ignored;
-            input >> ignored;
-        }
-    }
-
-    return info;
+Session::Session(std::filesystem::path fp, bool create_files)
+    : _fp(std::move(fp)) 
+{
+    if (create_files)
+        createSession();
 }
 
-bool writeSessionInfo(const std::filesystem::path& session_dir, const SessionInfo& info) {
-    const std::filesystem::path fp = session_dir / SessionInfoFileName;
-    const std::filesystem::path tmp_fp = tempPathFor(fp);
+Session::Session(std::filesystem::path fp)
+    : Session(std::move(fp), true) 
+{}
 
-    {
-        std::ofstream output(tmp_fp, std::ios::trunc);
-
-        if (!output)
-            return false;
-
-        output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
-               << "records " << info.records << '\n';
-        output.flush();
-
-        if (!output)
-            return false;
-    }
-
-    return replaceFile(tmp_fp, fp);
-}
-
-Session::Session(size_t id, std::filesystem::path fp)
-    : _id(id)
-    , _fp(std::move(fp)) {
-    createSession();
+Session Session::attached(std::filesystem::path fp) {
+    return Session(std::move(fp), false);
 }
 
 bool Session::write(const TrainingDataEntry& entry, Label label) const {
@@ -329,6 +318,10 @@ bool Session::write(const TrainingDataEntry& entry, Label label) const {
         file->second == nullptr or
         !file->second->is_open()
     ) ? false : TrainingDataEntry::write(*file->second, entry);
+}
+
+SessionInfo Session::info() const {
+    return readSessionInfo(_fp);
 }
 
 void Session::createSession() {
@@ -370,6 +363,137 @@ void Session::createSession() {
             paths::PathsManager.getDrawOutputFileName(thr_id)
         );
     }
+}
+
+bool Session::toBulletFormat() {
+    std::vector<std::filesystem::path> tdf_files;
+
+    if (!collectTdfFiles(_fp, tdf_files)) {
+        lg::warning("Failed to list session files: ", _fp.string());
+        return false;
+    }
+
+    if (tdf_files.empty()) {
+        lg::warning("Session stores no training data, skipping: ", _fp.string());
+        return false;
+    }
+
+    std::sort(tdf_files.begin(), tdf_files.end());
+
+    std::vector<std::pair<std::filesystem::path, std::filesystem::path>> pending;
+    std::error_code err;
+    size_t records = 0;
+
+    for (const auto& fp : tdf_files) {
+        std::filesystem::path tmp_fp;
+        size_t file_records = 0;
+
+        if (!convertFileInPlace(fp, tmp_fp, file_records)) {
+            for (const auto& [other_fp, other_tmp] : pending)
+                std::filesystem::remove(other_tmp, err);
+
+            return false;
+        }
+
+        pending.emplace_back(fp, tmp_fp);
+        records += file_records;
+    }
+
+    return commitConvertedFiles(pending, _fp, records);
+}
+
+bool Session::shuffleInto(const std::filesystem::path& target_fp) const {
+    const SessionInfo info = this->info();
+    std::error_code err;
+    std::vector<std::filesystem::path> tdf_files;
+
+    if (!collectTdfFiles(_fp, tdf_files)) {
+        lg::warning("Failed to list session files: ", _fp.string());
+        return false;
+    }
+
+    std::sort(tdf_files.begin(), tdf_files.end());
+
+    std::vector<BulletChessBoard> entries;
+    entries.reserve(info.records);
+
+    for (const auto& fp : tdf_files) {
+        const std::uintmax_t bytes = std::filesystem::file_size(fp, err);
+
+        /* A trailing partial record would be dropped by the reader, which
+        *  would silently shrink the merged output.
+        */
+        if (err or bytes % TrainingRecordSize != 0) {
+            lg::warning("Corrupted training file (size not a multiple of ", 
+                        TrainingRecordSize, "): ", fp.string());
+            return false;
+        }
+
+        std::ifstream input(fp, std::ios::binary);
+
+        if (!input) {
+            lg::warning("Failed to open input file: ", fp.string());
+            return false;
+        }
+
+        const size_t expected = static_cast<size_t>(bytes / TrainingRecordSize);
+        size_t read_cnt = 0;
+
+        for (BulletChessBoard entry; read_cnt < expected and BulletChessBoard::read(input, entry); ) {
+            entries.push_back(entry);
+            read_cnt++;
+        }
+
+        if (read_cnt != expected) {
+            lg::warning("Failed to read all records of file: ", fp.string());
+            return false;
+        }
+    }
+
+    if (entries.size() != info.records) {
+        lg::warning("Session record count mismatch (session.info says ", info.records,
+                    ", found ", entries.size(), "): ", _fp.string());
+    }
+
+    if (target_fp.has_parent_path()) {
+        std::filesystem::create_directories(target_fp.parent_path(), err);
+
+        if (err) {
+            lg::warning("Failed to create output directory: ", target_fp.parent_path().string(),
+                        " (", err.message(), ')');
+            return false;
+        }
+    }
+
+    std::mt19937_64 engine = rnd::getRandomEngine();
+    std::shuffle(entries.begin(), entries.end(), engine);
+
+    const std::filesystem::path tmp_target = tempPathFor(target_fp);
+    std::ofstream output(tmp_target, std::ios::binary | std::ios::trunc);
+
+    if (!output) {
+        lg::warning("Failed to open output file: ", tmp_target.string());
+        return false;
+    }
+
+    for (const auto& entry : entries) {
+        if (!BulletChessBoard::write(output, entry)) {
+            lg::warning("Failed to write entry to output: ", tmp_target.string());
+            std::filesystem::remove(tmp_target, err);
+            return false;
+        }
+    }
+
+    output.close();
+
+    if (!output or !replaceFile(tmp_target, target_fp)) {
+        lg::warning("Failed to finalize shuffled output: ", target_fp.string());
+        std::filesystem::remove(tmp_target, err);
+        return false;
+    }
+
+    lg::info("Shuffled ", entries.size(), " record(s): ", target_fp.string());
+    return true;
 }
 
 SelfplayInstance::SelfplayInstance()
@@ -434,23 +558,22 @@ void SelfplayInstance::createTournamentWorkspace() {
                              + _selfplay_fp.string());
 }
 
-Session& SelfplayInstance::querySessionHandler() {
+Session& SelfplayInstance::querySessionHandler(SelfplayDb& db) {
     std::call_once(_wrk_create, [this] { createTournamentWorkspace(); });
 
     const std::lock_guard<std::mutex> lock(_mtx);
 
-    if (_sessions.size() >= static_cast<size_t>(SelfPlaySessionCountLimit)) {
+    if (_session_cnt >= static_cast<size_t>(SelfPlaySessionCountLimit)) {
         throw std::runtime_error(
             std::format("Selfplay session count limit reached in: {}", _fp.string())
         );
     }
 
-    const size_t session_id = _sessions.size() + 1;
+    const size_t session_id = ++_session_cnt;
 
-    const std::filesystem::path session_fp = _fp / std::format("session{}", session_id);
-    _sessions.emplace_back(session_id, session_fp);
-
-    return _sessions.back();
+    return db.addSession(
+        Session(_fp / std::format("session{}", session_id))
+    );
 }
 
 SelfplayDb::SelfplayDb()
@@ -458,16 +581,17 @@ SelfplayDb::SelfplayDb()
 {}
 
 SelfplayDb::SelfplayDb(std::filesystem::path root)
-    : _fp(std::move(root))
-{}
+    : _fp(std::move(root)) {
+    discoverSessions();
+}
 
-std::vector<std::filesystem::path> SelfplayDb::sessionDirectories() const {
-    std::vector<std::filesystem::path> sessions;
+void SelfplayDb::discoverSessions() {
     std::error_code err;
 
-    if (!std::filesystem::is_directory(_fp, err)) {
-        return sessions;
-    }
+    _sessions.clear();
+
+    if (!std::filesystem::is_directory(_fp, err))
+        return;
 
     const auto hasTrainingData = [](const std::filesystem::path& dir) {
         std::vector<std::filesystem::path> files;
@@ -489,58 +613,53 @@ std::vector<std::filesystem::path> SelfplayDb::sessionDirectories() const {
                and hasTrainingData(dir);
     };
 
+    std::vector<std::filesystem::path> dirs;
+
     if (isSession(_fp))
-        sessions.push_back(_fp);
+        dirs.push_back(_fp);
 
     for (std::filesystem::recursive_directory_iterator it(_fp, err), end; 
          it != end and !err; 
          it.increment(err)) 
     {
         if (it->is_directory(err) and isSession(it->path()))
-            sessions.push_back(it->path());
+            dirs.push_back(it->path());
     }
 
-    std::sort(sessions.begin(), sessions.end());
-    return sessions;
+    std::sort(dirs.begin(), dirs.end());
+
+    for (const auto& dir : dirs)
+        _sessions.push_back(Session::attached(dir));
+}
+
+Session& SelfplayDb::addSession(Session session) {
+    _sessions.push_back(std::move(session));
+    return _sessions.back();
 }
 
 bool SelfplayDb::toBulletFormat() {
-    const std::vector<std::filesystem::path> sessions = sessionDirectories();
-
-    if (sessions.empty()) {
+    if (_sessions.empty()) {
         lg::warning("No selfplay data found in '", _fp.string(), "', nothing to convert.");
         return false;
     }
 
-    lg::info("Converting ", sessions.size(), 
+    lg::info("Converting ", _sessions.size(), 
              " selfplay session(s) to bullet format in place...");
 
     std::atomic<bool> success = true;
 
-    std::for_each(std::execution::par, sessions.begin(), sessions.end(), 
-                  [&success](const std::filesystem::path& session_dir) {
-        if (readSessionInfo(session_dir).bullet_format) {
-            lg::debug("Already in bullet format, skipping: ", session_dir.string());
+    std::for_each(std::execution::par, _sessions.begin(), _sessions.end(), 
+                  [&success](Session& session) {
+        if (session.info().bullet_format) {
+            lg::debug("Already in bullet format, skipping: ", session.path().string());
             return;
         }
 
-        size_t records = 0;
-
-        if (!convertSessionInPlace(session_dir, records)) {
-            lg::warning("Failed to convert session to bullet format: ", session_dir.string());
+        if (!session.toBulletFormat()) {
+            lg::warning("Failed to convert session to bullet format: ", 
+                        session.path().string());
             success.store(false);
-            return;
         }
-
-        if (!writeSessionInfo(session_dir, SessionInfo{true, records})) {
-            lg::warning("Failed to write '", std::string(SessionInfoFileName),
-                        "' for session: ", session_dir.string());
-            success.store(false);
-            return;
-        }
-
-        lg::info("Serialized ", records, 
-                 " record(s) to bullet format: ", session_dir.string());
     });
 
     if (!success.load()) {
@@ -553,92 +672,33 @@ bool SelfplayDb::toBulletFormat() {
 }
 
 bool SelfplayDb::shuffleData() {
-    const std::vector<std::filesystem::path> sessions = sessionDirectories();
-
-    if (sessions.empty()) {
+    if (_sessions.empty()) {
         lg::warning("No selfplay data found in '", _fp.string(), "', nothing to shuffle.");
         return false;
     }
 
     const std::filesystem::path shuffled_root = shuffledRootFor(_fp);
 
-    lg::info("Shuffling ", sessions.size(), " bullet-format session(s) into '", 
+    lg::info("Shuffling ", _sessions.size(), " bullet-format session(s) into '", 
              shuffled_root.string(), "'...");
 
     std::atomic<bool> success = true;
     std::atomic<size_t> shuffled_sessions = 0;
 
-    std::for_each(std::execution::par, sessions.begin(), sessions.end(), 
+    std::for_each(std::execution::par, _sessions.begin(), _sessions.end(), 
                   [this, &shuffled_root, &success, &shuffled_sessions]
-                  (const std::filesystem::path& session_dir) {
-        const SessionInfo info = readSessionInfo(session_dir);
-
-        if (!info.bullet_format) {
+                  (const Session& session) {
+        if (!session.info().bullet_format) {
             lg::warning("Session is not in bullet format, run 'to_bullet_format' first: ",
-                        session_dir.string());
+                        session.path().string());
             return;
-        }
-
-        std::vector<std::filesystem::path> tdf_files;
-        std::error_code err;
-
-        if (!collectTdfFiles(session_dir, tdf_files)) {
-            lg::warning("Failed to list session files: ", session_dir.string());
-            success.store(false);
-            return;
-        }
-
-        std::sort(tdf_files.begin(), tdf_files.end());
-
-        std::vector<BulletChessBoard> entries;
-        entries.reserve(info.records);
-
-        for (const auto& fp : tdf_files) {
-            const std::uintmax_t bytes = std::filesystem::file_size(fp, err);
-
-            /* A trailing partial record would be dropped by the reader, which
-            *  would silently shrink the merged output.
-            */
-            if (err or bytes % TrainingRecordSize != 0) {
-                lg::warning("Corrupted training file (size not a multiple of ", 
-                            TrainingRecordSize, "): ", fp.string());
-                success.store(false);
-                return;
-            }
-
-            std::ifstream input(fp, std::ios::binary);
-
-            if (!input) {
-                lg::warning("Failed to open input file: ", fp.string());
-                success.store(false);
-                return;
-            }
-
-            const size_t expected = static_cast<size_t>(bytes / TrainingRecordSize);
-            size_t read_cnt = 0;
-
-            for (BulletChessBoard entry; read_cnt < expected and BulletChessBoard::read(input, entry); ) {
-                entries.push_back(entry);
-                read_cnt++;
-            }
-
-            if (read_cnt != expected) {
-                lg::warning("Failed to read all records of file: ", fp.string());
-                success.store(false);
-                return;
-            }
-        }
-
-        if (entries.size() != info.records) {
-            lg::warning("Session record count mismatch (session.info says ", info.records,
-                        ", found ", entries.size(), "): ", session_dir.string());
         }
 
         /* 'lexically_relative' keeps this independent of how the root was spelled
         *  and of the current working directory. The root itself relative to the
         *  root yields '.', which has to be named after the root directory.
         */
-        std::filesystem::path relative = session_dir.lexically_relative(_fp);
+        std::filesystem::path relative = session.path().lexically_relative(_fp);
         std::filesystem::path target = shuffled_root;
 
         if (relative.empty() or relative == ".")
@@ -646,46 +706,12 @@ bool SelfplayDb::shuffleData() {
         else
             target /= relative.replace_extension(".tdf");
 
-        std::filesystem::create_directories(target.parent_path(), err);
-
-        if (err) {
-            lg::warning("Failed to create output directory: ", target.parent_path().string(),
-                        " (", err.message(), ')');
-            success.store(false);
-            return;
-        }
-
-        std::mt19937_64 engine = rnd::getRandomEngine();
-        std::shuffle(entries.begin(), entries.end(), engine);
-
-        const std::filesystem::path tmp_target = tempPathFor(target);
-        std::ofstream output(tmp_target, std::ios::binary | std::ios::trunc);
-
-        if (!output) {
-            lg::warning("Failed to open output file: ", tmp_target.string());
-            success.store(false);
-            return;
-        }
-
-        for (const auto& entry : entries) {
-            if (!BulletChessBoard::write(output, entry)) {
-                lg::warning("Failed to write entry to output: ", tmp_target.string());
-                success.store(false);
-                return;
-            }
-        }
-
-        output.close();
-
-        if (!output or !replaceFile(tmp_target, target)) {
-            lg::warning("Failed to finalize shuffled output: ", target.string());
-            std::filesystem::remove(tmp_target, err);
+        if (!session.shuffleInto(target)) {
             success.store(false);
             return;
         }
 
         shuffled_sessions.fetch_add(1);
-        lg::info("Shuffled ", entries.size(), " record(s): ", target.string());
     });
 
     if (!success.load()) {

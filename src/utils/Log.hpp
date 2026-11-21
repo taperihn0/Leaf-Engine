@@ -69,8 +69,12 @@ public:
 
     Log(const Log&) = delete;
     Log& operator=(const Log&) = delete;
-    Log(Log&&) noexcept = default;
-    Log& operator=(Log&&) noexcept = default;
+
+    /* A mutex cannot be moved, and moving a log while other threads write
+    *  through it would race on the stream anyway.
+    */
+    Log(Log&&) = delete;
+    Log& operator=(Log&&) = delete;
 
     _NODISCARD std::ostream& output();
     void flush();
@@ -111,7 +115,7 @@ private:
     std::ostream* _os;
     std::unique_ptr<std::ofstream> _file_stream = nullptr;
     // Held while a message is written so parallel jobs do not interleave output.
-    std::unique_ptr<std::mutex>   _mtx = std::make_unique<std::mutex>();
+    std::mutex                    _mtx;
 };
 
 template <typename... Args>
