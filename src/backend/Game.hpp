@@ -75,7 +75,7 @@ private:
 */
 class Game {
 public:
-    enum Result {
+    enum Result : uint8_t {
         GAME_INVALID,
         WHITE_WIN_BY_MATE,
         BLACK_WIN_BY_MATE,
@@ -86,7 +86,8 @@ public:
         DRAW_BY_HALF_MOVES_LIMIT,
         DRAW_BY_STALMATE,
         DRAW_BY_REPETITIONS,
-        DRAW_BY_ADJUCATION
+        DRAW_BY_ADJUCATION,
+        RESULT_MAX
     };
 
     Game(const Position& from, 
