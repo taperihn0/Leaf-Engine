@@ -156,6 +156,8 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         for (auto& engine : competitors) {
             engine.output().message("setoption name Hash value ", mb_tt_size);
             lg::info(log_thr_label, "setoption name Hash value ", mb_tt_size);
+
+            engine.sendInheritedOptions(log_thr_label);
         }
     }
 

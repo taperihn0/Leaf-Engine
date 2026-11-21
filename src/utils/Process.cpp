@@ -55,25 +55,15 @@ void ForkedProcess::init() {
             return;
         }
 
-        // Derive settings from current process
-
-        const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
-        const std::string export_nn_arg = "export_net " + nn_bin_path + ' ';
-
-        std::string syzygy_tb_arg;
-
-        if (SyzygyTablebase::get().isLoaded()) {
-            const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
-
-            if (syzygy_tb_path != "<empty>")
-                syzygy_tb_arg = "setoption name SyzygyPath value " + syzygy_tb_path + ' ';
-        }
+        // Derive settings from current process. Every argument is a complete
+        // UCI command line, exec passes it to the child as a single argv entry.
+        // SyzygyPath is sent over the pipe by sendInheritedOptions() instead.
+        const std::string export_nn_arg = "export_net " + nn::GlobPackedNetwork.getFilePath();
 
         if (execl(ProcExecArg.data(), 
                   ProcExecArg.data(), 
                   "--self-play",
                   export_nn_arg.c_str(), 
-                  syzygy_tb_arg.c_str(),
                   nullptr) < 0)
             return;
     }
@@ -106,6 +96,30 @@ bool ForkedProcess::isAlive() const {
 }
 
 #else
+
+namespace {
+
+// CreateProcessA takes one command line, so every argument containing
+// whitespace has to be quoted, otherwise the child CRT splits it into
+// several argv entries (and each entry becomes a separate UCI command).
+std::string quoteCmdArg(const std::string& arg) {
+    if (not arg.empty() and arg.find_first_of(" \t\"") == std::string::npos)
+        return arg;
+
+    std::string quoted = "\"";
+
+    for (const char c : arg) {
+        if (c == '"')
+            quoted += "\\\"";
+        else
+            quoted += c;
+    }
+
+    quoted += '"';
+    return quoted;
+}
+
+} // namespace
 
 ForkedProcess::~ForkedProcess() {
     if (_hthread) CloseHandle(_hthread);
@@ -151,18 +165,11 @@ void ForkedProcess::init() {
     if (!sz) FAILED("Failed to get module filename");
 
     const std::string nn_bin_path = nn::GlobPackedNetwork.getFilePath();
-    
+
     std::ostringstream ss;
-    ss << '\"' << std::string(filename) << "\" " 
-       << "--self-play "
-       << "export_net " << nn_bin_path << ' ';
-
-    if (SyzygyTablebase::get().isLoaded()) {
-        const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
-
-        if (syzygy_tb_path != "<empty>")
-            ss << "setoption name SyzygyPath value " << syzygy_tb_path << ' ';
-    }
+    ss << quoteCmdArg(std::string(filename)) << ' '
+       << quoteCmdArg("--self-play") << ' '
+       << quoteCmdArg("export_net " + nn_bin_path);
 
     const std::string& cmdline = ss.str();
     std::vector<char> cmdvec(cmdline.begin(), cmdline.end());
@@ -177,8 +184,10 @@ void ForkedProcess::init() {
     CloseHandle(h_stdout_wr);
     CloseHandle(h_stdin_rd);
 
-    const int fd_in = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdin_wr), _O_WRONLY);
-    const int fd_out = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdout_rd), _O_RDONLY);
+    const int fd_in = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdin_wr), 
+                                     _O_WRONLY | _O_BINARY);
+    const int fd_out = _open_osfhandle(reinterpret_cast<intptr_t>(h_stdout_rd), 
+                                      _O_RDONLY | _O_BINARY);
 
     _hproc = pi.hProcess;
     _hthread = pi.hThread;
@@ -220,9 +229,25 @@ bool ForkedProcess::isAlive() const {
 void ForkedProcess::syncUntilReady(lg::logLabel log_thr_label) {
     _log->message("isready");
 
-    for (std::string line; readline(*_input_stream, line) and line != "readyok"; ) {
+    for (std::string line; readline(*_input_stream, line); ) {
+        if (strippedCarriageReturn(line) == "readyok")
+            break;
+
         _log->debug(log_thr_label, line);
     }
+}
+
+void ForkedProcess::sendInheritedOptions(lg::logLabel log_thr_label) {
+    if (!SyzygyTablebase::get().isLoaded())
+        return;
+
+    const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
+
+    if (syzygy_tb_path == "<empty>")
+        return;
+
+    _log->message("setoption name SyzygyPath value ", syzygy_tb_path);
+    lg::info(log_thr_label, "setoption name SyzygyPath value ", syzygy_tb_path);
 }
 
 lg::Log& ForkedProcess::output() {

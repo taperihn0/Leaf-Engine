@@ -27,6 +27,11 @@
 #include "Tablebase.hpp"
 #include <sstream>
 
+#if defined(_WIN32)
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 opt::Options UniversalChessInterface::_options;
 
 search::utils::SearchLimits UniversalChessInterface::loadSearchLimits(std::istringstream& strm, std::string token) {
@@ -479,7 +484,7 @@ void UniversalChessInterface::parseShowOptions() {
 }
 
 void UniversalChessInterface::parseSelfPlay() {
-#ifdef _MSC_VER
+#if defined(_WIN32)
     if (_setmode(_fileno(stdout), _O_BINARY) == -1 or
         _setmode(_fileno(stdin), _O_BINARY) == -1) {
         std::cout << "Failed to set binary IO" << std::endl;

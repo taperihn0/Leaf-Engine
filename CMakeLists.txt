@@ -56,7 +56,11 @@ option(BUILD_UTILS     	    "Build utils sources"            OFF)
 
 message(STATUS "Collecting Search Stats: " ${COLLECT_SEARCH_STATS})
 
+<<<<<<< HEAD
 set(DEFAULT_NEURAL_NET_FILE_NAME "nn256_80_h.bin")
+=======
+set(DEFAULT_NEURAL_NET_FILE_NAME "nn256_30_h.bin")
+>>>>>>> nn/256-30
 
 if (BUILD_UTILS)
 	add_library(Leaf STATIC ${SOURCES})

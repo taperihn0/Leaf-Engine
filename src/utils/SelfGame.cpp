@@ -82,7 +82,7 @@ SelfGame::PlayerPerspectiveResult SelfGame::mixedMatch(PairOfForks& competitors,
     for (auto& engine : competitors) {
         engine.output().message("isready");
 
-        if (!readline(engine.input(), line) or line != "readyok") {
+        if (!readline(engine.input(), line) or strippedCarriageReturn(line) != "readyok") {
             packet.result = Game::GAME_INVALID;
             return GAME_INVALID;
         }

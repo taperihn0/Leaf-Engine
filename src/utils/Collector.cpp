@@ -57,8 +57,8 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
             engine.output().message("setoption name Hash value ", mb_tt_size);
             lg::info(log_thr_label, "setoption name Hash value ", mb_tt_size);
-            
-            // TODO: SyzygyPath manual setup
+
+            engine.sendInheritedOptions(log_thr_label);
         }
     }
 

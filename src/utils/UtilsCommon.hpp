@@ -56,6 +56,10 @@ _FORCEINLINE std::istream& readline(std::istream& os, std::string& line) {
     return std::getline(os, line);
 }
 
+_FORCEINLINE std::string_view strippedCarriageReturn(std::string& line) {
+    return !line.empty() and line.back() == '\r' ? line.substr(0, line.size() - 1) : line;
+}
+
 static constexpr int SelfPlaySessionCountLimit = 256;
 
 } // namespace utils

@@ -696,9 +696,13 @@ void UtilsProtocol::parsePerft(std::istringstream& strm) {
 
 void UtilsProtocol::loop(int argc, const char* argv[]) {
     std::ios_base::sync_with_stdio(false);
+
+    int arg_it = 1;
     
-    if (argc > 1 and std::string(argv[1]) == "--self-play")
+    if (argc > 1 and std::string(argv[1]) == "--self-play") {
         UniversalChessInterface::parseSelfPlay();
+        arg_it = 2;
+    }
 
     ProcExecArg = argv[0];
 
@@ -707,7 +711,10 @@ void UtilsProtocol::loop(int argc, const char* argv[]) {
     std::string command;
 
     do {
-        if (!std::getline(std::cin, command))
+        if (arg_it < argc)
+            command = argv[arg_it++];
+
+        else if (!std::getline(std::cin, command))
             command = "quit";
 
         std::istringstream strm(command);
