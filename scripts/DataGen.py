@@ -16,6 +16,7 @@ def _load_config(path: Path) -> dict:
         "games_per_session": 4000,
         "thread_count": 2,
         "nodes": 8000,
+        "tt_mb_size": 8,
         "syzygy_path": "Leaf-Engine/src/assets/tb/Syzygy",
     }
     cfg = dict(defaults)
@@ -39,6 +40,7 @@ def main():
             games_per_session = int(cfg["games_per_session"])
             thread_count = int(cfg["thread_count"])
             nodes = int(cfg["nodes"])
+            tt_mb_size = int(cfg["tt_mb_size"])
         except ValueError:
             log_msg("ERROR: Config numeric values must be integers.")
             sys.exit(1)
@@ -53,6 +55,7 @@ def main():
         except ValueError:
             log_msg("ERROR: Numeric arguments must be integers.")
             sys.exit(1)
+        tt_mb_size = int(cfg["tt_mb_size"])
         syzygy_path = "<empty>"
     elif len(sys.argv) == 7:
         executable = os.path.normpath(sys.argv[1])
@@ -64,6 +67,7 @@ def main():
         except ValueError:
             log_msg("ERROR: Numeric arguments must be integers.")
             sys.exit(1)
+        tt_mb_size = int(cfg["tt_mb_size"])
         syzygy_path = str(sys.argv[6])
     else:
         print(f"Usage: {sys.argv[0]} <executable_path> <total_sessions> <games_per_session> <thread_count> <nodes> <syzygy_path(optional)>")
@@ -96,6 +100,7 @@ def main():
     print(f"Batch:     {games_per_session}")
     print(f"Threads:   {thread_count}")
     print(f"Nodes:     {nodes}")
+    print(f"Hash:      {tt_mb_size} MB")
     print(f"Storage:   {base_dir}{os.sep}")
     print(f"Syzygy:    {syzygy_path}")
     print("----------------------------------------------------")
@@ -113,8 +118,10 @@ def main():
 
         log_msg(f"Launching Session {session_num}...")
 
+        input_cmds = f"setoption name Hash value {tt_mb_size}\n"
+
         if (syzygy_path != "<empty>"):
-            input_cmds = f"setoption name SyzygyPath value {syzygy_path}\n"
+            input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
 
         input_cmds += f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
 

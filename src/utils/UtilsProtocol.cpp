@@ -59,6 +59,7 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
         static_cast<uint>(thread_cnt),
         log_dir,
         limits,
+        static_cast<size_t>(_options.hash_opt.getCurrentValue()),
     };
 
     std::cout << packet.selfplay_filename << std::endl;

@@ -50,7 +50,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     }
 
     {
-        static const size_t mb_tt_size = 8;
+        const size_t mb_tt_size = thr_data.commons->tt_mb_size;
 
         for (auto& engine : competitors) {
             engine.syncUntilReady(log_thr_label);
@@ -180,14 +180,14 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
                                              TrainingDataEntry::DRAW;
 
         for (auto& [pos, white_score, move] : *game_packet.data_buffer) {
-            assert(move.isLegal(*pos));
+            assert(move.isLegal(pos));
 
-            if (!filterTrainPosition(*pos, white_score, move, total_positions_cnt))
+            if (!filterTrainPosition(pos, white_score, move, total_positions_cnt))
                 continue;
 
             filtered_positions_cnt++;
 
-            const TrainingDataEntry entry(PackedPosition::packed(*pos), white_score, result8b);
+            const TrainingDataEntry entry(PackedPosition::packed(pos), white_score, result8b);
 
             if (isWhiteWin(game_packet.result) and 
                 !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
@@ -243,7 +243,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 #if defined(INSPECT_SELFPLAY_MATCHES)
         if (thr_data.commons->total_thread_cnt == 1) {            
             lg::message(log_thr_label, 
-                        *game_packet.data_buffer->back().pos,
+                        game_packet.data_buffer->back().pos,
                         toStr(game_packet.result),
                         ": ");
 
@@ -309,6 +309,7 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->total_black_win_count = 0;
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = packet.thread_count;
+    thread_common->tt_mb_size = packet.tt_mb_size;
     thread_common->err_fp = packet.selfplay_filename / "err";
 
     if (GlobOpeningGenerator.isEmpty())
