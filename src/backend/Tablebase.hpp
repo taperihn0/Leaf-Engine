@@ -27,7 +27,7 @@ public:
     SyzygyTablebase& operator=(const SyzygyTablebase&) = delete;
 
     _NODISCARD static SyzygyTablebase& get();
-    _NODISCARD bool loadSyzygyFile(const std::string& fp);
+    _NODISCARD bool loadSyzygyFile(const std::filesystem::patyh& fp);
     _NODISCARD std::string getFilePath() const;
     _NODISCARD _FORCEINLINE bool isLoaded() const { return _initialized; }
 
@@ -49,6 +49,6 @@ private:
     SyzygyTablebase() = default;
     ~SyzygyTablebase();
 
-    bool                       _initialized = false;
-    std::optional<std::string> _tb_path = std::nullopt;
+    bool                                 _initialized = false;
+    std::optional<std::filesystem::path> _tb_path = std::nullopt;
 };

@@ -42,10 +42,9 @@ public:
     void syncUntilReady(lg::logLabel log_thr_label);
     void waitForProcess();
 
-    // Sends the UCI options every child engine must run with: the requested
-    // hash size and the loaded Syzygy tablebase path. No reply is awaited,
-    // call syncUntilReady() afterwards.
-    void sendInheritedOptions(lg::logLabel log_thr_label, size_t tt_mb_size);
+    void sendCommonOptions(lg::logLabel log_thr_label, 
+                           size_t tt_mb_size,
+                           std::filesystem::path syzygy_path = "<empty>");
     
     _NODISCARD bool isAlive() const;
 

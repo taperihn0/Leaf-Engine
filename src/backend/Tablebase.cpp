@@ -28,7 +28,7 @@ SyzygyTablebase& SyzygyTablebase::get() {
     return SyzygyTable;
 }
 
-bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
+bool SyzygyTablebase::loadSyzygyFile(const std::filesystem::path& fp) {
 #if defined(_USE_SYZYGY_TB)
     if (_initialized) {
         std::cout << "Syzygy tablebase already intialized" << std::endl;
@@ -56,7 +56,7 @@ bool SyzygyTablebase::loadSyzygyFile(const std::string& fp) {
 #endif // _USE_SYZYGY_TB
 }
 
-std::string SyzygyTablebase::getFilePath() const {
+std::filesystem::path SyzygyTablebase::getFilePath() const {
     return _tb_path.value_or("<empty>");
 }
 

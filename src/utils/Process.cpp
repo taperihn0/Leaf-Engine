@@ -237,22 +237,20 @@ void ForkedProcess::syncUntilReady(lg::logLabel log_thr_label) {
     }
 }
 
-void ForkedProcess::sendInheritedOptions(lg::logLabel log_thr_label, size_t tt_mb_size) {
+void ForkedProcess::sendCommonOptions(lg::logLabel log_thr_label, 
+                                      size_t tt_mb_size,
+                                      std::filesystem::path syzygy_path) 
+{
     if (tt_mb_size) {
         _log->message("setoption name Hash value ", tt_mb_size);
         lg::info(log_thr_label, "setoption name Hash value ", tt_mb_size);
     }
 
-    if (!SyzygyTablebase::get().isLoaded())
+    if (syzygy_path == "<empty>")
         return;
 
-    const std::string syzygy_tb_path = SyzygyTablebase::get().getFilePath();
-
-    if (syzygy_tb_path == "<empty>")
-        return;
-
-    _log->message("setoption name SyzygyPath value ", syzygy_tb_path);
-    lg::info(log_thr_label, "setoption name SyzygyPath value ", syzygy_tb_path);
+    _log->message("setoption name SyzygyPath value ", syzygy_path.string());
+    lg::info(log_thr_label, "setoption name SyzygyPath value ", syzygy_path.string());
 }
 
 lg::Log& ForkedProcess::output() {

@@ -38,10 +38,6 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
     ASSERT(thr_data.session != nullptr, "Selfplay session not initialized.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
 
-    /* A match constructs its 'Game' in the storage it is given. 'Game' holds
-    *  only plain data, so a single buffer per worker is reused for every game
-    *  and the storage is released once the worker terminates.
-    */
     static_assert(std::is_trivially_destructible_v<Game>,
                   "'Game' buffer is released without running a destructor");
 
@@ -54,7 +50,8 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
     std::allocator<Game> game_allocator;
     const std::unique_ptr<Game, GameDeleter> game_buffer(
-        std::allocator_traits<std::allocator<Game>>::allocate(game_allocator, 1));
+        std::allocator_traits<std::allocator<Game>>::allocate(game_allocator, 1)
+    );
 
     PairOfForks competitors;
 
@@ -70,7 +67,10 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         for (auto& engine : competitors) {
             engine.syncUntilReady(log_thr_label);
-            engine.sendInheritedOptions(log_thr_label, mb_tt_size);
+            engine.sendCommonOptions(log_thr_label, mb_tt_size, 
+                SyzygyTablebase::get().isLoaded() ? SyzygyTablebase::get().getFilePath() 
+                                                  : "<empty>"
+            );
         }
     }
 

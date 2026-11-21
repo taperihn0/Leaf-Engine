@@ -26,8 +26,7 @@
 #include <map>
 #include <iomanip>
 
-namespace utils
-{
+namespace utils {
 
 void UtilsProtocol::parseSelfPlay(TournamentCollector& collector, 
                                   std::istringstream& strm) 

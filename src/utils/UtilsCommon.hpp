@@ -60,6 +60,6 @@ _FORCEINLINE std::string_view strippedCarriageReturn(std::string& line) {
     return !line.empty() and line.back() == '\r' ? line.substr(0, line.size() - 1) : line;
 }
 
-static constexpr int SelfPlaySessionCountLimit = 256;
+static constexpr int SelfPlaySessionCountLimit = 2048;
 
 } // namespace utils

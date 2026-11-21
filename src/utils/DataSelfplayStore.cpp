@@ -55,48 +55,9 @@ std::mutex& outputMutex() {
     return mtx;
 }
 
-template <typename... Args>
-void println(Args&&... args) {
-    const std::lock_guard<std::mutex> lock(outputMutex());
-    (std::cout << ... << args) << std::endl;
-}
-
-std::string currentDateTag() {
-    const auto today = std::chrono::floor<std::chrono::days>(
-        std::chrono::system_clock::now());
-    const std::chrono::year_month_day ymd(today);
-
-    static constexpr std::array<std::string_view, 12> MonthNames = {
-        "jan", "feb", "mar", "apr", "may", "jun",
-        "jul", "aug", "sep", "oct", "nov", "dec",
-    };
-
-    const auto month = static_cast<unsigned>(ymd.month());
-    const auto day = static_cast<unsigned>(ymd.day());
-
-    return std::format("{}{:02}", MonthNames[month - 1], day);
-}
-
-/* Filename-safe printable ASCII: every character here is valid on all supported
-*  filesystems and needs no quoting when a directory is passed to a script.
-*/
-constexpr size_t TournamentKeyLength = 8;
-
-std::string makeTournamentKey() {
-    static constexpr std::string_view Alphabet =
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    std::string key(TournamentKeyLength, Alphabet.front());
-
-    for (char& c : key) {
-        c = Alphabet[rnd::random<size_t>(0, Alphabet.size() - 1)];
-    }
-
-    return key;
-}
-
 bool collectTdfFiles(const std::filesystem::path& dir, 
-                     std::vector<std::filesystem::path>& files) {
+                     std::vector<std::filesystem::path>& files) 
+{
     std::error_code err;
     std::filesystem::directory_iterator it(dir, err), end;
 
@@ -270,55 +231,56 @@ bool writeSessionInfo(const std::filesystem::path& session_dir, const SessionInf
 Session::Session(size_t id, std::filesystem::path fp)
     : _id(id)
     , _fp(std::move(fp)) {
-    createWorkspace();
+    createSession();
 }
 
 bool Session::write(const TrainingDataEntry& entry, Label label) const {
     const auto file = _thr_files.find(label);
-
-    if (file == _thr_files.end() or 
-        file->second == nullptr or 
-        !file->second->is_open()) {
-        return false;
-    }
-
-    return TrainingDataEntry::write(*file->second, entry);
+    return (
+        file == _thr_files.end() or
+        file->second == nullptr or
+        !file->second->is_open()
+    ) ? false : TrainingDataEntry::write(*file->second, entry);
 }
 
-void Session::createWorkspace() {
+void Session::createSession() {
     std::error_code err;
     std::filesystem::create_directories(_fp, err);
 
     if (err) {
-        throw std::runtime_error(std::format(
-            "Failed to create selfplay session directory: {} ({})", 
-            _fp.string(), err.message()));
+        throw std::runtime_error(
+            std::format(
+                "Failed to create selfplay session directory: {} ({})", 
+                _fp.string(), err.message())
+        );
     }
 
-    const auto openFile = [this](Label label, const std::filesystem::path& filename) {
+    static const auto SafeFileAdd = [this](Label label, const std::filesystem::path& filename) {
         const std::filesystem::path fp = _fp / filename;
-        auto output = std::make_unique<std::ofstream>(fp, std::ios::binary | std::ios::app);
+        auto file = std::make_unique<std::ofstream>(fp, std::ios::binary | std::ios::app);
 
-        if (!output->is_open()) {
-            throw std::runtime_error("Failed to open selfplay data file: " + fp.string());
+        if (!file->is_open()) {
+            throw std::runtime_error(std::format("Failed to open selfplay data file: {}", fp.string());
         }
 
-        _thr_files.emplace(label, std::move(output));
+        _thr_files.emplace(label, std::move(file));
     };
 
-    /* Thread ids used by the collector are in [1, PlatformThreadLimit], but
-    *  openings are created for the whole supported range so the layout does
-    *  not depend on how many threads a particular tournament runs.
-    */
     for (uint thr_id = 0; thr_id <= static_cast<uint>(PlatformThreadLimit); thr_id++) {
-        openFile(Label(Game::WHITE_WIN_BY_MATE, thr_id), 
-                 paths::PathsManager.getWhiteWinOutputFileName(static_cast<int>(thr_id)));
+        SafeFileAdd(
+            Label(Game::WHITE_WIN_BY_MATE, thr_id), 
+            paths::PathsManager.getWhiteWinOutputFileName(thr_id)
+        );
 
-        openFile(Label(Game::BLACK_WIN_BY_MATE, thr_id), 
-                 paths::PathsManager.getBlackWinOutputFileName(static_cast<int>(thr_id)));
+        SafeFileAdd(
+            Label(Game::BLACK_WIN_BY_MATE, thr_id), 
+            paths::PathsManager.getBlackWinOutputFileName(thr_id)
+        );
 
-        openFile(Label(Game::DRAW_BY_STALMATE, thr_id),  
-                 paths::PathsManager.getDrawOutputFileName(static_cast<int>(thr_id)));
+        SafeFileAdd(
+            Label(Game::DRAW_BY_STALMATE, thr_id),  
+            paths::PathsManager.getDrawOutputFileName(thr_id)
+        );
     }
 }
 
@@ -326,57 +288,66 @@ SelfplayInstance::SelfplayInstance()
     : SelfplayInstance(paths::PathsManager.getDir(paths::enumDir::DATA_SELFPLAY_DIRECTORY))
 {}
 
-SelfplayInstance::SelfplayInstance(std::filesystem::path base_dir)
-    : _base_fp(std::move(base_dir))
+SelfplayInstance::SelfplayInstance(std::filesystem::path fp)
+    : _selfplay_fp(std::move(fp))
 {}
 
-std::filesystem::path SelfplayInstance::makeTournamentDirectoryPath() {
-    return std::format("selfplay_{}_{}", currentDateTag(), makeTournamentKey());
+std::pair<std::string, std::string> SelfplayInstance::uniqueFileLabel() {
+    static constexpr std::array<std::string_view, 12> MonthNames = {
+        "jan", "feb", "mar", "apr", "may", "jun",
+        "jul", "aug", "sep", "oct", "nov", "dec",
+    };
+    const auto now = std::chrono::floor<std::chrono::days>(
+        std::chrono::system_clock::now()
+    );
+    const std::chrono::year_month_day ymd(now);
+
+    static constexpr auto FileAlphaKey = [] {
+        std::string key(4, 0);
+        std::ranges::generate(key, [] -> char { return 'a' + rnd::random<size_t>(0, 'z' - 'a' + 1); });
+        return key;
+    };
+
+    return std::make_pair(
+        std::format(
+            "{}{}", 
+            MonthNames[static_cast<uint>(ymd.month()) - 1], 
+            static_cast<uint>(ymd.day())
+        ),
+        FileAlphaKey()
+    );
 }
 
 void SelfplayInstance::createTournamentWorkspace() {
-    /* Two sessions started in the same second must not share one directory,
-    *  so keep drawing keys until 'create_directories' actually creates it.
-    */
-    for (int attempt = 0; attempt < 1000; attempt++) {
-        const std::filesystem::path candidate = _base_fp / makeTournamentDirectoryPath();
-        std::error_code err;
+    while (true) {
+        const auto file_label = uniqueFileLabel();
+        const std::filesystem::path file = _selfplay_fp / 
+            std::format("selfplay_{}_{}", file_label.first, file_label.second);
 
-        if (std::filesystem::create_directories(candidate, err)) {
-            _tournament_fp = candidate;
-            _workspace_created = true;
-            return;
-        }
-
-        if (err) {
-            throw std::runtime_error(std::format(
-                "Failed to create selfplay workspace: {} ({})", 
-                candidate.string(), err.message()));
+        if (std::filesystem::create_directories(file)) {
+            _fp = file;
+            break;
         }
     }
-
-    throw std::runtime_error("Failed to find a free selfplay workspace name in: " 
-                             + _base_fp.string());
 }
 
 Session& SelfplayInstance::querySessionHandler() {
+    std::call_once(_wrk_create, createTournamentWorkspace);
+
     const std::lock_guard<std::mutex> lock(_mtx);
 
-    if (not _workspace_created)
-        createTournamentWorkspace();
-
     if (_sessions.size() >= static_cast<size_t>(SelfPlaySessionCountLimit)) {
-        throw std::runtime_error("Selfplay session count limit reached in: " 
-                                 + _tournament_fp.string());
+        throw std::runtime_error(
+            std::format("Selfplay session count limit reached in: {}", _fp.string())
+        );
     }
 
     const size_t session_id = _sessions.size() + 1;
-    const std::filesystem::path session_fp = _tournament_fp 
-                                            / ("session" + std::to_string(session_id));
 
-    _sessions.push_back(std::make_unique<Session>(session_id, session_fp));
+    const std::filesystem::path session_fp = _fp / std::format("session{}", session_id);
+    _sessions.emplace_back(session_id, session_fp);
 
-    return *_sessions.back();
+    return _sessions.back();
 }
 
 SelfplayDb::SelfplayDb()
@@ -384,27 +355,29 @@ SelfplayDb::SelfplayDb()
 {}
 
 SelfplayDb::SelfplayDb(std::filesystem::path root)
-    : _root(std::move(root))
+    : _fp(std::move(root))
 {}
 
 std::vector<std::filesystem::path> SelfplayDb::sessionDirectories() const {
     std::vector<std::filesystem::path> sessions;
-
     std::error_code err;
 
-    if (!std::filesystem::is_directory(_root, err))
+    if (!std::filesystem::is_directory(_fp, err)) {
         return sessions;
+    }
 
     const auto hasTrainingData = [](const std::filesystem::path& dir) {
         std::vector<std::filesystem::path> files;
         return collectTdfFiles(dir, files) and !files.empty();
     };
 
-    if (hasTrainingData(_root))
-        sessions.push_back(_root);
+    if (hasTrainingData(_fp))
+        sessions.push_back(_fp);
 
-    for (std::filesystem::recursive_directory_iterator it(_root, err), end; 
-         it != end and !err; it.increment(err)) {
+    for (std::filesystem::recursive_directory_iterator it(_fp, err), end; 
+         it != end and !err; 
+         it.increment(err)) 
+    {
         if (it->is_directory(err) and hasTrainingData(it->path()))
             sessions.push_back(it->path());
     }
@@ -417,7 +390,7 @@ bool SelfplayDb::toBulletFormat() {
     const std::vector<std::filesystem::path> sessions = sessionDirectories();
 
     if (sessions.empty()) {
-        println("No selfplay data found in '", _root.string(), "', nothing to convert.");
+        println("No selfplay data found in '", _fp.string(), "', nothing to convert.");
         return false;
     }
 
@@ -463,12 +436,12 @@ bool SelfplayDb::shuffleData() {
     const std::vector<std::filesystem::path> sessions = sessionDirectories();
 
     if (sessions.empty()) {
-        println("No selfplay data found in '", _root.string(), "', nothing to shuffle.");
+        println("No selfplay data found in '", _fp.string(), "', nothing to shuffle.");
         return false;
     }
 
-    std::filesystem::path shuffled_root = _root;
-    shuffled_root.replace_filename(_root.filename().string() + "_shuffled");
+    std::filesystem::path shuffled_root = _fp;
+    shuffled_root.replace_filename(_fp.filename().string() + "_shuffled");
 
     println("Shuffling ", sessions.size(), " bullet-format session(s) into '", 
             shuffled_root.string(), "'...");
@@ -514,7 +487,7 @@ bool SelfplayDb::shuffleData() {
             }
         }
 
-        const std::filesystem::path relative = std::filesystem::relative(session_dir, _root);
+        const std::filesystem::path relative = std::filesystem::relative(session_dir, _fp);
         const std::filesystem::path target = 
             (shuffled_root / relative).replace_extension(".tdf");
 

@@ -154,7 +154,10 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
 #endif // DEBUG
 
         for (auto& engine : competitors) {
-            engine.sendInheritedOptions(log_thr_label, tt_mb_size);
+            engine.sendCommonOptions(log_thr_label, tt_mb_size,
+                SyzygyTablebase::get().isLoaded() ? SyzygyTablebase::get().getFilePath() 
+                                                  : "<empty>"    
+            );
         }
     }
 

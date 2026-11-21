@@ -23,9 +23,9 @@ public:
     static ProjectPathsManager& getManager();
     const std::filesystem::path& getDir(enumDir dir) const;
 
-    static std::filesystem::path getWhiteWinOutputFileName(int thread_num);
-    static std::filesystem::path getBlackWinOutputFileName(int thread_num);
-    static std::filesystem::path getDrawOutputFileName(int thread_num);
+    static std::filesystem::path getWhiteWinOutputFileName(uint thread_num);
+    static std::filesystem::path getBlackWinOutputFileName(uint thread_num);
+    static std::filesystem::path getDrawOutputFileName(uint thread_num);
 private:
     ProjectPathsManager();
     void initMapping();
