@@ -39,7 +39,9 @@ static constexpr float FloatEpsilon = 10e-5f;
 std::atomic<int> curr_iter;
 std::mutex       param_mutex;
 
-void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log) {
+void SPSA_Tuning::start(uint thread_count, 
+                        const std::filesystem::path& spsa_log,
+                        size_t tt_mb_size) {
     if (thread_count > static_cast<uint>(PlatformThreadLimit)) {
         std::cout << "Too many threads requested" << std::endl;
         return;
@@ -94,11 +96,12 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
         threads.emplace_back([&](std::vector<SPSA_Parameter>& theta, 
                                  std::ofstream& log_file, 
                                  search::utils::SearchLimits limits,
+                                 size_t tt_mb_size,
                                  uint id) 
         {
-            this->startThread(theta, log_file, limits, id);
+            this->startThread(theta, log_file, limits, tt_mb_size, id);
         }, 
-        std::ref(params), std::ref(log_file), limits, id);
+        std::ref(params), std::ref(log_file), limits, tt_mb_size, id);
     }
 
     for (auto& thread : threads) {
@@ -109,6 +112,7 @@ void SPSA_Tuning::start(uint thread_count, const std::filesystem::path& spsa_log
 void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta, 
                               std::ofstream& log_file, 
                               search::utils::SearchLimits limits,
+                              size_t tt_mb_size,
                               uint id) 
 {
     PairOfForks competitors;
@@ -149,15 +153,8 @@ void SPSA_Tuning::startThread(std::vector<SPSA_Parameter>& theta,
         }
 #endif // DEBUG
 
-        // set TT sizes
-        
-        static const size_t mb_tt_size = 32;
-
         for (auto& engine : competitors) {
-            engine.output().message("setoption name Hash value ", mb_tt_size);
-            lg::info(log_thr_label, "setoption name Hash value ", mb_tt_size);
-
-            engine.sendInheritedOptions(log_thr_label);
+            engine.sendInheritedOptions(log_thr_label, tt_mb_size);
         }
     }
 

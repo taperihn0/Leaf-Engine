@@ -18,6 +18,7 @@
 
 #include "UtilsProtocol.hpp"
 #include "TrainEntry.hpp"
+#include "backend/Tablebase.hpp"
 #include "StaticEval.hpp"
 #include "Tuning.hpp"
 #include <variant>
@@ -223,81 +224,34 @@ void UtilsProtocol::parseSPSA(std::istringstream& strm) {
     std::string spsa_log_path;
     strm >> std::skipws >> spsa_log_path;
 
-    _tuner.start(thread_count, spsa_log_path);
+    /* Every tuning engine is configured with the same hash and tablebase as
+    *  the data generation engines.
+    */
+    size_t tt_mb_size = static_cast<size_t>(_options.hash_opt.getCurrentValue());
+
+    if (std::string token; strm >> std::skipws >> token)
+        tt_mb_size = static_cast<size_t>(std::stoul(token));
+
+    if (std::string token; strm >> std::skipws >> token) {
+        if (!SyzygyTablebase::get().loadSyzygyFile(token)) {
+            std::cout << "Failed to load Syzygy Tablebase" << std::endl;
+            return;
+        }
+
+        _options.syzygy_opt.set(token);
+    }
+
+    _tuner.start(thread_count, spsa_log_path, tt_mb_size);
 }
 
 void UtilsProtocol::parseBulletFormat(std::istringstream& strm) {
-    std::filesystem::path selfplay_root;
-    strm >> std::skipws >> selfplay_root;
+    std::filesystem::path root;
+    strm >> std::skipws >> root;
 
-    if (!std::filesystem::exists(selfplay_root)) {
-        std::cerr << "Invalid selfplay directory root: " << selfplay_root << '\n';
-        return;
-    }
+    db::SelfplayDb selfplay_db = root.empty() ? db::SelfplayDb()
+                                              : db::SelfplayDb(root);
 
-    std::filesystem::path bf_selfplay_root = selfplay_root;
-    bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_serialized");
-
-    std::vector<std::filesystem::path> tdf_files;
-    
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
-        if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
-            tdf_files.push_back(entry.path());
-        }
-    }
-
-    std::atomic<bool> success = true;
-
-    std::for_each(std::execution::par, tdf_files.begin(), tdf_files.end(), [&](const auto& fp) {
-        {
-            static std::mutex m;
-            std::lock_guard lock(m);
-            std::cout << "Processing " << fp << std::endl;
-        }
-
-        const std::filesystem::path rfp = std::filesystem::relative(fp, selfplay_root);
-        const std::filesystem::path target = bf_selfplay_root / rfp;
-
-        {
-            static std::mutex m;
-            std::lock_guard lock(m);
-            std::filesystem::create_directories(target.parent_path());
-        }
-
-        std::ifstream input(fp, std::ios_base::binary);
-
-        if (!input) {
-            std::cout << "Failed to open input file: " << fp << std::endl;
-            return;
-        }
-
-        std::ofstream output(target);
-
-        if (!output) {
-            std::cout << "Failed to open output file: " << target << std::endl;
-            return;
-        }
-
-        for (TrainingDataEntry entry; 
-             TrainingDataEntry::read(input, entry) and success.load(); ) 
-        {
-            const BulletChessBoard bullet_board = TrainingDataEntry::toBulletFormat(entry);
-
-            if (!BulletChessBoard::write(output, bullet_board)) {
-                std::cout << "Failed to write bullet board to output: " << target << std::endl;
-                success.store(false);
-                break;
-            }
-        }
-
-        if (!success.load())
-            std::cout << "Aborting from thread" << std::endl;
-    });
-
-    if (success.load()) 
-        std::cout << "Successfully serialized files to bullet format" << std::endl;
-    else 
-        std::cout << "Failed to serialize files to bullet format" << std::endl;
+    selfplay_db.toBulletFormat();
 }
 
 void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
@@ -348,125 +302,14 @@ void UtilsProtocol::parseTestBulletFormat(std::istringstream& strm) {
     }
 }
 
-namespace {
-/* 'shuffle_data' only permutes records that already are in bullet format.
-*  Raw Leaf selfplay entries share the very same 32-byte layout, so pointing
-*  this command at un-serialized training data silently yields a file that
-*  bullet decodes with different nibble semantics and side-to-move orientation.
-*  Detect that case instead of quietly corrupting the dataset.
-*/
-bool looksLikeBulletFormat(const BulletChessBoard& bf) {
-    static constexpr uint8_t OurKingNibble = 0x5, TheirKingNibble = 0xD;
-
-    const size_t piece_cnt = bf.occ.popCount();
-
-    if (piece_cnt > 32) // nibbles are 4-bit packed, at most 32 pieces fit
-        return false;
-
-    uint8_t our_kings = 0, their_kings = 0;
-
-    for (size_t i = 0; i < piece_cnt; i++) {
-        const uint8_t nibble = (bf.pcs[i / 2] >> (4 * (i % 2))) & 0x0F;
-
-        if ((nibble & 0x07) > 5) // bullet knows only 6 piece types
-            return false;
-
-        our_kings   += nibble == OurKingNibble;
-        their_kings += nibble == TheirKingNibble;
-    }
-
-    return our_kings == 1 and their_kings == 1;
-}
-} // namespace
-
 void UtilsProtocol::parseDataShuffles(std::istringstream& strm) {
-    std::filesystem::path selfplay_root;
-    strm >> std::skipws >> selfplay_root;
+    std::filesystem::path root;
+    strm >> std::skipws >> root;
 
-    if (!std::filesystem::exists(selfplay_root)) {
-        std::cerr << "Invalid selfplay directory root: " << selfplay_root << '\n';
-        return;
-    }
+    db::SelfplayDb selfplay_db = root.empty() ? db::SelfplayDb()
+                                              : db::SelfplayDb(root);
 
-    std::filesystem::path bf_selfplay_root = selfplay_root;
-    bf_selfplay_root.replace_filename(selfplay_root.filename().string() + "_shuffled");
-
-    std::vector<std::filesystem::path> selfplay_dirs;
-
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_root)) {
-        if (entry.path().filename().string().find("selfplay") == 0 and entry.is_directory()) {
-            selfplay_dirs.push_back(entry.path());
-        }
-    }
-
-    std::for_each(std::execution::par, selfplay_dirs.begin(), selfplay_dirs.end(), [&](const auto& selfplay_fp) {
-        {
-            static std::mutex m;
-            std::lock_guard lock(m);
-			std::cout << "Processing " << selfplay_fp << std::endl;
-        }
-
-        const std::filesystem::path rfp = std::filesystem::relative(selfplay_fp, selfplay_root);
-        const std::filesystem::path target = (bf_selfplay_root / rfp).replace_extension(".tdf");
-
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_fp)) {
-            if (!entry.is_regular_file() or entry.path().extension() != ".tdf")
-                continue;
-
-            std::ifstream probe(entry.path(), std::ios_base::binary);
-            BulletChessBoard first_entry;
-
-            if (BulletChessBoard::read(probe, first_entry) and !looksLikeBulletFormat(first_entry)) {
-                static std::mutex m;
-                std::lock_guard lock(m);
-                std::cout << "Input " << entry.path() << " is not bullet-format data, aborting. "
-                          << "Run 'to_bullet_format " << selfplay_root.string() 
-                          << "' first, then shuffle its output." << std::endl;
-                return;
-            }
-
-            break;
-        }
-
-        {
-            static std::mutex m;
-            std::lock_guard lock(m);
-            std::filesystem::create_directories(target.parent_path());
-        }
-
-        std::ofstream output(target, std::ios_base::binary);
-
-        if (!output) {
-            std::cout << "Failed to open output file: " << target << std::endl;
-            return;
-        }
-
-        std::vector<BulletChessBoard> entries;
-
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(selfplay_fp)) {
-            if (entry.is_regular_file() and entry.path().extension() == ".tdf") {
-                std::ifstream input(entry.path(), std::ios_base::binary);
-
-                if (!input) {
-                    std::cout << "Failed to open input file: " << entry.path() << std::endl;
-                    return;
-                }
-
-                for (BulletChessBoard entry; BulletChessBoard::read(input, entry); ) {
-                    entries.push_back(entry);
-                }
-            }
-        }
-
-        std::shuffle(entries.begin(), entries.end(), rnd::GlobMersenne);
-
-        for (const auto& entry : entries) {
-            if (!BulletChessBoard::write(output, entry)) {
-                std::cout << "Failed to write entry to output: " << target << std::endl;
-                return;
-            }
-		}
-    });
+    selfplay_db.shuffleData();
 }
 
 namespace {

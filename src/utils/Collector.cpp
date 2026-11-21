@@ -25,8 +25,8 @@
 #include "PackedNetwork.hpp"
 #include "NetworkEval.hpp"
 #include "StaticEval.hpp"
-#include "Paths.hpp"
 
+#include <memory>
 #include <thread>
 #include <iomanip>
 
@@ -35,10 +35,26 @@ namespace utils {
 bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadData& thr_data, 
                                                  lg::logLabel log_thr_label) 
 {
-    ASSERT(thr_data.output_white_win.is_open(), "Output not opened.");
-    ASSERT(thr_data.output_black_win.is_open(), "Output not opened.");
-    ASSERT(thr_data.output_draw.is_open(), "Output not opened.");
+    ASSERT(thr_data.session != nullptr, "Selfplay session not initialized.");
     ASSERT(thr_data.commons != nullptr, "Thread commons not initialized");
+
+    /* A match constructs its 'Game' in the storage it is given. 'Game' holds
+    *  only plain data, so a single buffer per worker is reused for every game
+    *  and the storage is released once the worker terminates.
+    */
+    static_assert(std::is_trivially_destructible_v<Game>,
+                  "'Game' buffer is released without running a destructor");
+
+    struct GameDeleter {
+        void operator()(Game* game) const {
+            std::allocator<Game> allocator;
+            std::allocator_traits<std::allocator<Game>>::deallocate(allocator, game, 1);
+        }
+    };
+
+    std::allocator<Game> game_allocator;
+    const std::unique_ptr<Game, GameDeleter> game_buffer(
+        std::allocator_traits<std::allocator<Game>>::allocate(game_allocator, 1));
 
     PairOfForks competitors;
 
@@ -54,11 +70,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
         for (auto& engine : competitors) {
             engine.syncUntilReady(log_thr_label);
-
-            engine.output().message("setoption name Hash value ", mb_tt_size);
-            lg::info(log_thr_label, "setoption name Hash value ", mb_tt_size);
-
-            engine.sendInheritedOptions(log_thr_label);
+            engine.sendInheritedOptions(log_thr_label, mb_tt_size);
         }
     }
 
@@ -137,10 +149,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         game_packet.result = Game::GAME_INVALID;
         game_packet.data_buffer->clear();
 
-        std::allocator<Game> al;
-        using altraits = std::allocator_traits<decltype(al)>;
-        
-        Game* game = altraits::allocate(al, 1);
+        Game* game = game_buffer.get();
         _UNUSED const auto result = SelfGame::get().mixedMatch<_EnableSelfPlayLog>(competitors, game_packet, game);
 
         const size_t total_positions_cnt = game_packet.data_buffer->size();
@@ -179,6 +188,11 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
             isBlackWin(game_packet.result) ? TrainingDataEntry::BLACK_WIN :
                                              TrainingDataEntry::DRAW;
 
+        /* Thread id is a part of the label, so every thread owns a separate
+        *  file and concurrent writes never touch the same stream.
+        */
+        const db::Session::Label label(game_packet.result, thr_data.id);
+
         for (auto& [pos, white_score, move] : *game_packet.data_buffer) {
             assert(move.isLegal(pos));
 
@@ -189,18 +203,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
 
             const TrainingDataEntry entry(PackedPosition::packed(pos), white_score, result8b);
 
-            if (isWhiteWin(game_packet.result) and 
-                !TrainingDataEntry::write(thr_data.output_white_win, entry)) {
-                lg::info(log_thr_label, "Failed to write entry");
-            }
-            
-            else if (isBlackWin(game_packet.result) and
-                     !TrainingDataEntry::write(thr_data.output_black_win, entry)) {
-                lg::info(log_thr_label, "Failed to write entry");
-            }
-            
-            else if (isDraw(game_packet.result) and 
-                     !TrainingDataEntry::write(thr_data.output_draw, entry)) {
+            if (!thr_data.session->write(entry, label)) {
                 lg::info(log_thr_label, "Failed to write entry");
             }
         }
@@ -300,6 +303,30 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         return;
     }
 
+    {
+        std::error_code err;
+        std::filesystem::create_directories(packet.selfplay_filename, err);
+
+        if (err) {
+            lg::info("Failed to create directory: ", packet.selfplay_filename.string(),
+                      ", reason: ", err.message());
+            return;
+        }
+    }
+
+    db::SelfplayInstance selfplay_instance(packet.selfplay_filename);
+    db::Session* session = nullptr;
+
+    try {
+        session = &selfplay_instance.querySessionHandler();
+    }
+    catch (const std::exception& e) {
+        lg::info("Failed to create selfplay session: ", e.what());
+        return;
+    }
+
+    lg::info("Selfplay data directory: ", selfplay_instance.tournamentDirectory().string());
+
     auto thread_common = std::make_shared<CommonThreadData>();
 
     thread_common->games_ended = 0;
@@ -323,50 +350,8 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
 
     for (uint id = 1; id <= packet.thread_count; id++) {
         PerThreadData per_thread_data;
-        std::error_code err;
 
-        if (std::filesystem::create_directories(packet.selfplay_filename, err), err) {
-            lg::info("Failed to create directory: ", packet.selfplay_filename.string(),
-                      ", reason: ", err.message());
-            return;
-        }
-
-        {
-            const std::filesystem::path fp = packet.selfplay_filename 
-                                                / paths::PathsManager.getWhiteWinOutputFileName(id);
-
-            per_thread_data.output_white_win.open(fp, std::ios::binary | std::ios::app);
-
-            if (!per_thread_data.output_white_win) {
-                lg::info("Failed to open ", fp.string());
-                return;
-            }
-        }
-
-        {
-            const std::filesystem::path fp = packet.selfplay_filename 
-                                                / paths::PathsManager.getBlackWinOutputFileName(id);
-
-            per_thread_data.output_black_win.open(fp, std::ios::binary | std::ios::app);
-
-            if (!per_thread_data.output_black_win) {
-                lg::info("Failed to open ", fp.string());
-                return;
-            }
-        }
-
-        {
-            const std::filesystem::path fp = packet.selfplay_filename 
-                                                / paths::PathsManager.getDrawOutputFileName(id);
-
-            per_thread_data.output_draw.open(fp, std::ios::binary | std::ios::app);
-
-            if (!per_thread_data.output_draw) {
-                lg::info("Failed to open ", fp.string());
-                return;
-            }
-        }
-
+        per_thread_data.session = session;
         per_thread_data.limits = packet.limits;
         per_thread_data.commons = thread_common;
         per_thread_data.id = id;

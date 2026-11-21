@@ -237,7 +237,12 @@ void ForkedProcess::syncUntilReady(lg::logLabel log_thr_label) {
     }
 }
 
-void ForkedProcess::sendInheritedOptions(lg::logLabel log_thr_label) {
+void ForkedProcess::sendInheritedOptions(lg::logLabel log_thr_label, size_t tt_mb_size) {
+    if (tt_mb_size) {
+        _log->message("setoption name Hash value ", tt_mb_size);
+        lg::info(log_thr_label, "setoption name Hash value ", tt_mb_size);
+    }
+
     if (!SyzygyTablebase::get().isLoaded())
         return;
 

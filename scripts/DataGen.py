@@ -17,7 +17,7 @@ def _load_config(path: Path) -> dict:
         "thread_count": 2,
         "nodes": 8000,
         "tt_mb_size": 8,
-        "syzygy_path": "Leaf-Engine/src/assets/tb/Syzygy",
+        "syzygy_path": "assets/tb/Syzygy",
     }
     cfg = dict(defaults)
     if path.is_file():

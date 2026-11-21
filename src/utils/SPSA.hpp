@@ -32,7 +32,9 @@ namespace utils {
 class SPSA_Tuning {
 public:
     SPSA_Tuning() = default;
-    void start(uint thread_count, const std::filesystem::path& spsa_log);
+    void start(uint thread_count, 
+               const std::filesystem::path& spsa_log,
+               size_t tt_mb_size);
 private:
     struct SPSA_Parameter {
         std::string name;
@@ -54,6 +56,7 @@ private:
     void startThread(std::vector<SPSA_Parameter>& theta, 
                      std::ofstream& log_file, 
                      search::utils::SearchLimits limits,
+                     size_t tt_mb_size,
                      uint id);
 
     void tune(std::vector<SPSA_Parameter>& params,

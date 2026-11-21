@@ -19,6 +19,7 @@
 #pragma once
 
 #include "SelfGame.hpp"
+#include "DataSelfplayStore.hpp"
 
 #include <atomic>
 #include <mutex>
@@ -81,9 +82,10 @@ private:
     };
 
     struct PerThreadData {
-        std::ofstream output_white_win;
-        std::ofstream output_black_win;
-        std::ofstream output_draw;
+        /* Non-owning: the session is kept alive by the database for as long
+        *  as the tournament threads are running.
+        */
+        db::Session*  session = nullptr;
         search::utils::SearchLimits  
                       limits;
         size_t        games_ended;

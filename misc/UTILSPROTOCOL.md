@@ -48,6 +48,15 @@ self_play 50000 8 data/selfplay errors.log nodes 5000
 self_play 10000 4 data/selfplay errors.log depth 8
 ```
 
+Every run stores its data in a generated sub-directory of `output_dir`:
+
+```text
+<output_dir>/selfplay_<mon><day>_<key>/session<N>/
+```
+
+The engines started for the tournament inherit the current process' `Hash` and
+`SyzygyPath` settings, so set them before `self_play`.
+
 ### Supported Search Limits
 
 Same format as the `go` command:
@@ -71,20 +80,29 @@ Starts SPSA parameter tuning.
 ### Syntax
 
 ```text
-spsa <threads> <log_file>
+spsa <threads> <log_file> [hash_mb] [syzygy_path]
 ```
 
 ### Arguments
 
-| Argument   | Description              |
-| ---------- | ------------------------ |
-| `threads`  | Number of tuning threads |
-| `log_file` | SPSA tuning log output   |
+| Argument      | Description                                                        |
+| ------------- | ------------------------------------------------------------------ |
+| `threads`     | Number of tuning threads                                           |
+| `log_file`    | SPSA tuning log output                                             |
+| `hash_mb`     | Hash size forwarded to every tuning engine (default: `Hash` option) |
+| `syzygy_path` | Tablebase directory forwarded to every tuning engine               |
+
+Without the optional arguments the current process' `Hash` and `SyzygyPath`
+settings are used.
 
 ### Example
 
 ```text
 spsa 16 spsa.log
+```
+
+```text
+spsa 16 spsa.log 64 assets/tb/Syzygy
 ```
 
 ---
@@ -119,6 +137,9 @@ The command scans all session directories and validates every stored position.
 verify_session <tournament_dir>
 ```
 
+`tournament_dir` is one of the generated `selfplay_<mon><day>_<key>` run
+directories (not the `data/selfplay` root).
+
 ### Example
 
 ```text
@@ -133,6 +154,53 @@ For every position:
 * Position is not a solved tablebase position.
 * Side to move is not in check.
 * File is fully readable without corruption.
+
+---
+
+## to_bullet_format
+
+Converts collected selfplay data to bullet format **in place**.
+
+### Syntax
+
+```text
+to_bullet_format [root]
+```
+
+Without `root` the whole `data/selfplay` database is converted; with `root` the
+given directory tree is used instead. The conversion state is cached in a
+`session.info` file inside every session directory, so sessions that already
+are in bullet format are skipped. That makes it safe to call after every
+collection batch.
+
+### Example
+
+```text
+to_bullet_format
+```
+
+---
+
+## shuffle_data
+
+Merges the files of every bullet-format session, shuffles the records and
+writes one file per session.
+
+### Syntax
+
+```text
+shuffle_data [root]
+```
+
+Output goes to `<root>_shuffled/<session path>.tdf` (default:
+`data/selfplay_shuffled`). Sessions must be converted with `to_bullet_format`
+first; unconverted sessions are reported and skipped.
+
+### Example
+
+```text
+shuffle_data
+```
 
 ---
 
