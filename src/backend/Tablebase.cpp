@@ -39,7 +39,11 @@ bool SyzygyTablebase::loadSyzygyFile(const std::filesystem::path& fp) {
         return false;
     }
 
-    const bool status = tb_init(fp.c_str());
+    /* 'path::value_type' is 'wchar_t' on Windows, while Fathom only accepts
+    *  narrow strings.
+    */
+    const std::string fp_str = fp.string();
+    const bool status = tb_init(fp_str.c_str());
 
     if (!status) {
         std::cout << "Failed to initialize Syzygy tablebase" << std::endl;

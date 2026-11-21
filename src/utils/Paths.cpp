@@ -23,20 +23,20 @@ const std::filesystem::path& ProjectPathsManager::getDir(enumDir dir) const {
     return elem->second;
 }
 
-std::filesystem::path ProjectPathsManager::getWhiteWinOutputFileName(int thread_num) {
-    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
+std::filesystem::path ProjectPathsManager::getWhiteWinOutputFileName(uint thread_num) {
+    ASSERT_NO_LOG(thread_num <= static_cast<uint>(PlatformThreadLimit));
     return std::filesystem::path("selfplay_white_win_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }
 
-std::filesystem::path ProjectPathsManager::getBlackWinOutputFileName(int thread_num) {
-    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
+std::filesystem::path ProjectPathsManager::getBlackWinOutputFileName(uint thread_num) {
+    ASSERT_NO_LOG(thread_num <= static_cast<uint>(PlatformThreadLimit));
     return std::filesystem::path("selfplay_black_win_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }
 
-std::filesystem::path ProjectPathsManager::getDrawOutputFileName(int thread_num) {
-    ASSERT_NO_LOG(thread_num <= PlatformThreadLimit);
+std::filesystem::path ProjectPathsManager::getDrawOutputFileName(uint thread_num) {
+    ASSERT_NO_LOG(thread_num <= static_cast<uint>(PlatformThreadLimit));
     return std::filesystem::path("selfplay_draw_thread_" + std::to_string(thread_num))
                             .replace_extension(".tdf");
 }

@@ -21,6 +21,7 @@
 #include "UtilsCommon.hpp"
 
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 
@@ -109,6 +110,8 @@ private:
 
     std::ostream* _os;
     std::unique_ptr<std::ofstream> _file_stream = nullptr;
+    // Held while a message is written so parallel jobs do not interleave output.
+    std::unique_ptr<std::mutex>   _mtx = std::make_unique<std::mutex>();
 };
 
 template <typename... Args>

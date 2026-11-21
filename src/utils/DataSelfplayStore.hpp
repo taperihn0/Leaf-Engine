@@ -85,9 +85,11 @@ public:
 
     Session() = delete;
     Session(const Session&) = delete;
+    Session(Session&&) noexcept = default;
     Session(size_t id, std::filesystem::path fp);
 
     Session& operator=(const Session&) = delete;
+    Session& operator=(Session&&) noexcept = default;
 
     _NODISCARD _INLINE size_t id() const { return _id; }
     _NODISCARD _INLINE const std::filesystem::path& path() const { return _fp; }
@@ -110,6 +112,9 @@ public:
     SelfplayInstance(const SelfplayInstance&) = delete;
     SelfplayInstance& operator=(const SelfplayInstance&) = delete;
 
+    /* Creates a new session on first use. The returned reference is invalidated
+    *  by the next call, as sessions are kept in a growing vector.
+    */
     Session& querySessionHandler();
 
     _NODISCARD _INLINE const std::filesystem::path& tournamentDirectory() const { 
@@ -126,15 +131,34 @@ private:
     std::once_flag        _wrk_create;
 };
 
+/* Read-only view over a selfplay database, rooted at 'data/selfplay' by
+*  default. It only ever inspects directories and files, it never creates
+*  selfplay workspaces - that is what 'SelfplayInstance' is for.
+*/
 class SelfplayDb {
 public:
     SelfplayDb();
     explicit SelfplayDb(std::filesystem::path root);
 
     _NODISCARD _INLINE const std::filesystem::path& root() const { return _fp; }
+
+    /* Every directory under the root that directly stores '.tdf' files, i.e.
+    *  in the 'selfplay_<day>_<key>/session<N>' layout exactly the session
+    *  directories. The shuffled output directory of this database is excluded,
+    *  as it is already in bullet format and has no 'session.info'.
+    */
     _NODISCARD std::vector<std::filesystem::path> sessionDirectories() const;
 
+    /* Rewrites every session in place to bullet format. Sessions already marked
+    *  as converted in their 'session.info' are skipped, and a session that
+    *  fails to convert is rolled back to its raw state.
+    */
     bool toBulletFormat();
+
+    /* Merges and shuffles the bullet records of every session into
+    *  '<root>_shuffled/<relative session dir>.tdf'. Sessions that were not
+    *  converted with 'toBulletFormat' are reported and skipped.
+    */
     bool shuffleData();
 private:
     std::filesystem::path _fp;

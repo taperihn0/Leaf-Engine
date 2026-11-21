@@ -231,7 +231,7 @@
         {
             "name": "finalutils-mingw",
             "configurePreset": "finalutils-mingw-w64",
-            "targets": [ "Leaf" ]
+            "targets": [ "LeafUtils" ]
         },
         {
             "name": "finallegacy",

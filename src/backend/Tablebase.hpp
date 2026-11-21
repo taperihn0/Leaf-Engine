@@ -27,8 +27,8 @@ public:
     SyzygyTablebase& operator=(const SyzygyTablebase&) = delete;
 
     _NODISCARD static SyzygyTablebase& get();
-    _NODISCARD bool loadSyzygyFile(const std::filesystem::patyh& fp);
-    _NODISCARD std::string getFilePath() const;
+    _NODISCARD bool loadSyzygyFile(const std::filesystem::path& fp);
+    _NODISCARD std::filesystem::path getFilePath() const;
     _NODISCARD _FORCEINLINE bool isLoaded() const { return _initialized; }
 
     enum TbWdlInfo {

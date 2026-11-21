@@ -71,11 +71,13 @@ std::ostream& Log::output() {
 
 void Log::flush() {
     if (_os != nullptr) {
+        const std::lock_guard<std::mutex> lock(*_mtx);
         _os->flush();
     }
 }
 
 void Log::directWrite(logLabel label, std::string_view sv) {
+    const std::lock_guard<std::mutex> lock(*_mtx);
     output() << sv << std::endl;
 }
 
@@ -123,6 +125,7 @@ std::string Log::parse(logLabel label) {
 
 void Log::message(logLabel label, const std::string& msg) {
     if (_os != nullptr) {
+        const std::lock_guard<std::mutex> lock(*_mtx);
         *_os << parse(label) << msg << std::endl;
     }
 }
