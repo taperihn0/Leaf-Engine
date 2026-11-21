@@ -314,7 +314,6 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         }
     }
 
-    /* Owns the sessions of this tournament for as long as its threads run. */
     db::SelfplayDb selfplay_db(packet.selfplay_filename);
     db::SelfplayInstance selfplay_instance(packet.selfplay_filename);
     db::Session* session = nullptr;

@@ -169,7 +169,7 @@ to_bullet_format [root]
 
 Without `root` the whole `data/selfplay` database is converted; with `root` the
 given directory tree is used instead. The conversion state is cached in a
-`session.info` file inside every session directory, so sessions that already
+`.sessioninfo` file inside every session directory, so sessions that already
 are in bullet format are skipped. That makes it safe to call after every
 collection batch.
 

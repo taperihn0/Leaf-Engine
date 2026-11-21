@@ -42,13 +42,10 @@ namespace utils::db {
 
 namespace {
 
-constexpr std::string_view SessionInfoFileName = "session.info";
+constexpr std::string_view SessionInfoFileName = ".sessioninfo";
 constexpr std::string_view TempFileSuffix      = ".bullet_tmp";
 constexpr std::string_view BackupFileSuffix    = ".raw_backup";
 
-/* 'TrainingDataEntry' is larger in memory than on disk, but both the raw and
-*  the bullet record are packed into the same fixed size.
-*/
 constexpr size_t TrainingRecordSize = sizeof(BulletChessBoard);
 static_assert(TrainingRecordSize == 32, "Unexpected on-disk training record size");
 
@@ -81,7 +78,6 @@ std::filesystem::path shuffledRootFor(const std::filesystem::path& root) {
     std::filesystem::path shuffled_root = root;
     std::string name = shuffled_root.filename().string();
 
-    /* '.', '..' and '/' have no usable directory name to derive from. */
     if (name.empty() or name == "." or name == "..")
         name = "selfplay";
 
@@ -89,10 +85,6 @@ std::filesystem::path shuffledRootFor(const std::filesystem::path& root) {
     return shuffled_root;
 }
 
-/* Directories holding the shuffled output of a database. They are written in
-*  bullet format without a 'session.info', so they must never be picked up as
-*  a session by a later pass.
-*/
 bool isShuffledOutputDir(const std::filesystem::path& dir, 
                          const std::filesystem::path& root) {
     static constexpr std::string_view Suffix = "_shuffled";
@@ -116,10 +108,6 @@ bool replaceFile(const std::filesystem::path& from, const std::filesystem::path&
     if (!err)
         return true;
 
-    /* Some platforms and filesystems refuse to rename over an existing file.
-    *  Overwriting through a copy keeps 'to' intact if the copy fails, unlike
-    *  removing it and retrying the rename.
-    */
     err.clear();
     std::filesystem::copy_file(from, to, std::filesystem::copy_options::overwrite_existing, err);
 
@@ -131,127 +119,6 @@ bool replaceFile(const std::filesystem::path& from, const std::filesystem::path&
     return !err;
 }
 
-SessionInfo readSessionInfo(const std::filesystem::path& session_dir) {
-    SessionInfo info;
-
-    std::ifstream input(session_dir / SessionInfoFileName);
-
-    if (!input)
-        return info;
-
-    for (std::string key; input >> key; ) {
-        if (key == "bullet_format")
-            input >> info.bullet_format;
-        else if (key == "records")
-            input >> info.records;
-        else {
-            std::string ignored;
-            input >> ignored;
-        }
-    }
-
-    return info;
-}
-
-bool writeSessionInfo(const std::filesystem::path& session_dir, const SessionInfo& info) {
-    const std::filesystem::path fp = session_dir / SessionInfoFileName;
-    const std::filesystem::path tmp_fp = tempPathFor(fp);
-
-    {
-        std::ofstream output(tmp_fp, std::ios::trunc);
-
-        if (!output)
-            return false;
-
-        output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
-               << "records " << info.records << '\n';
-        output.flush();
-
-        if (!output)
-            return false;
-    }
-
-    return replaceFile(tmp_fp, fp);
-}
-
-/* Swaps the converted temporaries in, moving the raw originals aside first,
-*  and only marks the session as converted once every file was installed. A
-*  failure at any point restores the session to its previous state, so a
-*  session can neither end up half converted nor converted without a matching
-*  'session.info' - the next run would convert it a second time and corrupt it.
-*/
-bool commitConvertedFiles(
-    const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending,
-    const std::filesystem::path& session_dir,
-    size_t records) 
-{
-    std::error_code err;
-
-    size_t moved = 0;
-
-    for (; moved < pending.size(); moved++) {
-        const std::filesystem::path& fp = pending[moved].first;
-
-        if (!replaceFile(fp, backupPathFor(fp))) {
-            lg::warning("Failed to move aside raw file: ", fp.string());
-            break;
-        }
-    }
-
-    const auto rollback = [&pending, &err, &moved]() {
-        for (size_t i = 0; i < moved; i++) {
-            const std::filesystem::path& fp = pending[i].first;
-            std::error_code restore_err;
-
-            /* Drop the installed bullet copy, if it was already written. */
-            std::filesystem::remove(fp, restore_err);
-            std::filesystem::rename(backupPathFor(fp), fp, restore_err);
-        }
-
-        for (const auto& [fp, tmp_fp] : pending)
-            std::filesystem::remove(tmp_fp, err);
-    };
-
-    if (moved != pending.size()) {
-        rollback();
-        return false;
-    }
-
-    size_t installed = 0;
-
-    for (; installed < pending.size(); installed++) {
-        if (!replaceFile(pending[installed].second, pending[installed].first)) {
-            lg::warning("Failed to replace '", pending[installed].first.string(), 
-                        "' with its bullet-format copy.");
-            break;
-        }
-    }
-
-    if (installed != pending.size()) {
-        /* Every original is still intact in its backup, restore all of them. */
-        moved = pending.size();
-        rollback();
-        return false;
-    }
-
-    if (!writeSessionInfo(session_dir, SessionInfo{true, records})) {
-        lg::warning("Failed to write '", std::string(SessionInfoFileName),
-                    "' for session: ", session_dir.string());
-        moved = pending.size();
-        rollback();
-        return false;
-    }
-
-    for (const auto& [fp, tmp_fp] : pending)
-        std::filesystem::remove(backupPathFor(fp), err);
-
-    return true;
-}
-
-/* Streams one raw file into a temporary bullet file. The temporary is left in
-*  place for the caller, which only replaces the original once every file of
-*  the session converted successfully.
-*/
 bool convertFileInPlace(const std::filesystem::path& fp,
                         std::filesystem::path& tmp_fp,
                         size_t& record_cnt) {
@@ -260,7 +127,6 @@ bool convertFileInPlace(const std::filesystem::path& fp,
     std::error_code err;
     const std::uintmax_t bytes = std::filesystem::file_size(fp, err);
 
-    /* A trailing partial record would be silently dropped by the reader. */
     if (err or bytes % TrainingRecordSize != 0)
         return false;
 
@@ -321,7 +187,7 @@ bool Session::write(const TrainingDataEntry& entry, Label label) const {
 }
 
 SessionInfo Session::info() const {
-    return readSessionInfo(_fp);
+    return readInfo();
 }
 
 void Session::createSession() {
@@ -365,6 +231,114 @@ void Session::createSession() {
     }
 }
 
+SessionInfo Session::readInfo() const {
+    SessionInfo info;
+
+    std::ifstream input(_fp / SessionInfoFileName);
+
+    if (!input)
+        return info;
+
+    for (std::string key; input >> key; ) {
+        if (key == "bullet_format")
+            input >> info.bullet_format;
+        else if (key == "records")
+            input >> info.records;
+        else {
+            std::string ignored;
+            input >> ignored;
+        }
+    }
+
+    return info;
+}
+
+bool Session::writeInfo(const SessionInfo& info) const {
+    const std::filesystem::path fp = _fp / SessionInfoFileName;
+    const std::filesystem::path tmp_fp = tempPathFor(fp);
+
+    {
+        std::ofstream output(tmp_fp, std::ios::trunc);
+
+        if (!output)
+            return false;
+
+        output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
+               << "records " << info.records << '\n';
+        output.flush();
+
+        if (!output)
+            return false;
+    }
+
+    return replaceFile(tmp_fp, fp);
+}
+
+bool Session::commitConvertedFiles(
+    const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending,
+    size_t records) 
+{
+    std::error_code err;
+
+    size_t moved = 0;
+
+    for (; moved < pending.size(); moved++) {
+        const std::filesystem::path& fp = pending[moved].first;
+
+        if (!replaceFile(fp, backupPathFor(fp))) {
+            lg::warning("Failed to move aside raw file: ", fp.string());
+            break;
+        }
+    }
+
+    const auto rollback = [&pending, &err, &moved]() {
+        for (size_t i = 0; i < moved; i++) {
+            const std::filesystem::path& fp = pending[i].first;
+            std::error_code restore_err;
+
+            std::filesystem::remove(fp, restore_err);
+            std::filesystem::rename(backupPathFor(fp), fp, restore_err);
+        }
+
+        for (const auto& [fp, tmp_fp] : pending)
+            std::filesystem::remove(tmp_fp, err);
+    };
+
+    if (moved != pending.size()) {
+        rollback();
+        return false;
+    }
+
+    size_t installed = 0;
+
+    for (; installed < pending.size(); installed++) {
+        if (!replaceFile(pending[installed].second, pending[installed].first)) {
+            lg::warning("Failed to replace '", pending[installed].first.string(), 
+                        "' with its bullet-format copy.");
+            break;
+        }
+    }
+
+    if (installed != pending.size()) {
+        moved = pending.size();
+        rollback();
+        return false;
+    }
+
+    if (!writeInfo(SessionInfo{true, records})) {
+        lg::warning("Failed to write '", std::string(SessionInfoFileName),
+                    "' for session: ", _fp.string());
+        moved = pending.size();
+        rollback();
+        return false;
+    }
+
+    for (const auto& [fp, tmp_fp] : pending)
+        std::filesystem::remove(backupPathFor(fp), err);
+
+    return true;
+}
+
 bool Session::toBulletFormat() {
     std::vector<std::filesystem::path> tdf_files;
 
@@ -399,7 +373,7 @@ bool Session::toBulletFormat() {
         records += file_records;
     }
 
-    return commitConvertedFiles(pending, _fp, records);
+    return commitConvertedFiles(pending, records);
 }
 
 bool Session::shuffleInto(const std::filesystem::path& target_fp) const {
@@ -420,9 +394,6 @@ bool Session::shuffleInto(const std::filesystem::path& target_fp) const {
     for (const auto& fp : tdf_files) {
         const std::uintmax_t bytes = std::filesystem::file_size(fp, err);
 
-        /* A trailing partial record would be dropped by the reader, which
-        *  would silently shrink the merged output.
-        */
         if (err or bytes % TrainingRecordSize != 0) {
             lg::warning("Corrupted training file (size not a multiple of ", 
                         TrainingRecordSize, "): ", fp.string());
@@ -451,7 +422,7 @@ bool Session::shuffleInto(const std::filesystem::path& target_fp) const {
     }
 
     if (entries.size() != info.records) {
-        lg::warning("Session record count mismatch (session.info says ", info.records,
+        lg::warning("Session record count mismatch (.sessioninfo says ", info.records,
                     ", found ", entries.size(), "): ", _fp.string());
     }
 
@@ -514,9 +485,6 @@ std::pair<std::string, std::string> SelfplayInstance::uniqueFileLabel() {
     );
     const std::chrono::year_month_day ymd(now);
 
-    /* Fresh key on every call, otherwise a collision on the date would be
-    *  retried with the same (already existing) directory name forever.
-    */
     std::string file_alpha_key(4, 'a');
     std::ranges::generate(file_alpha_key, [] -> char { 
         return static_cast<char>('a' + rnd::random<size_t>(0, 'z' - 'a')); 
@@ -545,7 +513,6 @@ void SelfplayInstance::createTournamentWorkspace() {
             return;
         }
 
-        /* Another run already owns this name, draw a new one. */
         if (!err)
             continue;
 
@@ -598,11 +565,6 @@ void SelfplayDb::discoverSessions() {
         return collectTdfFiles(dir, files) and !files.empty();
     };
 
-    /* The shuffled output of this database is already in bullet format and has
-    *  no 'session.info'. Converting it again would corrupt it, so it is never
-    *  treated as a session - even when the caller passes a root that contains
-    *  it (e.g. 'data' instead of 'data/selfplay').
-    */
     const std::filesystem::path shuffled_root = 
         shuffledRootFor(_fp).lexically_normal();
 
@@ -694,10 +656,6 @@ bool SelfplayDb::shuffleData() {
             return;
         }
 
-        /* 'lexically_relative' keeps this independent of how the root was spelled
-        *  and of the current working directory. The root itself relative to the
-        *  root yields '.', which has to be named after the root directory.
-        */
         std::filesystem::path relative = session.path().lexically_relative(_fp);
         std::filesystem::path target = shuffled_root;
 

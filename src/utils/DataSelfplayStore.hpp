@@ -26,6 +26,8 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace utils::db::internal {
 
@@ -66,22 +68,13 @@ struct std::hash<utils::db::internal::Label> {
 
 namespace utils::db {
 
-/* Cached state of one session, stored in 'session.info' next to the data
-*  files. Bulk passes read it instead of probing the '.tdf' files again.
-*  A session without that file is still in its raw (unconverted) state.
-*/
 struct SessionInfo {
-    bool   bullet_format = false; // '.tdf' files are stored in bullet format
-    size_t records       = 0;     // training records stored in the session
+    bool   bullet_format = false;
+    size_t records       = 0;
 
     bool operator==(const SessionInfo&) const = default;
 };
 
-/* A single session directory, i.e. the '.tdf' files produced by one tournament
-*  run ('session<N>' in the 'selfplay_<day>_<key>' workspace). It owns
-*  everything that can be done to one session, so no bulk operation has to know
-*  about the on-disk layout.
-*/
 class Session {
 public:
     using Label = internal::Label;
@@ -90,37 +83,32 @@ public:
     Session(const Session&) = delete;
     Session(Session&&) noexcept = default;
 
-    /* Opens a session for collecting: creates the directory and its data files. */
     explicit Session(std::filesystem::path fp);
 
     Session& operator=(const Session&) = delete;
     Session& operator=(Session&&) noexcept = default;
 
-    /* Attaches to a session that already exists on disk, without creating or
-    *  opening anything, so read passes never modify the data they inspect.
-    */
     _NODISCARD static Session attached(std::filesystem::path fp);
 
     _NODISCARD _INLINE const std::filesystem::path& path() const { return _fp; }
 
     _NODISCARD bool write(const TrainingDataEntry& entry, Label label) const;
 
-    /* State cached in 'session.info', defaults to raw and empty when absent. */
     _NODISCARD SessionInfo info() const;
 
-    /* Rewrites this session in place to bullet format and records the result in
-    *  its 'session.info'. Either the whole session is converted or it is left
-    *  untouched in its raw state, never half converted.
-    */
     bool toBulletFormat();
-
-    /* Merges and shuffles the bullet records of this session into 'target_fp'.
-    *  The session must have been converted with 'toBulletFormat' first.
-    */
     bool shuffleInto(const std::filesystem::path& target_fp) const;
 private:
     Session(std::filesystem::path fp, bool create_files);
     void createSession();
+
+    _NODISCARD SessionInfo readInfo() const;
+    bool writeInfo(const SessionInfo& info) const;
+
+    bool commitConvertedFiles(
+        const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending,
+        size_t records
+    );
 
     std::filesystem::path   _fp;
     std::unordered_map<Label, std::unique_ptr<std::ofstream>>   
@@ -137,11 +125,6 @@ public:
     SelfplayInstance(const SelfplayInstance&) = delete;
     SelfplayInstance& operator=(const SelfplayInstance&) = delete;
 
-    /* Creates the next session of the tournament workspace and registers it in
-    *  'db', which keeps it alive for as long as the database exists. Sessions
-    *  created earlier stay valid, so callers can keep the returned reference
-    *  alongside references to the previous ones.
-    */
     Session& querySessionHandler(SelfplayDb& db);
 
     _NODISCARD _INLINE const std::filesystem::path& tournamentDirectory() const { 
@@ -158,11 +141,6 @@ private:
     std::once_flag        _wrk_create;
 };
 
-/* A selfplay database, rooted at 'data/selfplay' by default. It discovers the
-*  sessions stored under the root and keeps them alive; collecting adds new
-*  sessions to it through 'SelfplayInstance::querySessionHandler'. It never
-*  creates workspaces on its own.
-*/
 class SelfplayDb {
 public:
     SelfplayDb();
@@ -173,30 +151,12 @@ public:
 
     _NODISCARD _INLINE const std::filesystem::path& root() const { return _fp; }
 
-    /* Sessions under the root that directly store '.tdf' files - in the
-    *  'selfplay_<day>_<key>/session<N>' layout exactly the session directories,
-    *  sorted by path, followed by the ones added while collecting. The shuffled
-    *  output directory of this database is excluded, as it is already in bullet
-    *  format and has no 'session.info'.
-    */
     _NODISCARD _INLINE const std::deque<Session>& sessions() const { return _sessions; }
     _NODISCARD _INLINE size_t size() const { return _sessions.size(); }
 
-    /* Registers an externally created session. Adding never invalidates
-    *  references to the sessions already stored.
-    */
     Session& addSession(Session session);
 
-    /* Rewrites every session in place to bullet format. Sessions already marked
-    *  as converted in their 'session.info' are skipped, and a session that
-    *  fails to convert is rolled back to its raw state.
-    */
     bool toBulletFormat();
-
-    /* Merges and shuffles the bullet records of every session into
-    *  '<root>_shuffled/<relative session dir>.tdf'. Sessions that were not
-    *  converted with 'toBulletFormat' are reported and skipped.
-    */
     bool shuffleData();
 private:
     void discoverSessions();
