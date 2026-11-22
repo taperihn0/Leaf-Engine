@@ -49,20 +49,18 @@ void UtilsProtocol::parseSelfPlay(TournamentCollector& collector,
     }
 
     strm >> std::skipws >> token;
-    const std::filesystem::path log_dir = token;
-
-    strm >> std::skipws >> token;
     search::utils::SearchLimits limits = UniversalChessInterface::loadSearchLimits(strm, token);
 
+    auto selfplay_db = db::SelfplayDb();
+
     const TournamentCollector::TournamentPacket packet = {
-        static_cast<size_t>(games_count),
-        static_cast<uint>(thread_cnt),
-        log_dir,
-        limits,
-        static_cast<size_t>(_options.hash_opt.getCurrentValue()),
+        .games_count = static_cast<size_t>(games_count),
+        .thread_count = static_cast<uint>(thread_cnt),
+        .selfplay_db = selfplay_db,
+        .limits = limits,
+        .tt_mb_size = static_cast<size_t>(_options.hash_opt.getCurrentValue()),
     };
 
-    std::cout << packet.selfplay_filename << std::endl;
     collector.startTournament(packet);
 }
 

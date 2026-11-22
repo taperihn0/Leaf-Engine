@@ -20,6 +20,7 @@
 
 #include "UtilsCommon.hpp"
 #include "TrainEntry.hpp"
+#include "Log.hpp"
 
 #include <deque>
 #include <fstream>
@@ -92,9 +93,10 @@ public:
 
     _NODISCARD _INLINE const std::filesystem::path& path() const { return _fp; }
 
-    _NODISCARD bool write(const TrainingDataEntry& entry, Label label) const;
+    bool write(const TrainingDataEntry& entry, Label label) const;
+    _NODISCARD std::optional<SessionInfo> info() const;
 
-    _NODISCARD SessionInfo info() const;
+    lg::Log& errorLog();
 
     bool toBulletFormat();
     bool shuffleInto(const std::filesystem::path& target_fp) const;
@@ -102,17 +104,17 @@ private:
     Session(std::filesystem::path fp, bool create_files);
     void createSession();
 
-    _NODISCARD SessionInfo readInfo() const;
-    bool writeInfo(const SessionInfo& info) const;
+    void setInfo(const SessionInfo& info) const;
 
     bool commitConvertedFiles(
         const std::vector<std::pair<std::filesystem::path, std::filesystem::path>>& pending,
         size_t records
     );
 
-    std::filesystem::path   _fp;
+    static constexpr std::string_view ErrFileName = ".error";
+    std::filesystem::path _fp;
     std::unordered_map<Label, std::unique_ptr<std::ofstream>>   
-                            _thr_files;
+                          _thr_files;
 };
 
 class SelfplayDb;
@@ -155,6 +157,7 @@ public:
     _NODISCARD _INLINE size_t size() const { return _sessions.size(); }
 
     Session& addSession(Session session);
+    SelfplayInstance getSelfplayInstance() const;
 
     bool toBulletFormat();
     bool shuffleData();

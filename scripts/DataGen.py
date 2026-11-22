@@ -109,13 +109,8 @@ def main():
 
     while session_num <= total_sessions:
         session_dir = os.path.normpath(os.path.join(base_dir, f"session{session_num}"))
-        err_file = os.path.normpath(os.path.join(session_dir, "err"))
-
         os.makedirs(session_dir, exist_ok=True)
         
-        with open(err_file, "w", encoding="utf-8") as f:
-            f.truncate(0)
-
         log_msg(f"Launching Session {session_num}...")
 
         input_cmds = f"setoption name Hash value {tt_mb_size}\n"
@@ -123,7 +118,7 @@ def main():
         if (syzygy_path != "<empty>"):
             input_cmds += f"setoption name SyzygyPath value {syzygy_path}\n"
 
-        input_cmds += f"self_play {games_per_session} {thread_count} {session_dir} nodes {nodes}\n"
+        input_cmds += f"self_play {games_per_session} {thread_count} nodes {nodes}\n"
 
         try:
             process = subprocess.Popen(
@@ -142,14 +137,7 @@ def main():
             exit_code = -1
 
         if exit_code != 0:
-            log_msg(f"Crash (Code {exit_code}) in Session {session_num}.")
-
-            err_file = os.path.normpath(os.path.join(session_dir, "err"))
-            time_now = datetime.now().strftime("%H:%M:%S")
-
-            with open(err_file, "a", encoding="utf-8") as f:
-                f.write(f"[{time_now}] SCRIPT: Process exited with code {exit_code}\n")
-            
+            log_msg(f"Crash (Code {exit_code}) in Session {session_num}.")            
             log_msg("Restarting in 5s...")
             time.sleep(5)
             continue

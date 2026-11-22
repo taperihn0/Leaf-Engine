@@ -132,7 +132,7 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         {
             {
                 const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
-                lg::Log(thr_data.commons->err_fp, std::ios::app)
+                thr_data.session->errorLog()
                     .info(log_thr_label, "Engine disconnected");
             }
 
@@ -157,7 +157,8 @@ bool TournamentCollector::threadTournamentWorker(TournamentCollector::PerThreadD
         if (game_packet.result == Game::GAME_INVALID) {
             const std::lock_guard<std::mutex> lock(thr_data.commons->err_output_lock);
 
-            lg::Log errlog(thr_data.commons->err_fp, std::ios::app);
+            auto& errlog = thr_data.session->errorLog();
+
             errlog.message(log_thr_label, "Error: Invalid game");
             
             std::ostringstream ss;
@@ -303,23 +304,11 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
         return;
     }
 
-    {
-        std::error_code err;
-        std::filesystem::create_directories(packet.selfplay_filename, err);
-
-        if (err) {
-            lg::info("Failed to create directory: ", packet.selfplay_filename.string(),
-                      ", reason: ", err.message());
-            return;
-        }
-    }
-
-    db::SelfplayDb selfplay_db(packet.selfplay_filename);
-    db::SelfplayInstance selfplay_instance(packet.selfplay_filename);
+    auto selfplay_instance = packet.selfplay_db.get().getSelfplayInstance();
     db::Session* session = nullptr;
 
     try {
-        session = &selfplay_instance.querySessionHandler(selfplay_db);
+        session = &selfplay_instance.querySessionHandler(packet.selfplay_db);
     }
     catch (const std::exception& e) {
         lg::info("Failed to create selfplay session: ", e.what());
@@ -338,7 +327,6 @@ void TournamentCollector::startTournament(const TournamentPacket& packet) {
     thread_common->total_draw_count = 0;
     thread_common->total_thread_cnt = packet.thread_count;
     thread_common->tt_mb_size = packet.tt_mb_size;
-    thread_common->err_fp = packet.selfplay_filename / "err";
 
     if (GlobOpeningGenerator.isEmpty())
         GlobOpeningGenerator.load();

@@ -186,10 +186,6 @@ bool Session::write(const TrainingDataEntry& entry, Label label) const {
     ) ? false : TrainingDataEntry::write(*file->second, entry);
 }
 
-SessionInfo Session::info() const {
-    return readInfo();
-}
-
 void Session::createSession() {
     std::error_code err;
     std::filesystem::create_directories(_fp, err);
@@ -231,47 +227,44 @@ void Session::createSession() {
     }
 }
 
-SessionInfo Session::readInfo() const {
+std::optional<SessionInfo> Session::info() const {
     SessionInfo info;
-
     std::ifstream input(_fp / SessionInfoFileName);
 
-    if (!input)
-        return info;
+    if (!input) {
+        return std::nullopt;
+    }
 
-    for (std::string key; input >> key; ) {
-        if (key == "bullet_format")
-            input >> info.bullet_format;
-        else if (key == "records")
-            input >> info.records;
-        else {
-            std::string ignored;
-            input >> ignored;
-        }
+    std::string ignore;
+
+    for (std::string key; input >> key;) {
+        if (key == "bullet_format") input >> info.bullet_format;
+        else if (key == "records")  input >> info.records;
+        else                        input >> ignore;
     }
 
     return info;
 }
 
-bool Session::writeInfo(const SessionInfo& info) const {
-    const std::filesystem::path fp = _fp / SessionInfoFileName;
-    const std::filesystem::path tmp_fp = tempPathFor(fp);
+lg::Log& Session::errorLog() {
+    static lg::Log errlog(_fp / ErrFileName, std::ios::app);
+    return errlog;
+}
 
-    {
-        std::ofstream output(tmp_fp, std::ios::trunc);
+void Session::setInfo(const SessionInfo& info) const {
+    const std::filesystem::path info_file = _fp / SessionInfoFileName;
+    std::ofstream output(info_file, std::ios::trunc);
 
-        if (!output)
-            return false;
-
-        output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
-               << "records " << info.records << '\n';
-        output.flush();
-
-        if (!output)
-            return false;
+    if (!output) {
+        throw std::runtime_error(std::format("Failed to open {}", info_file.string()));
     }
 
-    return replaceFile(tmp_fp, fp);
+    output << "bullet_format " << (info.bullet_format ? 1 : 0) << '\n'
+            << "records " << info.records << std::endl;
+
+    if (!output) {
+        throw std::runtime_error(std::format("File error: {}", info_file.string()));
+    }
 }
 
 bool Session::commitConvertedFiles(
@@ -325,7 +318,10 @@ bool Session::commitConvertedFiles(
         return false;
     }
 
-    if (!writeInfo(SessionInfo{true, records})) {
+    try {
+        setInfo(SessionInfo{ true, records });
+    }
+    catch (...) {
         lg::warning("Failed to write '", std::string(SessionInfoFileName),
                     "' for session: ", _fp.string());
         moved = pending.size();
@@ -377,7 +373,7 @@ bool Session::toBulletFormat() {
 }
 
 bool Session::shuffleInto(const std::filesystem::path& target_fp) const {
-    const SessionInfo info = this->info();
+    const SessionInfo info = this->info().value();
     std::error_code err;
     std::vector<std::filesystem::path> tdf_files;
 
@@ -485,9 +481,9 @@ std::pair<std::string, std::string> SelfplayInstance::uniqueFileLabel() {
     );
     const std::chrono::year_month_day ymd(now);
 
-    std::string file_alpha_key(4, 'a');
-    std::ranges::generate(file_alpha_key, [] -> char { 
-        return static_cast<char>('a' + rnd::random<size_t>(0, 'z' - 'a')); 
+    std::string key(4, 'a');
+    std::ranges::generate(key, [] -> char { 
+        return 'a' + rnd::random<size_t>(0, 'z' - 'a'); 
     });
 
     return std::make_pair(
@@ -496,12 +492,16 @@ std::pair<std::string, std::string> SelfplayInstance::uniqueFileLabel() {
             MonthNames[static_cast<uint>(ymd.month()) - 1], 
             static_cast<uint>(ymd.day())
         ),
-        std::move(file_alpha_key)
+        std::move(key)
     );
 }
 
 void SelfplayInstance::createTournamentWorkspace() {
-    for (int attempt = 0; attempt < 1000; attempt++) {
+    // Another option: we already created that in current day, so 
+    // assign previous tournament workspace to _fp.
+    // _session_cnt have to be updated similarly.
+
+    for (int i = 0; i < 32; i++) {
         const auto file_label = uniqueFileLabel();
         const std::filesystem::path file = _selfplay_fp / 
             std::format("selfplay_{}_{}", file_label.first, file_label.second);
@@ -513,16 +513,17 @@ void SelfplayInstance::createTournamentWorkspace() {
             return;
         }
 
-        if (!err)
-            continue;
-
-        throw std::runtime_error(std::format(
-            "Failed to create selfplay workspace: {} ({})", 
-            file.string(), err.message()));
+        if (err) {
+            throw std::runtime_error(std::format(
+                "Failed to create selfplay workspace: {} ({})", 
+                file.string(), err.message())
+            );
+        }
     }
 
-    throw std::runtime_error("Failed to find a free selfplay workspace name in: " 
-                             + _selfplay_fp.string());
+    throw std::runtime_error(
+        std::format("Failed to find a free selfplay workspace name in: {}", _selfplay_fp.string())
+    );
 }
 
 Session& SelfplayInstance::querySessionHandler(SelfplayDb& db) {
@@ -599,6 +600,10 @@ Session& SelfplayDb::addSession(Session session) {
     return _sessions.back();
 }
 
+SelfplayInstance SelfplayDb::getSelfplayInstance() const {
+    return SelfplayInstance(_fp);
+}
+
 bool SelfplayDb::toBulletFormat() {
     if (_sessions.empty()) {
         lg::warning("No selfplay data found in '", _fp.string(), "', nothing to convert.");
@@ -606,26 +611,45 @@ bool SelfplayDb::toBulletFormat() {
     }
 
     lg::info("Converting ", _sessions.size(), 
-             " selfplay session(s) to bullet format in place...");
+             " selfplay session(s) to bullet format inplace ...");
 
     std::atomic<bool> success = true;
+    std::vector<std::filesystem::path> invalids;
 
     std::for_each(std::execution::par, _sessions.begin(), _sessions.end(), 
-                  [&success](Session& session) {
-        if (session.info().bullet_format) {
-            lg::debug("Already in bullet format, skipping: ", session.path().string());
-            return;
-        }
+                  [&success, &invalids](Session& session) 
+        {
+            bool curr_status = true;
 
-        if (!session.toBulletFormat()) {
-            lg::warning("Failed to convert session to bullet format: ", 
-                        session.path().string());
-            success.store(false);
+            const auto info = session.info().or_else([&curr_status] {
+                curr_status = false;
+                return std::optional<SessionInfo>();
+            }).value();
+
+            if (!curr_status) {
+                lg::warning("Missing info file in ", session.path().string());
+                success.store(false);
+                invalids.push_back(session.path());
+                return;
+            }
+
+            if (info.bullet_format) {
+                lg::debug("Already in bullet format, skipping: ", session.path().string());
+                return;
+            }
+
+            if (!session.toBulletFormat()) {
+                lg::warning("Failed to convert session to bullet format: ", 
+                            session.path().string());
+                success.store(false);
+                invalids.push_back(session.path());
+            }
         }
-    });
+    );
 
     if (!success.load()) {
-        lg::warning("Failed to serialize all sessions to bullet format.");
+        lg::warning("Failed to serialize all sessions to bullet format. Invalid sessions: ");
+        std::ranges::for_each(invalids, [](const auto& s) { lg::warning(s.string()); });
         return false;
     }
 
@@ -648,29 +672,42 @@ bool SelfplayDb::shuffleData() {
     std::atomic<size_t> shuffled_sessions = 0;
 
     std::for_each(std::execution::par, _sessions.begin(), _sessions.end(), 
-                  [this, &shuffled_root, &success, &shuffled_sessions]
-                  (const Session& session) {
-        if (!session.info().bullet_format) {
-            lg::warning("Session is not in bullet format, run 'to_bullet_format' first: ",
-                        session.path().string());
-            return;
+                  [this, &shuffled_root, &success, &shuffled_sessions](const Session& session) 
+        {
+            bool curr_status = true;
+
+            const auto info = session.info().or_else([&curr_status] {
+                curr_status = false;
+                return std::optional<SessionInfo>();
+            }).value();
+
+            if (!curr_status) {
+                lg::warning("Missing info file in ", session.path().string());
+                return;
+            }
+
+            if (info.bullet_format) {
+                lg::warning("Session is not in bullet format, run 'to_bullet_format' first: ",
+                            session.path().string());
+                return;
+            }
+
+            std::filesystem::path relative = session.path().lexically_relative(_fp);
+            std::filesystem::path target = shuffled_root;
+
+            if (relative.empty() or relative == ".")
+                target /= _fp.filename().string() + ".tdf";
+            else
+                target /= relative.replace_extension(".tdf");
+
+            if (!session.shuffleInto(target)) {
+                success.store(false);
+                return;
+            }
+
+            shuffled_sessions.fetch_add(1);
         }
-
-        std::filesystem::path relative = session.path().lexically_relative(_fp);
-        std::filesystem::path target = shuffled_root;
-
-        if (relative.empty() or relative == ".")
-            target /= _fp.filename().string() + ".tdf";
-        else
-            target /= relative.replace_extension(".tdf");
-
-        if (!session.shuffleInto(target)) {
-            success.store(false);
-            return;
-        }
-
-        shuffled_sessions.fetch_add(1);
-    });
+    );
 
     if (!success.load()) {
         lg::warning("Failed to shuffle all sessions.");

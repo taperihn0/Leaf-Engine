@@ -25,7 +25,7 @@ Starts a self-play tournament and collects training data.
 ### Syntax
 
 ```text
-self_play <games> <threads> <output_dir> <error_log> [search limits]
+self_play <games> <threads> <output_root> [search limits]
 ```
 
 ### Arguments
@@ -34,8 +34,7 @@ self_play <games> <threads> <output_dir> <error_log> [search limits]
 | --------------- | ---------------------------------------------- |
 | `games`         | Total number of games to play                  |
 | `threads`       | Number of worker threads                       |
-| `output_dir`    | Directory where training files will be written |
-| `error_log`     | Error log file                                 |
+| `output_root`    | Directory where training files will be written |
 | `search limits` | Standard UCI search limits                     |
 
 ### Example

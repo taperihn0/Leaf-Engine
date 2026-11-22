@@ -49,11 +49,11 @@ public:
     TournamentCollector() = default;
 
     struct TournamentPacket {
-        size_t                games_count; 
-        uint                  thread_count;
-        std::filesystem::path selfplay_filename;
+        size_t games_count; 
+        uint   thread_count;
+        std::reference_wrapper<db::SelfplayDb> selfplay_db;
         search::utils::SearchLimits limits;
-        size_t                tt_mb_size;
+        size_t tt_mb_size;
     };
     
     void startTournament(const TournamentPacket& packet);
@@ -76,8 +76,6 @@ private:
         std::atomic<size_t> total_draw_count;
         size_t              total_thread_cnt;
         size_t              tt_mb_size;
-        std::filesystem::path 
-                            err_fp;
         std::mutex          err_output_lock;
     };
 
